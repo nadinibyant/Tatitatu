@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // Assuming you're using react-router-dom for navigation
+import { Link, useLocation } from "react-router-dom"; // Import useLocation
 
 const Navbar = ({ menuItems, userOptions, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   const [submenuOpen, setSubmenuOpen] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
+  const location = useLocation(); // Get the current URL
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -35,20 +37,28 @@ const Navbar = ({ menuItems, userOptions, children }) => {
     <div className="flex h-screen">
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full bg-gray-800 text-white transition-all duration-300 ease-in-out w-64 z-20 ${
+        className={`fixed top-0 left-0 h-full bg-white text-white transition-all duration-300 ease-in-out w-64 z-20 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center h-16 border-b border-gray-700">
-          <h1 className="text-lg font-bold">Logo</h1>
+        <div className="flex items-center justify-center h-20">
+          <a href="">
+            <img src="logo.png" alt="" />
+          </a>
         </div>
 
         {/* Menu Items */}
-        <ul className="mt-4">
+        <ul className="mt-4 text-black">
           {menuItems.map((menu) => (
             <li key={menu.label} className="group">
-              <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 cursor-pointer">
+              <div
+                className={`flex items-center justify-between px-4 py-2 hover:bg-[#7B0C42] cursor-pointer ${
+                  location.pathname === menu.link || menu.submenu?.some(sub => location.pathname === sub.link) 
+                    ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
+                    : ""
+                }`}
+              >
                 <Link to={menu.link} className="flex items-center">
                   <span className="mr-2">{menu.icon}</span> {menu.label}
                 </Link>
@@ -58,7 +68,9 @@ const Navbar = ({ menuItems, userOptions, children }) => {
                     className="text-sm text-white focus:outline-none"
                   >
                     <svg
-                      className={`w-4 h-4 transition-transform ${submenuOpen[menu.label] ? "rotate-180" : "rotate-0"}`}
+                      className={`w-4 h-4 transition-transform ${
+                        submenuOpen[menu.label] ? "rotate-180" : "rotate-0"
+                      }`}
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -77,7 +89,14 @@ const Navbar = ({ menuItems, userOptions, children }) => {
               {menu.submenu && submenuOpen[menu.label] && (
                 <ul className="pl-8">
                   {menu.submenu.map((sub) => (
-                    <li key={sub.label} className="px-4 py-2 hover:bg-gray-700">
+                    <li
+                      key={sub.label}
+                      className={`px-4 py-2 hover:bg-gray-700 ${
+                        location.pathname === sub.link
+                          ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
+                          : ""
+                      }`}
+                    >
                       <Link to={sub.link}>{sub.label}</Link>
                     </li>
                   ))}
@@ -95,11 +114,8 @@ const Navbar = ({ menuItems, userOptions, children }) => {
         }`}
       >
         {/* Top Navbar */}
-        <div className="bg-gray-800 text-white h-16 flex items-center px-4 justify-between z-10">
-          <button
-            className="text-white mr-4"
-            onClick={toggleSidebar}
-          >
+        <div className="bg-white text-black h-16 flex items-center px-4 justify-between z-10">
+          <button className="text-white mr-4" onClick={toggleSidebar}>
             ☰
           </button>
           <div className="relative">
@@ -107,9 +123,11 @@ const Navbar = ({ menuItems, userOptions, children }) => {
               onClick={toggleDropdown}
               className="flex items-center focus:outline-none"
             >
-              <span>Username</span>
+              <span>SuperAdmin</span>
               <svg
-                className={`w-4 h-4 ml-2 transition-transform ${dropdownOpen ? "rotate-180" : "rotate-0"}`}
+                className={`w-4 h-4 ml-2 transition-transform ${
+                  dropdownOpen ? "rotate-180" : "rotate-0"
+                }`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -149,7 +167,11 @@ const Navbar = ({ menuItems, userOptions, children }) => {
         )}
 
         {/* Content */}
-        <div className={`flex-1 bg-gray-100 p-4 ${!isDesktop && sidebarOpen ? "opacity-50 pointer-events-none" : ""}`}>
+        <div
+          className={`flex-1 bg-gray-100 p-4 ${
+            !isDesktop && sidebarOpen ? "opacity-50 pointer-events-none" : ""
+          }`}
+        >
           {children}
         </div>
       </div>
