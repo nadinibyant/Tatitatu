@@ -42,17 +42,5 @@ const FileInput = ({ label, onFileChange }) => {
   );
 };
 
-const FileInput2 = () => {
-  const handleFileChange = (file) => {
-    console.log("File uploaded: ", file);
-  };
 
-  return (
-    <div className="p-4">
-      <h1 className="text-lg font-bold mb-4">Upload File</h1>
-      <FileInput label="Masukkan Foto Barang" onFileChange={handleFileChange} />
-    </div>
-  );
-};
-
-export default FileInput2;
+export default FileInput;

@@ -13,27 +13,23 @@ const Table = ({ data, headers, onRowClick, hasFilter = false, filterFields = []
 
   const applyFilters = () => {
     setIsFilterModalOpen(false);
-    // You can add logic here to filter data based on the `filters` state
   };
 
-  // Filter data berdasarkan pencarian dan filterFields
   const filteredData = data.filter((row) => {
     const matchesSearchTerm = Object.values(row).some((value) =>
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const matchesFilters = Object.keys(filters).every((key) => {
-      if (!filters[key]) return true; // Skip empty filters
+      if (!filters[key]) return true;
       return String(row[key]).toLowerCase().includes(filters[key].toLowerCase());
     });
 
     return matchesSearchTerm && matchesFilters;
   });
 
-  // Hitung total halaman
   const totalPages = Math.ceil(filteredData.length / pageSize);
 
-  // Filter data untuk halaman saat ini
   const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handlePageChange = (newPage) => {
@@ -44,7 +40,7 @@ const Table = ({ data, headers, onRowClick, hasFilter = false, filterFields = []
 
   const handlePageSizeChange = (event) => {
     setPageSize(Number(event.target.value));
-    setCurrentPage(1); // Reset ke halaman pertama
+    setCurrentPage(1); 
   };
 
   const generatePages = () => {
@@ -127,16 +123,16 @@ const Table = ({ data, headers, onRowClick, hasFilter = false, filterFields = []
       {/* Tabel */}
       <table className="min-w-full border-collapse">
         {/* Header */}
-        <thead className="bg-pink-100 text-left rounded-t-lg">
+        <thead className="bg-pink text-left rounded-t-lg">
           <tr>
             {headers.map((header, index) => (
               <th
                 key={index}
-                className={`text-sm font-medium text-gray-700 py-3 px-4 ${header.align || "text-left"} ${
+                className={`text-sm font-semibold text-primary py-3 px-4 ${header.align || "text-left"} ${
                   index === 0 ? "rounded-tl-lg" : index === headers.length - 1 ? "rounded-tr-lg" : ""
                 }`}
                 style={{
-                  borderBottom: "1px solid #e5e7eb", // Custom border hanya di header
+                  borderBottom: "1px solid #e5e7eb",
                 }}
               >
                 {header.label}

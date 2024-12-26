@@ -13,7 +13,7 @@ const Breadcrumbs = ({ items }) => {
               {item.label}
             </a>
           ) : (
-            <span className="text-purple-700 font-bold">{item.label}</span>
+            <span className="text-primary font-bold">{item.label}</span>
           )}
           {index !== items.length - 1 && <span className="text-gray-400">&gt;</span>}
         </React.Fragment>

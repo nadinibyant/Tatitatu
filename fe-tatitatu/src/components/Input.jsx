@@ -1,30 +1,37 @@
 import React, { useState } from "react";
 
-const Input = ({ label, type, value, onChange, width = "w-full" }) => {
+const Input = ({ label,type,type1 ="text", value, onChange, width = "w-full", required = true }) => {
+  const [rawValue, setRawValue] = useState(value || "");
+
   const formatNumber = (num) => {
-    return num.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (num === "" || num === undefined || num === null) return "";
+    return num.toString().replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   const handleInputChange = (e) => {
+    const inputValue = e.target.value;
     if (type === "number") {
-      const rawValue = e.target.value.replace(/\./g, "");
-      onChange(rawValue);
+      const raw = inputValue.replace(/\./g, "");
+      setRawValue(raw);
+      onChange(raw === "" ? "" : parseInt(raw)); // Hanya kirim nilai yang diformat
     } else {
-      onChange(e.target.value);
+      setRawValue(inputValue);
+      onChange(inputValue);
     }
   };
 
   return (
     <div className={`mb-4 ${width}`}>
-      <label className="block text-gray-700 font-medium mb-2 sm:text-base text-sm">
+      <label className="block text-gray-700 font-medium mb-2 sm:text-sm text-sm">
         {label}
       </label>
       <input
-        type={type === "number" ? "text" : type}
-        value={type === "number" ? formatNumber(value) : value}
+        type={type1} // Tetap gunakan type "text" agar bisa diformat
+        value={type === "number" ? formatNumber(rawValue) : rawValue} // Tampilkan nilai terformat untuk angka
         onChange={handleInputChange}
         className="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-base text-sm"
         placeholder={label}
+        required={required}
       />
     </div>
   );

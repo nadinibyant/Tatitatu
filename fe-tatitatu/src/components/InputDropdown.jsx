@@ -1,18 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const InputDropdown = ({ label, options, onSelect, width = "w-full" }) => {
+const InputDropdown = ({ label, options, value, onSelect, width = "w-full" }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState("");
+  const [selectedValue, setSelectedValue] = useState(value || ""); // Gunakan value jika tersedia
 
+  useEffect(() => {
+    setSelectedValue(value || ""); // Update selectedValue jika value berubah
+  }, [value]);
+
+  // Pastikan option memiliki struktur yang sesuai
   const filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
+    (option.label || option).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSelect = (value) => {
+  const handleSelect = (selectedOption) => {
+    const value = selectedOption.label || selectedOption; // Jika objek, ambil label
     setSelectedValue(value);
     setIsOpen(false);
-    onSelect(value);
+    if (onSelect) {
+      onSelect(selectedOption); // Panggil callback onSelect
+    }
   };
 
   return (
@@ -24,8 +32,9 @@ const InputDropdown = ({ label, options, onSelect, width = "w-full" }) => {
           readOnly
           value={selectedValue}
           placeholder={`Masukkan ${label}`}
-          className="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none cursor-pointer"
+          className="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap"
           onClick={() => setIsOpen((prev) => !prev)}
+          style={{ textOverflow: "ellipsis" }} // Tambahkan gaya untuk memotong teks
         />
         <span className="absolute right-3 top-3">
           <svg
@@ -58,10 +67,10 @@ const InputDropdown = ({ label, options, onSelect, width = "w-full" }) => {
               filteredOptions.map((option, index) => (
                 <li
                   key={index}
-                  className="py-2 px-4 hover:bg-gray-100 cursor-pointer"
+                  className="py-2 px-4 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
                   onClick={() => handleSelect(option)}
                 >
-                  {option}
+                  {option.label || option} {/* Tampilkan label jika ada */}
                 </li>
               ))
             ) : (
@@ -73,26 +82,5 @@ const InputDropdown = ({ label, options, onSelect, width = "w-full" }) => {
     </div>
   );
 };
-
-// const InputDropdown = () => {
-//   const [selectedOption, setSelectedOption] = useState("");
-
-//   const handleSelect = (value) => {
-//     setSelectedOption(value);
-//     console.log("Selected: ", value);
-//   };
-
-//   return (
-//     <div className="p-4">
-//       <h1 className="text-lg font-bold mb-4">Dropdown Dengan Pencarian</h1>
-//       <DropdownWithSearch
-//         label="Divisi"
-//         options={["Marketing", "HRD", "Finance", "IT Support", "Logistik"]}
-//         onSelect={handleSelect}
-//       />
-//       <p className="mt-4">Data Terpilih: {selectedOption}</p>
-//     </div>
-//   );
-// };
 
 export default InputDropdown;

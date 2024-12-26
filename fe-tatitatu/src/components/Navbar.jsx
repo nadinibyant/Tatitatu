@@ -44,16 +44,16 @@ const Navbar = ({ menuItems, userOptions, children }) => {
         {/* Logo */}
         <div className="flex items-center justify-center h-20">
           <a href="">
-            <img src="logo.png" alt="" />
+            <img src="/logo.png" alt="" />
           </a>
         </div>
 
         {/* Menu Items */}
-        <ul className="mt-4 text-black">
+        <ul className="mt-4 text-black overflow-y-auto h-[calc(100%-80px)] pr-2 pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {menuItems.map((menu) => (
             <li key={menu.label} className="group">
               <div
-                className={`flex items-center justify-between px-4 py-2 hover:bg-[#7B0C42] cursor-pointer ${
+                className={`flex text-sm items-center justify-between px-4 py-2 hover:bg-[#7B0C42] hover:text-white cursor-pointer ${
                   location.pathname === menu.link || menu.submenu?.some(sub => location.pathname === sub.link) 
                     ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
                     : ""
@@ -65,7 +65,7 @@ const Navbar = ({ menuItems, userOptions, children }) => {
                 {menu.submenu && (
                   <button
                     onClick={() => toggleSubmenu(menu.label)}
-                    className="text-sm text-white focus:outline-none"
+                    className="text-sm text-dark focus:outline-none"
                   >
                     <svg
                       className={`w-4 h-4 transition-transform ${
@@ -91,7 +91,7 @@ const Navbar = ({ menuItems, userOptions, children }) => {
                   {menu.submenu.map((sub) => (
                     <li
                       key={sub.label}
-                      className={`px-4 py-2 hover:bg-gray-700 ${
+                      className={`px-4 py-2 hover:bg-[#7B0C42] hover:text-white ${
                         location.pathname === sub.link
                           ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
                           : ""
@@ -114,10 +114,14 @@ const Navbar = ({ menuItems, userOptions, children }) => {
         }`}
       >
         {/* Top Navbar */}
-        <div className="bg-white text-black h-16 flex items-center px-4 justify-between z-10">
-          <button className="text-white mr-4" onClick={toggleSidebar}>
-            ☰
-          </button>
+        <div className="bg-white text-black h-16 flex items-center px-4 justify-between z-10 flex-shrink-0">
+          <div className="flex">
+            <button className="text-black mr-4" onClick={toggleSidebar}>
+              ☰
+            </button>
+            <p className="text-primary font-bold">Pembelian Stok</p>
+          </div>
+
           <div className="relative">
             <button
               onClick={toggleDropdown}
