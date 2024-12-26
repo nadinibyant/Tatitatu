@@ -9,6 +9,7 @@ import FileInput from "../../../components/FileInput";
 import Gallery from "../../../components/Gallery";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Gallery2 from "../../../components/Gallery2";
+import Spinner from "../../../components/Spinner";
 
 export default function TestComponent() {
     const [value, setValue] = useState("");
@@ -427,13 +428,14 @@ export default function TestComponent() {
             </div>
 
             <div className="p-4">
-            <Gallery2 items={items2} onSelect={handleSelect2} />
+            {/* <Gallery2 items={items2} onSelect={handleSelect2} /> */}
             <div className="mt-4">
                 <h2 className="text-lg font-bold">Selected Items:</h2>
                 <pre>{JSON.stringify(Object.values(selectedItems2), null, 2)}</pre>
             </div>
             </div>
 
+            <Spinner/>
             </Navbar>
         </>
     );

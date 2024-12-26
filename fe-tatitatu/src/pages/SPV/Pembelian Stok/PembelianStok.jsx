@@ -61,7 +61,6 @@ export default function PembelianStok() {
             modalLeft = rect.left + window.scrollX - 300;
         }
     
-        // Set the modal position dynamically based on device
         setModalPosition({
             top: modalTop,
             left: modalLeft,

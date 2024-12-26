@@ -8,6 +8,9 @@ import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Gallery2 from "../../../components/Gallery2";
 import TextArea from "../../../components/Textarea";
+import { useNavigate } from "react-router-dom";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
 
 export default function TambahPembelianStok() {
     const [nomor, setNomor] = useState("");
@@ -32,6 +35,8 @@ export default function TambahPembelianStok() {
     const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     const [selectedItems, setSelectedItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [isLoading, setLoading] = useState(false)
+    const [isModalSucc, setModalSucc] = useState(false)
 
     useEffect(() => {
         if (isModalOpen) {
@@ -49,7 +54,7 @@ export default function TambahPembelianStok() {
         return dataCabang.reduce((acc, cabang) => {
             // Jumlahkan Total Biaya dari setiap cabang
             const totalCabang = cabang.data.reduce((cabAcc, row) => {
-                const totalBiaya = parseInt(row["Total Biaya"].replace("Rp", "").replace(/,/g, ""), 10);
+                const totalBiaya = parseInt(row["Total Biaya"]);
                 return cabAcc + totalBiaya;
             }, 0);
             return acc + totalCabang;
@@ -62,19 +67,13 @@ export default function TambahPembelianStok() {
     };
 
     const handleSelectBayar = (selectedOption) => {
-        setSelectedBayar(selectedOption.label); 
+        setSelectedBayar(selectedOption.id); 
         if (selectedOption.id === 2) { 
-            setSelectMetode(dataMetode[0].label); 
+            setSelectMetode(dataMetode[1].id); 
         } else {
-            setSelectMetode(dataMetode[1].label); 
+            setSelectMetode(dataMetode[0].id); 
         }
     };
-
-    console.log(selectMetode)
-
-    console.log(selectBayar)
-
-
 
     const handleSelectMetode = (value) => {
         setSelectMetode(value);
@@ -107,23 +106,25 @@ export default function TambahPembelianStok() {
             jenis: "Barang Handmade",
             kategori: ["Semua", "Gelang", "Anting-Anting", "Cincin"],
             items: [
-                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: "Rp10.000", kategori: "Gelang" },
-                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: "Rp15.000", kategori: "Anting-Anting" },
-                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: "Rp20.000", kategori: "Cincin" },
-                { id: 4, image: "https://via.placeholder.com/150", code: "MMM456", name: "Gelang Modern", price: "Rp12.000", kategori: "Gelang" },
+                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: 10000, kategori: "Gelang" },
+                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: 15000, kategori: "Anting-Anting" },
+                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: 20000, kategori: "Cincin" },
+                { id: 4, image: "https://via.placeholder.com/150", code: "MMM456", name: "Gelang Modern", price: 12000, kategori: "Gelang" },
             ],
         },
         {
             jenis: "Barang Non-Handmade",
             kategori: ["Semua", "Kalung", "Topi", "Tas"],
             items: [
-                { id: 5, image: "https://via.placeholder.com/150", code: "MMM457", name: "Kalung Emas", price: "Rp50.000", kategori: "Kalung" },
-                { id: 6, image: "https://via.placeholder.com/150", code: "MMM458", name: "Topi Keren", price: "Rp30.000", kategori: "Topi" },
-                { id: 7, image: "https://via.placeholder.com/150", code: "MMM459", name: "Tas Ransel", price: "Rp100.000", kategori: "Tas" },
-                { id: 8, image: "https://via.placeholder.com/150", code: "MMM460", name: "Kalung Perak", price: "Rp45.000", kategori: "Kalung" },
+                { id: 5, image: "https://via.placeholder.com/150", code: "MMM457", name: "Kalung Emas", price: 50000, kategori: "Kalung" },
+                { id: 6, image: "https://via.placeholder.com/150", code: "MMM458", name: "Topi Keren", price: 30000, kategori: "Topi" },
+                { id: 7, image: "https://via.placeholder.com/150", code: "MMM459", name: "Tas Ransel", price: 100000, kategori: "Tas" },
+                { id: 8, image: "https://via.placeholder.com/150", code: "MMM460", name: "Kalung Perak", price: 45000, kategori: "Kalung" },
             ],
         },
     ];
+
+    
 
     const handleSelectItem = (item, count) => {
         setSelectedItems((prev) => {
@@ -165,7 +166,7 @@ export default function TambahPembelianStok() {
                     <img
                         src={item.image}
                         alt={item.name}
-                        className="w-10 h-10 rounded-md"
+                        className="w-12 h-12"
                     />
                 ),
                 "Nama Produk": (
@@ -217,12 +218,10 @@ export default function TambahPembelianStok() {
 
                           updatedCabangCopy[activeCabang].data[rowIndex].count = newCount;
                   
-                          const hargaSatuan = parseInt(
-                            item.price.replace(/[^0-9]/g, ""), 10
-                          );
+                          const hargaSatuan = parseInt(item.price);
                           const totalBiaya = hargaSatuan * Number(newCount);
                   
-                          updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${totalBiaya.toLocaleString()}`;
+                          updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = totalBiaya;
                   
 
                           setDataCabang(updatedCabangCopy);
@@ -233,9 +232,7 @@ export default function TambahPembelianStok() {
                     />
                   ),
                   
-                "Total Biaya": `Rp${(
-                    parseInt(item.price.replace("Rp", "").replace(/\./g, "")) * item.count
-                ).toLocaleString()}`,
+                "Total Biaya":parseInt(item.price) * item.count,
                 Aksi: (
                     <button
                         className="text-red-500 hover:text-red-700"
@@ -252,7 +249,7 @@ export default function TambahPembelianStok() {
         setIsModalOpen(false);
         setSelectedItems([]);
     };
-    
+
 
     const handleDeleteItem = (cabangIndex, itemId) => {
         const updatedCabang = [...dataCabang];
@@ -273,8 +270,29 @@ export default function TambahPembelianStok() {
         { id: 3, label: "Bank Nagari" }
     ]
 
+    const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
+    const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
+
     const subtotal = calculateSubtotal();
     const totalPenjualan = calculateTotalPenjualan(subtotal);
+    const navigate = useNavigate()
+
+    const handleTambahSubmit = (e) => {
+        e.preventDefault()
+        try {
+            setLoading(true)
+            setModalSucc(true)
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleAcc = () => {
+        setModalSucc(false)
+        navigate('/pembelianStok')
+    }
 
     return (
         <>
@@ -284,14 +302,14 @@ export default function TambahPembelianStok() {
 
                     {/* Section Form Input */}
                     <section className="bg-white p-5 mt-5 rounded-xl">
-                        <form action="">
+                        <form onSubmit={handleTambahSubmit}>
                             <section>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Input label={"Nomor*"} type={"text"} value={nomor} onChange={(e) => setNomor(e.target.value)} />
-                                    <Input label={"Tanggal*"} type={"date"} value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
-                                    <InputDropdown label={"Cash/Non-Cash*"} options={dataBayar} value={selectBayar} onSelect={handleSelectBayar} />
+                                    <Input label={"Nomor*"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
+                                    <Input label={"Tanggal*"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
+                                    <InputDropdown label={"Cash/Non-Cash*"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
                                     <div className="md:col-span-3 md:w-1/3">
-                                        <InputDropdown label={"Metode Pembayaran*"} options={dataMetode} value={selectMetode} onSelect={handleSelectMetode} />
+                                        <InputDropdown label={"Metode Pembayaran*"} options={dataMetode} value={selectedMetodeLabel} onSelect={handleSelectMetode} />
                                     </div>
                                 </div>
                             </section>
@@ -375,6 +393,7 @@ export default function TambahPembelianStok() {
                                         bgColor="bg-primary w-full"
                                         hoverColor="hover:bg-white hover:border-primary hover:text-black hover:border"
                                         textColor="text-white"
+                                        type="submit"
                                         />
                                     </div>
                                     </div>
@@ -503,6 +522,19 @@ export default function TambahPembelianStok() {
                         )}
                     </section>
                 </div>
+                {/* modal success */}
+                {isModalSucc && (
+                    <AlertSuccess
+                    title="Berhasil!!"
+                    description="Data berhasil dihapus"
+                    confirmLabel="Ok"
+                    onConfirm={handleAcc}
+                    />
+                )}
+
+                {isLoading && (
+                    <Spinner/>
+                )}
             </Navbar>
         </>
     );

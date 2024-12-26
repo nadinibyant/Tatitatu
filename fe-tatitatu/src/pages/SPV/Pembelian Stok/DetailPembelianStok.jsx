@@ -1,13 +1,41 @@
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import Breadcrumbs from "../../../components/Breadcrumbs"
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menuSpv";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
+import { useState } from "react";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
 
 export default function DetailPembelianStok(){
 const location = useLocation()
 const {id} = location.state || {}
+const navigate = useNavigate()
+const [isModalDel, setModalDel] = useState(false)
+const [isModelSucc, setModalSucc] = useState(false)
+
+const handleEdit = () => {
+    navigate('/pembelianStok/edit', {state : {id: id}})
+}
+
+const handleBtnDel = () => {
+    setModalDel(true)
+}
+
+const handleConfirmDel = () => {
+    // logika delete
+    setModalDel(false)
+    setModalSucc(true)
+}
+
+const handleCancelDel = () => {
+    setModalDel(false)
+}
+
+const handleConfirmSucc = () => {
+    setModalSucc(false)
+}
 
 const breadcrumbItems = [
 { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
@@ -160,6 +188,7 @@ return (
                                 bgColor="border border-oren"
                                 hoverColor="hover:bg-gray-50"
                                 textColor="text-oren"
+                                onClick={handleEdit}
                                 />
                         </div>
 
@@ -175,6 +204,7 @@ return (
                                 bgColor="bg-merah"
                                 hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
                                 textColor="text-white"
+                                onClick={handleBtnDel}
                                 />
                         </div>
                     </div>
@@ -241,6 +271,28 @@ return (
                 </section>
             </section>
         </div>
+
+        {/* modal delete */}
+        {isModalDel && (
+            <Alert
+            title="Hapus Data"
+            description="Apakah kamu yakin ingin menghapus data ini?"
+            confirmLabel="Hapus"
+            cancelLabel="Kembali"
+            onConfirm={handleConfirmDel}
+            onCancel={handleCancelDel}
+            />
+        )}
+
+        {/* modal success */}
+        {isModelSucc && (
+            <AlertSuccess
+            title="Berhasil!!"
+            description="Data berhasil dihapus"
+            confirmLabel="Ok"
+            onConfirm={handleConfirmSucc}
+            />
+        )}
     </Navbar>
 </>
 )
