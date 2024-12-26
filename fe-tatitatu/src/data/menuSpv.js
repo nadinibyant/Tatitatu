@@ -18,10 +18,6 @@ export const menuItems = [
         label: "Laporan Keuangan Toko",
         link: "/laporanKeuangan",
         icon: "📂",
-        submenu: [
-            { label: "Daftar Pemasukan", link: "/laporanKeuangan/daftarPemasukan" },
-            { label: "Daftar Pengeluaran", link: "/laporanKeuangan/daftarPengeluaran" },
-        ],
     },
     {
         label: "Daftar Penjualan Toko",

@@ -158,7 +158,7 @@ const formatCurrency = (amount) => {
 
 return (
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <Navbar menuItems={menuItems} userOptions={userOptions} label={'Pembelian Stok'}>
         <div className="p-5">
             <Breadcrumbs items={breadcrumbItems} />
 

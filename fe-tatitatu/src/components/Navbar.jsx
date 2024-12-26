@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom"; // Import useLocation
 
-const Navbar = ({ menuItems, userOptions, children }) => {
+const Navbar = ({ menuItems, userOptions, children, label }) => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   const [submenuOpen, setSubmenuOpen] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -62,6 +62,7 @@ const Navbar = ({ menuItems, userOptions, children }) => {
                 <Link to={menu.link} className="flex items-center">
                   <span className="mr-2">{menu.icon}</span> {menu.label}
                 </Link>
+
                 {menu.submenu && (
                   <button
                     onClick={() => toggleSubmenu(menu.label)}
@@ -119,7 +120,7 @@ const Navbar = ({ menuItems, userOptions, children }) => {
             <button className="text-black mr-4" onClick={toggleSidebar}>
               ☰
             </button>
-            <p className="text-primary font-bold">Pembelian Stok</p>
+            <p className="text-primary font-bold">{label}</p>
           </div>
 
           <div className="relative">

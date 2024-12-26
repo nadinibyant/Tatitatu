@@ -223,7 +223,7 @@ export default function PembelianStok() {
     }
 return (
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <Navbar menuItems={menuItems} userOptions={userOptions} label={'Pembelian Stok'}>
         <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                 {/* Left Section */}
