@@ -4,10 +4,11 @@ export const menuItems = [
       label: "Dashboard",
       link: "/dashboard",
       icon: "📂",
-    //   submenu: [
-    //     { label: "Submenu 1", link: "/submenu1" },
-    //     { label: "Submenu 2", link: "/submenu2" },
-    //   ],
+      submenu: [
+        { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
+        { label: "Cabang Terlaris", link: "/dashboard/cabang-terlaris" },
+        { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
+      ],
     },
     {
         label: "Pembelian Stok",
@@ -24,31 +25,34 @@ export const menuItems = [
         link: "/penjualanToko",
         icon: "📂",
     },
+    // {
+    //     label: "Produk Terlaris",
+    //     link: "/produkTerlaris",
+    //     icon: "📂",
+    // },
+    // {
+    //     label: "Cabang Terlaris",
+    //     link: "/cabangTerlaris",
+    //     icon: "📂",
+    // },
+    // {
+    //     label: "Karyawan Terbaik",
+    //     link: "/karyawanTerbaik",
+    //     icon: "📂",
+    // },
     {
-        label: "Produk Terlaris",
-        link: "/produkTerlaris",
-        icon: "📂",
-    },
-    {
-        label: "Cabang Terlaris",
-        link: "/cabangTerlaris",
-        icon: "📂",
-    },
-    {
-        label: "Karyawan Terbaik",
-        link: "/karyawanTerbaik",
-        icon: "📂",
-    },
-    {
-        label: "Daftar Penilaian KPI",
+        label: "Penilaian KPI",
         link: "/daftarPenilaianKPI",
         icon: "📂",
+        submenu: [
+            {label: "KPI Seluruh Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
+          ],
     },
-    {
-        label: "KPI Seluruh Divisi",
-        link: "/kpiSeluruhDivisi",
-        icon: "📂",
-    },
+    // {
+    //     label: "KPI Seluruh Divisi",
+    //     link: "/kpiSeluruhDivisi",
+    //     icon: "📂",
+    // },
     {
         label: "Karyawan, Absensi, dan Gaji",
         link: "/dataKaryawanAbsenGaji",

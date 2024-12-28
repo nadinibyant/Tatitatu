@@ -1,9 +1,14 @@
+import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
 import Table from "../../../../components/Table";
 import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { useLocation } from "react-router-dom";
 
 export default function DetailNonPenjualan() {
+    const location = useLocation()
+    const {nomor} = location.state || {}
+    
     const breadcrumbItems = [
         { label: "Daftar Pemasukan", href: "/laporanKeuangan" },
         { label: "Detail Pemasukan", href: "" },
@@ -17,45 +22,37 @@ export default function DetailNonPenjualan() {
         { label: "Pengeluaran", key: "pengeluaran", align: "text-left"},
     ];
 
+
     const data = {
-        nomor: 'BBN124',
+        nomor: 'INC123',
         tanggal: '2024-12-12',
-        deskripsi: 'Pengeluaran Buat Listrik',
-        cabang: "Gor Agus",
-        kategori: 'Beban Operasional',
-        total: 10000,
-        jenis: 'non-penjualan',
-        detail: {
-            nomor: 'INC123',
-            tanggal: '2024-12-12',
-            kategori: 'Hibah',
-            bayar: 'Cash',
-            metode: '-',
-            dataDetail: [
-                {
-                    deskripsi: 'Dana Hibah',
-                    toko: 'Tatitatu',
-                    cabang: 'Cabang Gor HAS Padang',
-                    pengeluaran: 1000000
-                },
-                {
-                    deskripsi: 'Dana Hibah',
-                    toko: 'Tatitatu',
-                    cabang: 'Cabang Gor HAS Padang',
-                    pengeluaran: 1000000
-                },
-                {
-                    deskripsi: 'Dana Hibah',
-                    toko: 'Tatitatu',
-                    cabang: 'Cabang Gor HAS Padang',
-                    pengeluaran: 1000000
-                },
-            ],
-            total_detail: 3000000
-        }
+        kategori: 'Hibah',
+        bayar: 'Cash',
+        metode: '-',
+        dataDetail: [
+            {
+                deskripsi: 'Dana Hibah',
+                toko: 'Tatitatu',
+                cabang: 'Cabang Gor HAS Padang',
+                pengeluaran: 1000000
+            },
+            {
+                deskripsi: 'Dana Hibah',
+                toko: 'Tatitatu',
+                cabang: 'Cabang Gor HAS Padang',
+                pengeluaran: 1000000
+            },
+            {
+                deskripsi: 'Dana Hibah',
+                toko: 'Tatitatu',
+                cabang: 'Cabang Gor HAS Padang',
+                pengeluaran: 1000000
+            },
+        ],
+        total_detail: 3000000
     };
 
-    const totalPengeluaran = data.detail.dataDetail.reduce((sum, item) => sum + item.pengeluaran, 0);
+    const totalPengeluaran = data.dataDetail.reduce((sum, item) => sum + item.pengeluaran, 0);
 
     const formatRupiah = (amount) => {
         return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -69,7 +66,7 @@ export default function DetailNonPenjualan() {
 
                 <section className="p-5 bg-white mt-5 rounded-xl">
                     <div className="border-b py-2">
-                        <p className="font-bold text-lg">{data.detail.nomor}</p>
+                        <p className="font-bold text-lg">{data.nomor}</p>
                     </div>
                     
                     <section className="pt-5">
@@ -84,11 +81,11 @@ export default function DetailNonPenjualan() {
                             </div>
                             <div className="">
                                 <p className="text-gray-500 text-sm">Cash/Non-Cash</p>
-                                <p className="font-bold text-lg">{data.detail.bayar}</p>
+                                <p className="font-bold text-lg">{data.bayar}</p>
                             </div>
                             <div className="">
                                 <p className="text-gray-500 text-sm">Metode Pembayaran</p>
-                                <p className="font-bold text-lg">{data.detail.metode}</p>
+                                <p className="font-bold text-lg">{data.metode}</p>
                             </div>
                         </div>
                     </section>
@@ -98,7 +95,7 @@ export default function DetailNonPenjualan() {
                         <div className="pt-5">
                             <Table
                                 headers={headers}
-                                data={data.detail.dataDetail.map((item, index) => ({
+                                data={data.dataDetail.map((item, index) => ({
                                     ...item,
                                     pengeluaran: formatRupiah(item.pengeluaran),  
                                     No: index + 1  

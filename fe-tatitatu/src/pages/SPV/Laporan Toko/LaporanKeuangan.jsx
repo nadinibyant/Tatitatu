@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
+import { useNavigate } from "react-router-dom";
 
 export default function LaporanKeuangan() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,6 +66,333 @@ export default function LaporanKeuangan() {
         { label: "Total", key: "total", align: "text-center" },
     ];
 
+    // const data = {
+    //     keuntungan: 10000000,
+    //     pemasukan: 10000000,
+    //     pengeluaran: 10000000,
+    //     produkTerjual: 120,
+    //     dataLaporan: [
+    //         {
+    //             id_jenis: 1,
+    //             nama_jenis: 'Pemasukan',
+    //             data: [
+    //                 {
+    //                     nomor: 'BBN123',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Gor Agus",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'non-penjualan',
+    //                     detail: {
+    //                         nomor: 'INC123',
+    //                         tanggal: '2024-12-12',
+    //                         kategori: 'Hibah',
+    //                         bayar: 'Cash',
+    //                         metode: '-',
+    //                         dataDetail: [
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                         ],
+    //                         total_detail: 2000000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN124',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Gor Agus",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'non-penjualan',
+    //                     detail: {
+    //                         nomor: 'INC123',
+    //                         tanggal: '2024-12-12',
+    //                         kategori: 'Hibah',
+    //                         bayar: 'Cash',
+    //                         metode: '-',
+    //                         dataDetail: [
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                             {
+    //                                 deskripsi: 'Dana Hibah',
+    //                                 toko: 'Tatitatu',
+    //                                 cabang: 'Cabang Gor HAS Padang',
+    //                                 pengeluaran: 1000000
+    //                             },
+    //                         ],
+    //                         total_detail: 2000000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN125',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'penjualan',
+    //                     detail: {
+    //                         nomor: 'INV123',
+    //                         tanggal: '2024-12-12',
+    //                         nama_pembeli: 'Suryani',
+    //                         bayar: 'Cash',
+    //                         metode: '-',
+    //                         data_produk: [
+    //                             {
+    //                                 "Foto Produk": "https://via.placeholder.com/150",
+    //                                 "Nama Produk": "Gelang Cantik",
+    //                                 "Jenis Barang": "Barang Handmade",
+    //                                 "Harga Satuan": 15000,
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 150000
+    //                             },
+    //                             {
+    //                                 "Foto Produk": "https://via.placeholder.com/150",
+    //                                 "Nama Produk": "Gelang Cantik",
+    //                                 "Jenis Barang": "Barang Handmade",
+    //                                 "Harga Satuan": 15000,
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 150000
+    //                             },
+    //                         ],
+    //                         data_packaging: [
+    //                             {
+    //                                 "Nama Packaging": "zipper",
+    //                                 "Harga Satuan": "1000",
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 10000
+    //                             }
+    //                         ],
+    //                         sub_total: 8000,
+    //                         diskon: 30,
+    //                         pajak: 1000,
+    //                         total_penjualan: 18000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN126',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'penjualan',
+    //                     detail: {
+    //                         nomor: 'INV123',
+    //                         tanggal: '2024-12-12',
+    //                         nama_pembeli: 'Suryani',
+    //                         bayar: 'Cash',
+    //                         metode: '-',
+    //                         data_produk: [
+    //                             {
+    //                                 "Foto Produk": "https://via.placeholder.com/150",
+    //                                 "Nama Produk": "Gelang Cantik",
+    //                                 "Jenis Barang": "Barang Handmade",
+    //                                 "Harga Satuan": 15000,
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 150000
+    //                             },
+    //                             {
+    //                                 "Foto Produk": "https://via.placeholder.com/150",
+    //                                 "Nama Produk": "Gelang Cantik",
+    //                                 "Jenis Barang": "Barang Handmade",
+    //                                 "Harga Satuan": 15000,
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 150000
+    //                             },
+    //                         ],
+    //                         data_packaging: [
+    //                             {
+    //                                 "Nama Packaging": "zipper",
+    //                                 "Harga Satuan": "1000",
+    //                                 kuantitas: 10,
+    //                                 "Total Biaya": 10000
+    //                             }
+    //                         ],
+    //                         sub_total: 8000,
+    //                         diskon: 30,
+    //                         pajak: 1000,
+    //                         total_penjualan: 18000
+    //                     }
+    //                 }
+    //             ]
+    //         },
+    //         {
+    //             id_jenis: 2,
+    //             nama_jenis: 'Pengeluaran',
+    //             data: [
+    //                 {
+    //                     nomor: 'BBN127',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'pengeluaran',
+    //                     detail: {
+    //                         nomor: 'EXP123',
+    //                         tangggal: '2024-12-12',
+    //                         kategori: 'Hibah',
+    //                         bayar: 'Cash',
+    //                         metode: '-' ,
+    //                         dataDetail: [
+    //                           {
+    //                               deskripsi: 'Biaya Operasional Staff',
+    //                               toko: 'Tatitatu',
+    //                               cabang: 'Cabang Gor HAS padang',
+    //                               pengeluaran: 1000000
+    //                           },
+    //                           {
+    //                               deskripsi: 'Biaya Operasional Staff',
+    //                               toko: 'Tatitatu',
+    //                               cabang: 'Cabang Gor HAS padang',
+    //                               pengeluaran: 1000000
+    //                           },
+    //                         ],
+    //                         sub_total: 8000,
+    //                         pemotongan: 1000,
+    //                         total_pengeluaran: 18000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN128',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'pengeluaran',
+    //                     detail: {
+    //                         nomor: 'EXP123',
+    //                         tangggal: '2024-12-12',
+    //                         kategori: 'Hibah',
+    //                         bayar: 'Cash',
+    //                         metode: '-' ,
+    //                         dataDetail: [
+    //                           {
+    //                               deskripsi: 'Biaya Operasional Staff',
+    //                               toko: 'Tatitatu',
+    //                               cabang: 'Cabang Gor HAS padang',
+    //                               pengeluaran: 1000000
+    //                           },
+    //                           {
+    //                               deskripsi: 'Biaya Operasional Staff',
+    //                               toko: 'Tatitatu',
+    //                               cabang: 'Cabang Gor HAS padang',
+    //                               pengeluaran: 1000000
+    //                           },
+    //                         ],
+    //                         sub_total: 8000,
+    //                         pemotongan: 1000,
+    //                         total_pengeluaran: 18000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN129',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'gaji',
+    //                     detail: {
+    //                         nomor: 'WAGE',
+    //                         tanggal: '2024-12-12',
+    //                         kategori: 'Bebang Gaji',
+    //                         cash: 'Cash',
+    //                         metode: '-',
+    //                         dataGaji: [
+    //                             {
+    //                                 nama: 'Hamzah Abdillah Arif',
+    //                                 divisi: 'SPV',
+    //                                 toko: 'tatitatu',
+    //                                 cabang: 'GOR Haji Agus Salim',
+    //                                 absen: 15,
+    //                                 kpi: 80,
+    //                                 total_gaji_akhir: 2500000
+    //                             },
+    //                             {
+    //                                 nama: 'Hamzah Abdillah Arif',
+    //                                 divisi: 'SPV',
+    //                                 toko: 'tatitatu',
+    //                                 cabang: 'GOR Haji Agus Salim',
+    //                                 absen: 15,
+    //                                 kpi: 80,
+    //                                 total_gaji_akhir: 2500000
+    //                             }
+    //                         ],
+    //                         akumulasi_akhir: 2000000
+    //                     }
+    //                 },
+    //                 {
+    //                     nomor: 'BBN1210',
+    //                     tanggal: '2024-12-12',
+    //                     deskripsi: 'Pengeluaran Buat Listrik',
+    //                     cabang: "Lubeg",
+    //                     kategori: 'Beban Operasional',
+    //                     total: 10000,
+    //                     jenis: 'gaji',
+    //                     detail: {
+    //                         nomor: 'WAGE',
+    //                         tanggal: '2024-12-12',
+    //                         kategori: 'Bebang Gaji',
+    //                         cash: 'Cash',
+    //                         metode: '-',
+    //                         dataGaji: [
+    //                             {
+    //                                 nama: 'Hamzah Abdillah Arif',
+    //                                 divisi: 'SPV',
+    //                                 toko: 'tatitatu',
+    //                                 cabang: 'GOR Haji Agus Salim',
+    //                                 absen: 15,
+    //                                 kpi: 80,
+    //                                 total_gaji_akhir: 2500000
+    //                             },
+    //                             {
+    //                                 nama: 'Hamzah Abdillah Arif',
+    //                                 divisi: 'SPV',
+    //                                 toko: 'tatitatu',
+    //                                 cabang: 'GOR Haji Agus Salim',
+    //                                 absen: 15,
+    //                                 kpi: 80,
+    //                                 total_gaji_akhir: 2500000
+    //                             }
+    //                         ],
+    //                         akumulasi_akhir: 2000000
+    //                     }
+    //                 }
+    //             ]
+    //         }
+    //     ]
+    // };
+
     const data = {
         keuntungan: 10000000,
         pemasukan: 10000000,
@@ -83,34 +411,6 @@ export default function LaporanKeuangan() {
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'non-penjualan',
-                        detail: {
-                            nomor: 'INC123',
-                            tanggal: '2024-12-12',
-                            kategori: 'Hibah',
-                            bayar: 'Cash',
-                            metode: '-',
-                            dataDetail: [
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                            ],
-                            total_detail: 2000000
-                        }
                     },
                     {
                         nomor: 'BBN124',
@@ -120,34 +420,6 @@ export default function LaporanKeuangan() {
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'non-penjualan',
-                        detail: {
-                            nomor: 'INC123',
-                            tanggal: '2024-12-12',
-                            kategori: 'Hibah',
-                            bayar: 'Cash',
-                            metode: '-',
-                            dataDetail: [
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                                {
-                                    deskripsi: 'Dana Hibah',
-                                    toko: 'Tatitatu',
-                                    cabang: 'Cabang Gor HAS Padang',
-                                    pengeluran: 1000000
-                                },
-                            ],
-                            total_detail: 2000000
-                        }
                     },
                     {
                         nomor: 'BBN125',
@@ -157,43 +429,6 @@ export default function LaporanKeuangan() {
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'penjualan',
-                        detail: {
-                            nomor: 'INV123',
-                            tanggal: '2024-12-12',
-                            nama_pembeli: 'Suryani',
-                            bayar: 'Cash',
-                            metode: '-',
-                            data_produk: [
-                                {
-                                    "Foto Produk": "https://via.placeholder.com/150",
-                                    "Nama Produk": "Gelang Cantik",
-                                    "Jenis Barang": "Barang Handmade",
-                                    "Harga Satuan": 15000,
-                                    kuantitas: 10,
-                                    "Total Biaya": 150000
-                                },
-                                {
-                                    "Foto Produk": "https://via.placeholder.com/150",
-                                    "Nama Produk": "Gelang Cantik",
-                                    "Jenis Barang": "Barang Handmade",
-                                    "Harga Satuan": 15000,
-                                    kuantitas: 10,
-                                    "Total Biaya": 150000
-                                },
-                            ],
-                            data_packaging: [
-                                {
-                                    "Nama Packaging": "zipper",
-                                    "Harga Satuan": "1000",
-                                    kuantitas: 10,
-                                    "Total Biaya": 10000
-                                }
-                            ],
-                            sub_total: 8000,
-                            diskon: 30,
-                            pajak: 1000,
-                            total_penjualan: 18000
-                        }
                     },
                     {
                         nomor: 'BBN126',
@@ -203,43 +438,6 @@ export default function LaporanKeuangan() {
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'penjualan',
-                        detail: {
-                            nomor: 'INV123',
-                            tanggal: '2024-12-12',
-                            nama_pembeli: 'Suryani',
-                            bayar: 'Cash',
-                            metode: '-',
-                            data_produk: [
-                                {
-                                    "Foto Produk": "https://via.placeholder.com/150",
-                                    "Nama Produk": "Gelang Cantik",
-                                    "Jenis Barang": "Barang Handmade",
-                                    "Harga Satuan": 15000,
-                                    kuantitas: 10,
-                                    "Total Biaya": 150000
-                                },
-                                {
-                                    "Foto Produk": "https://via.placeholder.com/150",
-                                    "Nama Produk": "Gelang Cantik",
-                                    "Jenis Barang": "Barang Handmade",
-                                    "Harga Satuan": 15000,
-                                    kuantitas: 10,
-                                    "Total Biaya": 150000
-                                },
-                            ],
-                            data_packaging: [
-                                {
-                                    "Nama Packaging": "zipper",
-                                    "Harga Satuan": "1000",
-                                    kuantitas: 10,
-                                    "Total Biaya": 10000
-                                }
-                            ],
-                            sub_total: 8000,
-                            diskon: 30,
-                            pajak: 1000,
-                            total_penjualan: 18000
-                        }
                     }
                 ]
             },
@@ -248,144 +446,40 @@ export default function LaporanKeuangan() {
                 nama_jenis: 'Pengeluaran',
                 data: [
                     {
-                        nomor: 'BBN123',
+                        nomor: 'BBN127',
                         tanggal: '2024-12-12',
                         deskripsi: 'Pengeluaran Buat Listrik',
                         cabang: "Lubeg",
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'pengeluaran',
-                        detail: {
-                            nomor: 'EXP123',
-                            tangggal: '2024-12-12',
-                            kategori: 'Hibah',
-                            bayar: 'Cash',
-                            metode: '-' ,
-                            dataDetail: [
-                              {
-                                  deskripsi: 'Biaya Operasional Staff',
-                                  toko: 'Tatitatu',
-                                  cabang: 'Cabang Gor HAS padang',
-                                  pengeluaran: 1000000
-                              },
-                              {
-                                  deskripsi: 'Biaya Operasional Staff',
-                                  toko: 'Tatitatu',
-                                  cabang: 'Cabang Gor HAS padang',
-                                  pengeluaran: 1000000
-                              },
-                            ],
-                            sub_total: 8000,
-                            pemotongan: 1000,
-                            total_pengeluaran: 18000
-                        }
                     },
                     {
-                        nomor: 'BBN124',
+                        nomor: 'BBN128',
                         tanggal: '2024-12-12',
                         deskripsi: 'Pengeluaran Buat Listrik',
                         cabang: "Lubeg",
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'pengeluaran',
-                        detail: {
-                            nomor: 'EXP123',
-                            tangggal: '2024-12-12',
-                            kategori: 'Hibah',
-                            bayar: 'Cash',
-                            metode: '-' ,
-                            dataDetail: [
-                              {
-                                  deskripsi: 'Biaya Operasional Staff',
-                                  toko: 'Tatitatu',
-                                  cabang: 'Cabang Gor HAS padang',
-                                  pengeluaran: 1000000
-                              },
-                              {
-                                  deskripsi: 'Biaya Operasional Staff',
-                                  toko: 'Tatitatu',
-                                  cabang: 'Cabang Gor HAS padang',
-                                  pengeluaran: 1000000
-                              },
-                            ],
-                            sub_total: 8000,
-                            pemotongan: 1000,
-                            total_pengeluaran: 18000
-                        }
                     },
                     {
-                        nomor: 'BBN125',
+                        nomor: 'BBN129',
                         tanggal: '2024-12-12',
                         deskripsi: 'Pengeluaran Buat Listrik',
                         cabang: "Lubeg",
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'gaji',
-                        detail: {
-                            nomor: 'WAGE',
-                            tanggal: '2024-12-12',
-                            kategori: 'Bebang Gaji',
-                            cash: 'Cash',
-                            metode: '-',
-                            dataGaji: [
-                                {
-                                    nama: 'Hamzah Abdillah Arif',
-                                    divisi: 'SPV',
-                                    toko: 'tatitatu',
-                                    cabang: 'GOR Haji Agus Salim',
-                                    absen: 15,
-                                    kpi: 80,
-                                    total_gaji_akhir: 2500000
-                                },
-                                {
-                                    nama: 'Hamzah Abdillah Arif',
-                                    divisi: 'SPV',
-                                    toko: 'tatitatu',
-                                    cabang: 'GOR Haji Agus Salim',
-                                    absen: 15,
-                                    kpi: 80,
-                                    total_gaji_akhir: 2500000
-                                }
-                            ],
-                            akumulasi_akhir: 2000000
-                        }
                     },
                     {
-                        nomor: 'BBN123',
+                        nomor: 'BBN1210',
                         tanggal: '2024-12-12',
                         deskripsi: 'Pengeluaran Buat Listrik',
                         cabang: "Lubeg",
                         kategori: 'Beban Operasional',
                         total: 10000,
                         jenis: 'gaji',
-                        detail: {
-                            nomor: 'WAGE',
-                            tanggal: '2024-12-12',
-                            kategori: 'Bebang Gaji',
-                            cash: 'Cash',
-                            metode: '-',
-                            dataGaji: [
-                                {
-                                    nama: 'Hamzah Abdillah Arif',
-                                    divisi: 'SPV',
-                                    toko: 'tatitatu',
-                                    cabang: 'GOR Haji Agus Salim',
-                                    absen: 15,
-                                    kpi: 80,
-                                    total_gaji_akhir: 2500000
-                                },
-                                {
-                                    nama: 'Hamzah Abdillah Arif',
-                                    divisi: 'SPV',
-                                    toko: 'tatitatu',
-                                    cabang: 'GOR Haji Agus Salim',
-                                    absen: 15,
-                                    kpi: 80,
-                                    total_gaji_akhir: 2500000
-                                }
-                            ],
-                            akumulasi_akhir: 2000000
-                        }
                     }
                 ]
             }
@@ -406,8 +500,20 @@ export default function LaporanKeuangan() {
 
             return isStoreMatch && isDateMatch;
         }) || [];
-
-        console.log(selectedStore)
+    
+    const navigate = useNavigate()
+    const handleRowClick = (row) => {
+        if (row.jenis === 'non-penjualan') {
+            navigate('/laporanKeuangan/pemasukan/non-penjualan', { state: { nomor: row.nomor } });
+        } else if (row.jenis === 'penjualan') {
+            navigate('/laporanKeuangan/pemasukan/penjualan', { state: { nomor: row.nomor } });
+        } else if (row.jenis === 'pengeluaran') {
+            navigate('/laporanKeuangan/pengeluaran', { state: { nomor: row.nomor } });
+        } else {
+            navigate('/laporanKeuangan/pengeluaran/gaji', { state: { nomor: row.nomor } });
+        }
+    }
+    
 
     return (
         <>
@@ -415,7 +521,7 @@ export default function LaporanKeuangan() {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Laporan Keungan Toko</p>
+                            <p className="text-primary text-base font-bold">Laporan Keuangan Toko</p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -559,7 +665,7 @@ export default function LaporanKeuangan() {
                                 ))}
                             </div>
 
-                            <Table headers={headers} data={selectedData} />
+                            <Table headers={headers} data={selectedData} onRowClick={handleRowClick}/>
                         </div>
                     </section>
                 </div>

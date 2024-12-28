@@ -1,9 +1,12 @@
+import { useLocation } from "react-router-dom";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
 import Table from "../../../../components/Table";
 import { menuItems, userOptions } from "../../../../data/menuSpv";
 
 export default function PengeluaranGaji(){
+    const location = useLocation()
+    const {nomor} = location.state || {}
     const breadcrumbItems = [
         { label: "Daftar Pengeluaran", href: "/laporanKeuangan" },
         { label: "Detail Laporan Keuangan Toko", href: "" },

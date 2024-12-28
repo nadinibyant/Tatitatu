@@ -31,8 +31,9 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
   );
 
   return (
-    <div className="relative inline-block w-full md:w-40">
+    <div className="relative inline-block w-full">
       <button
+      type='button'
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 focus:outline-none"
       >
