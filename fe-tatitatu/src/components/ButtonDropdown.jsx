@@ -35,7 +35,7 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
       <button
       type='button'
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-100 focus:outline-none"
+        className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
       >
         <div className="flex items-center space-x-2">
           {selectedIconUrl && <img src={selectedIconUrl} alt="icon" className="w-5 h-5" />}

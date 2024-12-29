@@ -29,7 +29,7 @@ const Input = ({ label,type,type1 ="text", value, onChange, width = "w-full", re
         type={type1} // Tetap gunakan type "text" agar bisa diformat
         value={type === "number" ? formatNumber(rawValue) : rawValue} // Tampilkan nilai terformat untuk angka
         onChange={handleInputChange}
-        className="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-base text-sm"
+        className="w-full border border-gray-300 rounded-md py-1 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-base text-sm"
         placeholder={label}
         required={required}
       />

@@ -347,8 +347,8 @@ return (
 
             <section className="bg-white p-5 mt-5 rounded-xl">
                 <Table data={filteredData} headers={headers} onRowClick={handleRowClick}/>
-                      {/* Modal for More Options */}
-                      {isModalMore && selectedItem && (
+                {/* Modal for More Options */}
+                {isModalMore && selectedItem && (
                 <div
                   className="fixed inset-0 flex justify-center items-center z-50"
                   style={{

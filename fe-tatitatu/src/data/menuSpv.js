@@ -63,11 +63,11 @@ export const menuItems = [
         link: "/daftarCabang",
         icon: "📂",
     },
-    {
-        label: "Daftar Toko",
-        link: "/DaftarToko",
-        icon: "📂",
-    },
+    // {
+    //     label: "Daftar Toko",
+    //     link: "/DaftarToko",
+    //     icon: "📂",
+    // },
     {
         label: "Biaya Gudang",
         link: "/biayaGudang",

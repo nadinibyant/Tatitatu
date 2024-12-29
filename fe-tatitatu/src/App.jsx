@@ -19,6 +19,13 @@ import CabangTerlaris from './pages/SPV/Dashboard/CabangTerlaris';
 import KaryawanTerbaik from './pages/SPV/Dashboard/KaryawanTerbaik';
 import PenilaianKPI from './pages/SPV/Penilaian KPI/PenilaianKPI';
 import TambahKPI from './pages/SPV/Penilaian KPI/TambahKPI';
+import KPISeluruhDivisi from './pages/SPV/Penilaian KPI/KPISeluruhDivisi';
+import TambahKPISeluruhDivisi from './pages/SPV/Penilaian KPI/TambahKPISeluruhDivisi';
+import EditKPISeluruhDivisi from './pages/SPV/Penilaian KPI/EditKPISeluruhDivisi';
+import Karyawan from './pages/SPV/Karyawan, Absensi dan Gaji/Karyawan';
+import DetailKaryawan from './pages/SPV/Karyawan, Absensi dan Gaji/DetailKaryawan';
+import Cabang from './pages/SPV/Cabang/Cabang';
+import BiayaGudang from './pages/SPV/Biaya Gudang/BiayaGudang';
 
 
 function App() {
@@ -45,6 +52,13 @@ function App() {
         <Route path='/dashboard/karyawan-terbaik' element= {<KaryawanTerbaik/>}/>
         <Route path='/daftarPenilaianKPI' element= {<PenilaianKPI/>}/>
         <Route path='/daftarPenilaianKPI/tambah-kpi' element= {<TambahKPI/>}/>
+        <Route path='/daftarPenilaianKPI/seluruh-divisi' element= {<KPISeluruhDivisi/>}/>
+        <Route path='/daftarPenilaianKPI/seluruh-divisi/tambah' element= {<TambahKPISeluruhDivisi/>}/>
+        <Route path='/daftarPenilaianKPI/seluruh-divisi/edit/:id' element= {<EditKPISeluruhDivisi/>}/>
+        <Route path='/dataKaryawanAbsenGaji' element= {<Karyawan/>}/>
+        <Route path='/dataKaryawanAbsenGaji/detail' element= {<DetailKaryawan/>}/>
+        <Route path='/daftarCabang' element= {<Cabang/>}/>
+        <Route path='/biayaGudang' element= {<BiayaGudang/>}/>
       </Routes>
     </Router>
     </>
