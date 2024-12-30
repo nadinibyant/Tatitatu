@@ -78,9 +78,9 @@ export const menuItems = [
         link: "/dataBarang",
         icon: "📂",
         submenu: [
-            { label: "Barang Handmade", link: "/dataBarang/handmande" },
+            { label: "Barang Handmade", link: "/dataBarang/handmade" },
             { label: "Barang Non-Handmade", link: "/dataBarang/non-handmade" },
-            { label: "Barang Mentah", link: "/dataBarang/mentah" },
+            { label: "Barang Custom", link: "/dataBarang/custom" },
             { label: "Packaging", link: "/dataBarang/packaging" },
         ],
     },

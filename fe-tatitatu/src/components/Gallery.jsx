@@ -1,193 +1,250 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from 'react';
+import { MoreVertical, Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const Gallery = ({ items, onSearch, filterFields = [], pageSizeOptions = [4, 8, 12, 16], onItemClick }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(pageSizeOptions[0]);
+
+const Gallery = ({ 
+  data = [],
+  enableSubMenus = false,
+  subMenus = [],
+  defaultSubMenu = '',
+  onEdit = () => {},
+  onDelete = () => {},
+  className = '',
+  onItemClick = () => {},
+  url=''
+}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSubMenu, setActiveSubMenu] = useState("Gelang");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [filters, setFilters] = useState({});
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  const filteredItems = items.filter((item) => {
-    const matchesSearchTerm = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilters = Object.keys(filters).every((key) => {
-      if (!filters[key]) return true;
-      return String(item[key]).toLowerCase().includes(filters[key].toLowerCase());
+  const filteredData = useMemo(() => {
+    return data.filter(item => {
+      const matchesSearch = (
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.type.toLowerCase().includes(searchQuery.toLowerCase()) 
+      );
+  
+      const matchesCategory = enableSubMenus
+        ? !searchQuery
+          ? (!activeSubMenu || item.category === activeSubMenu)
+          : true
+        : true; 
+  
+      return matchesSearch && matchesCategory;
     });
+  }, [data, searchQuery, activeSubMenu, enableSubMenus]);
+  
 
-    return matchesSearchTerm && matchesFilters;
-  });
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const displayedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
-  const totalPages = Math.ceil(filteredItems.length / pageSize);
+  const handlePreviousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
 
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+  const getVisiblePages = () => {
+    let pages = [];
+    if (totalPages <= 3) {
+      pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+    } else if (currentPage <= 2) {
+      pages = [1, 2, '...', totalPages];
+    } else if (currentPage >= totalPages - 1) {
+      pages = [1, '...', totalPages - 1, totalPages];
+    } else {
+      pages = [1, '...', currentPage, '...', totalPages];
     }
+    return pages;
   };
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const handleItemClick = (e, item) => {
+    if (e.target.closest('.more-button')) {
+      return;
+    }
+    onItemClick(item);
   };
 
-  const applyFilters = () => {
-    setIsFilterModalOpen(false);
-  };
+  const navigate = useNavigate()
 
   return (
-    <div className="p-4">
-      {/* Search and Filter */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-2 items-center w-2/3">
+    <div className="w-full max-w-7xl mx-auto p-4">
+      {/* Search Bar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Cari..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Cari Barang"
+            className="w-full p-2 pl-10 border rounded-lg bg-white"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button
-            onClick={() => setIsFilterModalOpen(true)}
-            className="p-2 border border-gray-300 rounded-md hover:bg-gray-100"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-          </button>
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
         </div>
-        <div>
-          <label htmlFor="pageSize" className="mr-2">Page</label>
-          <select
-            id="pageSize"
-            value={pageSize}
+        <div className="flex items-center">
+          <span className="mr-2 text-gray-600">Page</span>
+          <select 
+            className="border rounded-lg p-1.5 bg-white"
+            value={itemsPerPage}
             onChange={(e) => {
-              setPageSize(Number(e.target.value));
+              setItemsPerPage(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-md py-1 px-2"
           >
-            {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>{size}</option>
-            ))}
+            <option value={10}>10</option>
+            <option value={15}>15</option>
+            <option value={30}>30</option>
+            <option value={50}>50</option>
           </select>
         </div>
       </div>
 
-      {/* Gallery Items */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {paginatedItems.map((item, index) => (
-          <div
-            key={index}
-            className="border rounded-md p-4 cursor-pointer hover:shadow-md"
-            onClick={() => onItemClick && onItemClick(item)}
-          >
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-full h-48 object-cover rounded-md mb-2"
-            />
-            <p className="text-sm text-gray-500">{item.code}</p>
-            <h3 className="text-lg font-bold mb-1">{item.name}</h3>
-            <p className="text-sm text-gray-500">{item.price}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-end items-center mt-4 space-x-2">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          className={`py-1 px-3 rounded-md ${
-            currentPage === 1
-              ? "bg-gray-200 text-gray-400"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-          disabled={currentPage === 1}
-        >
-          &lt;
-        </button>
-        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => handlePageChange(page)}
-            className={`py-1 px-3 rounded-md ${
-              page === currentPage
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          className={`py-1 px-3 rounded-md ${
-            currentPage === totalPages
-              ? "bg-gray-200 text-gray-400"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-          disabled={currentPage === totalPages}
-        >
-          &gt;
-        </button>
-      </div>
-
-      {/* Filter Modal */}
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-md p-6 w-1/3">
-            <h2 className="text-lg font-bold mb-4">Filter Data</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                applyFilters();
+      {/* Sub Menus */}
+      {enableSubMenus && (
+        <div className="flex gap-6 mb-6 border-b">
+          {subMenus.map(menu => (
+            <button
+              key={menu}
+              className={`pb-2 px-1 ${
+                activeSubMenu === menu 
+                  ? 'border-b-2 border-primary text-primary font-medium'
+                  : 'text-gray-500'
+              }`}
+              onClick={() => {
+                setActiveSubMenu(menu);
+                setCurrentPage(1);
               }}
             >
-              {filterFields.map((field, index) => (
-                <div className="mb-4" key={index}>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    {field.label}
-                  </label>
-                  <input
-                    type={field.type || "text"}
-                    placeholder={field.placeholder || ""}
-                    value={filters[field.key] || ""}
-                    onChange={(e) => handleFilterChange(field.key, e.target.value)}
-                    className="w-full border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              ))}
-              <div className="flex justify-end space-x-4 mt-4">
+              {menu}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Gallery Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {displayedData.map(item => (
+          <div key={item.id} className="relative">
+            <div className="relative aspect-square">
+              <img
+                src={item.image}
+                onClick={(e) => handleItemClick(e, item)}
+                alt={item.title}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            </div>
+            <div className="p-3">
+              <p className="text-primary text-sm mb-1">{item.type}</p>
+              <h3 className="text-base font-bold text-gray-900 mb-1">{item.title}</h3>
+              <div className="flex items-center justify-between">
+                <p className="text-gray-600 text-sm">{item.price}</p>
                 <button
-                  type="submit"
-                  className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none"
+                  onClick={() => setSelectedItem(item)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  Terapkan
-                </button>
-                <button
-                  className="py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none"
-                  onClick={() => setIsFilterModalOpen(false)}
-                >
-                  Tutup
+                  <MoreHorizontal size={18} color='#7B0C42' />
                 </button>
               </div>
-            </form>
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* Modal */}
+      {selectedItem && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div 
+            className="bg-white rounded-lg p-4 w-64"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  onEdit(selectedItem);
+                  navigate(`${url}/${selectedItem.id}`)
+                  setSelectedItem(null);
+                }}
+                className="w-full border border-oren text-oren font-semibold py-2 text-left px-4 hover:bg-gray-100 rounded"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(selectedItem);
+                  setSelectedItem(null);
+                }}
+                className="w-full py-2 border border-merah text-merah font-semibold text-left px-4 hover:bg-gray-100 rounded text-red-600"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-end items-center gap-1">
+          <button
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1 
+                ? 'bg-gray-100 text-gray-400' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          {getVisiblePages().map((page, index) => (
+            <React.Fragment key={index}>
+              {page === '...' ? (
+                <span className="px-3 py-1">...</span>
+              ) : (
+                <button
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1 rounded-md min-w-[32px] ${
+                    currentPage === page
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
     </div>
   );
 };
-
 
 export default Gallery;

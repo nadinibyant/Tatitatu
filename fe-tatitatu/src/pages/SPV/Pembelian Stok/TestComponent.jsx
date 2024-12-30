@@ -250,6 +250,206 @@ export default function TestComponent() {
         console.log("File uploaded: ", file);
       };
 
+      
+      const sampleData = [
+        {
+          id: 1,
+          title: "Gelang Barbie 123",
+          price: "Rp10.000",
+          image: "https://via.placeholder.com/50",
+          type: "Zipper",
+          category: "Gelang"
+        },
+        {
+          id: 2,
+          title: "Cincin Diamond",
+          price: "Rp15.000",
+          image: "https://via.placeholder.com/50",
+          type: "Box",
+          category: "Cincin"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        {
+          id: 3,
+          title: "Anting Kristal",
+          price: "Rp12.000",
+          image: "https://via.placeholder.com/50",
+          type: "Paper Bag",
+          category: "Anting-Anting"
+        },
+        
+        // Add more sample data as needed
+      ];
+
+      const subMenus = ["Gelang", "Cincin", "Anting-Anting"]
+
       const items = [
         {
           image: "https://via.placeholder.com/150",
@@ -416,10 +616,9 @@ export default function TestComponent() {
             <div>
             <h1 className="text-xl font-bold mb-4">Gallery</h1>
             <Gallery
-                items={items}
-                onSearch={(term) => console.log("Search Term: ", term)}
-                filterFields={filterGallery}
-                onItemClick={handleItemClick}
+                data={sampleData}
+                enableSubMenus={true}
+                subMenus={subMenus}
             />
             </div>
 

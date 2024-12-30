@@ -26,6 +26,16 @@ import Karyawan from './pages/SPV/Karyawan, Absensi dan Gaji/Karyawan';
 import DetailKaryawan from './pages/SPV/Karyawan, Absensi dan Gaji/DetailKaryawan';
 import Cabang from './pages/SPV/Cabang/Cabang';
 import BiayaGudang from './pages/SPV/Biaya Gudang/BiayaGudang';
+import DataBarang from './pages/SPV/Data Barang/DataBarang';
+import DataNonHandmade from './pages/SPV/Data Barang/Non-Handmade/DataNonHandmade';
+import BarangCustom from './pages/SPV/Data Barang/Custom/BarangCustom';
+import Packaging from './pages/SPV/Data Barang/Packaging/Packaging';
+import TambahBarang from './pages/SPV/Data Barang/TambahBarang';
+import EditBarang from './pages/SPV/Data Barang/EditBarang';
+import DetailBarang from './pages/SPV/Data Barang/DetailBarang';
+import TambahNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
+import DetailNonHandmade from './pages/SPV/Data Barang/Non-Handmade/DetailNonHandmade';
+import EditNonHandmade from './pages/SPV/Data Barang/Non-Handmade/EditNonHandmade';
 
 
 function App() {
@@ -59,6 +69,17 @@ function App() {
         <Route path='/dataKaryawanAbsenGaji/detail' element= {<DetailKaryawan/>}/>
         <Route path='/daftarCabang' element= {<Cabang/>}/>
         <Route path='/biayaGudang' element= {<BiayaGudang/>}/>
+        <Route path='/dataBarang' element= {<DataBarang/>}/>
+        <Route path='/dataBarang/handmade' element= {<DataBarang/>}/>
+        <Route path='/dataBarang/handmade/tambah' element= {<TambahBarang/>}/>
+        <Route path='/dataBarang/handmade/edit/:id' element= {<EditBarang/>}/>
+        <Route path='/dataBarang/handmade/detail/:id' element= {<DetailBarang/>}/>
+        <Route path='/dataBarang/non-handmade' element= {<DataNonHandmade/>}/>
+        <Route path='/dataBarang/non-handmade/tambah' element= {<TambahNonHandmade/>}/>
+        <Route path='/dataBarang/non-handmade/detail/:id' element= {<DetailNonHandmade/>}/>
+        <Route path='/dataBarang/non-handmade/edit/:id' element= {<EditNonHandmade/>}/>
+        <Route path='/dataBarang/custom' element= {<BarangCustom/>}/>
+        <Route path='/dataBarang/packaging' element= {<Packaging/>}/>
       </Routes>
     </Router>
     </>

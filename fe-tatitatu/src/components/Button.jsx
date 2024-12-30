@@ -1,9 +1,9 @@
 import React from "react";
 
-const Button = ({type = "button", label, icon, onClick, bgColor = "bg-purple-700", hoverColor = "hover:bg-purple-800", textColor = "text-white" }) => {
+const Button = ({type = "button", label, icon, onClick, bgColor = "", hoverColor = "", textColor = "text-white" }) => {
   return (
     <button
-      className={`flex items-center text-sm justify-center ${bgColor} ${textColor} py-2 px-${label ? '4' : '2'} rounded-lg ${hoverColor} focus:outline-none focus:ring-2 focus:ring-offset-2`}
+      className={`flex items-center text-sm justify-center ${bgColor} ${textColor} py-2 px-${label ? '4' : '2'} rounded-lg ${hoverColor}`}
       onClick={onClick}
       type={type}
     >
