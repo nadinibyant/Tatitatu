@@ -4,9 +4,14 @@ import Navbar from "../../../../components/Navbar";
 import { menuItems, userOptions } from "../../../../data/menuSpv";
 import Gallery from "../../../../components/Gallery";
 import { useNavigate } from "react-router-dom";
+import Alert from "../../../../components/Alert";
+import AlertSuccess from "../../../../components/AlertSuccess";
 
 export default function DataNonHandmade(){
     const navigate = useNavigate()
+    const [id,setId] = useState('')
+    const [isModalDelete, setModalDelete] = useState(false)
+    const [isModalSucc, setModalSucc] = useState(false)
     const handleBtnAdd = () => {
       navigate('/dataBarang/non-handmade/tambah')
     }
@@ -181,9 +186,35 @@ export default function DataNonHandmade(){
           },
     ])
 
+    const handleBtnEdit = (id) => {
+      navigate(`/dataBarang/non-handmade/edit/${id.id}`)
+    }
+
+    const [selectedId, setSelectedId] = useState(null);
+    const handleBtnDelete = (item) => {
+      setSelectedId(item.id);
+      setModalDelete(true);
+    };
+    
+    const handleDelete = () => {
+      setData(prevData => prevData.filter(item => item.id !== selectedId));
+      setModalSucc(true);
+      setModalDelete(false);
+    };
+    
+    const handleBtnDelCancel = () => {
+      setSelectedId(null);
+      setModalDelete(false);
+    };
+    
+    const handleConfirmSucc = () => {
+      setSelectedId(null);
+      setModalSucc(false);
+    };
+
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Data Barang'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -221,10 +252,32 @@ export default function DataNonHandmade(){
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
-                        <Gallery data={data} url="/dataBarang/non-handmade/edit" onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}`)}/>
+                        <Gallery data={data} url="/dataBarang/non-handmade/edit" onDelete={handleBtnDelete} onEdit={handleBtnEdit} onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}`)}/>
                     </div>
                 </section>
             </div>
+
+          {/* modal delete */}
+          {isModalDelete && (
+              <Alert
+              title="Hapus Data"
+              description="Apakah kamu yakin ingin menghapus data ini?"
+              confirmLabel="Hapus"
+              cancelLabel="Kembali"
+              onConfirm={handleDelete}
+              onCancel={handleBtnDelCancel}
+              />
+          )}
+
+          {/* modal success */}
+          {isModalSucc&& (
+              <AlertSuccess
+              title="Berhasil!!"
+              description="Data berhasil dihapus"
+              confirmLabel="Ok"
+              onConfirm={handleConfirmSucc}
+              />
+          )}
         </Navbar>
         </>
     )

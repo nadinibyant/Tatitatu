@@ -230,7 +230,7 @@ const handleKeyPress = (e, section, index, key, value) => {
 
   return (
     <>
-      <Navbar menuItems={menuItems} userOptions={userOptions} label={"Biaya Gudang"}>
+      <Navbar menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             <div className="left w-full md:w-auto">
@@ -267,214 +267,222 @@ const handleKeyPress = (e, section, index, key, value) => {
             </div>
           </section>
 
-          {/* Operasional Section */}
-          <section className="mt-5 bg-white rounded-xl">
-            <div className="p-5" >
-              <p className="font-bold pb-5">
-                Biaya Operasional dan Staff <span className="text-merah">*</span>
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Operasional Section */}
+            <section className="mt-5 bg-white rounded-xl">
+              <div className="p-5">
+                <p className="font-bold pb-5">
+                  Biaya Operasional dan Staff <span className="text-merah">*</span>
+                </p>
                 <div>
-                    <Table
-                        headers={headers}
-                        data={data.operasional.data.map((row, index) => ({
-                        No: index + 1,
-                        "Nama Biaya": row.isEditable || isEditing ? (
-                            <Input
-                              className="w-full max-w-xs sm:max-w-sm" 
-                              value={row["Nama Biaya"]}
-                              onChange={(value) =>
-                                handleInputChange("operasional", index, "Nama Biaya", value)
-                              }
-                              onKeyDown={(e) =>
-                                handleKeyPress(e, "operasional", index, "Nama Biaya", row["Nama Biaya"])
-                                }
-                            />
-                          ) : (
-                            row["Nama Biaya"]
-                          ),
-                        "Total Biaya": row.isEditable || isEditing ? (
-                            <Input
-                                type="number"
-                                width="w-full"
-                                value={row["Total Biaya"]}
-                                onChange={(value) =>
-                                handleInputChange("operasional", index, "Total Biaya", value)
-                                }
-                                onKeyDown={(e) =>
-                                    handleKeyPress(e, "operasional", index, "Total Biaya", row["Total Biaya"])
-                                }
-                            />
-                          ) : (
-                            `Rp${row["Total Biaya"].toLocaleString("id-ID")}`
-                          ),
-                        Aksi: row.isEditable || isEditing ? (
-                            <Button
-                            label="Hapus"
-                            textColor="text-red-600"
-                            bgColor=""
-                            hoverColor="hover:text-red-800"
-                            className="delete-button"
-                            onClick={() => handleDeleteRow("operasional", row.id)}
-                            />
-                        ) : null,
-                        }))}
-                    />
+                  <Table
+                    headers={headers}
+                    data={data.operasional.data.map((row, index) => ({
+                      No: index + 1,
+                      "Nama Biaya": row.isEditable || isEditing ? (
+                        <Input
+                        showRequired={false}
+                          className="w-full max-w-xs sm:max-w-sm"
+                          value={row["Nama Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange("operasional", index, "Nama Biaya", value)
+                          }
+                          onKeyDown={(e) =>
+                            handleKeyPress(e, "operasional", index, "Nama Biaya", row["Nama Biaya"])
+                          }
+                        />
+                      ) : (
+                        row["Nama Biaya"]
+                      ),
+                      "Total Biaya": row.isEditable || isEditing ? (
+                        <Input
+                        showRequired={false}
+                          type="number"
+                          width="w-full"
+                          value={row["Total Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange("operasional", index, "Total Biaya", value)
+                          }
+                          onKeyDown={(e) =>
+                            handleKeyPress(e, "operasional", index, "Total Biaya", row["Total Biaya"])
+                          }
+                        />
+                      ) : (
+                        `Rp${row["Total Biaya"].toLocaleString("id-ID")}`
+                      ),
+                      Aksi: row.isEditable || isEditing ? (
+                        <Button
+                          label="Hapus"
+                          textColor="text-red-600"
+                          bgColor=""
+                          hoverColor="hover:text-red-800"
+                          className="delete-button"
+                          onClick={() => handleDeleteRow("operasional", row.id)}
+                        />
+                      ) : null,
+                    }))}
+                  />
 
-                <Button
-                  label="Tambah Baris"
-                  icon={
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  }
-                  bgColor="focus:ring-primary"
-                  hoverColor="hover:border-primary hover:border"
-                  textColor="text-primary"
-                  onClick={() => handleAddRow('operasional')}
-                />
-              </div>
-              <div className="mt-5">
-                <div className="flex justify-between items-center px-3 py-2">
-                  <p className="font-bold text-black">Total</p>
-                  <p>Rp{operasionalTotals.total.toLocaleString("id-ID")}</p>
+                  <Button
+                    label="Tambah Baris"
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    }
+                    bgColor="focus:ring-primary"
+                    hoverColor="hover:border-primary hover:border"
+                    textColor="text-primary"
+                    onClick={() => handleAddRow('operasional')}
+                  />
                 </div>
-                <div className="flex justify-between items-center px-3 py-2">
-                  <p className="font-bold text-black">Rata-Rata Tercetak</p>
+                <div className="mt-5">
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <p className="font-bold text-black">Total</p>
+                    <p>Rp{operasionalTotals.total.toLocaleString("id-ID")}</p>
+                  </div>
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <p className="font-bold text-black">Rata-Rata Tercetak</p>
                     {isEditing ? (
-                    <Input
+                      <Input
+                      showRequired={false}
                         type="number"
                         width="w-full md:w-1/5"
                         value={data.operasional["Rata Rata Tercetak"]}
                         onChange={(value) =>
-                        handleSummaryChange(
+                          handleSummaryChange(
                             "operasional",
                             "Rata Rata Tercetak",
                             value
-                        )
+                          )
                         }
-                    />
+                      />
                     ) : (
-                    <p>{data.operasional["Rata Rata Tercetak"].toLocaleString("id-ID")}</p>
+                      <p>{data.operasional["Rata Rata Tercetak"].toLocaleString("id-ID")}</p>
                     )}
-                </div>
-                <div className="flex justify-between items-center px-3 py-2">
-                  <p className="font-bold text-primary">Total Biaya</p>
-                  <p className="text-primary">{`Rp${data.operasional["Total Biaya"].toLocaleString("id-ID")}`}</p>
+                  </div>
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <p className="font-bold text-primary">Total Biaya</p>
+                    <p className="text-primary">{`Rp${data.operasional["Total Biaya"].toLocaleString("id-ID")}`}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Produksi Section */}
-          <section className="mt-5 bg-white rounded-xl w-full">
-            <div className="p-5" >
-              <p className="font-bold pb-5">
-                Biaya Operasional Produksi <span className="text-merah">*</span>
-              </p>
-              <div>
-                <Table
+            {/* Produksi Section */}
+            <section className="mt-5 bg-white rounded-xl">
+              <div className="p-5">
+                <p className="font-bold pb-5">
+                  Biaya Operasional Produksi <span className="text-merah">*</span>
+                </p>
+                <div>
+                  <Table
                     headers={headers}
                     data={data.produksi.data.map((row, index) => ({
-                        No: index + 1,
-                        "Nama Biaya": row.isEditable || isEditing ? (
-                            <Input
-                              className="w-full max-w-xs sm:max-w-sm" 
-                              value={row["Nama Biaya"]}
-                              onChange={(value) =>
-                                handleInputChange("produksi", index, "Nama Biaya", value)
-                              }
-                              onKeyDown={(e) =>
-                                handleKeyPress(e, "produksi", index, "Nama Biaya", row["Nama Biaya"])
-                            }
-                            />
-                          ) : (
-                            row["Nama Biaya"]
-                          ),
-                        "Total Biaya": row.isEditable || isEditing ? (
+                      No: index + 1,
+                      "Nama Biaya": row.isEditable || isEditing ? (
                         <Input
-                            type="number"
-                            width="w-full"
-                            value={row["Total Biaya"]}
-                            onChange={(value) =>
+                        showRequired={false}
+                          className="w-full max-w-xs sm:max-w-sm"
+                          value={row["Nama Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange("produksi", index, "Nama Biaya", value)
+                          }
+                          onKeyDown={(e) =>
+                            handleKeyPress(e, "produksi", index, "Nama Biaya", row["Nama Biaya"])
+                          }
+                        />
+                      ) : (
+                        row["Nama Biaya"]
+                      ),
+                      "Total Biaya": row.isEditable || isEditing ? (
+                        <Input
+                        showRequired={false}
+                          type="number"
+                          width="w-full"
+                          value={row["Total Biaya"]}
+                          onChange={(value) =>
                             handleInputChange("produksi", index, "Total Biaya", value)
-                            }
-                            onKeyDown={(e) =>
-                                handleKeyPress(e, "produksi", index, "Total Biaya", row["Total Biaya"])
-                            }
+                          }
+                          onKeyDown={(e) =>
+                            handleKeyPress(e, "produksi", index, "Total Biaya", row["Total Biaya"])
+                          }
                         />
-                        ) : (
+                      ) : (
                         `Rp${row["Total Biaya"].toLocaleString("id-ID")}`
-                        ),
-                        Aksi: row.isEditable || isEditing ? (
+                      ),
+                      Aksi: row.isEditable || isEditing ? (
                         <Button
-                            label="Hapus"
-                            bgColor=""
-                            textColor="text-red-600"
-                            hoverColor="hover:text-red-800"
-                            className="delete-button"
-                            onClick={() => handleDeleteRow("produksi", row.id)}
+                          label="Hapus"
+                          bgColor=""
+                          textColor="text-red-600"
+                          hoverColor="hover:text-red-800"
+                          className="delete-button"
+                          onClick={() => handleDeleteRow("produksi", row.id)}
                         />
-                        ) : null,
+                      ) : null,
                     }))}
-                    />
-                <Button
-                  label="Tambah Baris"
-                  icon={
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                  }
-                  bgColor="focus:ring-primary"
-                  hoverColor="hover:border-primary hover:border"
-                  textColor="text-primary"
-                  onClick={() => handleAddRow("produksi")}
-                />
-              </div>
-              <div className="mt-5">
-                <div className="flex justify-between items-center px-3">
-                  <p className="font-bold text-black">Waktu Kerja</p>
+                  />
+                  <Button
+                    label="Tambah Baris"
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    }
+                    bgColor="focus:ring-primary"
+                    hoverColor="hover:border-primary hover:border"
+                    textColor="text-primary"
+                    onClick={() => handleAddRow("produksi")}
+                  />
+                </div>
+                <div className="mt-5">
+                  <div className="flex justify-between items-center px-3">
+                    <p className="font-bold text-black">Waktu Kerja</p>
                     {isEditing ? (
-                    <Input
+                      <Input
+                      showRequired={false}
                         type="number"
                         width="w-full md:w-1/5"
                         value={data.produksi["Waktu Kerja"]}
                         onChange={(value) =>
-                        handleSummaryChange("produksi", "Waktu Kerja", value)
+                          handleSummaryChange("produksi", "Waktu Kerja", value)
                         }
-                    />
+                      />
                     ) : (
-                    <p>{data.produksi["Waktu Kerja"].toLocaleString("id-ID")}</p>
+                      <p>{data.produksi["Waktu Kerja"].toLocaleString("id-ID")}</p>
                     )}
-                </div>
-                <div className="flex justify-between items-center px-3 py-2">
-                  <p className="font-bold text-primary">Total Modal Operasional Produksi</p>
-                  <p className="text-primary">{`Rp${data.produksi["Total Modal Operasional Produksi"].toLocaleString("id-ID")}`}</p>
+                  </div>
+                  <div className="flex justify-between items-center px-3 py-2">
+                    <p className="font-bold text-primary">Total Modal Operasional Produksi</p>
+                    <p className="text-primary">{`Rp${data.produksi["Total Modal Operasional Produksi"].toLocaleString("id-ID")}`}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
           
         </div>
       </Navbar>

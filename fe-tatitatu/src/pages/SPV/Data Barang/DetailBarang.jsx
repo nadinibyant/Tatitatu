@@ -96,11 +96,11 @@ export default function DetailBarang(){
 
     const navigate = useNavigate()
     const handleBtnEdit = () => {
-        navigate(`/dataBarang/non-handmade/edit/${id}`)
+        navigate(`/dataBarang/handmade/edit/${id}`)
     }
 return(
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions} label={'Data Barang'}>
+    <Navbar menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <Breadcrumbs items={breadcrumbItems} />
 

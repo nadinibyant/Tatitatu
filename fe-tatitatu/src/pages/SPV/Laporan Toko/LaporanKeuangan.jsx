@@ -13,6 +13,21 @@ export default function LaporanKeuangan() {
     const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedJenis, setSelectedJenis] = useState("Pemasukan");
     const [selectedStore, setSelectedStore] = useState("Semua"); 
+    const [selectedKategori, setSelectedKategori] = useState("Semua");
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [filters, setFilters] = useState({});
+
+    useEffect(() => {
+        setSelectedStore("Semua");
+    }, []);
+
+    const handleFilterClick = () => {
+        setIsFilterModalOpen(true);
+    };
+
+    const handleApplyFilter = () => {
+        setIsFilterModalOpen(false);
+    };
 
     useEffect(() => {
         setSelectedStore("Semua");
@@ -514,10 +529,46 @@ export default function LaporanKeuangan() {
         }
     }
     
+    const filterFields = [
+        {
+          label: "Toko",
+          key: "Toko",
+          options: [
+            { label: "Semua", value: "Semua" },
+            { label: "Gor Agus", value: "Gor Agus" },
+            { label: "Lubeg", value: "Lubeg" },
+          ]
+        },
+        {
+            label: "Kategori",
+            key: "Kategori",
+            options: [
+              { label: "Semua", value: "Semua" },
+              { label: "Beban Operasional", value: "Beban Operasional" },
+              { label: "Beban Gaji", value: "Beban Gaji" },
+            ]
+          },
+    ];
+    
+    const filteredData = () => {
+        let filteredData = selectedData;
+
+        // Filter berdasarkan kategori
+        if (selectedKategori !== "Semua") {
+            filteredData = filteredData.filter(item => item.kategori === selectedKategori);
+        }
+
+        // Filter berdasarkan cabang
+        if (selectedStore !== "Semua") {
+            filteredData = filteredData.filter(item => item.cabang === selectedStore);
+        }
+
+        return filteredData;
+    };
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={'Laporan Keuangan'}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -665,10 +716,68 @@ export default function LaporanKeuangan() {
                                 ))}
                             </div>
 
-                            <Table headers={headers} data={selectedData} onRowClick={handleRowClick}/>
+                            {/* <Table headers={headers} data={selectedData} onRowClick={handleRowClick}/> */}
+
+                            <Table
+                                headers={headers}
+                                data={filteredData().map((item, index) => ({
+                                    ...item,
+                                    tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric'
+                                    }),
+                                    total: `Rp${item.total.toLocaleString('id-ID')}`
+                                }))}
+                                onRowClick={handleRowClick}
+                                hasFilter={true}
+                                onFilterClick={handleFilterClick}
+                            />
                         </div>
                     </section>
                 </div>
+
+                    {/* Filter Modal */}
+                    {isFilterModalOpen && (
+                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                    <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
+                        <button
+                            onClick={() => setIsFilterModalOpen(false)}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <h2 className="text-lg font-bold mb-4">Filter</h2>
+                        <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
+                            {filterFields.map((field, index) => (
+                                <div className="mb-4" key={index}>
+                                    <label className="block text-gray-700 font-medium mb-2">
+                                        {field.label}
+                                    </label>
+                                    <ButtonDropdown
+                                        options={field.options}
+                                        // Sesuaikan kondisi berdasarkan label field
+                                        selectedStore={field.key === "Toko" ? selectedStore : selectedKategori}
+                                        onSelect={(value) => 
+                                            field.key === "Toko" 
+                                                ? setSelectedStore(value) 
+                                                : setSelectedKategori(value)
+                                        }
+                                    />
+                                </div>
+                            ))}
+                            <button
+                                type="submit"
+                                className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
+                            >
+                                Terapkan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
             </Navbar>
         </>
     );

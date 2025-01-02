@@ -12,7 +12,8 @@ export default {
         secondary: '#D8D8D8',
         pink: '#FFE0ED',
         oren: '#DA5903',
-        merah: '#C21747'
+        merah: '#C21747',
+        hijau: '#269529'
       }
     },
   },

@@ -109,7 +109,7 @@ export default function Cabang(){
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Cabang'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -146,62 +146,60 @@ export default function Cabang(){
                 </section>
 
                 <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5 max-w-[1200px] mx-auto">
-                        <div className="overflow-x-auto scrollbar-none">
-                            <div className="flex gap-4 w-full">
-                                {/* keuntungan */}
-                                <div className="flex-shrink-0 w-full xs:w-[280px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
-                                            <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_toko}</p>
-                                            <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
-                                        </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
-                                        </div>
+                    <div className="p-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* keuntungan */}
+                            <div className="w-full">
+                                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                    <div className="flex-1">
+                                        <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_toko}</p>
+                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
+                                    </div>
+                                    <div className="flex items-center justify-center ml-4">
+                                        <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* pemasukan */}
-                                <div className="flex-shrink-0 w-full xs:w-[280px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
-                                            <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_toko}</p>
-                                            <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
-                                        </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
-                                        </div>
+                            {/* pemasukan */}
+                            <div className="w-full">
+                                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                    <div className="flex-1">
+                                        <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_toko}</p>
+                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
+                                    </div>
+                                    <div className="flex items-center justify-center ml-4">
+                                        <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* pengeluaran */}
-                                <div className="flex-shrink-0 w-full xs:w-[280px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
-                                            <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_toko}</p>
-                                            <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
-                                        </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
-                                        </div>
+                            {/* pengeluaran */}
+                            <div className="w-full">
+                                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                    <div className="flex-1">
+                                        <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_toko}</p>
+                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
+                                    </div>
+                                    <div className="flex items-center justify-center ml-4">
+                                        <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Barang Terbanyak */}
-                                <div className="flex-shrink-0 w-full xs:w-[280px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                                            <p className="font-bold text-lg">{dataTerbanyak.barang.nama_barang}</p>
-                                            <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
-                                        </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src="/keuangan/produkterjual.svg" alt="produk" />
-                                        </div>
+                            {/* Barang Terbanyak */}
+                            <div className="w-full">
+                                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                    <div className="flex-1">
+                                        <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.barang.nama_barang}</p>
+                                        <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
+                                    </div>
+                                    <div className="flex items-center justify-center ml-4">
+                                        <img src="/keuangan/produkterjual.svg" alt="produk" />
                                     </div>
                                 </div>
                             </div>

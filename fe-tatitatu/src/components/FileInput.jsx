@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const FileInput = ({ label, onFileChange }) => {
+const FileInput = ({ label, onFileChange, width='sm:w-1/6 w-1/3' }) => {
   const [preview, setPreview] = useState(null);
 
   const handleFileUpload = (event) => {
@@ -12,7 +12,7 @@ const FileInput = ({ label, onFileChange }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center border-2 border-dashed border-primary rounded-lg p-6 text-primary cursor-pointer hover:bg-purple-50 sm:w-1/6 w-1/3">
+    <div className={`flex flex-col items-center justify-center border-2 border-dashed border-primary rounded-lg p-6 text-primary cursor-pointer hover:bg-purple-50 ${width}`}>
       <label className="flex flex-col items-center justify-center cursor-pointer">
         <input
           type="file"

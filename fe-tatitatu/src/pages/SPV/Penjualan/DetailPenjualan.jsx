@@ -18,6 +18,7 @@ export default function DetailPenjualan() {
         nama_pembeli: 'Suryani',
         bayar: 'Cash',
         metode: '-',
+        catatan: 'Catatan penting mengenai transaksi ini',  
         data_produk: [
             {
                 "Foto Produk": "https://via.placeholder.com/150",
@@ -39,7 +40,7 @@ export default function DetailPenjualan() {
         data_packaging: [
             {
                 "Nama Packaging": "zipper",
-                "Harga Satuan": "1000",
+                "Harga Satuan": 1000,
                 kuantitas: 10,
                 "Total Biaya": 10000
             }
@@ -81,7 +82,7 @@ export default function DetailPenjualan() {
 
     return (
         <>
-        <Navbar label={'Laporan Keuangan Toko'} menuItems={menuItems} userOptions={userOptions}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -119,7 +120,7 @@ export default function DetailPenjualan() {
                                 data={data.data_produk.map((item, index) => ({
                                     ...item,
                                     "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
+                                    "kuantitas": item.kuantitas.toLocaleString('id-ID'),
                                     "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
                                     "Total Biaya": formatRupiah(item["Total Biaya"]),  
                                     No: index + 1  
@@ -135,17 +136,30 @@ export default function DetailPenjualan() {
                                 headers={headers2}
                                 data={data.data_packaging.map((item, index) => ({
                                     ...item,
-                                    "kuantitas": formatRupiah(item["kuantitas"]),  
+                                    "kuantitas": item.kuantitas.toLocaleString('id-ID'),  
                                     "Total Biaya": formatRupiah(item["Total Biaya"]),  
+                                    "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
                                     No: index + 1  
                                 }))}
                             />
                         </div>
                     </section>
 
-                        {/* Section Total */}
-                        <section className="flex justify-end text-base py-10">
-                            <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
+                        <section className="flex justify-between py-10">
+                        {/* Notes Section */}
+                            <div className="w-1/2 pr-8">
+                                <p className="font-bold mb-2">Catatan</p>
+                                <textarea 
+                                    className="w-full p-3 border rounded-lg"
+                                    value={data.catatan}
+                                    readOnly
+                                    rows={4}
+                                    placeholder="Masukan Catatan Disini"
+                                />
+                            </div>
+
+                            {/* Totals Section */}
+                            <div className="w-1/2 lg:w-1/3 space-y-4 text-sm">
                                 {/* Sub Total */}
                                 <div className="flex justify-between border-b pb-2">
                                     <p className="font-bold">Sub Total</p>

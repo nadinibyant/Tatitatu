@@ -10,7 +10,7 @@ import Button from "../../../../components/Button";
 
 export default function TambahNonHandmade() {
   const breadcrumbItems = [
-    { label: "List Data Barang Non-Handmade", href: "/dataBarang/non-handmade" },
+    { label: "Daftar Barang Non-Handmade", href: "/dataBarang/non-handmade" },
     { label: "Tambah Data Barang Non-Handmade", href: "" },
   ];
 
@@ -208,7 +208,6 @@ export default function TambahNonHandmade() {
       <Navbar
         menuItems={menuItems}
         userOptions={userOptions}
-        label={"Tambah Data Barang Non-Handmade"}
       >
         <div className="p-5">
           <Breadcrumbs items={breadcrumbItems} />

@@ -10,8 +10,8 @@ import Button from "../../../components/Button";
 
 export default function TambahBarang() {
   const breadcrumbItems = [
-    { label: "List Data Barang Jadi", href: "/dataBarang/handmade" },
-    { label: "Tambah Data Barang", href: "" },
+    { label: "Daftar Barang Handmade", href: "/dataBarang/handmade" },
+    { label: "Tambah", href: "" },
   ];
 
   const dataKategori = [
@@ -285,6 +285,7 @@ export default function TambahBarang() {
                             No: index + 1,
                             "Nama Biaya": row.isEditable ? (
                                 <Input
+                                showRequired={false}
                                 className="w-full max-w-xs sm:max-w-sm"
                                 value={row["Nama Biaya"]}
                                 onChange={(value) =>
@@ -296,6 +297,7 @@ export default function TambahBarang() {
                             ),
                             "Jumlah Biaya": row.isEditable ? (
                                 <Input
+                                showRequired={false}
                                 type="number"
                                 width="w-full"
                                 value={row["Jumlah Biaya"]}
@@ -356,6 +358,7 @@ export default function TambahBarang() {
                                 No: index + 1,
                                 "Nama Packaging": (
                                     <ButtonDropdown
+                                    showRequired={false}
                                     label={row["Nama Packaging"]}
                                     options={dataPackaging}
                                     onSelect={(value) =>
@@ -368,6 +371,7 @@ export default function TambahBarang() {
                                 )}`,
                                 Kuantitas: (
                                     <Input
+                                    showRequired={false}
                                     type={"number"}
                                     value={row.Kuantitas}
                                     onChange={(value) =>
@@ -398,6 +402,7 @@ export default function TambahBarang() {
                                 <div className="flex justify-between">
                                 <p className="font-bold">Harga Jual</p>
                                 <Input
+                                showRequired={false}
                                     type={"number"}
                                     width="w-1/2"
                                     onChange={(value) =>
@@ -414,12 +419,6 @@ export default function TambahBarang() {
                 </form>
               </div>
             </section>
-
-
-
-            
-
-
           </section>
         </div>
       </Navbar>

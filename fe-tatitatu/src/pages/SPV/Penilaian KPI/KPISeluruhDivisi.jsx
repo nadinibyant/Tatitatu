@@ -4,11 +4,16 @@ import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
 import { menuItems, userOptions } from "../../../data/menuSpv";
 import { useNavigate } from "react-router-dom";
+import MoreOptionsModal from "../../../components/MoreModal";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
 
 export default function KPISeluruhDivisi() {
     const [isModalMore, setIsModalMore] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+    const [isModalSucc, setModalSucc] = useState(false)
+    const [isModalDel, setModalDel] = useState(false)
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -22,14 +27,14 @@ export default function KPISeluruhDivisi() {
             id: 1,
             Divisi: "Kasir",
             JumlahKPI: 10,
-            Aksi: (
-                <img
-                src="/icon/more.svg"
-                alt="More Options"
-                className="w-5 h-5 cursor-pointer"
-                onClick={(event) => handleMoreClick(1, event)}
-                />
-            ),
+            // Aksi: (
+            //     <img
+            //     src="/icon/more.svg"
+            //     alt="More Options"
+            //     className="w-5 h-5 cursor-pointer"
+            //     onClick={(event) => handleMoreClick(1, event)}
+            //     />
+            // ),
         },
     ];
 
@@ -37,47 +42,28 @@ export default function KPISeluruhDivisi() {
         event.stopPropagation();
         setSelectedItem(item);
         setIsModalMore(true);
-    
-        const rect = event.target.getBoundingClientRect();
-    
-        const isMobile = window.innerWidth <= 768; 
-        const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
-        const isDesktop = window.innerWidth > 1024;
 
-        let modalTop, modalLeft;
-    
-    
-        if (isMobile) {
-            const availableSpaceBelow = window.innerHeight - rect.bottom;
-            const availableSpaceAbove = rect.top;
-    
-            if (availableSpaceBelow < 300) {
-                modalTop = rect.top + window.scrollY - 300; 
-            } else {
-                modalTop = rect.top + window.scrollY - 600;
+        const rect = event.target.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        
+        let top = rect.bottom + window.scrollY + 5;
+        let left = rect.left + window.scrollX;
+
+        if (viewportWidth <= 768) {
+            left = viewportWidth / 2;
+        } else {
+            // Prevent modal from going off-screen right
+            if (left + 250 > viewportWidth) {
+                left = rect.right - 250;
             }
-    
-            modalLeft = rect.left + window.scrollX - 650;
-        } else if (isTablet) {
-            const availableSpaceBelow = window.innerHeight - rect.bottom;
-            const availableSpaceAbove = rect.top; 
-    
-            if (availableSpaceBelow < 400) {
-                modalTop = rect.top + window.scrollY - 400; 
-            } else {
-                modalTop = rect.top + window.scrollY - 550;
+            
+            // If modal would go off bottom of screen, show it above the click
+            if (top + 150 > window.innerHeight) {
+                top = rect.top - 150;
             }
-    
-            modalLeft = rect.left + window.scrollX - 300; 
-        } else if (isDesktop) {
-            modalTop = rect.top + window.scrollY - 200;
-            modalLeft = rect.left + window.scrollX - 400;
         }
-    
-        setModalPosition({
-            top: modalTop,
-            left: modalLeft,
-        });
+
+        setModalPosition({ top, left });
     };
 
     const navigate = useNavigate()
@@ -87,9 +73,14 @@ export default function KPISeluruhDivisi() {
     };
 
     const handleDelete = () => {
-        alert(`Hapus data: ${selectedItem.Divisi}`);
         setIsModalMore(false);
+        setModalDel(true)
     };
+
+    const handleConfirmDel = () => {
+        //logik delete berdasarkan selceteditem
+        setModalSucc(true)
+    }
 
     
     const handleAddBtn = () => {
@@ -98,7 +89,7 @@ export default function KPISeluruhDivisi() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label="Penilaian KPI">
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -141,10 +132,25 @@ export default function KPISeluruhDivisi() {
                                 data={data.map((item, index) => ({
                                     ...item,
                                     nomor: index + 1,
+                                    Aksi: (
+                                        <img
+                                            src="/icon/more.svg"
+                                            alt="More Options"
+                                            className="w-5 h-5 cursor-pointer"
+                                            onClick={(event) => handleMoreClick(item.id, event)} 
+                                        />
+                                    ),
                                 }))}
                             />
+                            <MoreOptionsModal 
+                            isOpen={isModalMore}
+                            onClose={() => setIsModalMore(false)}
+                            position={modalPosition}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                        />
                             {/* Modal for More Options */}
-                            {isModalMore && selectedItem && (
+                            {/* {isModalMore && selectedItem && (
                             <div
                             className="fixed inset-0 flex justify-center items-center z-50"
                             style={{
@@ -224,10 +230,32 @@ export default function KPISeluruhDivisi() {
                                 </button>
                             </div>
                             </div>
-                        )}
+                        )} */}
                         </div>
                     </section>
                 </div>
+
+                {/* modal delete */}
+                {isModalDel && (
+                    <Alert
+                    title="Hapus Data"
+                    description="Apakah kamu yakin ingin menghapus data ini?"
+                    confirmLabel="Hapus"
+                    cancelLabel="Kembali"
+                    onConfirm={handleConfirmDel}
+                    onCancel={() => setModalDel(false)}
+                    />
+                )}
+
+                {/* modal success */}
+                {isModalSucc&& (
+                    <AlertSuccess
+                    title="Berhasil!!"
+                    description="Data berhasil dihapus"
+                    confirmLabel="Ok"
+                    onConfirm={() => setModalSucc(false)}
+                    />
+                )}
             </Navbar>
         </>
     );

@@ -175,7 +175,7 @@ const Gallery = ({
               <button
                 onClick={() => {
                   onEdit(selectedItem);
-                  navigate(`${url}/${selectedItem.id}`)
+                  // navigate(`${url}/${selectedItem.id}`)
                   setSelectedItem(null);
                 }}
                 className="w-full border border-oren text-oren font-semibold py-2 text-left px-4 hover:bg-gray-100 rounded"

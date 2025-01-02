@@ -27,6 +27,7 @@ export default function Pengeluaran() {
         kategori: 'Hibah',
         bayar: 'Cash',
         metode: '-' ,
+        catatan: 'Catatan penting mengenai transaksi ini',  
         dataDetail: [
           {
               deskripsi: 'Biaya Operasional Staff',
@@ -59,7 +60,7 @@ export default function Pengeluaran() {
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Laporan Keuangan Toko'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -102,9 +103,21 @@ export default function Pengeluaran() {
                             />
                         </div>
 
-                        {/* Section Total */}
-                        <section className="flex justify-end text-base py-10">
-                            <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
+                        <section className="flex justify-between py-10">
+                        {/* Notes Section */}
+                            <div className="w-1/2 pr-8">
+                                <p className="font-bold mb-2">Catatan</p>
+                                <textarea 
+                                    className="w-full p-3 border rounded-lg"
+                                    value={data.catatan}
+                                    readOnly
+                                    rows={4}
+                                    placeholder="Masukan Catatan Disini"
+                                />
+                            </div>
+
+                            {/* Totals Section */}
+                            <div className="w-1/2 lg:w-1/3 space-y-4 text-sm">
                                 {/* Sub Total */}
                                 <div className="flex justify-between border-b pb-2">
                                     <p className="font-bold">Sub Total</p>
@@ -117,7 +130,7 @@ export default function Pengeluaran() {
                                 </div>
                                 {/* Total Penjualan */}
                                 <div className="flex justify-between border-b pb-2">
-                                    <p className="font-bold">Total Pengeluaran</p>
+                                    <p className="font-bold">Total Penjualan</p>
                                     <p className="font-bold">{formatCurrency(data.total_pengeluaran) || 0}</p>
                                 </div>
                             </div>

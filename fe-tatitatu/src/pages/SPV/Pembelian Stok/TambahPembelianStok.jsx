@@ -25,7 +25,6 @@ export default function TambahPembelianStok() {
         { nama: "Cabang GOR.Lubuk Begalung", data: [] },
     ]);
 
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(null);
     const [resetSignal, setResetSignal] = useState(false);
@@ -37,6 +36,8 @@ export default function TambahPembelianStok() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setLoading] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
+    const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+
 
     useEffect(() => {
         if (isModalOpen) {
@@ -50,12 +51,10 @@ export default function TambahPembelianStok() {
     }, [isModalOpen]);
 
     const calculateSubtotal = () => {
-        // Cek jika dataCabang ada dan tidak kosong
         return dataCabang.reduce((acc, cabang) => {
-            // Jumlahkan Total Biaya dari setiap cabang
+            // Jumlahkan rawTotalBiaya dari setiap cabang
             const totalCabang = cabang.data.reduce((cabAcc, row) => {
-                const totalBiaya = parseInt(row["Total Biaya"]);
-                return cabAcc + totalBiaya;
+                return cabAcc + (row.rawTotalBiaya || 0);
             }, 0);
             return acc + totalCabang;
         }, 0);
@@ -95,7 +94,6 @@ export default function TambahPembelianStok() {
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
-
     const btnAddBaris = (cabangIndex) => {
         setActiveCabang(cabangIndex);
         setIsModalOpen(true);
@@ -125,6 +123,13 @@ export default function TambahPembelianStok() {
     ];
 
     
+    useEffect(() => {
+        if (selectBayar === 1) { // Jika Cash
+            setIsMetodeDisabled(true);
+        } else if (selectBayar === 2) { // Jika Non-Cash
+            setIsMetodeDisabled(false);
+        }
+    }, [selectBayar]);
 
     const handleSelectItem = (item, count) => {
         setSelectedItems((prev) => {
@@ -156,12 +161,17 @@ export default function TambahPembelianStok() {
         setIsModalOpen(false);
     };
 
-    const handleModalSubmit = () => {
-        if (activeCabang !== null) {
-            const updatedCabang = [...dataCabang];
-            const newItems = selectedItems.map((item) => ({
+    // console.log(dataCabang)
+
+// Di dalam handleModalSubmit
+const handleModalSubmit = () => {
+    if (activeCabang !== null) {
+        const updatedCabang = [...dataCabang];
+        const newItems = selectedItems.map((item) => {
+            const totalBiaya = parseInt(item.price) * item.count;
+            return {
                 id: item.id,
-                No: updatedCabang[activeCabang].data.length + 1, 
+                No: updatedCabang[activeCabang].data.length + 1,
                 "Foto Produk": (
                     <img
                         src={item.image}
@@ -170,69 +180,213 @@ export default function TambahPembelianStok() {
                     />
                 ),
                 "Nama Produk": (
-                <InputDropdown
-                    options={dataBarang
-                    .find((data) => data.jenis === selectedJenis)
-                    ?.items.map((item) => ({ label: item.name, value: item.price }))} 
-                    value={item.name} 
-                    onSelect={(selectedOption) => {
-                    const updatedDataCabang = [...dataCabang];
-                    const itemIndex = updatedDataCabang[activeCabang].data.findIndex(
-                        (data) => data.id === item.id
-                    );
+                    <InputDropdown
+                        showRequired={false}
+                        options={dataBarang.reduce((allItems, data) => {
+                            const items = data.items.map(item => ({
+                                label: item.name,
+                                value: item.price,
+                                jenis: data.jenis,
+                                kategori: item.kategori,
+                                image: item.image,
+                                code: item.code,
+                                id: item.id
+                            }));
+                            return [...allItems, ...items];
+                        }, [])}
+                        value={item.name}
+                        onSelect={(newSelection) => {
+                            const updatedDataCabang = [...dataCabang];
+                            const itemIndex = updatedDataCabang[activeCabang].data.findIndex(
+                                (data) => data.id === item.id
+                            );
 
-                    if (itemIndex !== -1) {
-                        // Perbarui Nama Produk
-                        updatedDataCabang[activeCabang].data[itemIndex].name = selectedOption.label;
+                            if (itemIndex !== -1) {
+                                let selectedItem = null;
+                                let jenisBarang = '';
+                                
+                                for (const category of dataBarang) {
+                                    const found = category.items.find(i => i.name === newSelection.label);
+                                    if (found) {
+                                        selectedItem = found;
+                                        jenisBarang = category.jenis;
+                                        break;
+                                    }
+                                }
 
-                        // Perbarui Harga Satuan
-                        const newPrice = parseInt(selectedOption.value.replace(/[^0-9]/g, ""), 10);
-                        updatedDataCabang[activeCabang].data[itemIndex]["Harga Satuan"] = `Rp${newPrice.toLocaleString()}`;
+                                if (selectedItem) {
+                                    const createNewOnSelect = (itemId) => (nextSelection) => {
+                                        const newUpdatedDataCabang = [...dataCabang];
+                                        const newItemIndex = newUpdatedDataCabang[activeCabang].data.findIndex(
+                                            (data) => data.id === itemId
+                                        );
 
-                        // Hitung ulang Total Biaya
-                        const currentCount = updatedDataCabang[activeCabang].data[itemIndex].count || 0;
-                        const totalBiaya = newPrice * currentCount;
-                        updatedDataCabang[activeCabang].data[itemIndex]["Total Biaya"] = `Rp${totalBiaya.toLocaleString()}`;
+                                        if (newItemIndex !== -1) {
+                                            let newSelectedItem = null;
+                                            let newJenisBarang = '';
+                                            const currentQuantity = newUpdatedDataCabang[activeCabang].data[newItemIndex].quantity || 0;
+                                            
+                                            for (const category of dataBarang) {
+                                                const found = category.items.find(i => i.name === nextSelection.label);
+                                                if (found) {
+                                                    newSelectedItem = found;
+                                                    newJenisBarang = category.jenis;
+                                                    break;
+                                                }
+                                            }
 
-                        // Perbarui state
-                        setDataCabang(updatedDataCabang);
-                    }
-                    }}
-                />
-                ),
-                "Jenis Barang": selectedJenis,
-                "Harga Satuan": item.price,
-                Kuantitas: (
-                    <Input
-                      type="number"
-                      value={item.count}
-                      onChange={(newCount) => {
-                        const updatedCabangCopy = [...dataCabang];
-                  
-                        // Temukan indeks baris yang sesuai
-                        const rowIndex = updatedCabangCopy[activeCabang].data.findIndex(
-                          (row) => row.id === item.id
-                        );
-                  
-                        if (rowIndex !== -1) {
+                                            if (newSelectedItem) {
+                                                const newTotalBiaya = newSelectedItem.price * currentQuantity;
+                                                newUpdatedDataCabang[activeCabang].data[newItemIndex] = {
+                                                    ...newUpdatedDataCabang[activeCabang].data[newItemIndex],
+                                                    "Nama Produk": (
+                                                        <InputDropdown
+                                                            showRequired={false}
+                                                            options={dataBarang.reduce((allItems, data) => {
+                                                                const items = data.items.map(item => ({
+                                                                    label: item.name,
+                                                                    value: item.price,
+                                                                    jenis: data.jenis,
+                                                                    kategori: item.kategori,
+                                                                    image: item.image,
+                                                                    code: item.code,
+                                                                    id: item.id
+                                                                }));
+                                                                return [...allItems, ...items];
+                                                            }, [])}
+                                                            value={nextSelection.label}
+                                                            onSelect={createNewOnSelect(itemId)}
+                                                        />
+                                                    ),
+                                                    "Jenis Barang": newJenisBarang,
+                                                    "Harga Satuan": `Rp${newSelectedItem.price.toLocaleString()}`,
+                                                    "Kuantitas": (
+                                                        <Input
+                                                            showRequired={false}
+                                                            type="number"
+                                                            value={currentQuantity}
+                                                            onChange={(newCount) => {
+                                                                const updatedCabangCopy = [...dataCabang];
+                                                                const rowIndex = newItemIndex;
+                                                                if (rowIndex !== -1) {
+                                                                    updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
+                                                                    const newTotal = newSelectedItem.price * Number(newCount);
+                                                                    updatedCabangCopy[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
+                                                                    updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+                                                                    setDataCabang(updatedCabangCopy);
+                                                                }
+                                                            }}
+                                                        />
+                                                    ),
+                                                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                                                    rawTotalBiaya: newTotalBiaya, // Menyimpan nilai numerik
+                                                    name: nextSelection.label,
+                                                    currentPrice: newSelectedItem.price,
+                                                    quantity: currentQuantity
+                                                };
 
-                          updatedCabangCopy[activeCabang].data[rowIndex].count = newCount;
-                  
-                          const hargaSatuan = parseInt(item.price);
-                          const totalBiaya = hargaSatuan * Number(newCount);
-                  
-                          updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = totalBiaya;
-                  
+                                                setDataCabang(newUpdatedDataCabang);
+                                            }
+                                        }
+                                    };
 
-                          setDataCabang(updatedCabangCopy);
-                        } else {
-                          console.error("Baris tidak ditemukan!");
-                        }
-                      }}
+                                    const currentQuantity = updatedDataCabang[activeCabang].data[itemIndex].quantity || 0;
+                                    const newTotalBiaya = selectedItem.price * currentQuantity;
+                                    
+                                    updatedDataCabang[activeCabang].data[itemIndex] = {
+                                        ...updatedDataCabang[activeCabang].data[itemIndex],
+                                        "Nama Produk": (
+                                            <InputDropdown
+                                                showRequired={false}
+                                                options={dataBarang.reduce((allItems, data) => {
+                                                    const items = data.items.map(item => ({
+                                                        label: item.name,
+                                                        value: item.price,
+                                                        jenis: data.jenis,
+                                                        kategori: item.kategori,
+                                                        image: item.image,
+                                                        code: item.code,
+                                                        id: item.id
+                                                    }));
+                                                    return [...allItems, ...items];
+                                                }, [])}
+                                                value={newSelection.label}
+                                                onSelect={createNewOnSelect(item.id)}
+                                            />
+                                        ),
+                                        "Jenis Barang": jenisBarang,
+                                        "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
+                                        "Kuantitas": (
+                                            <Input
+                                                showRequired={false}
+                                                type="number"
+                                                value={currentQuantity}
+                                                onChange={(newCount) => {
+                                                    const updatedCabangCopy = [...dataCabang];
+                                                    const rowIndex = itemIndex;
+                                                    if (rowIndex !== -1) {
+                                                        updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
+                                                        const newTotal = selectedItem.price * Number(newCount);
+                                                        updatedCabangCopy[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
+                                                        updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+                                                        setDataCabang(updatedCabangCopy);
+                                                    }
+                                                }}
+                                            />
+                                        ),
+                                        "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                                        rawTotalBiaya: newTotalBiaya, // Menyimpan nilai numerik
+                                        name: newSelection.label,
+                                        currentPrice: selectedItem.price,
+                                        quantity: currentQuantity
+                                    };
+
+                                    setDataCabang(updatedDataCabang);
+                                }
+                            }
+                        }}
                     />
-                  ),
-                  
-                "Total Biaya":parseInt(item.price) * item.count,
+                ),
+                "Jenis Barang": item.jenis || dataBarang.find(d => 
+                    d.items.some(i => i.name === item.name)
+                )?.jenis,
+                "Harga Satuan": `Rp${item.price.toLocaleString()}`,
+                "Kuantitas": (
+                    <Input
+                        showRequired={false}
+                        type="number"
+                        value={item.count}
+                        onChange={(newCount) => {
+                            const updatedCabangCopy = [...dataCabang];
+                            // Cari item berdasarkan id bukan berdasarkan index
+                            const itemIndex = updatedCabangCopy[activeCabang].data.findIndex(
+                                (row) => row.id === item.id
+                            );
+
+                            // Kalau ini item baru yang belum ada di array
+                            if (itemIndex === -1) {
+                                const newTotal = item.price * Number(newCount);
+                                const updatedItem = {
+                                    ...item,
+                                    quantity: newCount,
+                                    rawTotalBiaya: newTotal,
+                                    "Total Biaya": `Rp${newTotal.toLocaleString()}`
+                                };
+                                updatedCabangCopy[activeCabang].data.push(updatedItem);
+                            } else {
+                                // Update item yang sudah ada
+                                updatedCabangCopy[activeCabang].data[itemIndex].quantity = newCount;
+                                const newTotal = item.price * Number(newCount);
+                                updatedCabangCopy[activeCabang].data[itemIndex].rawTotalBiaya = newTotal;
+                                updatedCabangCopy[activeCabang].data[itemIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+                            }
+                            setDataCabang(updatedCabangCopy);
+                        }}
+                    />
+                ),
+                quantity: item.count,
+                "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
+                rawTotalBiaya: totalBiaya, // Menyimpan nilai numerik
                 Aksi: (
                     <button
                         className="text-red-500 hover:text-red-700"
@@ -241,14 +395,14 @@ export default function TambahPembelianStok() {
                         Hapus
                     </button>
                 ),
-            }));
-            updatedCabang[activeCabang].data.push(...newItems);
-            setDataCabang(updatedCabang);
-
-        }
-        setIsModalOpen(false);
-        setSelectedItems([]);
-    };
+            };
+        });
+        updatedCabang[activeCabang].data.push(...newItems);
+        setDataCabang(updatedCabang);
+    }
+    setIsModalOpen(false);
+    setSelectedItems([]);
+};
 
 
     const handleDeleteItem = (cabangIndex, itemId) => {
@@ -296,7 +450,7 @@ export default function TambahPembelianStok() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={'Pembelian Stok'}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -305,11 +459,11 @@ export default function TambahPembelianStok() {
                         <form onSubmit={handleTambahSubmit}>
                             <section>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Input label={"Nomor*"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
-                                    <Input label={"Tanggal*"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                    <InputDropdown label={"Cash/Non-Cash*"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
+                                    <Input label={"Nomor"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
+                                    <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
+                                    <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
                                     <div className="md:col-span-3 md:w-1/3">
-                                        <InputDropdown label={"Metode Pembayaran*"} options={dataMetode} value={selectedMetodeLabel} onSelect={handleSelectMetode} />
+                                        <InputDropdown label={"Metode Pembayaran"} disabled={isMetodeDisabled} options={dataMetode} value={selectedMetodeLabel} onSelect={handleSelectMetode} />
                                     </div>
                                 </div>
                             </section>
@@ -343,7 +497,7 @@ export default function TambahPembelianStok() {
                                 {/* Bagian Catatan */}
                                 <div className="w-full md:w-2/4">
                                     <TextArea
-                                    label="Catatan*"
+                                    label="Catatan"
                                     placeholder="Masukkan Catatan Di Sini"
                                     required={true}
                                     value={note}
@@ -365,6 +519,7 @@ export default function TambahPembelianStok() {
                                         <div className="w-30">
                                         <Input
                                             type="number"
+                                            showRequired={false}
                                             value={diskon}
                                             onChange={(e) => setDiskon(e)}
                                         />
@@ -376,6 +531,7 @@ export default function TambahPembelianStok() {
                                         <div className="w-30">
                                         <Input
                                             type="number"
+                                            showRequired={false}
                                             value={pajak}
                                             onChange={(e) => setPajak(e)}
                                         />

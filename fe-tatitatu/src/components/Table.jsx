@@ -10,18 +10,27 @@ const Table = ({
   hasFilter = false,
   filterFields = [],
   onFilterClick,
-  hasSearch = true,  // Default to true
-  hasPagination = true // Default to true
+  hasSearch = true,
+  hasPagination = true,
+  hasSubmenu = false,
+  submenuItems = [],
+  defaultSubmenu = 'semua'
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pageSize, setPageSize] = useState(10); // Number of data per page
   const [currentPage, setCurrentPage] = useState(1); // Current page
+  const [activeSubmenu, setActiveSubmenu] = useState(defaultSubmenu);
 
   const filteredData = data.filter((row) => {
     const matchesSearchTerm = Object.values(row).some((value) =>
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
     );
-    return matchesSearchTerm;
+    
+    // Jika submenu 'semua' atau tidak ada submenu, tampilkan semua data
+    if (activeSubmenu === 'semua' || !hasSubmenu) return matchesSearchTerm;
+    
+    // Filter berdasarkan submenu aktif dan search
+    return matchesSearchTerm && row.type === activeSubmenu;
   });
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
@@ -108,6 +117,34 @@ const Table = ({
           </div>
         )}
       </div>
+
+      {hasSubmenu && submenuItems.length > 0 && (
+        <div className="flex space-x-2 mb-4">
+          <button
+            onClick={() => setActiveSubmenu('semua')}
+            className={`px-4 py-2 text-sm font-medium transition-colors
+              ${activeSubmenu === 'semua'
+                ? "text-primary border-b-2 border-primary" 
+                : "bg-white text-gray-700"
+              }`}
+          >
+            Semua
+          </button>
+          {submenuItems.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => setActiveSubmenu(item.value)}
+              className={`px-4 py-2 text-sm font-medium transition-colors
+                ${activeSubmenu === item.value
+                  ? "text-primary border-b-2 border-primary"
+                  : "bg-white text-gray-700"
+                }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <table className="min-w-full border-collapse">

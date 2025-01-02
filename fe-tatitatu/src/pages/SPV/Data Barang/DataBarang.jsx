@@ -4,8 +4,14 @@ import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menuSpv";
 import Gallery from "../../../components/Gallery";
 import { useNavigate } from "react-router-dom";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
 
 export default function DataBarang(){
+    const [id,setId] = useState('')
+    const [selectedId, setSelectedId] = useState(null);
+    const [isModalDelete, setModalDelete] = useState(false)
+    const [isModalSucc, setModalSucc] = useState(false)
     const [data,setData] = useState([
         {
             id: 1,
@@ -208,17 +214,42 @@ export default function DataBarang(){
         navigate('/dataBarang/handmade/tambah')
       }
 
-      const handleEdit = () => {
-        navigate('/dataBarang/handmade/edit')
+      // const handleEdit = () => {
+      //   navigate('/dataBarang/handmade/edit')
+      // }
+
+      const handleBtnEdit = (id) => {
+        navigate(`/dataBarang/handmade/edit/${id.id}`)
       }
+  
+      const handleBtnDelete = (item) => {
+        setSelectedId(item.id);
+        setModalDelete(true);
+      };
+      
+      const handleDelete = () => {
+        setData(prevData => prevData.filter(item => item.id !== selectedId));
+        setModalSucc(true);
+        setModalDelete(false);
+      };
+      
+      const handleBtnDelCancel = () => {
+        setSelectedId(null);
+        setModalDelete(false);
+      };
+      
+      const handleConfirmSucc = () => {
+        setSelectedId(null);
+        setModalSucc(false);
+      };
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Data Barang'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">List Barang Handmade</p>
+                            <p className="text-primary text-base font-bold">Daftar Barang Handmade</p>
                         </div>
 
                         {/* Right Section */}
@@ -251,10 +282,32 @@ export default function DataBarang(){
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
-                        <Gallery url="/dataBarang/handmade/edit" data={data} subMenus={subMenus} enableSubMenus={true} onEdit={handleEdit} onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}`)}/>
+                        <Gallery data={data} subMenus={subMenus} enableSubMenus={true} onEdit={handleBtnEdit} onDelete={handleBtnDelete} onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}`)}/>
                     </div>
                 </section>
             </div>
+
+            {/* modal delete */}
+            {isModalDelete && (
+                <Alert
+                title="Hapus Data"
+                description="Apakah kamu yakin ingin menghapus data ini?"
+                confirmLabel="Hapus"
+                cancelLabel="Kembali"
+                onConfirm={handleDelete}
+                onCancel={handleBtnDelCancel}
+                />
+            )}
+
+            {/* modal success */}
+            {isModalSucc&& (
+                <AlertSuccess
+                title="Berhasil!!"
+                description="Data berhasil dihapus"
+                confirmLabel="Ok"
+                onConfirm={handleConfirmSucc}
+                />
+            )}
         </Navbar>
         </>
     )

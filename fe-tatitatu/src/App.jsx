@@ -36,6 +36,13 @@ import DetailBarang from './pages/SPV/Data Barang/DetailBarang';
 import TambahNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
 import DetailNonHandmade from './pages/SPV/Data Barang/Non-Handmade/DetailNonHandmade';
 import EditNonHandmade from './pages/SPV/Data Barang/Non-Handmade/EditNonHandmade';
+import AkunKaryawan from './pages/SPV/Akun Karyawan/AkunKaryawan';
+import TambahAkunKaryawan from './pages/SPV/Akun Karyawan/TambahAkunKaryawan';
+import EditKaryawan from './pages/SPV/Akun Karyawan/EditKaryawan';
+import StokBarang from './pages/SPV/StokBarang/StokBarang';
+import IzinCuti from './pages/SPV/Izin Cuti/IzinCuti';
+import MasterKategori from './pages/SPV/Master Kategori/MasterKategori';
+import TargetBulanan from './pages/SPV/Target Bulanan/TargetBulanan';
 
 
 function App() {
@@ -80,6 +87,13 @@ function App() {
         <Route path='/dataBarang/non-handmade/edit/:id' element= {<EditNonHandmade/>}/>
         <Route path='/dataBarang/custom' element= {<BarangCustom/>}/>
         <Route path='/dataBarang/packaging' element= {<Packaging/>}/>
+        <Route path='/akunKaryawan' element= {<AkunKaryawan/>}/>
+        <Route path='/akunKaryawan/tambah' element= {<TambahAkunKaryawan/>}/>
+        <Route path='/akunKaryawan/edit/:id' element= {<EditKaryawan/>}/>
+        <Route path='/stokBarang' element= {<StokBarang/>}/>
+        <Route path='/pengajuanCuti' element= {<IzinCuti/>}/>
+        <Route path='/master-kategori' element= {<MasterKategori/>}/>
+        <Route path='/target-kasir' element= {<TargetBulanan/>}/>
       </Routes>
     </Router>
     </>

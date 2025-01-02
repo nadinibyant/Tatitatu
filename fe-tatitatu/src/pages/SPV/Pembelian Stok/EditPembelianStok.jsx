@@ -134,6 +134,7 @@ export default function EditPembelianStok() {
     const [selectedRow, setSelectRow] = useState("")
     const [selectedLabel, setSelectLabel] = useState("")
     const [isLoading, setLoading] = useState(false)
+    const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
 
     // data fix
     const [updateData, setUpdateData] = useState({})
@@ -164,6 +165,20 @@ export default function EditPembelianStok() {
             setModalDel(true);
         }
     }
+
+    console.log(selectMetode)
+
+    useEffect(() => {
+        if (selectBayar === 1) { // Jika Cash
+            setSelectMetode(dataMetode[0].id);
+            setSelectLabel(dataMetode[0].label);
+            setIsMetodeDisabled(true);
+        } else if (selectBayar === 2) { // Jika Non-Cash
+            setSelectMetode(dataMetode[1].id);
+            setSelectLabel(dataMetode[1].label);
+            setIsMetodeDisabled(false);
+        }
+    }, [selectBayar]);
 
     const handleCancelDel = () => {
         setModalDel(false)
@@ -355,6 +370,7 @@ export default function EditPembelianStok() {
                 "Foto Produk": item["Foto Produk"],
                 "Nama Produk": (
                     <InputDropdown
+                    showRequired={false}
                     options={filteredItemsBarang}
                     value={defaultProduct ? defaultProduct.label : ""}
                     onSelect={(selectedOption) => handleChange(selectedOption, cabangIndex, itemIndex, "Nama Produk")}
@@ -365,6 +381,7 @@ export default function EditPembelianStok() {
                 "Harga Satuan": `Rp${(item["Harga Satuan"]).toLocaleString()}`,
                 Kuantitas: (
                     <Input
+                        showRequired={false}
                         type="number"
                         value={item.Kuantitas}
                         onChange={(e) => handleChange(e, cabangIndex, itemIndex, "Kuantitas")}
@@ -488,7 +505,7 @@ export default function EditPembelianStok() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={'Pembelian Stok'}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -497,11 +514,11 @@ export default function EditPembelianStok() {
                         <form onSubmit={handleEditSubmit}>
                             <section>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Input label={"Nomor*"} type1={"text"} value={data.nomor} onChange={(e) => setNomor(e)} />
-                                    <Input label={"Tanggal*"} type1={"date"} value={data.tanggal} onChange={(e) => setTanggal(e)} />
-                                    <InputDropdown label={"Cash/Non-Cash*"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
+                                    <Input label={"Nomor"} type1={"text"} value={data.nomor} onChange={(e) => setNomor(e)} />
+                                    <Input label={"Tanggal"} type1={"date"} value={data.tanggal} onChange={(e) => setTanggal(e)} />
+                                    <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
                                     <div className="md:col-span-3 md:w-1/3">
-                                        <InputDropdown label={"Metode Pembayaran*"} options={dataMetode} value={selectedLabel} onSelect={handleSelectMetode} />
+                                        <InputDropdown label={"Metode Pembayaran"} disabled={isMetodeDisabled} options={dataMetode} value={selectedLabel} onSelect={handleSelectMetode} />
                                     </div>
                                 </div>
                             </section>

@@ -12,8 +12,8 @@ import { useParams } from "react-router-dom";
 export default function EditBarang({ existingData }) {
   const { id } = useParams();
   const breadcrumbItems = [
-    { label: "List Data Barang Jadi", href: "/dataBarang/handmade" },
-    { label: "Edit Data Barang", href: "" },
+    { label: "Daftar Barang Handmade", href: "/dataBarang/handmade" },
+    { label: "Edit", href: "" },
   ];
 
   const dataKategori = [
@@ -273,6 +273,7 @@ export default function EditBarang({ existingData }) {
                   No: index + 1,
                   "Nama Biaya": (
                     <Input
+                    showRequired={false}
                       value={row["Nama Biaya"]}
                       onChange={(value) =>
                         handleInputChange("rincian_biaya", index, "Nama Biaya", value)
@@ -281,6 +282,7 @@ export default function EditBarang({ existingData }) {
                   ),
                   "Jumlah Biaya": (
                     <Input
+                    showRequired={false}
                       type="number"
                       value={row["Jumlah Biaya"]}
                       onChange={(value) =>
@@ -331,6 +333,7 @@ export default function EditBarang({ existingData }) {
                   No: index + 1,
                   "Nama Packaging": (
                     <ButtonDropdown
+                    showRequired={false}
                       label={row["Nama Packaging"]}
                       value={row["Nama Packaging"]}
                       options={dataPackaging}
@@ -342,6 +345,7 @@ export default function EditBarang({ existingData }) {
                   "Harga Satuan": formatCurrency(row["Harga Satuan"]),
                   Kuantitas: (
                     <Input
+                    showRequired={false}
                       type="number"
                       value={row.Kuantitas}
                       onChange={(value) =>
@@ -376,6 +380,7 @@ export default function EditBarang({ existingData }) {
                 <div className="flex justify-between pb-3">
                   <p className="font-bold">Harga Jual</p>
                   <Input
+                  showRequired={false}
                     width="w-full md: w-1/2"
                     type="number"
                     value={data.info_barang["Harga Jual"]}

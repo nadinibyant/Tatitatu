@@ -250,7 +250,7 @@ export default function ProdukTerlaris() {
 
   return (
     <>
-      <Navbar menuItems={menuItems} userOptions={userOptions} label={"Dashboard"}>
+      <Navbar menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             <div className="left w-full md:w-auto">
@@ -333,62 +333,60 @@ export default function ProdukTerlaris() {
           </section>
 
           <section className="mt-5 bg-white rounded-xl">
-            <div className="relative p-5 max-w-[1200px] mx-auto"> 
-                <div className="overflow-x-auto scrollbar-hide">
-                    <div className="flex gap-4 w-full pb-4"> 
-                        {/* handmade */}
-                        <div className="flex-shrink-0 w-[calc(30.333%-0.75rem)]"> 
-                            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                <div className="flex-1">
-                                    <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
-                                    <p className="font-bold text-lg">{data.dashboard.barang_handmade.nama}</p>
-                                    <p className="">{formatNumberWithDots(data.dashboard.barang_handmade.jumlah)} Pcs</p>
-                                </div>
-                                <div className="flex items-center justify-center ml-4">
-                                    <img src="/Dashboard Produk/handmade.svg" alt="handmade" />
-                                </div>
+            <div className="p-5">
+                <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* handmade */}
+                    <div className="w-full">
+                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
+                                <p className="font-bold text-lg truncate">{data.dashboard.barang_handmade.nama}</p>
+                                <p>{formatNumberWithDots(data.dashboard.barang_handmade.jumlah)} Pcs</p>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                                <img src="/Dashboard Produk/handmade.svg" alt="handmade" className="w-12 h-12" />
                             </div>
                         </div>
+                    </div>
 
-                        {/* non handmade */}
-                        <div className="flex-shrink-0 w-[calc(30.333%-0.75rem)]">
-                            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                <div className="flex-1">
-                                    <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
-                                    <p className="font-bold text-lg">{data.dashboard.barang_non_handmade.nama}</p>
-                                    <p className="">{formatNumberWithDots(data.dashboard.barang_non_handmade.jumlah)} Pcs</p>
-                                </div>
-                                <div className="flex items-center justify-center ml-4">
-                                    <img src="/Dashboard Produk/nonhandmade.svg" alt="nonhandmade" />
-                                </div>
+                    {/* non handmade */}
+                    <div className="w-full">
+                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
+                                <p className="font-bold text-lg truncate">{data.dashboard.barang_non_handmade.nama}</p>
+                                <p>{formatNumberWithDots(data.dashboard.barang_non_handmade.jumlah)} Pcs</p>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                                <img src="/Dashboard Produk/nonhandmade.svg" alt="nonhandmade" className="w-12 h-12" />
                             </div>
                         </div>
+                    </div>
 
-                        {/* packaging */}
-                        <div className="flex-shrink-0 w-[calc(30.333%-0.75rem)]">
-                            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                <div className="flex-1">
-                                    <p className="text-gray-400 text-sm">Packaging Terlaris</p>
-                                    <p className="font-bold text-lg">{data.dashboard.packging.nama}</p>
-                                    <p className="">{formatNumberWithDots(data.dashboard.packging.jumlah)} Pcs</p>
-                                </div>
-                                <div className="flex items-center justify-center ml-4">
-                                    <img src="/Dashboard Produk/packaging.svg" alt="packaging" />
-                                </div>
+                    {/* packaging */}
+                    <div className="w-full">
+                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-gray-400 text-sm">Packaging Terlaris</p>
+                                <p className="font-bold text-lg truncate">{data.dashboard.packging.nama}</p>
+                                <p>{formatNumberWithDots(data.dashboard.packging.jumlah)} Pcs</p>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                                <img src="/Dashboard Produk/packaging.svg" alt="packaging" className="w-12 h-12" />
                             </div>
                         </div>
+                    </div>
 
-                        {/* custom */}
-                        <div className="flex-shrink-0 w-[calc(33.333%-0.75rem)]">
-                            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                <div className="flex-1">
-                                    <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                                    <p className="font-bold text-lg">{data.dashboard.barang_custom.nama}</p>
-                                    <p className="">{formatNumberWithDots(data.dashboard.barang_custom.jumlah)} Pcs</p>
-                                </div>
-                                <div className="flex items-center justify-center ml-4">
-                                    <img src="/Dashboard Produk/custom.svg" alt="Custom" />
-                                </div>
+                    {/* custom */}
+                    <div className="w-full">
+                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
+                                <p className="font-bold text-lg truncate">{data.dashboard.barang_custom.nama}</p>
+                                <p>{formatNumberWithDots(data.dashboard.barang_custom.jumlah)} Pcs</p>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                                <img src="/Dashboard Produk/custom.svg" alt="Custom" className="w-12 h-12" />
                             </div>
                         </div>
                     </div>
@@ -398,37 +396,39 @@ export default function ProdukTerlaris() {
 
 
           <section className="mt-5">
-            <div className="flex flex-wrap md:flex-nowrap md:space-x-4 lg:space-x-4">
-                <div className="w-full bg-white rounded-xl p-5">
-                    <Table
-                        headers={headers}
-                        data={selectedData.map((item, index) => ({
-                            ...item,
-                            nomor: index + 1,
-                            Terjual: `${item.Terjual} Pcs`,
-                        }))}
-                        hasFilter={true}
-                        onFilterClick={handleFilterClick}
-                    />
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-5">
+                      <Table
+                          headers={headers}
+                          data={selectedData.map((item, index) => ({
+                              ...item,
+                              nomor: index + 1,
+                              Terjual: `${item.Terjual} Pcs`,
+                          }))}
+                          hasFilter={false}
+                          onFilterClick={handleFilterClick}
+                      />
+                  </div>
 
-                <div className="w-full bg-white rounded-xl p-5">
-                    <p className="font-bold">10 Barang Terlaris di Toko</p>
-                    <Table
-                        headers={headers2}
-                        data={data.barang_terlaris.map((item, index) => ({
-                            ...item,
-                            "Foto": <img src={item["Foto"]} className="w-12 h-12 object-cover" />,
-                            nomor: index + 1,
-                            Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
-                        }))}
-                        bg_header="bg-none"
-                        text_header="text-gray-400"
-                        hasSearch={false}
-                        hasPagination={false}
-                    />
-                </div>
-            </div>
+                  <div className="bg-white rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold text-base">10 Barang Terlaris di Toko</h3>
+                      </div>
+                      <Table
+                          headers={headers2}
+                          data={data.barang_terlaris.map((item, index) => ({
+                              ...item,
+                              "Foto": <img src={item["Foto"]} className="w-8 h-8 object-cover rounded-lg" />,
+                              nomor: index + 1,
+                              Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
+                          }))}
+                          bg_header="bg-none"
+                          text_header="text-gray-400"
+                          hasSearch={false}
+                          hasPagination={false}
+                      />
+                  </div>
+              </div>
           </section>
         </div>
         {/* Filter Modal */}

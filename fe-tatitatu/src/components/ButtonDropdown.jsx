@@ -11,17 +11,17 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
       const selectedOption = options.find(option => option.label === selectedStore);
       if (selectedOption) {
         setSelectedValue(selectedOption.label);
-        setSelectedIconUrl(selectedOption.icon);
+        setSelectedIconUrl(options?.icon || null);
       } else {
         setSelectedValue(selectedStore || 'Semua');  
-        setSelectedIconUrl(selectedIcon);
+        setSelectedIconUrl(selectedIcon || null);
       }
     }
   }, [options, selectedStore, selectedIcon]);
 
   const handleSelect = (option) => {
     setSelectedValue(option.label);
-    setSelectedIconUrl(option.icon);
+    setSelectedIconUrl(option?.icon || null);
     onSelect(option.label);  
     setIsOpen(false);
   };
@@ -33,7 +33,7 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
   return (
     <div className="relative inline-block w-full">
       <button
-      type='button'
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
       >
@@ -48,12 +48,7 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
         </svg>
       </button>
 
@@ -75,11 +70,7 @@ const ButtonDropdown = ({ options, selectedIcon, label, selectedStore, onSelect 
                   className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-2">
-                    <img
-                      src={option.icon}
-                      alt={option.label}
-                      className="w-5 h-5"
-                    />
+                    {option.icon && <img src={option.icon} alt={option.label} className="w-5 h-5" />}
                     <span>{option.label}</span>
                   </div>
                 </li>

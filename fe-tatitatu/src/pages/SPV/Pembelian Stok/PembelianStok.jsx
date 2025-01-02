@@ -123,6 +123,7 @@ export default function PembelianStok() {
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
+            type: 'cash',
             "Total Transaksi": "Rp.200.000",
             Aksi: (
                 <img
@@ -141,6 +142,7 @@ export default function PembelianStok() {
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
+            type: "cash",
             "Total Transaksi": "Rp.200.000",
             Aksi: (
                 <img
@@ -159,6 +161,7 @@ export default function PembelianStok() {
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
+            type: "non-cash",
             "Total Transaksi": "Rp.200.000",
             Aksi: (
                 <img
@@ -221,9 +224,14 @@ export default function PembelianStok() {
         setSuccess(false)
         setModalMore(false)
     }
+
+    const submenuItems = [
+        { label: "Cash", value: "cash" },
+        { label: "Non-Cash", value: "non-cash" }
+    ];
 return (
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions} label={'Pembelian Stok'}>
+    <Navbar menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                 {/* Left Section */}
@@ -346,7 +354,7 @@ return (
             </section>
 
             <section className="bg-white p-5 mt-5 rounded-xl">
-                <Table data={filteredData} headers={headers} onRowClick={handleRowClick}/>
+                <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="Semua"/>
                 {/* Modal for More Options */}
                 {isModalMore && selectedItem && (
                 <div

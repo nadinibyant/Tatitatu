@@ -10,7 +10,7 @@ const GalleryItem = ({ item, onSelect, selectionCount }) => {
       <div
           onClick={handleSelect}
           className={`relative border rounded-md p-4 cursor-pointer hover:shadow-md ${
-              selectionCount > 0 ? "border-purple-700" : "border-gray-300"
+              selectionCount > 0 ? "border-primary" : "border-gray-300"
           }`}
       >
           <img
@@ -19,7 +19,7 @@ const GalleryItem = ({ item, onSelect, selectionCount }) => {
               className="w-full h-48 object-cover rounded-md mb-2"
           />
           {selectionCount > 0 && (
-              <span className="absolute top-2 right-2 bg-purple-700 text-white rounded-full w-6 h-6 flex items-center justify-center">
+              <span className="absolute top-2 right-2 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center">
                   {selectionCount}
               </span>
           )}

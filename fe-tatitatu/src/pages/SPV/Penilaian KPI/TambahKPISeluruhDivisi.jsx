@@ -6,6 +6,7 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
+import { useNavigate } from "react-router-dom";
 
 export default function TambahKPISeluruhDivisi() {
     const breadcrumbItems = [
@@ -64,9 +65,14 @@ export default function TambahKPISeluruhDivisi() {
         setData((prevState) => ({ ...prevState, data: updatedData }));
     };
 
+    const navigate = useNavigate()
+    const handleBtnCancel = () => {
+        navigate('/daftarPenilaianKPI/seluruh-divisi')
+    }
+
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={"Penilaian KPI"}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -94,6 +100,7 @@ export default function TambahKPISeluruhDivisi() {
                                             Nomor: row.Nomor,
                                             NamaKPI: (
                                                 <Input
+                                                showRequired={false}
                                                     type1="text"
                                                     value={row.NamaKPI}
                                                     onChange={(value) => handleInputChange(index, "NamaKPI", value)}
@@ -101,13 +108,14 @@ export default function TambahKPISeluruhDivisi() {
                                             ),
                                             Persentase: (
                                                 <Input
+                                                showRequired={false}
                                                     type1="number"
                                                     value={row.Persentase}
                                                     onChange={(value) => handleInputChange(index, "Persentase", value)}
                                                 />
                                             ),
                                             Waktu: (
-                                                <ButtonDropdown
+                                                <ButtonDropdown   
                                                     options={dataWaktu}
                                                     label={row.Waktu || "Pilih Waktu"}
                                                     onSelect={(value) => handleInputChange(index, "Waktu", value)}
@@ -156,6 +164,7 @@ export default function TambahKPISeluruhDivisi() {
 
                                 <div className="pt-5 flex justify-end space-x-4">
                                     <Button 
+                                        onClick={handleBtnCancel}
                                         label={"Batal"} 
                                         bgColor="bg-none border border-black" 
                                         textColor="text-black" 

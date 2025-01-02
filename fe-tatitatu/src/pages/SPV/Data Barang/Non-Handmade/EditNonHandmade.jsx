@@ -12,8 +12,8 @@ import Button from "../../../../components/Button";
 export default function EditNonHandmade({ existingData }) {
   const { id } = useParams();
   const breadcrumbItems = [
-    { label: "List Data Barang Non-Handmade", href: "/dataBarang/non-handmade" },
-    { label: "Edit Data Barang", href: "" },
+    { label: "Daftar Barang Non-Handmade", href: "/dataBarang/non-handmade" },
+    { label: "Edit", href: "" },
   ];
 
   const dataKategori = [
@@ -198,10 +198,7 @@ export default function EditNonHandmade({ existingData }) {
   };
 
   const formatCurrency = (amount) => {
-    return amount.toLocaleString("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    });
+    return `Rp${amount.toLocaleString("id-ID")}`
   };
 
   console.log(data)
@@ -210,7 +207,6 @@ export default function EditNonHandmade({ existingData }) {
     <Navbar
       menuItems={menuItems}
       userOptions={userOptions}
-      label={"Edit Data Barang Non-Handmade"}
     >
       <div className="p-5">
         <Breadcrumbs items={breadcrumbItems} />
@@ -273,6 +269,7 @@ export default function EditNonHandmade({ existingData }) {
                   No: index + 1,
                   "Nama Biaya": (
                     <Input
+                    showRequired={false}
                       value={row["Nama Biaya"]}
                       onChange={(value) =>
                         handleInputChange("rincian_biaya", index, "Nama Biaya", value)
@@ -281,6 +278,7 @@ export default function EditNonHandmade({ existingData }) {
                   ),
                   "Jumlah Biaya": (
                     <Input
+                    showRequired={false}
                       type="number"
                       value={row["Jumlah Biaya"]}
                       onChange={(value) =>
@@ -342,6 +340,7 @@ export default function EditNonHandmade({ existingData }) {
                   "Harga Satuan": formatCurrency(row["Harga Satuan"]),
                   Kuantitas: (
                     <Input
+                    showRequired={false}
                       type="number"
                       value={row.Kuantitas}
                       onChange={(value) =>
@@ -376,6 +375,7 @@ export default function EditNonHandmade({ existingData }) {
                 <div className="flex justify-between pb-3">
                   <p className="font-bold">Harga Jual</p>
                   <Input
+                  showRequired={false}
                     width="w-full md: w-1/2"
                     type="number"
                     value={data.info_barang["Harga Jual"]}

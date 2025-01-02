@@ -197,7 +197,7 @@ export default function Karyawan(){
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Data Karyawan'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">

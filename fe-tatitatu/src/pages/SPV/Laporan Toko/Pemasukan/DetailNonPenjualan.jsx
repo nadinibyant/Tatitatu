@@ -22,13 +22,13 @@ export default function DetailNonPenjualan() {
         { label: "Pengeluaran", key: "pengeluaran", align: "text-left"},
     ];
 
-
     const data = {
         nomor: 'INC123',
         tanggal: '2024-12-12',
         kategori: 'Hibah',
         bayar: 'Cash',
         metode: '-',
+        catatan: 'Catatan penting mengenai transaksi ini',  
         dataDetail: [
             {
                 deskripsi: 'Dana Hibah',
@@ -60,7 +60,7 @@ export default function DetailNonPenjualan() {
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Laporan Keuangan Toko'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -102,9 +102,21 @@ export default function DetailNonPenjualan() {
                                 }))}
                             />
                         </div>
-                        <div className="flex justify-end mt-5">
-                            <div className="font-bold px-5">Total Pengeluaran</div>
-                            <div className="font-bold">{formatRupiah(totalPengeluaran)}</div>
+                        <div className="flex justify-between mt-5">
+                            <div className="w-1/2">
+                                <p className="font-bold mb-2">Catatan</p>
+                                <textarea 
+                                    className="w-full p-3 border rounded-lg"
+                                    value={data.catatan}
+                                    readOnly
+                                    rows={4}
+                                    placeholder="Masukan Catatan Disini"
+                                />
+                            </div>
+                            <div className="flex items-start">
+                                <div className="font-bold px-5">Total Pengeluaran</div>
+                                <div className="font-bold">{formatRupiah(totalPengeluaran)}</div>
+                            </div>
                         </div>
                     </section>
                 </section>

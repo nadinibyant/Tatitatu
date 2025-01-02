@@ -140,7 +140,7 @@ export default function KaryawanTerbaik() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={'Dashboard'}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -164,38 +164,102 @@ export default function KaryawanTerbaik() {
                                 </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" onClick={toggleModal} />
                             </div>
                         </div>
+
+                        {/* Modal */}
+                    {isModalOpen && (
+                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                        <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div className="flex space-x-4 w-full">
+                            <div className="flex flex-col w-full">
+                            <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            </div>
+                            <div className="flex flex-col w-full">
+                            <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            </div>
+                        </div>
+                        <div className="flex flex-col space-y-3 w-full">
+                            <button
+                            onClick={handleToday}
+                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                            >
+                            Hari Ini
+                            </button>
+                            <button
+                            onClick={handleLast7Days}
+                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                            >
+                            7 Hari Terakhir
+                            </button>
+                            <button
+                            onClick={handleThisMonth}
+                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                            >
+                            Bulan Ini
+                            </button>
+                        </div>
+                        </div>
+                    </div>
+                    )}
                     </section>
 
                     <section className="mt-5">
-                        <div className="flex flex-wrap md:flex-nowrap md:space-x-4 lg:space-x-4">
-                            <div className="w-full bg-white rounded-xl p-5">
-                                <Table
-                                    headers={headers}
-                                    data={filteredKaryawanData().map((item, index) => ({
-                                        ...item,
-                                        nomor: index + 1,
-                                        KPI: `${formatNumberWithDots(item.KPI)}%`,
-                                    }))}
-                                    hasFilter={true}
-                                    onFilterClick={handleFilterClick}
-                                />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Main table */}
+                            <div className="bg-white rounded-xl p-4">
+                                <div className="overflow-x-auto">
+                                    <Table
+                                        headers={headers}
+                                        data={filteredKaryawanData().map((item, index) => ({
+                                            ...item,
+                                            nomor: index + 1,
+                                            KPI: `${formatNumberWithDots(item.KPI)}%`,
+                                        }))}
+                                        hasFilter={false}
+                                        onFilterClick={handleFilterClick}
+                                        className="min-w-full"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="w-full bg-white rounded-xl p-5">
-                                <p className="font-bold">10 Karyawan Terbaik di Toko</p>
-                                <Table
-                                    headers={headers2}
-                                    data={data.karyawan_terbaik.map((item, index) => ({
-                                        ...item,
-                                        "Foto": <img src={item["Foto"]} className="w-12 h-12 rounded-full object-cover" />,
-                                        nomor: index + 1,
-                                        KPI: `${formatNumberWithDots(item.KPI)}%`,
-                                    }))}
-                                    bg_header="bg-none"
-                                    text_header="text-gray-400"
-                                    hasSearch={false}
-                                    hasPagination={false}
-                                />
+                            {/* Top 10 table */}
+                            <div className="bg-white rounded-xl p-4">
+                                <h3 className="font-bold text-lg mb-4">10 Karyawan Terbaik di Toko</h3>
+                                <div className="overflow-x-auto">
+                                    <Table
+                                        headers={headers2}
+                                        data={data.karyawan_terbaik.map((item, index) => ({
+                                            ...item,
+                                            "Foto": <img src={item["Foto"]} className="w-8 h-8 rounded-full object-cover" />,
+                                            nomor: index + 1,
+                                            KPI: `${formatNumberWithDots(item.KPI)}%`,
+                                        }))}
+                                        bg_header="bg-none"
+                                        text_header="text-gray-400"
+                                        hasSearch={false}
+                                        hasPagination={false}
+                                        className="min-w-full"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </section>

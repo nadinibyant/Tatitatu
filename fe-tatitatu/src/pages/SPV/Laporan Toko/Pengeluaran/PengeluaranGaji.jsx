@@ -58,7 +58,7 @@ export default function PengeluaranGaji(){
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} label={'Laporan Keuangan Toko'}>
+        <Navbar menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 

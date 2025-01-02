@@ -70,7 +70,7 @@ export default function EditKPISeluruhDivisi() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} label={"Edit KPI"}>
+            <Navbar menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -98,6 +98,7 @@ export default function EditKPISeluruhDivisi() {
                                             Nomor: row.Nomor,
                                             NamaKPI: (
                                                 <Input
+                                                showRequired={false}
                                                     type1="text"
                                                     value={row.NamaKPI}
                                                     onChange={(value) => handleInputChange(index, "NamaKPI", value)}
@@ -105,7 +106,8 @@ export default function EditKPISeluruhDivisi() {
                                             ),
                                             Persentase: (
                                                 <Input
-                                                    type1="number"
+                                                showRequired={false}
+                                                    type="number"
                                                     value={row.Persentase}
                                                     onChange={(value) => handleInputChange(index, "Persentase", value)}
                                                 />
