@@ -43,6 +43,10 @@ import StokBarang from './pages/SPV/StokBarang/StokBarang';
 import IzinCuti from './pages/SPV/Izin Cuti/IzinCuti';
 import MasterKategori from './pages/SPV/Master Kategori/MasterKategori';
 import TargetBulanan from './pages/SPV/Target Bulanan/TargetBulanan';
+import EditPemasukanJual from './pages/SPV/Laporan Toko/Pemasukan/EditPemasukanJual';
+import EditPemasukanJualCustom from './pages/SPV/Laporan Toko/Pemasukan/EditPemasukanJualCustom';
+import EditPenjualanCustom from './pages/SPV/Penjualan/EditPenjualanCustom';
+import EditPenjualanNon from './pages/SPV/Penjualan/EditPenjualanNon';
 
 
 function App() {
@@ -59,10 +63,14 @@ function App() {
         <Route path='/laporanKeuangan' element= {<LaporanKeuangan/>}/>
         <Route path='/laporanKeuangan/pemasukan/non-penjualan' element= {<DetailNonPenjualan/>}/>
         <Route path='/laporanKeuangan/pemasukan/penjualan' element= {<DetailPemasukanJual/>}/>
+        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/non-custom/:id' element= {<EditPemasukanJual/>}/>
+        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/custom/:id' element= {<EditPemasukanJualCustom/>}/>
         <Route path='/laporanKeuangan/pengeluaran' element= {<Pengeluaran/>}/>
         <Route path='/laporanKeuangan/pengeluaran/gaji' element= {<PengeluaranGaji/>}/>
         <Route path='/penjualanToko' element= {<Penjualan/>}/>
         <Route path='/penjualanToko/detail' element= {<DetailPenjualan/>}/>
+        <Route path='/penjualanToko/edit/custom/:id' element= {<EditPenjualanCustom/>}/>
+        <Route path='/penjualanToko/edit/non-custom/:id' element= {<EditPenjualanNon/>}/>
         <Route path='/dashboard' element= {<Dashboard/>}/>
         <Route path='/dashboard/produk-terlaris' element= {<ProdukTerlaris/>}/>
         <Route path='/dashboard/cabang-terlaris' element= {<CabangTerlaris/>}/>

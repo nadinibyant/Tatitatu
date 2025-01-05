@@ -11,9 +11,10 @@ import AlertSuccess from "../../../../components/AlertSuccess";
 
 export default function DetailPemasukanJual() {
     const location = useLocation()
-    const {nomor} = location.state || {}
+    const { nomor, tipe } = location.state || {};
+    const isCustom = tipe === 'custom';
     const breadcrumbItems = [
-        { label: "Daftar Pengeluaran", href: "/laporanKeuangan" },
+        { label: "Daftar Pemasukan", href: "/laporanKeuangan" },
         { label: "Detail Laporan Keuangan Toko", href: "" },
     ];
     const [isModalDel, setModalDel] = useState(false)
@@ -44,8 +45,15 @@ export default function DetailPemasukanJual() {
                 "Total Biaya": 150000
             },
         ],
+        rincian_biaya: [
+            {
+                "Nama Biaya": "Jasa",
+                "Jumlah Biaya": 1000
+            }
+        ],
         data_packaging: [
             {
+                "Foto Produk": "https://via.placeholder.com/150",
                 "Nama Packaging": "zipper",
                 "Harga Satuan": 1000,
                 kuantitas: 10,
@@ -68,12 +76,19 @@ export default function DetailPemasukanJual() {
         { label: "Total Biaya", key: "Total Biaya", align: "text-left"},
     ];
 
+    const headersRincianBiaya = [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
+        { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
+    ];
+
     const formatRupiah = (amount) => {
         return `Rp ${amount.toLocaleString('id-ID')}`;
     };
 
     const headers2 = [
         { label: "No", key: "No", align: "text-left" },
+        ...(isCustom ? [{ label: "Foto Produk", key: "Foto Produk", align: "text-left" }] : []),
         { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
         { label: "Kuantitas", key: "kuantitas", align: "text-left" },
@@ -89,7 +104,11 @@ export default function DetailPemasukanJual() {
 
     const navigate = useNavigate()
     const handleEdit = () => {
-        console.log('Edit clicked');
+        if (isCustom) {
+            navigate(`/laporanKeuangan/pemasukan/penjualan/edit/custom/${data.nomor}`);
+        } else {
+            navigate(`/laporanKeuangan/pemasukan/penjualan/edit/non-custom/${data.nomor}`);
+        }
     };
 
     const handleDelete = () => {
@@ -160,7 +179,9 @@ export default function DetailPemasukanJual() {
                     </section>
 
                     <section className="pt-10">
-                        <p className="font-bold">List Produk</p>
+                        <p className="font-bold">
+                            {isCustom ? "Rincian Jumlah dan Bahan" : "List Produk"}
+                        </p>
                         <div className="pt-5">
                             <Table
                                 headers={headers}
@@ -176,6 +197,22 @@ export default function DetailPemasukanJual() {
                         </div>
                     </section>
 
+                    {isCustom && (
+                        <section className="pt-10">
+                            <p className="font-bold">Rincian Biaya</p>
+                            <div className="pt-5">
+                                <Table
+                                    headers={headersRincianBiaya}
+                                    data={data.rincian_biaya.map((item, index) => ({
+                                        ...item,
+                                        "No": index + 1,
+                                        "Jumlah Biaya": formatRupiah(item["Jumlah Biaya"])
+                                    }))}
+                                />
+                            </div>
+                        </section>
+                    )}
+
                     <section className="pt-10">
                         <p className="font-bold">Packging</p>
                         <div className="pt-5">
@@ -183,10 +220,13 @@ export default function DetailPemasukanJual() {
                                 headers={headers2}
                                 data={data.data_packaging.map((item, index) => ({
                                     ...item,
-                                    "kuantitas": formatRupiah(item["kuantitas"]),  
-                                    "Total Biaya": formatRupiah(item["Total Biaya"]),  
+                                    "No": index + 1,
+                                    ...(isCustom && {
+                                        "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />
+                                    }),
+                                    "kuantitas": formatRupiah(item["kuantitas"]),
                                     "Harga Satuan": formatRupiah(item["Harga Satuan"]),
-                                    No: index + 1  
+                                    "Total Biaya": formatRupiah(item["Total Biaya"])
                                 }))}
                             />
                         </div>

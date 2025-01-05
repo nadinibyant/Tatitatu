@@ -6,6 +6,7 @@ import { menuItems, userOptions } from "../../../data/menuSpv";
 import moment from "moment";
 import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";
+import ActionMenu from "../../../components/ActionMenu";
 
 export default function Penjualan() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,7 +24,8 @@ export default function Penjualan() {
             "Jumlah Barang": 2,
             Diskon: 11,
             Pajak: 11,
-            "Total Transaksi": 200000
+            "Total Transaksi": 200000,
+            tipe: 'custom'
         },
         {
             Nomor: 'STK124',
@@ -33,7 +35,8 @@ export default function Penjualan() {
             "Jumlah Barang": 3,
             Diskon: 5,
             Pajak: 5,
-            "Total Transaksi": 150000
+            "Total Transaksi": 150000,
+            tipe: 'non-custom'
         }
     ];
 
@@ -87,6 +90,7 @@ export default function Penjualan() {
         { label: "Diskon", key: "Diskon", align: "text-center" },
         { label: "Pajak", key: "Pajak", align: "text-center" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-center" },
+        { label: "Aksi", key: "action", align: "text-center" },
     ];
 
     const formatNamaBarang = (namaBarang) => {
@@ -118,8 +122,18 @@ export default function Penjualan() {
 
     const navigate = useNavigate()
     const handleRowClick = (row) => {
-        navigate('/penjualanToko/detail', {state: {nomor: row.Nomor}})
+        navigate('/penjualanToko/detail', {state: {nomor: row.Nomor, tipe: row.tipe}})
     }
+
+    const handleEdit = (nomor) => {
+        // Add your edit logic here
+        console.log('Editing item:', nomor);
+    };
+    
+    const handleDelete = (nomor) => {
+        // Add your delete logic here
+        console.log('Deleting item:', nomor);
+    };
 
     return (
         <>
@@ -207,16 +221,20 @@ export default function Penjualan() {
 
                     <section className="mt-5 bg-white rounded-xl">
                         <div className="p-5">
-                            <Table
-                                headers={headers}
-                                data={selectedData.map((item, index) => ({
-                                    ...item,
-                                    "Nama Barang": formatNamaBarang(item["Nama Barang"]),
-                                    "Total Transaksi": formatRupiah(item["Total Transaksi"]),
-                                    "Diskon": `${item["Diskon"]}%`,
-                                }))}
-                                onRowClick={handleRowClick}
-                            />
+                        <Table
+                            headers={headers}
+                            data={selectedData.map((item, index) => ({
+                                ...item,
+                                "Nama Barang": formatNamaBarang(item["Nama Barang"]),
+                                "Total Transaksi": formatRupiah(item["Total Transaksi"]),
+                                "Diskon": `${item["Diskon"]}%`,
+                                "action": <ActionMenu 
+                                    onEdit={() => handleEdit(item.Nomor)} 
+                                    onDelete={() => handleDelete(item.Nomor)}
+                                />
+                            }))}
+                            onRowClick={handleRowClick}
+                        />
                         </div>
                     </section>
                 </div>

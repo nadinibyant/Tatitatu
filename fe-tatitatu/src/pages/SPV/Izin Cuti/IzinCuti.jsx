@@ -137,7 +137,7 @@ const ActionButtons = ({ id, status }) => {
         { label: "Divisi", key: "Divisi", align: "text-left" },
         { label: "Rentang Waktu", key: "Rentang Waktu", align: "text-left" },
         { label: "Jumlah Hari", key: "Jumlah Hari", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-left" },
+        { label: "Aksi", key: "Aksi", align: "text-center" },
     ];
 
     const [data, setData] = useState([
