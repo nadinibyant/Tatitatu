@@ -2,7 +2,7 @@ import { Camera } from "lucide-react";
 import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs";

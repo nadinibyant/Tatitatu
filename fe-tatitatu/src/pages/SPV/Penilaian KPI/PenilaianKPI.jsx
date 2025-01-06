@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import { useNavigate } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function PenilaianKPI() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,6 +16,8 @@ export default function PenilaianKPI() {
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [selectedStore, setSelectedStore] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isHeadGudang = userData?.role === 'headgudang';
 
     const handleFilterClick = () => {
         setIsFilterModalOpen(true);
@@ -156,7 +159,7 @@ export default function PenilaianKPI() {
         { label: "#", key: "nomor", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },
         { label: "Divisi", key: "Divisi", align: "text-left" },
-        { label: "Cabang", key: "Cabang", align: "text-left" },
+        ...(!isHeadGudang ? [{ label: "Cabang", key: "Cabang", align: "text-left" }] : []),
         { label: "KPI", key: "KPI", align: "text-left" },
         { label: "Total Gaji Akhir", key: "Total Gaji Akhir", align: "text-left" },
     ];
@@ -166,7 +169,8 @@ export default function PenilaianKPI() {
     }
 
     const filterFields = [
-        {
+        // Filter Cabang hanya untuk admin
+        ...(!isHeadGudang ? [{
             label: "Cabang",
             key: "Cabang",
             options: [
@@ -174,7 +178,8 @@ export default function PenilaianKPI() {
                 { label: "Gor Agus", value: "Gor Agus" },
                 { label: "Lubeg", value: "Lubeg" },
             ]
-        },
+        }] : []),
+        // Filter Divisi untuk semua role
         {
             label: "Divisi",
             key: "Divisi",
@@ -189,15 +194,15 @@ export default function PenilaianKPI() {
 
     const filteredData = () => {
         let dataToDisplay = [...data];
-
+    
         if (selectedKategori !== "Semua") {
             dataToDisplay = dataToDisplay.filter(item => item.Divisi === selectedKategori);
         }
-
-        if (selectedStore !== "Semua") {
+    
+        if (!isHeadGudang && selectedStore !== "Semua") {
             dataToDisplay = dataToDisplay.filter(item => item.Cabang === selectedStore);
         }
-
+    
         return dataToDisplay;
     };
 
@@ -208,7 +213,7 @@ export default function PenilaianKPI() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -229,6 +234,62 @@ export default function PenilaianKPI() {
                                 </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" onClick={toggleModal} />
                             </div>
                         </div>
+
+                            {/* Modal */}
+                            {isModalOpen && (
+                                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                                    <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
+                                        <button
+                                            onClick={() => setIsModalOpen(false)}
+                                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <div className="flex space-x-4 w-full">
+                                            <div className="flex flex-col w-full">
+                                                <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
+                                                <input
+                                                    type="date"
+                                                    value={startDate}
+                                                    onChange={(e) => setStartDate(e.target.value)}
+                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col w-full">
+                                                <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
+                                                <input
+                                                    type="date"
+                                                    value={endDate}
+                                                    onChange={(e) => setEndDate(e.target.value)}
+                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col space-y-3 w-full">
+                                            <button
+                                                onClick={handleToday}
+                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                            >
+                                                Hari Ini
+                                            </button>
+                                            <button
+                                                onClick={handleLast7Days}
+                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                            >
+                                                7 Hari Terakhir
+                                            </button>
+                                            <button
+                                                onClick={handleThisMonth}
+                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                            >
+                                                Bulan Ini
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                     </section>
 
                     <section className="mt-5 bg-white rounded-xl">
@@ -284,7 +345,7 @@ export default function PenilaianKPI() {
                         </div>
                     </div>
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

@@ -1,18 +1,19 @@
 import { useLocation } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Button from "../../../components/Button";
 import { useState } from "react";
 import moment from "moment";
 import Table from "../../../components/Table";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function DetailKaryawan(){
     const location = useLocation()
-    const {id} = location.state || {}
+    const {id, divisi} = location.state || {}
 
     const breadcrumbItems = [
-        { label: "Data Karyawan Absensi dan Gaji", href: "/dataKaryawanAbsensiGaji" },
+        { label: "Data Karyawan Absensi dan Gaji", href: "/dataKaryawanAbsenGaji" },
         { label: "Detail", href: "" },
     ];
 
@@ -74,6 +75,22 @@ export default function DetailKaryawan(){
             { label: "Jam Keluar", key: "Jam Keluar", align: "text-left" },
             { label: "Total Waktu", key: "Total Waktu", align: "text-center" },
             { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-center" },
+        ];
+
+        const headersProduksi = [
+            { label: "Tanggal", key: "Tanggal", align: "text-left" },
+            { label: "Foto", key: "Foto", align: "text-left" },
+            { label: "Jumlah Produksi", key: "Jumlah Produksi", align: "text-left" },
+            { label: "Total Menit", key: "Total Menit", align: "text-left" },
+            { label: "Status", key: "Status", align: "text-center" },
+            { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-center" },
+        ];
+    
+        const headersTransportasi = [
+            { label: "Tanggal", key: "Tanggal", align: "text-left" },
+            { label: "Foto", key: "Foto", align: "text-left" },
+            { label: "Lokasi", key: "Lokasi", align: "text-left" },
+            { label: "Status", key: "Status", align: "text-center" },
         ];
 
         const [data, setData] = useState({
@@ -162,11 +179,91 @@ export default function DetailKaryawan(){
                 }
             ]
         })
+
+            // Data berbeda untuk setiap divisi
+    const dataProduksi = {
+        ...data,
+        data: [
+            {
+                Tanggal: '2024-12-11',
+                Foto: 'https://via.placeholder.com/50',
+                "Jumlah Produksi": "13 Pcs",
+                "Total Menit": "20 Menit",
+                "Status": "Diterima",
+                "Gaji Pokok Perhari": 30000
+            },
+        ]
+    };
+
+    const dataTransportasi = {
+        ...data,
+        data: [
+            {
+                Tanggal: '2024-12-11',
+                Foto: 'https://via.placeholder.com/50',
+                Lokasi: "Youth Center Padang",
+                Status: "Antar"
+            },
+            {
+                Tanggal: '2024-12-11',
+                Foto: 'https://via.placeholder.com/50',
+                Lokasi: "Youth Center Padang",
+                Status: "Jemput"
+            },
+        ]
+    };
+
+    const renderTable = () => {
+        if (divisi === 'Produksi') {
+          return (
+            <Table
+              headers={headersProduksi}
+              data={dataProduksi.data.map((item, index) => ({
+                ...item,
+                Tanggal: formatDate2(item.Tanggal),
+                Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
+                Status: <span className={`px-3 py-1 rounded-lg ${
+                  item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : ''
+                }`}>{item.Status}</span>,
+                "Gaji Pokok Perhari": `Rp${formatNumberWithDots(item["Gaji Pokok Perhari"])}`,
+              }))}
+            />
+          );
+        } else if (divisi === 'Transportasi') {
+          return (
+            <Table
+              headers={headersTransportasi}
+              data={dataTransportasi.data.map((item, index) => ({
+                ...item,
+                Tanggal: formatDate2(item.Tanggal),
+                Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
+                Status: <span className={`px-3 py-1 rounded-lg ${
+                  item.Status === 'Antar' ? 'bg-pink text-primary' : 'bg-primary text-white'
+                }`}>{item.Status}</span>,
+              }))}
+            />
+          );
+        } else {
+          // Tabel default untuk divisi lainnya
+          return (
+            <Table
+              headers={headers}
+              data={data.data.map((item, index) => ({
+                ...item,
+                Tanggal: formatDate2(item.Tanggal),
+                Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
+                "Gaji Pokok Perhari": `Rp${formatNumberWithDots(item["Gaji Pokok Perhari"])}`,
+                "Total Waktu": `${item["Total Waktu"]} Menit`,
+              }))}
+            />
+          );
+        }
+      };
     
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
             <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
@@ -351,21 +448,13 @@ export default function DetailKaryawan(){
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
-                        <Table
-                            headers={headers}
-                            data={data.data.map((item, index) => ({
-                            ...item,
-                            Tanggal: formatDate2(item.Tanggal),
-                            Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
-                            "Gaji Pokok Perhari": `Rp${formatNumberWithDots(item["Gaji Pokok Perhari"])}`,
-                            "Total Waktu": `${item["Total Waktu"]} Menit`,
-                            }))}
-                        />
+                        {renderTable()}
                     </div>
                 </section>
 
+
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { useNavigate } from "react-router-dom";
 import MoreOptionsModal from "../../../components/MoreModal";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function KPISeluruhDivisi() {
     const [isModalMore, setIsModalMore] = useState(false);
@@ -89,7 +90,7 @@ export default function KPISeluruhDivisi() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -256,7 +257,7 @@ export default function KPISeluruhDivisi() {
                     onConfirm={() => setModalSucc(false)}
                     />
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

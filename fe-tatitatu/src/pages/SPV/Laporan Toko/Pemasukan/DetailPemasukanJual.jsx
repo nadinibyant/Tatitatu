@@ -2,12 +2,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
 import Table from "../../../../components/Table";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import Button from "../../../../components/Button";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function DetailPemasukanJual() {
     const location = useLocation()
@@ -122,7 +123,7 @@ export default function DetailPemasukanJual() {
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -294,7 +295,7 @@ export default function DetailPemasukanJual() {
                 onConfirm={() => setModalSucc(false)}
                 />
             )}
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

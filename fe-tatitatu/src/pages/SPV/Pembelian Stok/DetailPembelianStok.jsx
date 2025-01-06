@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom"
 import Breadcrumbs from "../../../components/Breadcrumbs"
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
 import { useState } from "react";

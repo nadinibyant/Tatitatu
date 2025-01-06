@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import InputDropdown from "../../../components/InputDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";

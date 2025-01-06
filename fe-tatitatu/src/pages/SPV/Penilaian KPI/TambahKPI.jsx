@@ -1,11 +1,12 @@
 import { useLocation } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import Button from "../../../components/Button";
 import { useEffect, useState } from "react";
 import moment from "moment";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahKPI(){
     const location = useLocation()
@@ -143,7 +144,7 @@ export default function TambahKPI(){
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
@@ -451,7 +452,7 @@ export default function TambahKPI(){
                 </section>
 
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

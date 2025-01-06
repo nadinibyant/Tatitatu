@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate} from 'react-router-dom';
 import NotFound from './NotFound';
 import TestComponent from './pages/SPV/Pembelian Stok/TestComponent';
 import PembelianStok from './pages/SPV/Pembelian Stok/PembelianStok';
@@ -47,65 +47,139 @@ import EditPemasukanJual from './pages/SPV/Laporan Toko/Pemasukan/EditPemasukanJ
 import EditPemasukanJualCustom from './pages/SPV/Laporan Toko/Pemasukan/EditPemasukanJualCustom';
 import EditPenjualanCustom from './pages/SPV/Penjualan/EditPenjualanCustom';
 import EditPenjualanNon from './pages/SPV/Penjualan/EditPenjualanNon';
+import AuthPages from './pages/AuthPages';
+import ProtectedRoute from './components/ProtectedRoute';
 
 
 function App() {
+  // Helper function untuk menentukan allowed roles
+  const getProtectedRoute = (Component, specificRoles = null) => {
+    // Jika specificRoles tidak diset, berarti route hanya untuk admin
+    const allowedRoles = specificRoles || ['admin'];
+    return (
+      <ProtectedRoute allowedRoles={allowedRoles}>
+        <Component />
+      </ProtectedRoute>
+    );
+  };
+
+  // Routes yang bisa diakses headgudang
+  const headGudangRoutes = [
+    '/dashboard',
+    '/dashboard/produk-terlaris',
+    '/dashboard/cabang-terlaris',
+    '/dashboard/karyawan-terbaik',
+    '/laporanKeuangan',
+    '/laporanKeuangan/pemasukan/non-penjualan',
+    '/laporanKeuangan/pemasukan/penjualan',
+    '/laporanKeuangan/pemasukan/penjualan/edit/non-custom',
+    '/laporanKeuangan/pemasukan/penjualan/edit/custom',
+    '/laporanKeuangan/pengeluaran',
+    '/laporanKeuangan/pengeluaran/gaji',
+    '/daftarPenilaianKPI',
+    '/daftarPenilaianKPI/tambah-kpi',
+    '/daftarPenilaianKPI/seluruh-divisi',
+    '/daftarPenilaianKPI/seluruh-divisi/tambah',
+    '/daftarPenilaianKPI/seluruh-divisi/edit',
+    '/dataKaryawanAbsenGaji',
+    '/dataKaryawanAbsenGaji/detail',
+    '/akunKaryawan',
+    '/akunKaryawan/tambah',
+    '/akunKaryawan/edit',
+    '/pengajuanCuti'
+  ];
+
+  // Helper function untuk mengecek apakah route bisa diakses headgudang
+  const isHeadGudangRoute = (path) => {
+    return headGudangRoutes.some(route => 
+      path.startsWith(route) || path === route
+    );
+  };
+
   return (
-    <>
     <Router>
       <Routes>
-        <Route path='*' element= {<NotFound/>}/>
-        <Route path='/test' element= {<TestComponent/>}/>
-        <Route path='/pembelianStok' element= {<PembelianStok/>}/>
-        <Route path='/pembelianStok/detail' element= {<DetailPembelianStok/>}/>
-        <Route path='/pembelianStok/tambah' element= {<TambahPembelianStok/>}/>
-        <Route path='/pembelianStok/edit' element= {<EditPembelianStok/>}/>
-        <Route path='/laporanKeuangan' element= {<LaporanKeuangan/>}/>
-        <Route path='/laporanKeuangan/pemasukan/non-penjualan' element= {<DetailNonPenjualan/>}/>
-        <Route path='/laporanKeuangan/pemasukan/penjualan' element= {<DetailPemasukanJual/>}/>
-        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/non-custom/:id' element= {<EditPemasukanJual/>}/>
-        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/custom/:id' element= {<EditPemasukanJualCustom/>}/>
-        <Route path='/laporanKeuangan/pengeluaran' element= {<Pengeluaran/>}/>
-        <Route path='/laporanKeuangan/pengeluaran/gaji' element= {<PengeluaranGaji/>}/>
-        <Route path='/penjualanToko' element= {<Penjualan/>}/>
-        <Route path='/penjualanToko/detail' element= {<DetailPenjualan/>}/>
-        <Route path='/penjualanToko/edit/custom/:id' element= {<EditPenjualanCustom/>}/>
-        <Route path='/penjualanToko/edit/non-custom/:id' element= {<EditPenjualanNon/>}/>
-        <Route path='/dashboard' element= {<Dashboard/>}/>
-        <Route path='/dashboard/produk-terlaris' element= {<ProdukTerlaris/>}/>
-        <Route path='/dashboard/cabang-terlaris' element= {<CabangTerlaris/>}/>
-        <Route path='/dashboard/karyawan-terbaik' element= {<KaryawanTerbaik/>}/>
-        <Route path='/daftarPenilaianKPI' element= {<PenilaianKPI/>}/>
-        <Route path='/daftarPenilaianKPI/tambah-kpi' element= {<TambahKPI/>}/>
-        <Route path='/daftarPenilaianKPI/seluruh-divisi' element= {<KPISeluruhDivisi/>}/>
-        <Route path='/daftarPenilaianKPI/seluruh-divisi/tambah' element= {<TambahKPISeluruhDivisi/>}/>
-        <Route path='/daftarPenilaianKPI/seluruh-divisi/edit/:id' element= {<EditKPISeluruhDivisi/>}/>
-        <Route path='/dataKaryawanAbsenGaji' element= {<Karyawan/>}/>
-        <Route path='/dataKaryawanAbsenGaji/detail' element= {<DetailKaryawan/>}/>
-        <Route path='/daftarCabang' element= {<Cabang/>}/>
-        <Route path='/biayaGudang' element= {<BiayaGudang/>}/>
-        <Route path='/dataBarang' element= {<DataBarang/>}/>
-        <Route path='/dataBarang/handmade' element= {<DataBarang/>}/>
-        <Route path='/dataBarang/handmade/tambah' element= {<TambahBarang/>}/>
-        <Route path='/dataBarang/handmade/edit/:id' element= {<EditBarang/>}/>
-        <Route path='/dataBarang/handmade/detail/:id' element= {<DetailBarang/>}/>
-        <Route path='/dataBarang/non-handmade' element= {<DataNonHandmade/>}/>
-        <Route path='/dataBarang/non-handmade/tambah' element= {<TambahNonHandmade/>}/>
-        <Route path='/dataBarang/non-handmade/detail/:id' element= {<DetailNonHandmade/>}/>
-        <Route path='/dataBarang/non-handmade/edit/:id' element= {<EditNonHandmade/>}/>
-        <Route path='/dataBarang/custom' element= {<BarangCustom/>}/>
-        <Route path='/dataBarang/packaging' element= {<Packaging/>}/>
-        <Route path='/akunKaryawan' element= {<AkunKaryawan/>}/>
-        <Route path='/akunKaryawan/tambah' element= {<TambahAkunKaryawan/>}/>
-        <Route path='/akunKaryawan/edit/:id' element= {<EditKaryawan/>}/>
-        <Route path='/stokBarang' element= {<StokBarang/>}/>
-        <Route path='/pengajuanCuti' element= {<IzinCuti/>}/>
-        <Route path='/master-kategori' element= {<MasterKategori/>}/>
-        <Route path='/target-kasir' element= {<TargetBulanan/>}/>
+        {/* Auth Routes */}
+        <Route path="/login" element={<AuthPages defaultTab="login" />} />
+        <Route path="/register" element={<AuthPages defaultTab="register" />} />
+        
+        {/* Root Route */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        
+        {/* 404 Route */}
+        <Route path='*' element={<NotFound/>}/>
+
+        {/* Test Route */}
+        <Route path='/test' element={getProtectedRoute(TestComponent)} />
+
+        {/* Protected Routes */}
+        <Route path='/dashboard' element={getProtectedRoute(Dashboard, ['admin', 'headgudang'])} />
+        <Route path='/dashboard/produk-terlaris' element={getProtectedRoute(ProdukTerlaris, ['admin', 'headgudang'])} />
+        <Route path='/dashboard/cabang-terlaris' element={getProtectedRoute(CabangTerlaris, ['admin'])} />
+        <Route path='/dashboard/karyawan-terbaik' element={getProtectedRoute(KaryawanTerbaik, ['admin', 'headgudang'])} />
+
+        {/* Pembelian Stok Routes */}
+        <Route path='/pembelianStok' element={getProtectedRoute(PembelianStok)} />
+        <Route path='/pembelianStok/detail' element={getProtectedRoute(DetailPembelianStok)} />
+        <Route path='/pembelianStok/tambah' element={getProtectedRoute(TambahPembelianStok)} />
+        <Route path='/pembelianStok/edit' element={getProtectedRoute(EditPembelianStok)} />
+
+        {/* Laporan Keuangan Routes */}
+        <Route path='/laporanKeuangan' element={getProtectedRoute(LaporanKeuangan, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan/non-penjualan' element={getProtectedRoute(DetailNonPenjualan, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan' element={getProtectedRoute(DetailPemasukanJual, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/non-custom/:id' element={getProtectedRoute(EditPemasukanJual, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/custom/:id' element={getProtectedRoute(EditPemasukanJualCustom, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pengeluaran' element={getProtectedRoute(Pengeluaran, ['admin', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pengeluaran/gaji' element={getProtectedRoute(PengeluaranGaji, ['admin', 'headgudang'])} />
+
+        {/* Penjualan Routes */}
+        <Route path='/penjualanToko' element={getProtectedRoute(Penjualan)} />
+        <Route path='/penjualanToko/detail' element={getProtectedRoute(DetailPenjualan)} />
+        <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustom)} />
+        <Route path='/penjualanToko/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNon)} />
+
+        {/* KPI Routes */}
+        <Route path='/daftarPenilaianKPI' element={getProtectedRoute(PenilaianKPI, ['admin', 'headgudang'])} />
+        <Route path='/daftarPenilaianKPI/tambah-kpi' element={getProtectedRoute(TambahKPI, ['admin', 'headgudang'])} />
+        <Route path='/daftarPenilaianKPI/seluruh-divisi' element={getProtectedRoute(KPISeluruhDivisi, ['admin', 'headgudang'])} />
+        <Route path='/daftarPenilaianKPI/seluruh-divisi/tambah' element={getProtectedRoute(TambahKPISeluruhDivisi, ['admin', 'headgudang'])} />
+        <Route path='/daftarPenilaianKPI/seluruh-divisi/edit/:id' element={getProtectedRoute(EditKPISeluruhDivisi, ['admin', 'headgudang'])} />
+
+        {/* Karyawan Routes */}
+        <Route path='/dataKaryawanAbsenGaji' element={getProtectedRoute(Karyawan, ['admin', 'headgudang'])} />
+        <Route path='/dataKaryawanAbsenGaji/detail' element={getProtectedRoute(DetailKaryawan, ['admin', 'headgudang'])} />
+
+        {/* Other Routes */}
+        <Route path='/daftarCabang' element={getProtectedRoute(Cabang)} />
+        <Route path='/biayaGudang' element={getProtectedRoute(BiayaGudang)} />
+
+        {/* Data Barang Routes */}
+        <Route path='/dataBarang' element={getProtectedRoute(DataBarang)} />
+        <Route path='/dataBarang/handmade' element={getProtectedRoute(DataBarang)} />
+        <Route path='/dataBarang/handmade/tambah' element={getProtectedRoute(TambahBarang)} />
+        <Route path='/dataBarang/handmade/edit/:id' element={getProtectedRoute(EditBarang)} />
+        <Route path='/dataBarang/handmade/detail/:id' element={getProtectedRoute(DetailBarang)} />
+        <Route path='/dataBarang/non-handmade' element={getProtectedRoute(DataNonHandmade)} />
+        <Route path='/dataBarang/non-handmade/tambah' element={getProtectedRoute(TambahNonHandmade)} />
+        <Route path='/dataBarang/non-handmade/detail/:id' element={getProtectedRoute(DetailNonHandmade)} />
+        <Route path='/dataBarang/non-handmade/edit/:id' element={getProtectedRoute(EditNonHandmade)} />
+        <Route path='/dataBarang/custom' element={getProtectedRoute(BarangCustom)} />
+        <Route path='/dataBarang/packaging' element={getProtectedRoute(Packaging)} />
+
+        {/* Akun Karyawan Routes */}
+        <Route path='/akunKaryawan' element={getProtectedRoute(AkunKaryawan, ['admin', 'headgudang'])} />
+        <Route path='/akunKaryawan/tambah' element={getProtectedRoute(TambahAkunKaryawan, ['admin', 'headgudang'])} />
+        <Route path='/akunKaryawan/edit/:id' element={getProtectedRoute(EditKaryawan, ['admin', 'headgudang'])} />
+
+        {/* Final Routes */}
+        <Route path='/stokBarang' element={getProtectedRoute(StokBarang)} />
+        <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
+        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori)} />
+        <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan)} />
       </Routes>
     </Router>
-    </>
-  )
+  );
 }
 
-export default App
+export default App;

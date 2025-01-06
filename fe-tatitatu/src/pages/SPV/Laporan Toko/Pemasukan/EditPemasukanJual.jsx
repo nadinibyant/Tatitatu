@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import Input from "../../../../components/Input";
 import InputDropdown from "../../../../components/InputDropdown";
 import Table from "../../../../components/Table";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 // Constants
 const PAYMENT_METHODS = {
@@ -410,7 +411,7 @@ export default function EditPemasukanJual() {
     // }, [formData, selectBayar, selectMetode, tableData, catatan, diskonPersen, pajak, totalHarga]);
 
     return (
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
                 <section className="mt-5 bg-white rounded-xl">
@@ -552,6 +553,6 @@ export default function EditPemasukanJual() {
                     </div>
                 )} */}
             </div>
-        </Navbar>
+        </LayoutWithNav>
     );
 }

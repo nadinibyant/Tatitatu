@@ -1,13 +1,14 @@
 import { useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import { X } from "lucide-react";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function IzinCuti() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -201,7 +202,7 @@ const ActionButtons = ({ id, status }) => {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -446,7 +447,7 @@ const ActionButtons = ({ id, status }) => {
                         onConfirm={() => setIsSuccessAlert(false)}
                     />
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

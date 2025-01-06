@@ -1,21 +1,25 @@
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function LaporanKeuangan() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
     const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-    const [selectedJenis, setSelectedJenis] = useState("Pemasukan");
+    const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [selectedStore, setSelectedStore] = useState("Semua"); 
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filters, setFilters] = useState({});
+
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isHeadGudang = userData?.role === 'headgudang';
 
     useEffect(() => {
         setSelectedStore("Semua");
@@ -176,9 +180,8 @@ export default function LaporanKeuangan() {
         ]
     };
 
-    const selectedData = data.dataLaporan
-        .find((item) => item.nama_jenis === selectedJenis)
-        ?.data.filter((item) => {
+    const selectedData = selectedJenis === "Semua" 
+        ? data.dataLaporan.flatMap(item => item.data).filter((item) => {
             // Filter by store
             const isStoreMatch =
                 selectedStore === 'Semua' || item.cabang === selectedStore;
@@ -189,7 +192,19 @@ export default function LaporanKeuangan() {
                 itemDate.isBetween(startDate, endDate, null, '[]');
 
             return isStoreMatch && isDateMatch;
-        }) || [];
+        })
+        : data.dataLaporan
+            .find((item) => item.nama_jenis === selectedJenis)
+            ?.data.filter((item) => {
+                const isStoreMatch =
+                    selectedStore === 'Semua' || item.cabang === selectedStore;
+
+                const itemDate = moment(item.tanggal);
+                const isDateMatch =
+                    itemDate.isBetween(startDate, endDate, null, '[]');
+
+                return isStoreMatch && isDateMatch;
+            }) || [];
     
     const navigate = useNavigate()
     const handleRowClick = (row) => {
@@ -210,45 +225,46 @@ export default function LaporanKeuangan() {
     }
     
     const filterFields = [
-        {
-          label: "Toko",
-          key: "Toko",
-          options: [
-            { label: "Semua", value: "Semua" },
-            { label: "Gor Agus", value: "Gor Agus" },
-            { label: "Lubeg", value: "Lubeg" },
-          ]
-        },
+        ...(!isHeadGudang ? [{
+            label: "Toko",
+            key: "Toko",
+            options: [
+                { label: "Semua", value: "Semua" },
+                { label: "Gor Agus", value: "Gor Agus" },
+                { label: "Lubeg", value: "Lubeg" },
+            ]
+        }] : []),
         {
             label: "Kategori",
             key: "Kategori",
             options: [
-              { label: "Semua", value: "Semua" },
-              { label: "Beban Operasional", value: "Beban Operasional" },
-              { label: "Beban Gaji", value: "Beban Gaji" },
+                { label: "Semua", value: "Semua" },
+                { label: "Beban Operasional", value: "Beban Operasional" },
+                { label: "Beban Gaji", value: "Beban Gaji" },
             ]
-          },
+        }
     ];
+    
     
     const filteredData = () => {
         let filteredData = selectedData;
-
+    
         // Filter berdasarkan kategori
         if (selectedKategori !== "Semua") {
             filteredData = filteredData.filter(item => item.kategori === selectedKategori);
         }
-
-        // Filter berdasarkan cabang
-        if (selectedStore !== "Semua") {
+    
+        // Filter berdasarkan cabang hanya untuk admin
+        if (!isHeadGudang && selectedStore !== "Semua") {
             filteredData = filteredData.filter(item => item.cabang === selectedStore);
         }
-
+    
         return filteredData;
     };
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -257,19 +273,39 @@ export default function LaporanKeuangan() {
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                             <div className="w-full md:w-auto">
-                                <Button label="Export" icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" />
+                                <Button 
+                                    label="Export" 
+                                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+                                    </svg>} 
+                                    bgColor="border border-secondary" 
+                                    hoverColor="hover:bg-white" 
+                                    textColor="text-black" 
+                                />
                             </div>
+                            {/* ButtonDropdown untuk cabang hanya muncul jika bukan headgudang */}
+                            {!isHeadGudang && (
+                                <div className="w-full md:w-auto">
+                                    <ButtonDropdown 
+                                        selectedIcon={'/icon/toko.svg'} 
+                                        options={dataCabang} 
+                                        onSelect={(value) => setSelectedStore(value)} 
+                                    />
+                                </div>
+                            )}
                             <div className="w-full md:w-auto">
-                                <ButtonDropdown selectedIcon={'/icon/toko.svg'} options={dataCabang} onSelect={(value) => setSelectedStore(value)} />
-                            </div>
-                            <div className="w-full md:w-auto">
-                                <Button label={`${formatDate(startDate)} - ${formatDate(endDate)}`} icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" onClick={toggleModal} />
+                                <Button 
+                                    label={`${formatDate(startDate)} - ${formatDate(endDate)}`} 
+                                    icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>} 
+                                    bgColor="border border-secondary" 
+                                    hoverColor="hover:bg-white" 
+                                    textColor="text-black" 
+                                    onClick={toggleModal} 
+                                />
                             </div>
 
                             {/* Modal */}
@@ -381,7 +417,7 @@ export default function LaporanKeuangan() {
                     <section className="bg-white mt-5 rounded-xl">
                         <div className="p-4">
                             <div className="flex border-b border-gray-300 mb-4">
-                                {["Pemasukan", "Pengeluaran"].map((jenis) => (
+                                {["Semua","Pemasukan", "Pengeluaran"].map((jenis) => (
                                     <button
                                         key={jenis}
                                         onClick={() => setSelectedJenis(jenis)}
@@ -458,7 +494,7 @@ export default function LaporanKeuangan() {
                     </div>
                 </div>
             )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "../../../../components/Button";
 import Navbar from "../../../../components/Navbar";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import Gallery from "../../../../components/Gallery";
 import FileInput from "../../../../components/FileInput";
 import { X } from "lucide-react";

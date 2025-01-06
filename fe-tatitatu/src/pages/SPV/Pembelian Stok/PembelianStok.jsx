@@ -1,6 +1,6 @@
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { useEffect, useState } from "react";
 import Input from "../../../components/Input";
 import Table from "../../../components/Table";

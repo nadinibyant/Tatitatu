@@ -4,7 +4,7 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import FileInput from "../../../components/FileInput";
 import Input from "../../../components/Input";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 

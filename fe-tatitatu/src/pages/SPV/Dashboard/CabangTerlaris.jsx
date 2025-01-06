@@ -1,9 +1,10 @@
 import { useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function CabangTerlaris(){
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -169,7 +170,7 @@ export default function CabangTerlaris(){
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
@@ -328,7 +329,7 @@ export default function CabangTerlaris(){
                 </section>
 
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

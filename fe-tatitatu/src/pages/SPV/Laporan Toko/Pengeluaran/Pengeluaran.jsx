@@ -2,7 +2,8 @@ import { useLocation } from "react-router-dom";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
 import Table from "../../../../components/Table";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function Pengeluaran() {
     const location = useLocation()
@@ -60,7 +61,7 @@ export default function Pengeluaran() {
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -138,7 +139,7 @@ export default function Pengeluaran() {
                     </section>
                 </section>
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     );
 }

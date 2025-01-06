@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { Pencil, Trash2, Plus, X } from 'lucide-react';
 
 export default function Cabang(){

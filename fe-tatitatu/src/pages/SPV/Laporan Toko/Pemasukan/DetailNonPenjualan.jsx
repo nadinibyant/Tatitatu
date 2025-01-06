@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Navbar from "../../../../components/Navbar";
 import Table from "../../../../components/Table";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import { useLocation } from "react-router-dom";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function DetailNonPenjualan() {
     const location = useLocation()
@@ -60,7 +61,7 @@ export default function DetailNonPenjualan() {
 
     return (
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
@@ -121,7 +122,7 @@ export default function DetailNonPenjualan() {
                     </section>
                 </section>
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     );
 }

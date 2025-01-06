@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Navbar from "../../../../components/Navbar";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import FileInput from "../../../../components/FileInput";
 import Input from "../../../../components/Input";

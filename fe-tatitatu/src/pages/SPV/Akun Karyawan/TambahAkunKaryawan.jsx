@@ -2,10 +2,11 @@ import { Camera } from "lucide-react";
 import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import { useNavigate } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahAkunKaryawan(){
     const [formData, setFormData] = useState({
@@ -83,7 +84,7 @@ export default function TambahAkunKaryawan(){
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
                 <section className="mt-5 bg-white rounded-xl">
@@ -203,7 +204,7 @@ export default function TambahAkunKaryawan(){
                     </div>
                 </section>
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

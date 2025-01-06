@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";

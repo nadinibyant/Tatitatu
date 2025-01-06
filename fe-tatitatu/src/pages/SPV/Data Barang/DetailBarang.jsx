@@ -3,7 +3,7 @@ import Breadcrumbs from "../../../components/Breadcrumbs";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import { useNavigate, useParams } from "react-router-dom";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";

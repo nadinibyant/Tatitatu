@@ -1,12 +1,13 @@
 import { useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import { useNavigate } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahKPISeluruhDivisi() {
     const breadcrumbItems = [
@@ -72,7 +73,7 @@ export default function TambahKPISeluruhDivisi() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -109,7 +110,7 @@ export default function TambahKPISeluruhDivisi() {
                                             Persentase: (
                                                 <Input
                                                 showRequired={false}
-                                                    type1="number"
+                                                    type="number"
                                                     value={row.Persentase}
                                                     onChange={(value) => handleInputChange(index, "Persentase", value)}
                                                 />
@@ -183,7 +184,7 @@ export default function TambahKPISeluruhDivisi() {
                         </div>
                     </section>
                 </div>
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

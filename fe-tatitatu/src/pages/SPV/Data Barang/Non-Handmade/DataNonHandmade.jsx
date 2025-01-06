@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "../../../../components/Button";
 import Navbar from "../../../../components/Navbar";
-import { menuItems, userOptions } from "../../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../../data/menu";
 import Gallery from "../../../../components/Gallery";
 import { useNavigate } from "react-router-dom";
 import Alert from "../../../../components/Alert";

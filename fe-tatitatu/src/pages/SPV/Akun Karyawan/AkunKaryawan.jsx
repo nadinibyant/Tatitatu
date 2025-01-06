@@ -3,7 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
-import { menuItems, userOptions } from "../../../data/menuSpv";
+import { menuItems, userOptions } from "../../../data/menu";
+import LayoutWithNav from "../../../components/LayoutWithNav";
+import ButtonDropdown from "../../../components/ButtonDropdown";
 
 export default function AkunKaryawan() {
     const [showModal, setShowModal] = useState(false);
@@ -12,6 +14,16 @@ export default function AkunKaryawan() {
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const modalRef = useRef(null);
+    const [selectedKategori, setSelectedKategori] = useState("Semua");
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const handleFilterClick = () => {
+        setIsFilterModalOpen(true);
+    };
+
+    const handleApplyFilter = () => {
+        setIsFilterModalOpen(false);
+    };
 
     const navigate = useNavigate();
 
@@ -118,9 +130,34 @@ export default function AkunKaryawan() {
         navigate('/akunKaryawan/tambah')
     }
 
+    const filterFields = [
+        {
+            label: "Divisi",
+            key: "Divisi",
+            options: [
+                { label: "Semua", value: "Semua" },
+                { label: "SPV", value: "SPV" },
+                { label: "Content Creator", value: "Content Creator" },
+                { label: "Produksi", value: "Produksi" },
+                { label: "Transportasi", value: "Transportasi" },
+                { label: "Admin", value: "Admin" },
+            ]
+        }
+    ];
+
+    const filteredData = () => {
+        let dataToDisplay = [...data];
+    
+        if (selectedKategori !== "Semua") {
+            dataToDisplay = dataToDisplay.filter(item => item.Divisi === selectedKategori);
+        }
+    
+        return dataToDisplay;
+    };
+
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -167,16 +204,18 @@ export default function AkunKaryawan() {
                         <div className="p-5">
                             <Table
                                 headers={headers}
-                                data={data.map((item, index) => ({
+                                data={filteredData().map((item, index) => ({
                                     ...item,
                                     nomor: index + 1,
                                 }))}
                                 onRowClick={handleDetail}
+                                hasFilter={true}
+                                onFilterClick={handleFilterClick}
                             />
                         </div>
                     </section>
                 </div>
-            </Navbar>
+            </LayoutWithNav>
 
             {/* Modal */}
             {showModal && (
@@ -319,6 +358,43 @@ export default function AkunKaryawan() {
                     </div>
                 </div>
             )}
+
+                    {/* Filter Modal */}
+                    {isFilterModalOpen && (
+                        <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                            <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
+                                <button
+                                    onClick={() => setIsFilterModalOpen(false)}
+                                    className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                <h2 className="text-lg font-bold mb-4">Filter</h2>
+                                <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
+                                    {filterFields.map((field, index) => (
+                                        <div className="mb-4" key={index}>
+                                            <label className="block text-gray-700 font-medium mb-2">
+                                                {field.label}
+                                            </label>
+                                            <ButtonDropdown
+                                                options={field.options}
+                                                selectedStore={selectedKategori}
+                                                onSelect={(value) => setSelectedKategori(value)}
+                                            />
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="submit"
+                                        className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
+                                    >
+                                        Terapkan
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
         </>
     );
 }
