@@ -125,9 +125,12 @@ export default function Penjualan() {
         navigate('/penjualanToko/detail', {state: {nomor: row.Nomor, tipe: row.tipe}})
     }
 
-    const handleEdit = (nomor) => {
-        // Add your edit logic here
-        console.log('Editing item:', nomor);
+    const handleEdit = (row) => {
+        if (row.tipe === 'custom') {
+            navigate(`/penjualanToko/edit/custom/${row.Nomor}`);
+        } else {
+            navigate(`/penjualanToko/edit/non-custom/${row.Nomor}`);
+        }
     };
     
     const handleDelete = (nomor) => {
@@ -228,9 +231,9 @@ export default function Penjualan() {
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
                                 "Total Transaksi": formatRupiah(item["Total Transaksi"]),
                                 "Diskon": `${item["Diskon"]}%`,
-                                "action": <ActionMenu 
-                                    onEdit={() => handleEdit(item.Nomor)} 
-                                    onDelete={() => handleDelete(item.Nomor)}
+                                action: <ActionMenu 
+                                    onEdit={() => handleEdit(item)} 
+                                    onDelete={() => handleDelete(item)} 
                                 />
                             }))}
                             onRowClick={handleRowClick}

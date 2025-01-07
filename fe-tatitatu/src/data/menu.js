@@ -90,7 +90,7 @@ export const menuItems = [
     },
     {
         label: "Target Kasir",
-        link: "/target-kasir",
+        link: "/target-bulanan",
         icon: "/Menu/targetKasir.svg",
         iconWarna: "/Menu/targetKasir.svg",
         // iconWarna: '/Icon Warna/targetKasir.svg',
