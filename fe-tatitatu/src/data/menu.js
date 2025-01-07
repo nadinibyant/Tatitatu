@@ -101,7 +101,6 @@ export const menuItems = [
         link: "/master-kategori",
         icon: "/Menu/masterKategori.svg",
         iconWarna: '/Icon Warna/masterKategori.svg',
-
     },
 
   ];
@@ -111,6 +110,7 @@ export const menuItems = [
     { label: "Logout", link: "/logout" },
   ];
 
+// headGudang
   export const menuHeadGudang = [
     {
       label: "Dashboard",
@@ -158,5 +158,35 @@ export const menuItems = [
         iconWarna: '/Icon Warna/izinCuti.svg',
     }
   ];
+
+//   kasir toko
+  export const menuKasirToko = [
+    {
+      label: "Dashboard",
+      link: "/dashboard-kasir",
+      icon: "/Menu/dashboard.svg",
+      iconWarna: '/Icon Warna/dashboard.svg',
+    },
+    {
+        label: "Stok Barang",
+        link: "/stokBarang",
+        icon: "/Menu/stokBarang.svg",
+        iconWarna: '/Icon Warna/stokBarang.svg',
+    },
+    {
+        label: "Penjualan",
+        link: "/penjualan-kasir",
+        icon: "/Menu/penjualan.svg",
+        iconWarna: '/Icon Warna/penjualan.svg',
+    },
+    {
+        label: "Master Kategori",
+        link: "/master-kategori",
+        icon: "/Menu/masterKategori.svg",
+        iconWarna: '/Icon Warna/masterKategori.svg',
+    },
+  ];
+
+
   
   

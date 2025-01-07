@@ -4,6 +4,7 @@ import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function StokBarang() {
     const headers = [
@@ -99,7 +100,7 @@ export default function StokBarang() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -177,7 +178,7 @@ export default function StokBarang() {
                         </div>
                     )}
                 </div>
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Input from "../../../components/Input";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Button from "../../../components/Button";
+import LayoutWithNav from "../../../components/LayoutWithNav";
+import { useNavigate } from "react-router-dom";
 
 export default function MasterKategori() {
     const [showListModal, setShowListModal] = useState(false);
@@ -13,6 +15,17 @@ export default function MasterKategori() {
     const [formType, setFormType] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState('');
+    const navigate = useNavigate();
+    const [userData, setUserData] = useState(null);
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('userData'));
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        setUserData(user);
+    }, [navigate]);
 
     const [data, setData] = useState({
         categories: [
@@ -64,6 +77,19 @@ export default function MasterKategori() {
             }
         ]
     });
+
+    const getFilteredCategories = () => {
+        if (userData?.role === 'kasirtoko') {
+            return data.categories.filter(category => 
+                category.title === 'Metode Pembayaran'
+            );
+        }
+        return data.categories;
+    };
+
+    if (!userData) {
+        return null;
+    }
 
 
     function getActionButtons(item) {
@@ -140,7 +166,7 @@ export default function MasterKategori() {
     };
 
     return (
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <div className="">
                     <h1 className="text-base font-bold text-primary mb-6">
@@ -148,7 +174,7 @@ export default function MasterKategori() {
                     </h1>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {data.categories.map((category) => (
+                        {getFilteredCategories().map((category) => (
                             <div 
                                 key={category.id}
                                 className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
@@ -258,6 +284,6 @@ export default function MasterKategori() {
                 </div>
             )}
             </div>
-        </Navbar>
+        </LayoutWithNav>
     );
 }

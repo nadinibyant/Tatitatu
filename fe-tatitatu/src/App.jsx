@@ -49,6 +49,13 @@ import EditPenjualanCustom from './pages/SPV/Penjualan/EditPenjualanCustom';
 import EditPenjualanNon from './pages/SPV/Penjualan/EditPenjualanNon';
 import AuthPages from './pages/AuthPages';
 import ProtectedRoute from './components/ProtectedRoute';
+import DashboardKasir from './pages/Kasir Toko/Dashboard/DashboardKasir';
+import PenjualanKasir from './pages/Kasir Toko/Penjualan/PenjualanKasir';
+import TambahPenjualanKasir from './pages/Kasir Toko/Penjualan/TambahPenjualanKasir';
+import TambahPenjualanCustom from './pages/Kasir Toko/Penjualan/TambahPenjualanCustom';
+import DetailPenjualanKasir from './pages/Kasir Toko/Penjualan/DetailPenjualan';
+import EditPenjualanCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanCustomKasir';
+import EditPenjualanNonCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanNonCustomKasir';
 
 
 function App() {
@@ -113,10 +120,13 @@ function App() {
         <Route path='/test' element={getProtectedRoute(TestComponent)} />
 
         {/* Protected Routes */}
-        <Route path='/dashboard' element={getProtectedRoute(Dashboard, ['admin', 'headgudang'])} />
+        <Route path='/dashboard' element={getProtectedRoute(Dashboard, ['admin', 'headgudang', 'kasirtoko'])} />
         <Route path='/dashboard/produk-terlaris' element={getProtectedRoute(ProdukTerlaris, ['admin', 'headgudang'])} />
         <Route path='/dashboard/cabang-terlaris' element={getProtectedRoute(CabangTerlaris, ['admin'])} />
         <Route path='/dashboard/karyawan-terbaik' element={getProtectedRoute(KaryawanTerbaik, ['admin', 'headgudang'])} />
+
+        {/* dashboard kasir toko */}
+        <Route path='/dashboard-kasir' element={getProtectedRoute(DashboardKasir, ['kasirtoko'])} />
 
         {/* Pembelian Stok Routes */}
         <Route path='/pembelianStok' element={getProtectedRoute(PembelianStok)} />
@@ -138,6 +148,15 @@ function App() {
         <Route path='/penjualanToko/detail' element={getProtectedRoute(DetailPenjualan)} />
         <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustom)} />
         <Route path='/penjualanToko/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNon)} />
+        <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanNon)} />
+
+        {/* penjualan kasir toko */}
+        <Route path='/penjualan-kasir' element={getProtectedRoute(PenjualanKasir, ['kasirtoko'])} />
+        <Route path='/penjualan-kasir/tambah' element={getProtectedRoute(TambahPenjualanKasir, ['kasirtoko'])} />
+        <Route path='/penjualan-kasir/tambah/custom' element={getProtectedRoute(TambahPenjualanCustom, ['kasirtoko'])} />
+        <Route path='/penjualan-kasir/detail' element={getProtectedRoute(DetailPenjualanKasir, ['kasirtoko'])} />
+        <Route path='/penjualan-kasir/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustomKasir, ['kasirtoko'])} />
+        <Route path='/penjualan-kasir/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['kasirtoko'])} />
 
         {/* KPI Routes */}
         <Route path='/daftarPenilaianKPI' element={getProtectedRoute(PenilaianKPI, ['admin', 'headgudang'])} />
@@ -173,9 +192,9 @@ function App() {
         <Route path='/akunKaryawan/edit/:id' element={getProtectedRoute(EditKaryawan, ['admin', 'headgudang'])} />
 
         {/* Final Routes */}
-        <Route path='/stokBarang' element={getProtectedRoute(StokBarang)} />
+        <Route path='/stokBarang' element={getProtectedRoute(StokBarang, ['admin', 'kasirtoko'])} />
         <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
-        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori)} />
+        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko'])} />
         <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan)} />
       </Routes>
     </Router>

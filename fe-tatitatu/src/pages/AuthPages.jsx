@@ -15,6 +15,7 @@ const AuthPages = ({ defaultTab = 'login' }) => {
   const roleMapping = {
     'admin@gmail.com': 'admin',
     'headgudang@gmail.com': 'headgudang',
+    'kasirtoko@gmail.com': 'kasirtoko'
     //  email-role
   };
 
@@ -51,6 +52,9 @@ const AuthPages = ({ defaultTab = 'login' }) => {
         case 'headgudang':
           navigate('/dashboard');
           break;
+        case 'kasirtoko':
+            navigate('/dashboard-kasir');
+            break;
         default:
           navigate('/dashboard');
       }

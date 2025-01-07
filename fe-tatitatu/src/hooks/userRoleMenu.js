@@ -1,7 +1,7 @@
 // src/hooks/useRoleMenu.js
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { menuHeadGudang, menuItems, userOptions } from '../data/menu';
+import { menuHeadGudang, menuItems, menuKasirToko, userOptions } from '../data/menu';
 
 export const useRoleMenu = () => {
     const navigate = useNavigate();
@@ -24,6 +24,9 @@ export const useRoleMenu = () => {
                 break;
             case 'admin':
                 setRoleMenu(menuItems);
+                break;
+            case 'kasirtoko':
+                setRoleMenu(menuKasirToko);
                 break;
             default:
                 setRoleMenu([]);
