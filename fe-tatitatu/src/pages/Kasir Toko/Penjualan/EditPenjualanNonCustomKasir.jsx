@@ -37,6 +37,8 @@ export default function EditPenjualanNonCustomKasir() {
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     const existingData = {
         nomor: 'INV123',
@@ -182,8 +184,13 @@ export default function EditPenjualanNonCustomKasir() {
     const handleSelectMetode = (value) => {
         setSelectMetode(value);
     };
-
-    const breadcrumbItems = [
+    
+    const breadcrumbItems = isAdminGudang 
+    ? [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Edit Penjualan", href: "" },
+    ]
+    : [
         { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
         { label: "Edit Penjualan", href: "" },
     ];

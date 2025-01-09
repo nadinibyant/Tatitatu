@@ -627,7 +627,7 @@ export default function TestComponent() {
             </div>
 
             <div className="p-4">
-            {/* <Gallery2 items={items2} onSelect={handleSelect2} /> */}
+            <Gallery2 items={items2} onSelect={handleSelect2} />
             <div className="mt-4">
                 <h2 className="text-lg font-bold">Selected Items:</h2>
                 <pre>{JSON.stringify(Object.values(selectedItems2), null, 2)}</pre>

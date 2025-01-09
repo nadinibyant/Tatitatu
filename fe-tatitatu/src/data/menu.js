@@ -187,6 +187,100 @@ export const menuItems = [
     },
   ];
 
+  export const menuAdminGudang = [
+    {
+      label: "Dashboard",
+      link: "/dashboard-admin-gudang",
+      icon: "/Menu/dashboard.svg",
+      iconWarna: '/Icon Warna/dashboard.svg',
+    },
+    {
+      label: "Biaya Rumah Produksi",
+      link: "/biayaGudang",
+      icon: "/Menu/biayaToko.svg",
+      iconWarna: '/Icon Warna/biayaToko.svg',
+    },
+    {
+      label: "Data Barang",
+      link: "/dataBarang",
+      icon: "/Menu/dataBarang.svg",
+      iconWarna: '/Icon Warna/dataBarang.svg',
+      submenu: [
+          { label: "Barang Handmade", link: "/dataBarang/handmade" },
+          { label: "Barang Non-Handmade", link: "/dataBarang/non-handmade" },
+          { label: "Barang Mentah", link: "/dataBarang/mentah" },
+          { label: "Packaging", link: "/dataBarang/packaging" },
+      ],
+    },
+    {
+      label: "Stok Barang",
+      link: "/stokBarang",
+      icon: "/Menu/stokBarang.svg",
+      iconWarna: '/Icon Warna/stokBarang.svg',
+    },
+    {
+      label: "Penjualan",
+      link: "/penjualan-admin-gudang",
+      icon: "/Menu/penjualan.svg",
+      iconWarna: '/Icon Warna/penjualan.svg',
+    },
+    {
+      label: "Pembelian Stok",
+      link: "/pembelianStok",
+      icon: "/Menu/pembelianStok.svg",
+      iconWarna: '/Icon Warna/pembelianStok.svg',
+    },
+    {
+      label: "Pengajuan Absensi",
+      link: "/pengajuanAbsensi",
+      icon: "/Menu/absensi.svg",
+      iconWarna: '/Icon Warna/absensi.svg',
+    },
+  ]
 
+  export const menuKaryawan = [
+    {
+      label: "Absensi",
+      link: "/absensi-karyawan",
+      icon: "/Menu/absensi.svg",
+      iconWarna: '/Icon Warna/absensi.svg',
+    },
+    {
+      label: "Izin/Cuti Karyawan",
+      link: "/izin-cuti-karyawan",
+      icon: "/Menu/izinCuti.svg",
+      iconWarna: '/Icon Warna/izinCuti.svg',
+    },
+  ]
+  
+  export const menuKaryawanTransport = [
+    {
+      label: "Absensi",
+      link: "/absensi-karyawan-transport",
+      icon: "/Menu/absensi.svg",
+      iconWarna: '/Icon Warna/absensi.svg',
+    },
+    {
+      label: "Izin/Cuti Karyawan",
+      link: "/izin-cuti-karyawan",
+      icon: "/Menu/izinCuti.svg",
+      iconWarna: '/Icon Warna/izinCuti.svg',
+    },
+  ]
+
+  export const menuKaryawanProduksi = [
+    {
+      label: "Absensi",
+      link: "/absensi-karyawan-produksi",
+      icon: "/Menu/absensi.svg",
+      iconWarna: '/Icon Warna/absensi.svg',
+    },
+    {
+      label: "Izin/Cuti Karyawan",
+      link: "/izin-cuti-karyawan",
+      icon: "/Menu/izinCuti.svg",
+      iconWarna: '/Icon Warna/izinCuti.svg',
+    },
+  ]
   
   

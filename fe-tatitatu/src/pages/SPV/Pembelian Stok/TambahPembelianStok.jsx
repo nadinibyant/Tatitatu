@@ -11,6 +11,7 @@ import TextArea from "../../../components/Textarea";
 import { useNavigate } from "react-router-dom";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahPembelianStok() {
     const [nomor, setNomor] = useState("");
@@ -450,7 +451,7 @@ const handleModalSubmit = () => {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -691,7 +692,7 @@ const handleModalSubmit = () => {
                 {isLoading && (
                     <Spinner/>
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

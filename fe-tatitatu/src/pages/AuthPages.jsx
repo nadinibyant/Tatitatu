@@ -13,10 +13,14 @@ const AuthPages = ({ defaultTab = 'login' }) => {
 
   // Daftar role berdasarkan email
   const roleMapping = {
-    'admin@gmail.com': 'admin',
-    'headgudang@gmail.com': 'headgudang',
-    'kasirtoko@gmail.com': 'kasirtoko'
-    //  email-role
+    'admin@gmail.com': { role: 'admin', route: '/dashboard' },
+    'headgudang@gmail.com': { role: 'headgudang', route: '/dashboard' },
+    'kasirtoko@gmail.com': { role: 'kasirtoko', route: '/dashboard-kasir' },
+    'admingudang@gmail.com': { role: 'admingudang', route: '/dashboard-admin-gudang' },
+    'karyawanumum@gmail.com': { role: 'karyawanumum', route: '/izin-cuti-karyawan' },
+    'karyawanproduksi@gmail.com': { role: 'karyawanproduksi', route: '/izin-cuti-karyawan' },
+    'karyawanlogistik@gmail.com': { role: 'karyawanlogistik', route: '/izin-cuti-karyawan' },
+    'karyawantransportasi@gmail.com': { role: 'karyawantransportasi', route: '/izin-cuti-karyawan' },
   };
 
 
@@ -32,32 +36,20 @@ const AuthPages = ({ defaultTab = 'login' }) => {
     
     setError('');
 
-    // Cek apakah email terdaftar
-    const userRole = roleMapping[email];
+    // More secure role check
+    const userConfig = roleMapping[email];
     
-    if (userRole && password === 'password123') { 
+    if (userConfig && password === 'password123') { 
       const userData = {
         email,
-        role: userRole,
-        token: 'dummy-token-' + userRole, 
+        role: userConfig.role,
+        token: `token-${userConfig.role}-${Date.now()}`, 
       };
       
       localStorage.setItem('userData', JSON.stringify(userData));
       
-      // Redirect berdasarkan role
-      switch(userRole) {
-        case 'admin':
-          navigate('/dashboard');
-          break;
-        case 'headgudang':
-          navigate('/dashboard');
-          break;
-        case 'kasirtoko':
-            navigate('/dashboard-kasir');
-            break;
-        default:
-          navigate('/dashboard');
-      }
+      // Redirect to role-specific route
+      navigate(userConfig.route);
     } else {
       setError('Email atau kata sandi tidak valid');
     }

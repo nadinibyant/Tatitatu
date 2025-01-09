@@ -12,6 +12,7 @@ import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import { useNavigate } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function EditPembelianStok() {
     const data = {
@@ -505,7 +506,7 @@ export default function EditPembelianStok() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -758,7 +759,7 @@ export default function EditPembelianStok() {
                 {isLoading && (
                     <Spinner/>
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

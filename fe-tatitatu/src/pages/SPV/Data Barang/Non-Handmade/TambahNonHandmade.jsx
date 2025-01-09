@@ -7,6 +7,7 @@ import Input from "../../../../components/Input";
 import ButtonDropdown from "../../../../components/ButtonDropdown";
 import Table from "../../../../components/Table";
 import Button from "../../../../components/Button";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function TambahNonHandmade() {
   const breadcrumbItems = [
@@ -205,7 +206,7 @@ export default function TambahNonHandmade() {
 
   return (
     <>
-      <Navbar
+      <LayoutWithNav
         menuItems={menuItems}
         userOptions={userOptions}
       >
@@ -415,7 +416,7 @@ export default function TambahNonHandmade() {
             </section>
           </section>
         </div>
-      </Navbar>
+      </LayoutWithNav>
     </>
   );
 }

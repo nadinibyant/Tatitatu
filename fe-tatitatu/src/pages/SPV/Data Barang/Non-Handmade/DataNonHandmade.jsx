@@ -6,6 +6,7 @@ import Gallery from "../../../../components/Gallery";
 import { useNavigate } from "react-router-dom";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function DataNonHandmade(){
     const navigate = useNavigate()
@@ -214,7 +215,7 @@ export default function DataNonHandmade(){
 
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -278,7 +279,7 @@ export default function DataNonHandmade(){
               onConfirm={handleConfirmSucc}
               />
           )}
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }

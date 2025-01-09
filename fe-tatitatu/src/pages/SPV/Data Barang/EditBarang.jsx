@@ -8,6 +8,7 @@ import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import { useParams } from "react-router-dom";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function EditBarang({ existingData }) {
   const { id } = useParams();
@@ -207,7 +208,7 @@ export default function EditBarang({ existingData }) {
   console.log(data)
 
   return (
-    <Navbar
+    <LayoutWithNav
       menuItems={menuItems}
       userOptions={userOptions}
       label={"Edit Data Barang Handmade"}
@@ -395,6 +396,6 @@ export default function EditBarang({ existingData }) {
           </form>
         </section>
       </div>
-    </Navbar>
+    </LayoutWithNav>
   );
 }

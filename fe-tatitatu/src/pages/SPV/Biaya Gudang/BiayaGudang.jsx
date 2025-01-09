@@ -4,6 +4,7 @@ import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
 import { menuItems, userOptions } from "../../../data/menu";
 import Input from "../../../components/Input";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function BiayaGudang() {
     const [isEditing, setIsEditing] = useState(false);
@@ -230,7 +231,7 @@ const handleKeyPress = (e, section, index, key, value) => {
 
   return (
     <>
-      <Navbar menuItems={menuItems} userOptions={userOptions}>
+      <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             <div className="left w-full md:w-auto">
@@ -485,7 +486,7 @@ const handleKeyPress = (e, section, index, key, value) => {
           </div>
           
         </div>
-      </Navbar>
+      </LayoutWithNav>
     </>
   );
 }

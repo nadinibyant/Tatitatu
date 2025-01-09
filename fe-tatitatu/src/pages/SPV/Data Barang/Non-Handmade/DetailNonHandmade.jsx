@@ -7,6 +7,7 @@ import Button from "../../../../components/Button";
 import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function DetailNonHandmade(){
     const { id } = useParams();
@@ -101,7 +102,7 @@ export default function DetailNonHandmade(){
 
 return(
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <Breadcrumbs items={breadcrumbItems} />
 
@@ -247,7 +248,7 @@ return(
             onConfirm={handleConfirmSucc}
             />
         )}
-    </Navbar>
+    </LayoutWithNav>
 </>
 )
 }

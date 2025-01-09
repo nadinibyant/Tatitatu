@@ -8,8 +8,10 @@ import { useNavigate } from "react-router-dom";
 
 export default function PenjualanKasir() {
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState(5); // Mei = 5
+    const [selectedMonth, setSelectedMonth] = useState(5);
     const [selectedYear, setSelectedYear] = useState(2024);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     const months = [
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -61,7 +63,8 @@ export default function PenjualanKasir() {
     ]);
 
     const handleRowClick = (row) => {
-        navigate('/penjualan-kasir/detail', {state: {nomor: row.Nomor, tipe: row.tipe}})
+        const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
+        navigate(`${baseRoute}/detail`, {state: {nomor: row.Nomor, tipe: row.tipe}});
     }
 
     // Headers untuk tabel
@@ -86,10 +89,11 @@ export default function PenjualanKasir() {
 
     // Handlers untuk action menu
     const handleEdit = (row) => {
+        const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
         if (row.tipe === 'custom') {
-            navigate(`/penjualan-kasir/edit/custom/${row.Nomor}`);
+            navigate(`${baseRoute}/edit/custom/${row.Nomor}`);
         } else {
-            navigate(`/penjualan-kasir/edit/non-custom/${row.Nomor}`);
+            navigate(`${baseRoute}/edit/non-custom/${row.Nomor}`);
         }
     };
 
@@ -100,11 +104,13 @@ export default function PenjualanKasir() {
     const navigate = useNavigate()
     
     const handleAdd = () => {
-        navigate('/penjualan-kasir/tambah')
+        const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
+        navigate(`${baseRoute}/tambah`);
     }
 
     const handleAddCustom = () => {
-        navigate('/penjualan-kasir/tambah/custom')
+        const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
+        navigate(`${baseRoute}/tambah/custom`);
     }
 
     return (

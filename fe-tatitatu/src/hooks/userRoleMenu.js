@@ -1,7 +1,7 @@
 // src/hooks/useRoleMenu.js
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { menuHeadGudang, menuItems, menuKasirToko, userOptions } from '../data/menu';
+import { menuHeadGudang, menuItems, menuKasirToko, userOptions, menuAdminGudang, menuKaryawan, menuKaryawanTransport, menuKaryawanProduksi } from '../data/menu';
 
 export const useRoleMenu = () => {
     const navigate = useNavigate();
@@ -28,6 +28,22 @@ export const useRoleMenu = () => {
             case 'kasirtoko':
                 setRoleMenu(menuKasirToko);
                 break;
+            case 'admingudang':
+                setRoleMenu(menuAdminGudang);
+                break;
+            case 'karyawanumum':
+                setRoleMenu(menuKaryawan)
+                break
+            case 'karyawanlogistik':
+                setRoleMenu(menuKaryawan)
+                break
+            case 'karyawanproduksi':
+                setRoleMenu(menuKaryawanProduksi)
+                break
+     
+            case 'karyawantransportasi':
+                setRoleMenu(menuKaryawanTransport)
+                break
             default:
                 setRoleMenu([]);
         }

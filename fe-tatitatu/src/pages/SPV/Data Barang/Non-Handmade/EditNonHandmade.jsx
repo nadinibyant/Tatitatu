@@ -8,6 +8,7 @@ import Input from "../../../../components/Input";
 import ButtonDropdown from "../../../../components/ButtonDropdown";
 import Table from "../../../../components/Table";
 import Button from "../../../../components/Button";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function EditNonHandmade({ existingData }) {
   const { id } = useParams();
@@ -204,7 +205,7 @@ export default function EditNonHandmade({ existingData }) {
   console.log(data)
 
   return (
-    <Navbar
+    <LayoutWithNav
       menuItems={menuItems}
       userOptions={userOptions}
     >
@@ -390,6 +391,6 @@ export default function EditNonHandmade({ existingData }) {
           </form>
         </section>
       </div>
-    </Navbar>
+    </LayoutWithNav>
   );
 }

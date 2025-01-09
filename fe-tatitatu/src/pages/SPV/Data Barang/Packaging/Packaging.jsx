@@ -9,6 +9,7 @@ import Input from "../../../../components/Input";
 import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function Packaging() {
   const [isModal, setModal] = useState(false);
@@ -341,12 +342,12 @@ export default function Packaging() {
   }
   return (
     <>
-      <Navbar menuItems={menuItems} userOptions={userOptions}>
+      <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className="text-primary text-base font-bold">Daftar Barang Custom</p>
+              <p className="text-primary text-base font-bold">Daftar Packaging</p>
             </div>
 
             {/* Right Section */}
@@ -607,7 +608,7 @@ export default function Packaging() {
             onConfirm={handleConfirmSucc}
             />
         )}
-      </Navbar>
+      </LayoutWithNav>
     </>
   );
 }

@@ -12,10 +12,9 @@ import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 
-export default function TambahPenjualanKasir() {
+export default function TambahBeliStokGudang() {
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
-    const [namaPembeli, setNamaPembeli] = useState("");
     const [note, setNote] = useState("");
     const [selectBayar, setSelectedBayar] = useState("");
     const [selectMetode, setSelectMetode] = useState("");
@@ -79,15 +78,10 @@ export default function TambahPenjualanKasir() {
         setSelectMetode(value);
     };
 
-    const breadcrumbItems = isAdminGudang 
-        ? [
-            { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
-            { label: "Tambah Penjualan", href: "" },
-        ]
-        : [
-            { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
-            { label: "Tambah Penjualan", href: "" },
-        ];
+    const breadcrumbItems = [
+        { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
+        { label: "Tambah Pembelian", href: "" },
+    ]
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -486,7 +480,6 @@ export default function TambahPenjualanKasir() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <Input label={"Nomor"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
                                     <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                    <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
                                     <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
                                     <div className="">
                                         <InputDropdown label={"Metode Pembayaran"} disabled={isMetodeDisabled} options={dataMetode} value={selectedMetodeLabel} onSelect={handleSelectMetode} />

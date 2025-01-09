@@ -7,6 +7,7 @@ import { menuItems, userOptions } from "../../../data/menu";
 import { useNavigate, useParams } from "react-router-dom";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function DetailBarang(){
     const { id } = useParams();
@@ -100,7 +101,7 @@ export default function DetailBarang(){
     }
 return(
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <Breadcrumbs items={breadcrumbItems} />
 
@@ -246,7 +247,7 @@ return(
             onConfirm={handleConfirmSucc}
             />
         )}
-    </Navbar>
+    </LayoutWithNav>
 </>
 )
 }

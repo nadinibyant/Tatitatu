@@ -34,6 +34,8 @@ const TambahPenjualanCustom = () => {
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     useEffect(() => {
         if (isModalOpen) {
@@ -73,9 +75,14 @@ const TambahPenjualanCustom = () => {
         setSelectMetode(value);
     };
 
-    const breadcrumbItems = [
-        { label: 'Daftar Penjualan Toko', href: '/penjualan-kasir' },
-        { label: 'Tambah Penjualan Custom', href: '' },
+    const breadcrumbItems = isAdminGudang 
+    ? [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Tambah Penjualan Custom", href: "" },
+    ]
+    : [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+        { label: "Tambah Penjualan Custom", href: "" },
     ];
 
     const headers = [

@@ -7,6 +7,7 @@ import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahBarang() {
   const breadcrumbItems = [
@@ -205,7 +206,7 @@ export default function TambahBarang() {
 
   return (
     <>
-      <Navbar
+      <LayoutWithNav
         menuItems={menuItems}
         userOptions={userOptions}
         label={"Tambah Data Barang Handmade"}
@@ -421,7 +422,7 @@ export default function TambahBarang() {
             </section>
           </section>
         </div>
-      </Navbar>
+      </LayoutWithNav>
     </>
   );
 }

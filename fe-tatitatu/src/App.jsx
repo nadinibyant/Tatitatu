@@ -56,6 +56,14 @@ import TambahPenjualanCustom from './pages/Kasir Toko/Penjualan/TambahPenjualanC
 import DetailPenjualanKasir from './pages/Kasir Toko/Penjualan/DetailPenjualan';
 import EditPenjualanCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanCustomKasir';
 import EditPenjualanNonCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanNonCustomKasir';
+import DashboardAG from './pages/Admin Gudang/Dashboard/DashboardAG';
+import IzinCutiKaryawan from './pages/Karyawan/Izin/IzinCutiKaryawan';
+import Absensi from './pages/Karyawan/Absensi/Absensi';
+import AbsensiTransport from './pages/Karyawan/Absensi/Transportasi/AbsensiTransport';
+import AbsensiProduksi from './pages/Karyawan/Absensi/Produksi/AbsensiProduksi';
+import TambahAbsensiProduksi from './pages/Karyawan/Absensi/Produksi/TambahAbsensiProduksi';
+import TambahBeliStokGudang from './pages/Admin Gudang/Pembelian Stok/TambahBeliStokGudang';
+import EditBeliStokGudang from './pages/Admin Gudang/Pembelian Stok/EditBeliStokGudang';
 
 
 function App() {
@@ -128,11 +136,21 @@ function App() {
         {/* dashboard kasir toko */}
         <Route path='/dashboard-kasir' element={getProtectedRoute(DashboardKasir, ['kasirtoko'])} />
 
+
+        <Route path='/dashboard-admin-gudang' element={getProtectedRoute(ProdukTerlaris, ['admingudang'])} />
+
+
+
         {/* Pembelian Stok Routes */}
-        <Route path='/pembelianStok' element={getProtectedRoute(PembelianStok)} />
-        <Route path='/pembelianStok/detail' element={getProtectedRoute(DetailPembelianStok)} />
-        <Route path='/pembelianStok/tambah' element={getProtectedRoute(TambahPembelianStok)} />
-        <Route path='/pembelianStok/edit' element={getProtectedRoute(EditPembelianStok)} />
+        <Route path='/pembelianStok' element={getProtectedRoute(PembelianStok, ['admin', 'admingudang'])} />
+        <Route path='/pembelianStok/detail' element={getProtectedRoute(DetailPembelianStok, ['admin', 'admingudang'])} />
+        <Route path='/pembelianStok/tambah' element={getProtectedRoute(TambahPembelianStok, ['admin'])} />
+        <Route path='/pembelianStok/edit' element={getProtectedRoute(EditPembelianStok, ['admin'])} />
+
+        {/* pembelian stok admin gudang */}
+        <Route path='/pembelianStok/tambah-admin-gudang' element={getProtectedRoute(TambahBeliStokGudang, ['admingudang'])} />
+        <Route path='/pembelianStok/edit-admin-gudang' element={getProtectedRoute(EditBeliStokGudang, ['admingudang'])} />
+
 
         {/* Laporan Keuangan Routes */}
         <Route path='/laporanKeuangan' element={getProtectedRoute(LaporanKeuangan, ['admin', 'headgudang'])} />
@@ -158,6 +176,14 @@ function App() {
         <Route path='/penjualan-kasir/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustomKasir, ['kasirtoko'])} />
         <Route path='/penjualan-kasir/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['kasirtoko'])} />
 
+        {/* penjualan admin gudang */}
+        <Route path='/penjualan-admin-gudang' element={getProtectedRoute(PenjualanKasir, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/tambah' element={getProtectedRoute(TambahPenjualanKasir, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/tambah/custom' element={getProtectedRoute(TambahPenjualanCustom, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/detail' element={getProtectedRoute(DetailPenjualanKasir, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustomKasir, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['admingudang'])} />
+
         {/* KPI Routes */}
         <Route path='/daftarPenilaianKPI' element={getProtectedRoute(PenilaianKPI, ['admin', 'headgudang'])} />
         <Route path='/daftarPenilaianKPI/tambah-kpi' element={getProtectedRoute(TambahKPI, ['admin', 'headgudang'])} />
@@ -171,20 +197,21 @@ function App() {
 
         {/* Other Routes */}
         <Route path='/daftarCabang' element={getProtectedRoute(Cabang)} />
-        <Route path='/biayaGudang' element={getProtectedRoute(BiayaGudang)} />
+        <Route path='/biayaGudang' element={getProtectedRoute(BiayaGudang, ['admin', 'admingudang'])} />
 
         {/* Data Barang Routes */}
-        <Route path='/dataBarang' element={getProtectedRoute(DataBarang)} />
-        <Route path='/dataBarang/handmade' element={getProtectedRoute(DataBarang)} />
-        <Route path='/dataBarang/handmade/tambah' element={getProtectedRoute(TambahBarang)} />
-        <Route path='/dataBarang/handmade/edit/:id' element={getProtectedRoute(EditBarang)} />
-        <Route path='/dataBarang/handmade/detail/:id' element={getProtectedRoute(DetailBarang)} />
-        <Route path='/dataBarang/non-handmade' element={getProtectedRoute(DataNonHandmade)} />
-        <Route path='/dataBarang/non-handmade/tambah' element={getProtectedRoute(TambahNonHandmade)} />
-        <Route path='/dataBarang/non-handmade/detail/:id' element={getProtectedRoute(DetailNonHandmade)} />
-        <Route path='/dataBarang/non-handmade/edit/:id' element={getProtectedRoute(EditNonHandmade)} />
-        <Route path='/dataBarang/custom' element={getProtectedRoute(BarangCustom)} />
-        <Route path='/dataBarang/packaging' element={getProtectedRoute(Packaging)} />
+        <Route path='/dataBarang' element={getProtectedRoute(DataBarang, ['admin', 'admingudang'])}/>
+        <Route path='/dataBarang/handmade' element={getProtectedRoute(DataBarang, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/handmade/tambah' element={getProtectedRoute(TambahBarang, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/handmade/edit/:id' element={getProtectedRoute(EditBarang, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/handmade/detail/:id' element={getProtectedRoute(DetailBarang, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/non-handmade' element={getProtectedRoute(DataNonHandmade, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/non-handmade/tambah' element={getProtectedRoute(TambahNonHandmade, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/non-handmade/detail/:id' element={getProtectedRoute(DetailNonHandmade, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/non-handmade/edit/:id' element={getProtectedRoute(EditNonHandmade, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/custom' element={getProtectedRoute(BarangCustom, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/mentah' element={getProtectedRoute(BarangCustom, ['admingudang'])} />
+        <Route path='/dataBarang/packaging' element={getProtectedRoute(Packaging, ['admin', 'admingudang'])} />
 
         {/* Akun Karyawan Routes */}
         <Route path='/akunKaryawan' element={getProtectedRoute(AkunKaryawan, ['admin', 'headgudang'])} />
@@ -192,10 +219,19 @@ function App() {
         <Route path='/akunKaryawan/edit/:id' element={getProtectedRoute(EditKaryawan, ['admin', 'headgudang'])} />
 
         {/* Final Routes */}
-        <Route path='/stokBarang' element={getProtectedRoute(StokBarang, ['admin', 'kasirtoko'])} />
+        <Route path='/stokBarang' element={getProtectedRoute(StokBarang, ['admin', 'kasirtoko', 'admingudang'])} />
         <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
+        <Route path='/pengajuanAbsensi' element={getProtectedRoute(IzinCuti, ['admingudang'])} />
         <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko'])} />
         <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan)} />
+
+        {/* karyawan */}
+        <Route path='/izin-cuti-karyawan' element={getProtectedRoute(IzinCutiKaryawan, ['karyawanumum', 'karyawanproduksi', 'karyawanlogistik', 'karyawantransportasi'])} />
+        <Route path='/absensi-karyawan' element={getProtectedRoute(Absensi, ['karyawanumum', 'karyawanlogistik' ])} />
+        <Route path='/absensi-karyawan-transport' element={getProtectedRoute(AbsensiTransport, ['karyawantransportasi' ])} />
+        <Route path='/absensi-karyawan-produksi' element={getProtectedRoute(AbsensiProduksi, ['karyawanproduksi' ])} />
+        <Route path='/absensi-karyawan-produksi/tambah' element={getProtectedRoute(TambahAbsensiProduksi, ['karyawanproduksi' ])} />
+        
       </Routes>
     </Router>
   );

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function PembelianStok() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +20,8 @@ export default function PembelianStok() {
     const navigate = useNavigate()
     const [isModalDel, setModalDel] = useState(false)
     const [isSuccess, setSuccess] = useState(false)
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     const handleMoreClick = (item, event) => {
         event.stopPropagation();
@@ -196,12 +199,20 @@ export default function PembelianStok() {
     }, [startDate, endDate]);
 
     const handleAddBtn = () => {
-        navigate('/pembelianStok/tambah')
+        if (isAdminGudang) {
+            navigate('/pembelianStok/tambah-admin-gudang');
+        } else {
+            navigate('/pembelianStok/tambah');
+        }
     }
 
     const handleEdit = () => {
-        navigate(`/pembelianStok/edit`, { state: { id: selectedItem.id } });
-
+        if (isAdminGudang) {
+            navigate(`/pembelianStok/edit-admin-gudang`, { state: { id: selectedItem.id } });
+        } else {
+            navigate(`/pembelianStok/edit`, { state: { id: selectedItem.id } });
+        }
+    
         setModalMore(false);
     };
     
@@ -231,7 +242,7 @@ export default function PembelianStok() {
     ];
 return (
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                 {/* Left Section */}
@@ -460,7 +471,7 @@ return (
             onConfirm={handleSucc}
             />
         )}
-    </Navbar>
+    </LayoutWithNav>
 </>
 );
 }

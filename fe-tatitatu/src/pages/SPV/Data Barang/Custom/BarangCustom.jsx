@@ -9,9 +9,12 @@ import Input from "../../../../components/Input";
 import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
+import LayoutWithNav from "../../../../components/LayoutWithNav";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userData?.role === 'admingudang';
   const [isModalDelete, setModalDelete] = useState(false)
   const [isModalSucc, setModalSucc] = useState(false)
   const [modalMode, setModalMode] = useState("add");
@@ -342,12 +345,12 @@ export default function BarangCustom() {
   }
   return (
     <>
-      <Navbar menuItems={menuItems} userOptions={userOptions}>
+      <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className="text-primary text-base font-bold">Daftar Barang Custom</p>
+              <p className="text-primary text-base font-bold">{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
             </div>
 
             {/* Right Section */}
@@ -608,7 +611,7 @@ export default function BarangCustom() {
             onConfirm={handleConfirmSucc}
             />
         )}
-      </Navbar>
+      </LayoutWithNav>
     </>
   );
 }

@@ -160,7 +160,7 @@ const Table = ({
       {/* Table Section */}
       <div className="relative overflow-x-auto sm:rounded-lg [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         <div className="min-w-full inline-block align-middle">
-          <div className="overflow-hidden">
+          <div className="overflow-hidden max-h-screen overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className={`${bg_header}`}>
                 <tr>

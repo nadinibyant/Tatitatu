@@ -34,6 +34,8 @@ const EditPenjualanCustomKasir = () => {
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     const existingData = {
         nomor: 'INV123',
@@ -257,9 +259,14 @@ const EditPenjualanCustomKasir = () => {
         setSelectMetode(value);
     };
 
-    const breadcrumbItems = [
-        { label: 'Daftar Penjualan Toko', href: '/penjualan-kasir' },
-        { label: 'Edit Penjualan Custom', href: '' },
+    const breadcrumbItems = isAdminGudang 
+    ? [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Edit Penjualan Custom", href: "" },
+    ]
+    : [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+        { label: "Edit Penjualan Custom", href: "" },
     ];
 
     const headers = [

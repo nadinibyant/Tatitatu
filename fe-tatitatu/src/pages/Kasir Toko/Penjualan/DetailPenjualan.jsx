@@ -13,12 +13,21 @@ export default function DetailPenjualanKasir() {
     const location = useLocation()
     const { nomor, tipe } = location.state || {};
     const isCustom = tipe === 'custom';
-    const breadcrumbItems = [
-        { label: "Daftar Penjualan", href: "/penjualan-kasir" },
-        { label: "Detail Penjualan", href: "" },
-    ];
+    
     const [isModalDel, setModalDel] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
+
+    const breadcrumbItems = isAdminGudang 
+    ? [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Detail Penjualan", href: "" },
+    ]
+    : [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+        { label: "Detail Penjualan", href: "" },
+    ];
 
     const data = {
         nomor: 'INV123',

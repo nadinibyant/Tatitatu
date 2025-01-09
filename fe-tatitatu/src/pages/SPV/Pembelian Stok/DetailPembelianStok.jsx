@@ -7,6 +7,7 @@ import Table from "../../../components/Table";
 import { useState } from "react";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function DetailPembelianStok(){
 const location = useLocation()
@@ -15,9 +16,16 @@ const navigate = useNavigate()
 const [isModalDel, setModalDel] = useState(false)
 const [isModelSucc, setModalSucc] = useState(false)
 
+const userData = JSON.parse(localStorage.getItem('userData'));
+const isAdminGudang = userData?.role === 'admingudang';
+
 const handleEdit = () => {
-    navigate('/pembelianStok/edit', {state : {id: id}})
-}
+    if (isAdminGudang) {
+        navigate('/pembelianStok/edit-admin-gudang', {state : {id: id}});
+    } else {
+        navigate('/pembelianStok/edit', {state : {id: id}});
+    }
+};
 
 const handleBtnDel = () => {
     setModalDel(true)
@@ -158,7 +166,7 @@ const formatCurrency = (amount) => {
 
 return (
 <>
-    <Navbar menuItems={menuItems} userOptions={userOptions}>
+    <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
         <div className="p-5">
             <Breadcrumbs items={breadcrumbItems} />
 
@@ -293,7 +301,7 @@ return (
             onConfirm={handleConfirmSucc}
             />
         )}
-    </Navbar>
+    </LayoutWithNav>
 </>
 )
 }
