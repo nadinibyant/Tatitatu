@@ -20,6 +20,7 @@ export default function LaporanKeuangan() {
 
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
 
     useEffect(() => {
         setSelectedStore("Semua");
@@ -80,7 +81,7 @@ export default function LaporanKeuangan() {
         { label: "Nomor", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-center" },
         { label: "Deskripsi", key: "deskripsi", align: "text-left" },
-        { label: "Cabang", key: "cabang", align: "text-left" },
+        { label: isOwner ? "Toko" : "Cabang", key: "cabang", align: "text-left" },
         { label: "Kategori", key: "kategori", align: "text-center" },
         { label: "Total", key: "total", align: "text-center" },
     ];
@@ -226,9 +227,13 @@ export default function LaporanKeuangan() {
     
     const filterFields = [
         ...(!isHeadGudang ? [{
-            label: "Toko",
+            label: isOwner ? "Toko" : "Toko",
             key: "Toko",
-            options: [
+            options: isOwner ? [
+                { label: "Semua", value: "Semua" },
+                { label: "Tatitatu", value: "Tatitatu" },
+                { label: "Rotaliu", value: "Rotaliu" }
+            ] : [
                 { label: "Semua", value: "Semua" },
                 { label: "Gor Agus", value: "Gor Agus" },
                 { label: "Lubeg", value: "Lubeg" },
@@ -268,7 +273,9 @@ export default function LaporanKeuangan() {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Laporan Keuangan Toko</p>
+                            <p className="text-primary text-base font-bold">
+                                {isOwner ? 'Laporan Keuangan Perusahaan' : 'Laporan Keuangan Toko'}
+                            </p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">

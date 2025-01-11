@@ -19,7 +19,7 @@ export default function ProdukTerlaris() {
 
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isHeadGudang = userData?.role === 'headgudang';
-
+  const isOwner = userData?.role === 'owner';
 
   useEffect(() => {
     setSelectedStore("Semua");
@@ -217,29 +217,41 @@ export default function ProdukTerlaris() {
     return dataToDisplay;
   };
 
-  const filterFields = [
+  const filterFields = isOwner ? [
     {
-      label: "Jenis",
-      key: "Jenis",
-      options: [
-        { label: "Semua", value: "Semua" },
-        { label: "Barang Handmade", value: "Barang Handmade" },
-        { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
-        { label: "Barang Custom", value: "Barang Custom" },
-      ]
+        label: "Kategori",
+        key: "Kategori",
+        options: [
+            { label: "Semua", value: "Semua" },
+            { label: "Gelang", value: "Gelang" },
+            { label: "Cincin", value: "Cincin" },
+            { label: "Anting", value: "Anting" },
+            { label: "Tas", value: "Tas" },
+        ]
+    }
+] : [
+    {
+        label: "Jenis",
+        key: "Jenis",
+        options: [
+            { label: "Semua", value: "Semua" },
+            { label: "Barang Handmade", value: "Barang Handmade" },
+            { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
+            { label: "Barang Custom", value: "Barang Custom" },
+        ]
     },
     {
-      label: "Kategori",
-      key: "Kategori",
-      options: [
-        { label: "Semua", value: "Semua" },
-        { label: "Gelang", value: "Gelang" },
-        { label: "Cincin", value: "Cincin" },
-        { label: "Anting", value: "Anting" },
-        { label: "Tas", value: "Tas" },
-      ]
+        label: "Kategori",
+        key: "Kategori",
+        options: [
+            { label: "Semua", value: "Semua" },
+            { label: "Gelang", value: "Gelang" },
+            { label: "Cincin", value: "Cincin" },
+            { label: "Anting", value: "Anting" },
+            { label: "Tas", value: "Tas" },
+        ]
     }
-  ];
+];
 
   const selectedData = filteredData().filter((item) => {
     const isStoreMatch = selectedStore === "Semua" || item.Cabang === selectedStore;
@@ -259,7 +271,9 @@ export default function ProdukTerlaris() {
         <div className="p-5">
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             <div className="left w-full md:w-auto">
-              <p className="text-primary text-base font-bold">Produk Terlaris</p>
+              <p className="text-primary text-base font-bold">
+                  {isOwner ? 'Produk Terlaris Perusahaan' : 'Produk Terlaris'}
+              </p>
             </div>
 
             <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -437,7 +451,9 @@ export default function ProdukTerlaris() {
 
                   <div className="bg-white rounded-xl p-5">
                       <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-bold text-base">10 Barang Terlaris di Toko</h3>
+                        <h3 className="font-bold text-base">
+                            {isOwner ? '10 Barang Terlaris di Perusahaan' : '10 Barang Terlaris di Toko'}
+                        </h3>
                       </div>
                       <Table
                           headers={headers2}

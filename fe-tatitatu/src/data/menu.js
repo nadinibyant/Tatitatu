@@ -283,4 +283,31 @@ export const menuItems = [
     },
   ]
   
+  export const menuOwner = [
+    {
+      label: "Dashboard",
+      link: "/dashboard",
+      icon: "/Menu/dashboard.svg",
+      iconWarna: '/Icon Warna/dashboard.svg',
+      submenu: [
+        { label: "Overview", link: "/dashboard" },
+        { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
+        { label: "Toko Terbaik", link: "/dashboard/toko-terbaik" },
+        { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
+        { label: "Hari Terlaris", link: "/dashboard/hari-terlaris" },
+      ],
+    },
+    {
+      label: "Laporan Keuangan Perusahaan",
+      link: "/laporanKeuangan",
+      icon: "/Menu/laporanKeuangan.svg",
+      iconWarna: '/Icon Warna/laporanKeuangan.svg',
+    },
+    {
+      label: "Catatan dari Manajer",
+      link: "/catatan",
+      icon: "/Menu/catatan.svg",
+      iconWarna: '/Icon Warna/catatan.svg',
+    },
+  ]
   
