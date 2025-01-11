@@ -21,6 +21,7 @@ export default function LaporanKeuangan() {
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
     const isOwner = userData?.role === 'owner';
+    const isFinance = userData?.role === 'finance';
 
     useEffect(() => {
         setSelectedStore("Semua");
@@ -81,7 +82,7 @@ export default function LaporanKeuangan() {
         { label: "Nomor", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-center" },
         { label: "Deskripsi", key: "deskripsi", align: "text-left" },
-        { label: isOwner ? "Toko" : "Cabang", key: "cabang", align: "text-left" },
+        { label: isOwner || isFinance? "Toko" : "Cabang", key: "cabang", align: "text-left" },
         { label: "Kategori", key: "kategori", align: "text-center" },
         { label: "Total", key: "total", align: "text-center" },
     ];

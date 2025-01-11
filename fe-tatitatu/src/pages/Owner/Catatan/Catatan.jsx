@@ -203,7 +203,6 @@ export default function Catatan(){
             {showDetailModal && selectedData && (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-start z-50 pt-20">
         <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
-            {/* Header dengan tombol close */}
             <div className="flex justify-end p-4">
                 <button 
                     onClick={() => setShowDetailModal(false)}
@@ -217,7 +216,6 @@ export default function Catatan(){
 
             {/* Content */}
             <div className="px-6 pb-6 space-y-4">
-                {/* Nama & Tanggal */}
                 <div className="grid grid-cols-2 gap-8">
                     <div>
                         <label className="block text-gray-500 mb-1">Nama</label>
@@ -229,7 +227,6 @@ export default function Catatan(){
                     </div>
                 </div>
 
-                {/* Judul */}
                 <div>
                     <label className="block text-gray-500 mb-1">Judul</label>
                     <input 
@@ -240,7 +237,6 @@ export default function Catatan(){
                     />
                 </div>
 
-                {/* Isi - tampilkan isi full tanpa truncate */}
                 <div>
                     <label className="block text-gray-500 mb-1">Isi</label>
                     <div className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 whitespace-pre-line min-h-[150px]">

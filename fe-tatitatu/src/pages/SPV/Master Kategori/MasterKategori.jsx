@@ -79,12 +79,20 @@ export default function MasterKategori() {
     });
 
     const getFilteredCategories = () => {
-        if (userData?.role === 'kasirtoko') {
-            return data.categories.filter(category => 
-                category.title === 'Metode Pembayaran'
-            );
+        switch(userData?.role) {
+            case 'kasirtoko':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran'
+                );
+            case 'finance':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran' || 
+                    category.title === 'Kategori Pengeluaran' || 
+                    category.title === 'Kategori Pemasukan'
+                );
+            default:
+                return data.categories;
         }
-        return data.categories;
     };
 
     if (!userData) {

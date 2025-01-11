@@ -310,4 +310,31 @@ export const menuItems = [
       iconWarna: '/Icon Warna/catatan.svg',
     },
   ]
+
+  export const menuFinance = [
+    {
+      label: "Laporan Keuangan Perusahaan",
+      link: "/laporanKeuangan",
+      icon: "/Menu/laporanKeuangan.svg",
+      iconWarna: '/Icon Warna/laporanKeuangan.svg',
+    },
+    {
+      label: "Pemasukan",
+      link: "/pemasukan",
+      icon: "/Menu/pemasukan.svg",
+      iconWarna: '/Icon Warna/pemasukan.svg',
+    },
+    {
+      label: "Pengeluaran",
+      link: "/pengeluaran",
+      icon: "/Menu/pengeluaran.svg",
+      iconWarna: '/Icon Warna/pengeluaran.svg',
+    },
+    {
+      label: "Master Kategori",
+      link: "/master-kategori",
+      icon: "/Menu/masterKategori.svg",
+      iconWarna: '/Icon Warna/masterKategori.svg',
+  },
+  ]
   
