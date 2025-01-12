@@ -69,6 +69,12 @@ import HariTerlaris from './pages/Owner/Dashboard/HariTerlaris';
 import Catatan from './pages/Owner/Catatan/Catatan';
 import Pemasukan from './pages/Finance/Pemasukan/Pemasukan';
 import PengeluaranFinance from './pages/Finance/Pengeluaran/Pengeluaran';
+import TambahPemasukan from './pages/Finance/Pemasukan/TambahPemasukan';
+import DetailPemasukan from './pages/Finance/Pemasukan/DetailPemasukan';
+import EditPemasukan from './pages/Finance/Pemasukan/EditPemasukan';
+import TambahPengeluaran from './pages/Finance/Pengeluaran/TambahPengeluaran';
+import DetailPengeluaran from './pages/Finance/Pengeluaran/DetailPengeluaran';
+import EditPengeluaran from './pages/Finance/Pengeluaran/EditPengeluaran';
 
 
 function App() {
@@ -245,7 +251,13 @@ function App() {
 
         {/* finance tambahan */}
         <Route path='/pemasukan' element={getProtectedRoute(Pemasukan, ['finance' ])} />
+        <Route path='/pemasukan/tambah' element={getProtectedRoute(TambahPemasukan, ['finance' ])} />
+        <Route path='/pemasukan/detail' element={getProtectedRoute(DetailPemasukan, ['finance' ])} />
+        <Route path='/pemasukan/edit/:id' element={getProtectedRoute(EditPemasukan, ['finance' ])} />
         <Route path='/pengeluaran' element={getProtectedRoute(PengeluaranFinance, ['finance' ])} />
+        <Route path='/pengeluaran/tambah' element={getProtectedRoute(TambahPengeluaran, ['finance' ])} />
+        <Route path='/pengeluaran/detail' element={getProtectedRoute(DetailPengeluaran, ['finance' ])} />
+        <Route path='/pengeluaran/edit/:id' element={getProtectedRoute(EditPengeluaran, ['finance' ])} />
         
       </Routes>
     </Router>

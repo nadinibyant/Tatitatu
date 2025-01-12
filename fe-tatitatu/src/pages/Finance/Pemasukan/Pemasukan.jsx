@@ -3,6 +3,9 @@ import Button from "../../../components/Button";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import moment from "moment";
+import Table from "../../../components/Table";
+import InputDropdown from "../../../components/InputDropdown";
+import { useNavigate } from "react-router-dom";
 
 export default function Pemasukan(){
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,9 +15,15 @@ export default function Pemasukan(){
   const [selectedKategori, setSelectedKategori] = useState("Semua");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({});
+  const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
 
-  const handleFilterClick = () => {
-    setIsFilterModalOpen(true);
+  const handleFilterClick = (event) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setFilterPosition({
+      top: buttonRect.bottom + window.scrollY + 5,
+      left: buttonRect.left + window.scrollX
+    });
+    setIsFilterModalOpen(prev => !prev);
   };
 
   const handleApplyFilter = () => {
@@ -53,10 +62,70 @@ export default function Pemasukan(){
       year: "numeric",
     });
 
+    const [data, setData] = useState([
+        {
+            Nomor: 'INC1234',
+            Tanggal: '12/05/2024',
+            'Deskripsi/Barang': ['Hibah PT Karya, Dana Kak Syifa', 'Dana Hamzah', 'Uang Sedekah'],
+            Kategori: 'Hibah',
+            'Cash/Non-Cash': 'Cash',
+            Pemasukan: 1000000
+        },
+        {
+            Nomor: 'INC1234',
+            Tanggal: '12/05/2024',
+            'Deskripsi/Barang': ['Hibah PT Karya, Dana Kak Syifa', 'Dana Hamzah', 'Uang Sedekah'],
+            Kategori: 'Sedekah',
+            'Cash/Non-Cash': 'Cash',
+            Pemasukan: 1000000
+        },
+        {
+            Nomor: 'INC1234',
+            Tanggal: '12/05/2024',
+            'Deskripsi/Barang': ['Hibah PT Karya, Dana Kak Syifa', 'Dana Hamzah', 'Uang Sedekah', 'Uang Dini'],
+            Kategori: 'Hibah',
+            'Cash/Non-Cash': 'Cash',
+            Pemasukan: 1000000
+        },
+        {
+            Nomor: 'INC1234',
+            Tanggal: '12/05/2024',
+            'Deskripsi/Barang': ['Hibah PT Karya, Dana Kak Syifa', 'Dana Hamzah', 'Uang Sedekah'],
+            Kategori: 'Zakat',
+            'Cash/Non-Cash': 'Non-Cash',
+            Pemasukan: 1000000
+        }
+    ])
+    
+    const headers = [
+        { label: "Nomor", key: "Nomor", align: "text-left" },
+        { label: "Tanggal", key: "Tanggal", align: "text-left" },
+        { label: "Deskripsi/Barang", key: "Deskripsi/Barang", align: "text-left" },
+        { label: "Kategori", key: "Kategori", align: "text-left" },
+        { label: "Cash/Non-Cash", key: "Cash/Non-Cash", align: "text-left" },
+        { label: "Pemasukan", key: "Pemasukan", align: "text-left" },
+    ];
+
+    const filteredData = data.filter(item => {
+        const matchesKategori = selectedKategori === "Semua" || item.Kategori === selectedKategori;
+        const matchesCashType = selectedJenis === "Semua" || item["Cash/Non-Cash"] === selectedJenis;
+        return matchesKategori && matchesCashType;
+    });
+
+    const navigate = useNavigate()
+    const handleBtnAdd = () => {
+        navigate('/pemasukan/tambah')
+    }
+
+    const handleRowClick = (row) => {
+        navigate('/pemasukan/detail', {state: {nomor: row.Nomor}})
+    }
+
+
     return(
         <>
         <LayoutWithNav>
-            <div className="p-5">
+            <div className="p-5 relative">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
                     <p className="text-primary text-base font-bold">Daftar Pemasukan</p>
@@ -96,8 +165,8 @@ export default function Pemasukan(){
                                 </svg>
                                 } 
                             bgColor="bg-primary" 
-                            hoverColor="hover:bg-white" 
                             textColor="text-white" 
+                            onClick={handleBtnAdd}
                         />
                     </div>
                 </div>
@@ -158,7 +227,79 @@ export default function Pemasukan(){
                     </div>
                     )}
                 </section>
+
+                <section className="mt-5 bg-white rounded-xl">
+                    <div className="p-5">
+                        <Table
+                            headers={headers}
+                            data={filteredData.map((item, index) => ({
+                                ...item,
+                                "Deskripsi/Barang": Array.isArray(item["Deskripsi/Barang"]) 
+                                    ? item["Deskripsi/Barang"].length > 2 
+                                        ? <span>
+                                            {item["Deskripsi/Barang"].slice(0, 2).join(", ")}
+                                            <span className="text-gray-400"> +{item["Deskripsi/Barang"].length - 2} Lainnya</span>
+                                        </span>
+                                        : item["Deskripsi/Barang"].join(", ")
+                                    : item["Deskripsi/Barang"],
+                                Pemasukan: `Rp${item.Pemasukan.toLocaleString('id-ID')}`
+                            }))}
+                            hasFilter={true}
+                            onFilterClick={handleFilterClick}
+                            onRowClick={handleRowClick}
+                        />
+                    </div>
+                </section>
             </div>
+
+            {/* Filter Modal */}
+        {isFilterModalOpen && (
+          <>
+            <div 
+              className="fixed inset-0"
+              onClick={() => setIsFilterModalOpen(false)}
+            />
+            <div 
+              className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+              style={{ 
+                top: filterPosition.top,
+                left: filterPosition.left 
+              }}
+            >
+              <div className="space-y-4">
+                <InputDropdown
+                  label="Kategori"
+                  options={[
+                    { label: "Semua", value: "Semua" },
+                    { label: "Hibah", value: "Hibah" },
+                    { label: "Sedekah", value: "Sedekah" },
+                    { label: "Zakat", value: "Zakat" }
+                  ]}
+                  value={selectedKategori}
+                  onSelect={(value) => setSelectedKategori(value.value)}
+                  required={true}
+                />
+                <InputDropdown
+                  label="Cash/Non-Cash"
+                  options={[
+                    { label: "Semua", value: "Semua" },
+                    { label: "Cash", value: "Cash" },
+                    { label: "Non-Cash", value: "Non-Cash" }
+                  ]}
+                  value={selectedJenis}
+                  onSelect={(value) => setSelectedJenis(value.value)}
+                  required={true}
+                />
+                <button
+                  onClick={handleApplyFilter}
+                  className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                >
+                  Simpan
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         </LayoutWithNav>
         </>
     )
