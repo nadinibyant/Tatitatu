@@ -5,6 +5,7 @@ import { menuItems, userOptions } from "../../../data/menu";
 import { Pencil, Trash2, Plus, X } from 'lucide-react';
 import Input from "../../../components/Input";
 import FileInput from "../../../components/FileInput";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function Toko(){
     function formatNumberWithDots(number) {
@@ -131,7 +132,7 @@ export default function Toko(){
     
     return(
         <>
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
@@ -435,7 +436,7 @@ export default function Toko(){
                         </div>
                     )}
             </div>
-        </Navbar>
+        </LayoutWithNav>
         </>
     )
 }
