@@ -269,7 +269,7 @@ export default function KaryawanTerbaik() {
                                 <h3 className="font-bold text-lg mb-4">
                                     {isHeadGudang 
                                         ? "10 Karyawan Terbaik di Rumah Produksi"
-                                        : "10 Karyawan Terbaik di Toko"
+                                        : "10 Karyawan Terbaik"
                                     }
                                 </h3>
                                 <div className="overflow-x-auto">

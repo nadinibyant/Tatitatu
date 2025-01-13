@@ -274,6 +274,8 @@ export default function HariTerlaris(){
                                     "Produk Terjual": `${item["Produk Terjual"]} Pcs`,
                                     "Total Transaksi": `Rp${formatNumberWithDots(item["Total Transaksi"])}`,
                                 }))}
+                                hasSearch={false}
+                                hasPagination={false}
                             />      
                         </div>
                     </section>

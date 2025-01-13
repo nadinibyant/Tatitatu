@@ -335,6 +335,50 @@ export const menuItems = [
       link: "/master-kategori",
       icon: "/Menu/masterKategori.svg",
       iconWarna: '/Icon Warna/masterKategori.svg',
-  },
+    },
+  ]
+
+  export const menuManajer = [
+    {
+      label: "Dashboard",
+      link: "/dashboard",
+      icon: "/Menu/dashboard.svg",
+      iconWarna: '/Icon Warna/dashboard.svg',
+      submenu: [
+        { label: "Overview", link: "/dashboard" },
+        { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
+        { label: "Toko Terbaik", link: "/dashboard/toko-terbaik" },
+        { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
+        { label: "Hari Terlaris", link: "/dashboard/hari-terlaris" },
+      ],
+    },
+    {
+      label: "KPI",
+      link: "/daftarPenilaianKPI",
+      icon: "/Menu/kpi.svg",
+      iconWarna: '/Icon Warna/kpi.svg',
+      submenu: [
+          {label: "Daftar Penilaian KPI", link: '/daftarPenilaianKPI'},
+          {label: "KPI Seluruh Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
+        ],
+    },
+    {
+      label: "Karyawan Absens & Gaji",
+      link: "/karyawan-absen-gaji",
+      icon: "/Menu/karyawanAbsensi.svg",
+      iconWarna: '/Icon Warna/karyawanAbsensi.svg',
+    },
+    {
+      label: "Laporan Keuangan Perusahaan",
+      link: "/laporanKeuangan",
+      icon: "/Menu/laporanKeuangan.svg",
+      iconWarna: '/Icon Warna/laporanKeuangan.svg',
+    },
+    {
+      label: "Toko",
+      link: "/toko",
+      icon: "/Menu/toko.svg",
+      iconWarna: '/Icon Warna/toko.svg',
+    },
   ]
   

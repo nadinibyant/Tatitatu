@@ -23,6 +23,7 @@ const AuthPages = ({ defaultTab = 'login' }) => {
     'karyawantransportasi@gmail.com': { role: 'karyawantransportasi', route: '/izin-cuti-karyawan' },
     'owner@gmail.com': { role: 'owner', route: '/dashboard' },
     'finance@gmail.com': { role: 'finance', route: '/laporanKeuangan' },
+    'manajer@gmail.com': { role: 'manajer', route: '/dashboard' },
   };
 
 

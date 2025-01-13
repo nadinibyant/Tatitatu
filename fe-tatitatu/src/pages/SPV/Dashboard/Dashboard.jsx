@@ -14,6 +14,7 @@ export default function Dashboard(){
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
@@ -547,7 +548,7 @@ export default function Dashboard(){
                               </svg>
                           </div>
                           <h2 className="text-lg font-bold text-[#93025F]">
-                              {isOwner ? 'Toko Terlaris' : 'Cabang Terlaris'}
+                            {isOwner || isManajer ? 'Toko Terlaris' : 'Cabang Terlaris'}
                           </h2>
                       </div>
                   )}
@@ -589,7 +590,9 @@ export default function Dashboard(){
                             </div>
 
                             <div className="w-full bg-white rounded-xl p-5">
-                                <p className="font-bold">10 Karyawan Terbaik di Toko</p>
+                                <p className="font-bold">
+                                  {isOwner || isManajer ? '10 Karyawan Teerbaik Perusahaan' : '10 Karyawan Terbaik Toko'}
+                                </p>
                                 <Table
                                     headers={headers2}
                                     data={data.karyawan_terbaik.map((item, index) => ({

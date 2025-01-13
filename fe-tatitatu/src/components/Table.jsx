@@ -13,7 +13,8 @@ const Table = ({
   hasPagination = true,
   hasSubmenu = false,
   submenuItems = [],
-  defaultSubmenu = 'semua'
+  defaultSubmenu = 'semua',
+  additionalButton
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pageSize, setPageSize] = useState(10);
@@ -92,19 +93,22 @@ const Table = ({
             </div>
           )}
           {hasFilter && (
-            <button
-              className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-primary/50 transition-colors"
-              onClick={onFilterClick}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-700"
-                viewBox="0 0 20 20"
-                fill="currentColor"
+            <div className="flex items-center gap-2">
+              <button
+                className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-primary/50 transition-colors"
+                onClick={onFilterClick}
               >
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V4z" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-700"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V4z" />
+                </svg>
+              </button>
+              {additionalButton}
+            </div>
           )}
         </div>
         {hasPagination && (

@@ -20,6 +20,7 @@ export default function ProdukTerlaris() {
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
 
   useEffect(() => {
     setSelectedStore("Semua");
@@ -272,7 +273,7 @@ export default function ProdukTerlaris() {
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             <div className="left w-full md:w-auto">
               <p className="text-primary text-base font-bold">
-                  {isOwner ? 'Produk Terlaris Perusahaan' : 'Produk Terlaris'}
+                  {isOwner || isManajer ? 'Produk Terlaris Perusahaan' : 'Produk Terlaris'}
               </p>
             </div>
 
@@ -452,7 +453,7 @@ export default function ProdukTerlaris() {
                   <div className="bg-white rounded-xl p-5">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-base">
-                            {isOwner ? '10 Barang Terlaris di Perusahaan' : '10 Barang Terlaris di Toko'}
+                            {isOwner || isManajer? '10 Barang Terlaris di Perusahaan' : '10 Barang Terlaris di Toko'}
                         </h3>
                       </div>
                       <Table
