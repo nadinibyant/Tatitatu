@@ -90,6 +90,12 @@ export default function MasterKategori() {
                     category.title === 'Kategori Pengeluaran' || 
                     category.title === 'Kategori Pemasukan'
                 );
+            case 'admin':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran' || 
+                    category.title === 'Kategori Barang' || 
+                    category.title === 'Divisi'
+                );
             default:
                 return data.categories;
         }

@@ -10,6 +10,7 @@ import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
+import InputDropdown from "../../../../components/InputDropdown";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
@@ -27,6 +28,7 @@ export default function BarangCustom() {
         price: "Rp10.000",
         image: "https://via.placeholder.com/50",
         type: "Zipper",
+        kategori: 'Aksesoris'
       },
       {
         id: 2,
@@ -34,6 +36,7 @@ export default function BarangCustom() {
         price: "Rp15.000",
         image: "https://via.placeholder.com/50",
         type: "Box",
+        kategori: 'Aksesoris'
       },
       {
         id: 3,
@@ -41,6 +44,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 4,
@@ -48,6 +52,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 5,
@@ -55,6 +60,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 6,
@@ -62,6 +68,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 7,
@@ -69,6 +76,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 8,
@@ -76,6 +84,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 9,
@@ -83,6 +92,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 10,
@@ -90,6 +100,7 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
       {
         id: 11,
@@ -97,115 +108,35 @@ export default function BarangCustom() {
         price: "Rp12.000",
         image: "https://via.placeholder.com/50",
         type: "Paper Bag",
-      },
-      {
-        id: 12,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 13,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 14,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 15,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 16,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 17,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 18,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 19,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 20,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 21,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 22,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 23,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 24,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
+        kategori: 'Aksesoris'
       },
 ])
 
-  const [data2, setData2] = useState({
-    info_barang: {
-      Nomor: "",
-      "Nama Barang": "",
-      "Jumlah Minimum Stok": "",
-      Foto: null,
+const categoryOptions = [
+  "Aksesoris",
+  "Perhiasan",
+  "Mainan",
+  "Dekorasi",
+  "Pakaian",
+  "Lainnya"
+];
+
+const [data2, setData2] = useState({
+  info_barang: {
+    Nomor: "",
+    "Nama Barang": "",
+    "Jumlah Minimum Stok": "",
+    Kategori: "",
+    Foto: null,
+  },
+  rincian_biaya: [
+    {
+      Harga: "",
+      Isi: "",
+      HargaSatuan: "",
     },
-    rincian_biaya: [
-      {
-        Harga: "",
-        Isi: "",
-        HargaSatuan: "",
-      },
-    ],
-  });
+  ],
+});
 
   const handleAddBtn = () => {
     setModalMode("add");
@@ -231,18 +162,21 @@ export default function BarangCustom() {
     setModalMode("edit");
     setId(itemId.id);
     setModal(true);
-    // const itemToEdit = data.find((item) => item.id === itemId);
+    
+    const itemToEdit = data.find(item => item.id === itemId.id);
+    
     setData2({
       info_barang: {
         Nomor: "123",
-        "Nama Barang":  "Barbie",
-        "Jumlah Minimum Stok": 12, 
-        Foto: "https://via.placeholder.com/50",
+        "Nama Barang": itemToEdit.title,
+        "Jumlah Minimum Stok": 12,
+        Kategori: itemToEdit.kategori, 
+        Foto: itemToEdit.image,
       },
       rincian_biaya: [
         {
           Harga: 1000,
-          Isi: 20, 
+          Isi: 20,
           HargaSatuan: 50,
         },
       ],
@@ -280,7 +214,7 @@ export default function BarangCustom() {
   const headers = [
     { label: "No", key: "No", align: "text-left" },
     { label: "Harga", key: "Harga", align: "text-left" },
-    { label: "Isi", key: "Isi", align: "text-left" },
+    { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
     { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
   ];
 
@@ -435,6 +369,16 @@ export default function BarangCustom() {
                         placeholder="Masukan Nama Barang"
                         value={data2.info_barang["Nama Barang"]}
                         onChange={(value) => handleInfoBarangChange("Nama Barang", value)}
+                      />
+                    </div>
+
+                    <div className="">
+                      <InputDropdown
+                        label="Kategori"
+                        options={categoryOptions}
+                        value={data2.info_barang.Kategori}
+                        onSelect={(value) => handleInfoBarangChange("Kategori", value)}
+                        required={true}
                       />
                     </div>
 

@@ -90,57 +90,135 @@ export default function TambahKPI(){
         return number.toLocaleString('id-ID');
     }
 
-    const handleMonthChange = (e) => {
-        const selectedMonth = e.target.value;
-        setStartDate(selectedMonth);
-        setDaysInMonth(moment(selectedMonth).daysInMonth()); // Update days based on selected month
-        setData((prev) => ({
-          ...prev,
-          kpi1: {
-            ...prev.kpi1,
-            checkedDays: Array(moment(selectedMonth).daysInMonth()).fill(false), // Reset checkedDays based on days in selected month
-          },
-        }));
-      };
-    
     const handleDayCheck = (day) => {
-        setData((prev) => ({
-          ...prev,
-          kpi1: {
-            ...prev.kpi1,
-            checkedDays: prev.kpi1.checkedDays.map((checked, index) =>
-              index === day - 1 ? !checked : checked
-            ),
-          },
-        }));
+        setData((prev) => {
+          const newCheckedDays = [...prev.kpi1.checkedDays];
+          newCheckedDays[day - 1] = !newCheckedDays[day - 1];
+
+          const updatedData = {
+            ...prev,
+            kpi1: {
+              ...prev.kpi1,
+              checkedDays: newCheckedDays
+            }
+          };
+          
+          const newStats = calculateKPI1Stats();
+
+          return {
+            ...updatedData,
+            kpi1: {
+              ...updatedData.kpi1,
+              stats: newStats
+            }
+          };
+        });
       };
-    
+      
       const handleWeekCheck = (week) => {
-        setData(prev => ({
-          ...prev,
-          kpi2: {
-            ...prev.kpi2,
-            weeks: prev.kpi2.weeks.map((checked, index) => 
-              index === week - 1 ? !checked : checked
-            )
-          }
-        }));
+        setData(prev => {
+          const newWeeks = [...prev.kpi2.weeks];
+          newWeeks[week - 1] = !newWeeks[week - 1];
+          
+          const newStats = calculateKPI2Stats();
+          
+          return {
+            ...prev,
+            kpi2: {
+              ...prev.kpi2,
+              weeks: newWeeks,
+              stats: newStats
+            }
+          };
+        });
       };
-    
+      
       const handleMonthCheck = () => {
-        setData(prev => ({
-          ...prev,
-          kpi3: {
-            ...prev.kpi3,
-            monthlyCheck: !prev.kpi3.monthlyCheck
-          }
-        }));
+        setData(prev => {
+          const newMonthlyCheck = !prev.kpi3.monthlyCheck;
+          
+          const newStats = calculateKPI3Stats();
+          
+          return {
+            ...prev,
+            kpi3: {
+              ...prev.kpi3,
+              monthlyCheck: newMonthlyCheck,
+              stats: newStats
+            }
+          };
+        });
       };
 
       useEffect(() => {
-        // Set the number of days in the selected month
+        const kpi1Stats = calculateKPI1Stats();
+        const kpi2Stats = calculateKPI2Stats();
+        const kpi3Stats = calculateKPI3Stats();
+        
+        const totalBonus = kpi1Stats.bonus + kpi2Stats.bonus + kpi3Stats.bonus;
+        const totalPercentage = (
+          (Number(kpi1Stats.percentage) + Number(kpi2Stats.percentage) + Number(kpi3Stats.percentage)) / 3
+        ).toFixed(2);
+        
+        setData(prev => ({
+          ...prev,
+          totalPercentage,
+          bonus: totalBonus
+        }));
+      }, [data.kpi1.checkedDays, data.kpi2.weeks, data.kpi3.monthlyCheck]);
+
+      useEffect(() => {
         setDaysInMonth(moment(startDate).daysInMonth());
       }, [startDate]);
+
+      const calculateKPI1Stats = () => {
+        const totalDays = data.kpi1.checkedDays.length;
+        
+        const tercapai = data.kpi1.checkedDays.filter(day => day).length;
+        
+        const tidakTercapai = totalDays - tercapai;
+        
+        const percentage = (tercapai / totalDays) * data.kpi1.percentage;
+        
+        // Hitung bonus
+        const bonus = (data.kpi1.percentage / 100) * tercapai * 50000;
+      
+        return {
+          tercapai, 
+          tidakTercapai, 
+          percentage: percentage.toFixed(2),
+          bonus
+        };
+      };
+      
+      const calculateKPI2Stats = () => {
+        const totalWeeks = data.kpi2.weeks.length;
+        const tercapai = data.kpi2.weeks.filter(week => week).length;
+        const tidakTercapai = totalWeeks - tercapai;
+        const percentage = (tercapai / totalWeeks) * data.kpi2.percentage;
+        const bonus = (data.kpi2.percentage / 100) * tercapai * 200000;
+      
+        return {
+          tercapai,
+          tidakTercapai,
+          percentage: percentage.toFixed(2),
+          bonus
+        };
+      };
+      
+      const calculateKPI3Stats = () => {
+        const tercapai = data.kpi3.monthlyCheck ? 1 : 0;
+        const tidakTercapai = data.kpi3.monthlyCheck ? 0 : 1;
+        const percentage = tercapai * data.kpi3.percentage;
+        const bonus = (data.kpi3.percentage / 100) * tercapai * 1000000;
+      
+        return {
+          tercapai,
+          tidakTercapai,
+          percentage: percentage.toFixed(2),
+          bonus
+        };
+      };
 
     return(
         <>
@@ -308,28 +386,33 @@ export default function TambahKPI(){
                                     {/* Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi1.stats.tercapai}</p>
+                                        <p className="text-primary font-bold text-lg">{data.kpi1.checkedDays.filter(day => day).length}</p>
                                     </div>
 
                                     {/* Tidak Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi1.stats.tidakTercapai}</p>
+                                        <p className="text-primary font-bold text-lg">
+                                            {data.kpi1.checkedDays.length - data.kpi1.checkedDays.filter(day => day).length}
+                                        </p>
                                     </div>
 
                                     {/* Persentase Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi1.stats.percentage}%</p>
+                                        <p className="text-primary font-bold text-lg">
+                                            {((data.kpi1.checkedDays.filter(day => day).length / data.kpi1.checkedDays.length) * data.kpi1.percentage).toFixed(2)}%
+                                        </p>
                                     </div>
                                 </div>
-
 
                                 {/* Bonus Yang Diterima */}
                                 <div className="text-end w-1/5">
                                     <div className="">
                                         <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">Rp{formatNumberWithDots(data.kpi1.stats.bonus)}</p>
+                                        <p className="text-primary font-bold text-start">
+                                            Rp{formatNumberWithDots((data.kpi1.percentage / 100) * data.kpi1.checkedDays.filter(day => day).length * 50000)}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -366,28 +449,33 @@ export default function TambahKPI(){
                                     {/* Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi2.stats.tercapai}</p>
+                                        <p className="text-primary font-bold text-lg">{data.kpi2.weeks.filter(week => week).length}</p>
                                     </div>
 
                                     {/* Tidak Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi2.stats.tidakTercapai}</p>
+                                        <p className="text-primary font-bold text-lg">
+                                            {data.kpi2.weeks.length - data.kpi2.weeks.filter(week => week).length}
+                                        </p>
                                     </div>
 
                                     {/* Persentase Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi2.stats.percentage}%</p>
+                                        <p className="text-primary font-bold text-lg">
+                                            {((data.kpi2.weeks.filter(week => week).length / data.kpi2.weeks.length) * data.kpi2.percentage).toFixed(2)}%
+                                        </p>
                                     </div>
                                 </div>
-
 
                                 {/* Bonus Yang Diterima */}
                                 <div className="text-end w-1/5">
                                     <div className="">
                                         <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">Rp{formatNumberWithDots(data.kpi2.stats.bonus)}</p>
+                                        <p className="text-primary font-bold text-start">
+                                            Rp{formatNumberWithDots((data.kpi2.percentage / 100) * data.kpi2.weeks.filter(week => week).length * 200000)}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -422,28 +510,31 @@ export default function TambahKPI(){
                                     {/* Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi3.stats.tercapai}</p>
+                                        <p className="text-primary font-bold text-lg">{data.kpi3.monthlyCheck ? 1 : 0}</p>
                                     </div>
 
                                     {/* Tidak Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi3.stats.tidakTercapai}</p>
+                                        <p className="text-primary font-bold text-lg">{data.kpi3.monthlyCheck ? 0 : 1}</p>
                                     </div>
 
                                     {/* Persentase Tercapai */}
                                     <div className="flex flex-col">
                                         <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi3.stats.percentage}%</p>
+                                        <p className="text-primary font-bold text-lg">
+                                            {data.kpi3.monthlyCheck ? data.kpi3.percentage : 0}%
+                                        </p>
                                     </div>
                                 </div>
-
 
                                 {/* Bonus Yang Diterima */}
                                 <div className="text-end w-1/5">
                                     <div className="">
                                         <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">Rp{formatNumberWithDots(data.kpi3.stats.bonus)}</p>
+                                        <p className="text-primary font-bold text-start">
+                                            Rp{formatNumberWithDots((data.kpi3.percentage / 100) * (data.kpi3.monthlyCheck ? 1 : 0) * 1000000)}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

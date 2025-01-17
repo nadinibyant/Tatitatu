@@ -7,8 +7,9 @@ export const menuItems = [
       submenu: [
         { label: "Overview", link: "/dashboard" },
         { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
-        { label: "Cabang Terlaris", link: "/dashboard/cabang-terlaris" },
+        { label: "Cabang Terbaik", link: "/dashboard/cabang-terlaris" },
         { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
+        { label: "Hari Terlaris", link: "/dashboard/hari-terlaris" },
       ],
     },
     {

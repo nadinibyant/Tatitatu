@@ -10,6 +10,7 @@ import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
+import InputDropdown from "../../../../components/InputDropdown";
 
 export default function Packaging() {
   const [isModal, setModal] = useState(false);
@@ -20,180 +21,67 @@ export default function Packaging() {
   const [id, setId] = useState("");
   const [data,setData] = useState([
     {
-        id: 1,
-        title: "Gelang Barbie 123",
-        price: "Rp10.000",
-        image: "https://via.placeholder.com/50",
-        type: "Zipper",
-      },
-      {
-        id: 2,
-        title: "Cincin Diamond",
-        price: "Rp15.000",
-        image: "https://via.placeholder.com/50",
-        type: "Box",
-      },
-      {
-        id: 3,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 4,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 5,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 6,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 7,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 8,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 9,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 10,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 11,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 12,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 13,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 14,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 15,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 16,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 17,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 18,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 19,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 20,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 21,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 22,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 23,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
-      {
-        id: 24,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-      },
+      id: 1,
+      title: "Gelang Barbie 123",
+      price: "Rp10.000",
+      image: "https://via.placeholder.com/50",
+      type: "Zipper",
+      kategori: "Zipper",
+    },
+    {
+      id: 2,
+      title: "Cincin Diamond",
+      price: "Rp15.000",
+      image: "https://via.placeholder.com/50",
+      type: "Box",
+      kategori: "Box",
+    },
+    {
+      id: 3,
+      title: "Anting Kristal",
+      price: "Rp12.000",
+      image: "https://via.placeholder.com/50",
+      type: "Paper Bag",
+      kategori: "Paper Bag",
+    },
 ])
 
-  const [data2, setData2] = useState({
+const categoryOptions = [
+  "Paper Bag",
+  "Box",
+  "Plastik",
+  "Zipper",
+  "Karton",
+  "Lainnya"
+];
+
+
+const [data2, setData2] = useState({
+  info_barang: {
+    Nomor: "",
+    "Nama Barang": "",
+    "Jumlah Minimum Stok": "",
+    Kategori: "",
+    Foto: null,
+  },
+  rincian_biaya: [
+    {
+      Harga: "",
+      Isi: "",
+      HargaSatuan: "",
+    },
+  ],
+});
+
+const handleAddBtn = () => {
+  setModalMode("add");
+  setModal(true);
+  setData2({
     info_barang: {
       Nomor: "",
       "Nama Barang": "",
       "Jumlah Minimum Stok": "",
+      Kategori: "",
       Foto: null,
     },
     rincian_biaya: [
@@ -204,48 +92,32 @@ export default function Packaging() {
       },
     ],
   });
+};  
 
-  const handleAddBtn = () => {
-    setModalMode("add");
-    setModal(true);
-    setData2({
-      info_barang: {
-        Nomor: "",
-        "Nama Barang": "",
-        "Jumlah Minimum Stok": "",
-        Foto: null,
+const handleEdit = (itemId) => {
+  setModalMode("edit");
+  setId(itemId.id);
+  setModal(true);
+  
+  const itemToEdit = data.find(item => item.id === itemId.id);
+  
+  setData2({
+    info_barang: {
+      Nomor: "123",
+      "Nama Barang": "Barbie",
+      "Jumlah Minimum Stok": 12,
+      Kategori: itemToEdit?.kategori || "", 
+      Foto: "https://via.placeholder.com/50",
+    },
+    rincian_biaya: [
+      {
+        Harga: 1000,
+        Isi: 20,
+        HargaSatuan: 50,
       },
-      rincian_biaya: [
-        {
-          Harga: "",
-          Isi: "",
-          HargaSatuan: "",
-        },
-      ],
-    });
-  };
-
-  const handleEdit = (itemId) => {
-    setModalMode("edit");
-    setId(itemId.id);
-    setModal(true);
-    // const itemToEdit = data.find((item) => item.id === itemId);
-    setData2({
-      info_barang: {
-        Nomor: "123",
-        "Nama Barang":  "Barbie",
-        "Jumlah Minimum Stok": 12, 
-        Foto: "https://via.placeholder.com/50",
-      },
-      rincian_biaya: [
-        {
-          Harga: 1000,
-          Isi: 20, 
-          HargaSatuan: 50,
-        },
-      ],
-    });
-  };
+    ],
+  });
+};
 
   const handleInfoBarangChange = (key, value) => {
     setData2((prevData) => ({
@@ -278,7 +150,7 @@ export default function Packaging() {
   const headers = [
     { label: "No", key: "No", align: "text-left" },
     { label: "Harga", key: "Harga", align: "text-left" },
-    { label: "Isi", key: "Isi", align: "text-left" },
+    { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
     { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
   ];
 
@@ -432,6 +304,16 @@ export default function Packaging() {
                         placeholder="Masukan Nama Barang"
                         value={data2.info_barang["Nama Barang"]}
                         onChange={(value) => handleInfoBarangChange("Nama Barang", value)}
+                      />
+                    </div>
+
+                    <div className="">
+                      <InputDropdown
+                        label="Kategori"
+                        options={categoryOptions}
+                        value={data2.info_barang.Kategori}
+                        onSelect={(value) => handleInfoBarangChange("Kategori", value)}
+                        required={true}
                       />
                     </div>
 

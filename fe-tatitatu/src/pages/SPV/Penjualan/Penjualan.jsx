@@ -231,6 +231,7 @@ export default function Penjualan() {
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
                                 "Total Transaksi": formatRupiah(item["Total Transaksi"]),
                                 "Diskon": `${item["Diskon"]}%`,
+                                Pajak: `${item.Pajak}%`,
                                 action: <ActionMenu 
                                     onEdit={() => handleEdit(item)} 
                                     onDelete={() => handleDelete(item)} 

@@ -267,7 +267,7 @@ export default function EditPembelianStok() {
         { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
         { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];

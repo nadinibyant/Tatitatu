@@ -7,6 +7,7 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import { menuHeadGudang, menuItems, userOptions } from "../../../data/menu";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import { useNavigate } from "react-router-dom";
+import InputDropdown from "../../../components/InputDropdown";
 
 export default function Dashboard(){
 
@@ -25,17 +26,25 @@ export default function Dashboard(){
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({});
 
-  useEffect(() => {
-    setSelectedStore("Semua");
-  }, []);
+  const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
 
-  const handleFilterClick = () => {
-    setIsFilterModalOpen(true);
+  const handleFilterClick = (event) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setFilterPosition({
+      top: buttonRect.bottom + window.scrollY + 5,
+      left: buttonRect.left + window.scrollX
+    });
+    setIsFilterModalOpen(prev => !prev);
   };
 
   const handleApplyFilter = () => {
     setIsFilterModalOpen(false);
   };
+
+
+  useEffect(() => {
+    setSelectedStore("Semua");
+  }, []);
 
   const handleToday = () => {
     const today = moment().startOf("day");
@@ -611,8 +620,47 @@ export default function Dashboard(){
                     </section>
             </div>
 
+            {isFilterModalOpen && (
+            <>
+                <div 
+                    className="fixed inset-0"
+                    onClick={() => setIsFilterModalOpen(false)}
+                />
+                <div 
+                    className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                    style={{ 
+                        top: filterPosition.top,
+                        left: filterPosition.left 
+                    }}
+                >
+                    <div className="space-y-4">
+                    {filterFields.map((field) => (
+                            <InputDropdown
+                                key={field.key}
+                                label={field.label}
+                                options={field.options}
+                                value={field.key === "Jenis" ? selectedJenis : selectedKategori}
+                                onSelect={(value) => 
+                                    field.key === "Jenis" 
+                                        ? setSelectedJenis(value.value)
+                                        : setSelectedKategori(value.value)
+                                }
+                                required={true}
+                            />
+                        ))}
+                        <button
+                            onClick={handleApplyFilter}
+                            className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                        >
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </>
+        )}
+
             {/* Filter Modal */}
-        {isFilterModalOpen && (
+        {/* {isFilterModalOpen && (
             <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
               <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
                 <button
@@ -646,7 +694,7 @@ export default function Dashboard(){
                 </form>
               </div>
             </div>
-          )}
+          )} */}
         </LayoutWithNav>
         </>
     )

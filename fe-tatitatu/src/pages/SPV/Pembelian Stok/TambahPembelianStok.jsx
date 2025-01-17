@@ -74,9 +74,9 @@ export default function TambahPembelianStok() {
             setSelectMetode(dataMetode[0].id); 
         }
     };
-
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
+    
+    const handleSelectMetode = (selectedOption) => {
+        setSelectMetode(selectedOption.id);
     };
 
     const breadcrumbItems = [
@@ -90,7 +90,7 @@ export default function TambahPembelianStok() {
         { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
         { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: "110px"},
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];

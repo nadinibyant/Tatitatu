@@ -6,6 +6,7 @@ import Table from "../../../components/Table";
 import { menuItems, userOptions } from "../../../data/menu";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import ButtonDropdown from "../../../components/ButtonDropdown";
+import InputDropdown from "../../../components/InputDropdown";
 
 export default function AkunKaryawan() {
     const [showModal, setShowModal] = useState(false);
@@ -16,13 +17,36 @@ export default function AkunKaryawan() {
     const modalRef = useRef(null);
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    const detailModalRef = useRef(null);
 
-    const handleFilterClick = () => {
-        setIsFilterModalOpen(true);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (detailModalRef.current && !event.target.closest('.modal-content')) {
+            setShowDetailModal(false);
+          }
+        };
+    
+        if (showDetailModal) {
+          document.addEventListener('mousedown', handleClickOutside);
+        }
+    
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }, [showDetailModal]);
+
+    const handleFilterClick = (event) => {
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      setFilterPosition({
+        top: buttonRect.bottom + window.scrollY + 5,
+        left: buttonRect.left + window.scrollX
+      });
+      setIsFilterModalOpen(prev => !prev);
     };
-
+  
     const handleApplyFilter = () => {
-        setIsFilterModalOpen(false);
+      setIsFilterModalOpen(false);
     };
 
     const navigate = useNavigate();
@@ -253,114 +277,126 @@ export default function AkunKaryawan() {
             )}
 
             {/* Detail Modal */}
-            {showDetailModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                    <div className="bg-white rounded-lg w-full max-w-2xl mx-4 overflow-hidden relative">
-                        <button
-                            onClick={() => setShowDetailModal(false)}
-                            className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                {showDetailModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" ref={detailModalRef}>
+                        <div className="modal-content bg-white rounded-lg w-full max-w-2xl mx-4 overflow-hidden">
                         {/* Header dengan nama karyawan */}
                         <div className="p-4 flex justify-between items-center border-b">
                             <h2 className="text-lg font-semibold">{selectedEmployee?.Nama}</h2>
                             <div className="flex gap-2">
-                                <Button
-                                    label={'Edit'}  
-                                    icon={
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M2.5 14.375V17.5H5.625L14.8417 8.28334L11.7167 5.15834L2.5 14.375ZM17.2583 5.86667C17.5833 5.54167 17.5833 5.01667 17.2583 4.69167L15.3083 2.74167C14.9833 2.41667 14.4583 2.41667 14.1333 2.74167L12.6083 4.26667L15.7333 7.39167L17.2583 5.86667Z" fill="#F97316"/>
-                                        </svg>
-                                    } 
-                                    onClick={() => handleEdit(selectedEmployee?.id)}      
-                                    bgColor="border-oren border"   
-                                    textColor="text-oren"                    
-                                />
-                                {/* <button
-                                    onClick={() => handleEdit(selectedEmployee?.id)}
-                                    className="flex items-center gap-2 px-4 py-2 text-orange-500 bg-white border border-orange-500 rounded hover:bg-orange-50"
-                                >
-                                    
-                                    Edit
-                                </button> */}
-                                <Button
-                                    label={'Hapus'}
-                                    icon={
-                                        <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M15.75 1.875H2.25C1.62868 1.875 1.125 2.37868 1.125 3V3.75C1.125 4.37132 1.62868 4.875 2.25 4.875H15.75C16.3713 4.875 16.875 4.37132 16.875 3.75V3C16.875 2.37868 16.3713 1.875 15.75 1.875Z" fill="white"/>
-                                        <path d="M2.61724 6H15.3828L14.7265 16.9453C14.6503 18.0844 13.7099 18.975 12.5671 18.975H5.43296C4.29022 18.975 3.34979 18.0844 3.27357 16.9453L2.61724 6Z" fill="white"/>
-                                        <path d="M6.375 9.375C6.375 9.16789 6.54289 9 6.75 9H7.125C7.33211 9 7.5 9.16789 7.5 9.375V15.375C7.5 15.5821 7.33211 15.75 7.125 15.75H6.75C6.54289 15.75 6.375 15.5821 6.375 15.375V9.375Z" fill="red"/>
-                                        <path d="M10.5 9.375C10.5 9.16789 10.6679 9 10.875 9H11.25C11.4571 9 11.625 9.16789 11.625 9.375V15.375C11.625 15.5821 11.4571 15.75 11.25 15.75H10.875C10.6679 15.75 10.5 15.5821 10.5 15.375V9.375Z" fill="red"/>
-                                    </svg>
-                                    }
-                                    bgColor="bg-merah"
-                                    onClick={() => handleDelete(selectedEmployee?.id)}
-                                    textColor="text-white"
-                                /> 
-                                {/* <button
-                                    onClick={() => handleDelete(selectedEmployee?.id)}
-                                    className="flex items-center gap-2 px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700"
-                                >
-                                    
-                                    Hapus
-                                </button> */}
+                            <Button
+                                label={'Edit'}  
+                                icon={
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.5 14.375V17.5H5.625L14.8417 8.28334L11.7167 5.15834L2.5 14.375ZM17.2583 5.86667C17.5833 5.54167 17.5833 5.01667 17.2583 4.69167L15.3083 2.74167C14.9833 2.41667 14.4583 2.41667 14.1333 2.74167L12.6083 4.26667L15.7333 7.39167L17.2583 5.86667Z" fill="#F97316"/>
+                                </svg>
+                                } 
+                                onClick={() => handleEdit(selectedEmployee?.id)}      
+                                bgColor="border-oren border"   
+                                textColor="text-oren"                    
+                            />
+                            <Button
+                                label={'Hapus'}
+                                icon={
+                                <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15.75 1.875H2.25C1.62868 1.875 1.125 2.37868 1.125 3V3.75C1.125 4.37132 1.62868 4.875 2.25 4.875H15.75C16.3713 4.875 16.875 4.37132 16.875 3.75V3C16.875 2.37868 16.3713 1.875 15.75 1.875Z" fill="white"/>
+                                    <path d="M2.61724 6H15.3828L14.7265 16.9453C14.6503 18.0844 13.7099 18.975 12.5671 18.975H5.43296C4.29022 18.975 3.34979 18.0844 3.27357 16.9453L2.61724 6Z" fill="white"/>
+                                    <path d="M6.375 9.375C6.375 9.16789 6.54289 9 6.75 9H7.125C7.33211 9 7.5 9.16789 7.5 9.375V15.375C7.5 15.5821 7.33211 15.75 7.125 15.75H6.75C6.54289 15.75 6.375 15.5821 6.375 15.375V9.375Z" fill="red"/>
+                                    <path d="M10.5 9.375C10.5 9.16789 10.6679 9 10.875 9H11.25C11.4571 9 11.625 9.16789 11.625 9.375V15.375C11.625 15.5821 11.4571 15.75 11.25 15.75H10.875C10.6679 15.75 10.5 15.5821 10.5 15.375V9.375Z" fill="red"/>
+                                </svg>
+                                }
+                                bgColor="bg-merah"
+                                onClick={() => handleDelete(selectedEmployee?.id)}
+                                textColor="text-white"
+                            /> 
                             </div>
                         </div>
 
                         {/* Content */}
                         <div className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Profile Image Column */}
-                                <div className="flex justify-center items-start">
-                                    <img
-                                        src={selectedEmployee?.foto || "/default-profile.jpg"}
-                                        alt={selectedEmployee?.Nama}
-                                        className="w-32 h-32 object-cover rounded-lg"
-                                    />
-                                </div>
+                            {/* Profile Image Column */}
+                            <div className="flex justify-center items-start">
+                                <img
+                                src={selectedEmployee?.foto || "/default-profile.jpg"}
+                                alt={selectedEmployee?.Nama}
+                                className="w-32 h-32 object-cover rounded-lg"
+                                />
+                            </div>
 
-                                {/* Details Columns */}
-                                <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-gray-500">Email</p>
-                                        <p className="font-medium">{selectedEmployee?.Email}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Password</p>
-                                        <p className="font-medium">{selectedEmployee?.password}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Divisi</p>
-                                        <p className="font-medium">{selectedEmployee?.Divisi}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Jumlah Gaji Pokok</p>
-                                        <p className="font-medium">{selectedEmployee?.["Jumlah Gaji Pokok"]}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Bonus</p>
-                                        <p className="font-medium">{selectedEmployee?.Bonus}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Waktu Kerja Sebulan</p>
-                                        <p className="font-medium">{selectedEmployee?.["Waktu Kerja"]}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500">Nomor Handphone</p>
-                                        <p className="font-medium">{selectedEmployee?.["No.Handphone"]}</p>
-                                    </div>
+                            {/* Details Columns */}
+                            <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                <p className="text-gray-500">Email</p>
+                                <p className="font-medium">{selectedEmployee?.Email}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Password</p>
+                                <p className="font-medium">{selectedEmployee?.password}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Divisi</p>
+                                <p className="font-medium">{selectedEmployee?.Divisi}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Jumlah Gaji Pokok</p>
+                                <p className="font-medium">{selectedEmployee?.["Jumlah Gaji Pokok"]}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Bonus</p>
+                                <p className="font-medium">{selectedEmployee?.Bonus}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Waktu Kerja Sebulan</p>
+                                <p className="font-medium">{selectedEmployee?.["Waktu Kerja"]}</p>
+                                </div>
+                                <div>
+                                <p className="text-gray-500">Nomor Handphone</p>
+                                <p className="font-medium">{selectedEmployee?.["No.Handphone"]}</p>
                                 </div>
                             </div>
+                            </div>
+                        </div>
                         </div>
                     </div>
-                </div>
-            )}
+                    )}
 
-                    {/* Filter Modal */}
                     {isFilterModalOpen && (
+                        <>
+                            <div 
+                                className="fixed inset-0"
+                                onClick={() => setIsFilterModalOpen(false)}
+                            />
+                            <div 
+                                className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                                style={{ 
+                                    top: filterPosition.top,
+                                    left: filterPosition.left 
+                                }}
+                            >
+                                <div className="space-y-4">
+                                    {filterFields.map((field) => (
+                                        <InputDropdown
+                                            key={field.key}
+                                            label={field.label}
+                                            options={field.options}
+                                            value={selectedKategori}
+                                            onSelect={(value) => setSelectedKategori(value.value)}
+                                            required={true}
+                                        />
+                                    ))}
+                                    <button
+                                        onClick={handleApplyFilter}
+                                        className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                    >
+                                        Simpan
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Filter Modal */}
+                    {/* {isFilterModalOpen && (
                         <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                             <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
                                 <button
@@ -394,7 +430,7 @@ export default function AkunKaryawan() {
                                 </form>
                             </div>
                         </div>
-                    )}
+                    )} */}
         </>
     );
 }

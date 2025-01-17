@@ -9,6 +9,7 @@ import moment from "moment";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import ActionMenu from "../../../components/ActionMenu";
 
 export default function PembelianStok() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +115,7 @@ export default function PembelianStok() {
         { label: "Diskon", key: "Diskon", align: "text-center" },
         { label: "Pajak", key: "Pajak", align: "text-center" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-center"},
+        { label: "Aksi", key: "action", align: "text-center" },
       ];
     
       const data = [
@@ -365,7 +366,21 @@ return (
             </section>
 
             <section className="bg-white p-5 mt-5 rounded-xl">
-                <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="Semua"/>
+                {/* <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="semua" /> */}
+                <Table
+                    headers={headers}
+                    data={filteredData.map((item, index) => ({
+                        ...item,
+                        action: <ActionMenu 
+                            onEdit={() => handleEdit(item)} 
+                            onDelete={() => handleDelete(item)} 
+                        />
+                    }))}
+                    onRowClick={handleRowClick}
+                    hasSubmenu={true}
+                    submenuItems={submenuItems}
+                    defaultSubmenu="semua"
+                />        
                 {/* Modal for More Options */}
                 {isModalMore && selectedItem && (
                 <div

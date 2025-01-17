@@ -5,6 +5,8 @@ import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import InputDropdown from "../../../components/InputDropdown";
+import { X } from "lucide-react";
 
 export default function StokBarang() {
     const headers = [
@@ -18,45 +20,67 @@ export default function StokBarang() {
     const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    const [selectedStore, setSelectedStore] = useState("Semua");
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
 
-    const handleFilterClick = () => {
-        setIsFilterModalOpen(true);
+    const dataCabang = [
+        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
+        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
+    ];
+
+    const handleFilterClick = (event) => {
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      setFilterPosition({
+        top: buttonRect.bottom + window.scrollY + 5,
+        left: buttonRect.left + window.scrollX
+      });
+      setIsFilterModalOpen(prev => !prev);
     };
-
+  
     const handleApplyFilter = () => {
-        setIsFilterModalOpen(false);
+      setIsFilterModalOpen(false);
     };
 
     const [data] = useState([
         {
-            Nomor: "PC124",
+            Nomor: "SIO202",
             "Nama Barang": "Gelang Besi",
-            Jenis: "Non-Handmade",
+            Jenis: "Sedang",
             Kategori: "Gelang",
-            "Jumlah Stok": 500
+            "Jumlah Stok": 1000,
+            image: "/path/to/gelang-image.jpg",
+            cabang: [
+                { nama: "GOR HAS", stok: 500 },
+                { nama: "Lubeg", stok: 500 }
+            ]
         },
         {
             Nomor: "PC125",
             "Nama Barang": "Cincin Perak",
             Jenis: "Handmade",
             Kategori: "Cincin",
-            "Jumlah Stok": 300
+            "Jumlah Stok": 300,
+            image: "/path/to/cincin-image.jpg",
+            cabang: [
+                { nama: "GOR HAS", stok: 150 },
+                { nama: "Lubeg", stok: 150 }
+            ]
         },
-        {
-            Nomor: "PC126",
-            "Nama Barang": "Anting Emas",
-            Jenis: "Custom",
-            Kategori: "Anting-Anting",
-            "Jumlah Stok": 2500
-        },
-        {
-            Nomor: "PC127",
-            "Nama Barang": "Kotak Perhiasan",
-            Jenis: "Packaging",
-            Kategori: "Packaging",
-            "Jumlah Stok": 1000
-        }
     ]);
+
+    const handleRowClick = (row) => {
+        setSelectedItem(row);
+        setIsDetailModalOpen(true);
+    };
+
+    const rincianStokHeaders = [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Cabang", key: "Cabang", align: "text-left" },
+        { label: "Jumlah Stok", key: "Jumlah Stok", align: "text-left" }
+    ];
 
     const filterFields = [
         {
@@ -124,6 +148,14 @@ export default function StokBarang() {
                                     textColor="text-black"
                                 />
                             </div>
+
+                            <div className="w-full md:w-auto">
+                                <ButtonDropdown 
+                                    selectedIcon={'/icon/toko.svg'} 
+                                    options={dataCabang} 
+                                    onSelect={(value) => setSelectedStore(value)} 
+                                />
+                            </div>
                         </div>
                     </section>
 
@@ -137,46 +169,114 @@ export default function StokBarang() {
                                 }))}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
+                                onRowClick={handleRowClick}
                             />
                         </div>
                     </section>
 
                     {/* Filter Modal */}
                     {isFilterModalOpen && (
-                        <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                            <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg w-full">
+                    <>
+                        <div 
+                            className="fixed inset-0"
+                            onClick={() => setIsFilterModalOpen(false)}
+                        />
+                        <div 
+                            className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                            style={{ 
+                                top: filterPosition.top,
+                                left: filterPosition.left 
+                            }}
+                        >
+                            <div className="space-y-4">
+                                {filterFields.map((field) => (
+                                    <InputDropdown
+                                        key={field.key}
+                                        label={field.label}
+                                        options={field.options}
+                                        value={field.key === "Jenis" ? selectedJenis : selectedKategori}
+                                        onSelect={(value) => 
+                                            field.key === "Jenis" 
+                                                ? setSelectedJenis(value.value)
+                                                : setSelectedKategori(value.value)
+                                        }
+                                        required={true}
+                                    />
+                                ))}
                                 <button
-                                    onClick={() => setIsFilterModalOpen(false)}
-                                    className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                                    onClick={handleApplyFilter}
+                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    Simpan
                                 </button>
-                                <h2 className="text-lg font-bold mb-4">Filter</h2>
-                                <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                                    {filterFields.map((field, index) => (
-                                        <div className="mb-4" key={index}>
-                                            <label className="block text-gray-700 font-medium mb-2">
-                                                {field.label}
-                                            </label>
-                                            <ButtonDropdown
-                                                options={field.options}
-                                                selectedStore={field.key === "Jenis" ? selectedJenis : selectedKategori}
-                                                onSelect={(value) => field.key === "Jenis" ? setSelectedJenis(value) : setSelectedKategori(value)}
-                                            />
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="submit"
-                                        className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                                    >
-                                        Terapkan
-                                    </button>
-                                </form>
                             </div>
                         </div>
-                    )}
+                    </>
+                )}
+
+{isDetailModalOpen && selectedItem && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg w-full max-w-3xl mx-4">
+                            {/* Header with close button */}
+                            <div className="flex justify-between items-center p-6">
+                                <h2 className="text-xl font-semibold">{selectedItem["Nama Barang"]}</h2>
+                                <button
+                                    onClick={() => setIsDetailModalOpen(false)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Image Column */}
+                                    <div>
+                                        <img
+                                            src={selectedItem.image || "/placeholder-image.jpg"}
+                                            alt={selectedItem["Nama Barang"]}
+                                            className="w-full h-auto rounded-lg"
+                                        />
+                                    </div>
+
+                                    {/* Details Columns */}
+                                    <div className="col-span-2 grid grid-cols-2 gap-y-4">
+                                        <div>
+                                            <p className="text-gray-500">Nomor</p>
+                                            <p className="font-medium">{selectedItem.Nomor}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">Nama Barang</p>
+                                            <p className="font-medium">{selectedItem["Nama Barang"]}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">Jenis</p>
+                                            <p className="font-medium">{selectedItem.Jenis}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500">Total Stok Keseluruhan</p>
+                                            <p className="font-medium">{selectedItem["Jumlah Stok"]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Rincian Stok Table */}
+                                <div className="mt-8">
+                                    <h3 className="font-bold mb-4">Rincian Stok</h3>
+                                    <Table
+                                        headers={rincianStokHeaders}
+                                        data={selectedItem.cabang.map((item, index) => ({
+                                            No: index + 1,
+                                            Cabang: item.nama,
+                                            "Jumlah Stok": item.stok
+                                        }))}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 </div>
             </LayoutWithNav>
         </>

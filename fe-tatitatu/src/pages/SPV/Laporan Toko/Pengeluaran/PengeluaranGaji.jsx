@@ -9,8 +9,8 @@ export default function PengeluaranGaji(){
     const location = useLocation()
     const {nomor} = location.state || {}
     const breadcrumbItems = [
-        { label: "Daftar Pengeluaran", href: "/laporanKeuangan" },
-        { label: "Detail Laporan Keuangan Toko", href: "" },
+        { label: "Laporan Keuangan Toko", href: "/laporanKeuangan" },
+        { label: "Detail Pengeluaran", href: "" },
     ];
 
     const data = {

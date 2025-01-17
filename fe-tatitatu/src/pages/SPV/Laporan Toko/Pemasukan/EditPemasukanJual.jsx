@@ -6,6 +6,7 @@ import Input from "../../../../components/Input";
 import InputDropdown from "../../../../components/InputDropdown";
 import Table from "../../../../components/Table";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
+import { useNavigate } from "react-router-dom";
 
 // Constants
 const PAYMENT_METHODS = {
@@ -123,14 +124,14 @@ export default function EditPemasukanJual() {
         { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
         { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
 
     // Navigation configuration
     const breadcrumbItems = [
-        { label: "Daftar Penjualan Rumah Produksi", href: "/laporanKeuangan" },
+        { label: "Laporan Keuangan Toko", href: "/laporanKeuangan" },
         { label: "Edit Penjualan", href: "" },
     ];
 
@@ -410,6 +411,11 @@ export default function EditPemasukanJual() {
     //     console.log('Complete Data State:', allData);
     // }, [formData, selectBayar, selectMetode, tableData, catatan, diskonPersen, pajak, totalHarga]);
 
+    const navigate = useNavigate()
+    const handleBack = () => {
+        navigate(-1);
+    };
+
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
@@ -532,7 +538,22 @@ export default function EditPemasukanJual() {
                                     </span>
                                 </div>
                             </div>
+
                         </div>
+                        <div className="flex justify-end gap-4 mt-8">
+                                <button
+                                    onClick={handleBack}
+                                    className="px-20 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                >
+                                    Kembali
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    className="px-20 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90"
+                                >
+                                    Simpan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>

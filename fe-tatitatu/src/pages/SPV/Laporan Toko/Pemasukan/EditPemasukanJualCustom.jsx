@@ -173,7 +173,7 @@ export default function EditPemasukanJualCustom() {
         { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
         { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
@@ -181,7 +181,7 @@ export default function EditPemasukanJualCustom() {
     const biayaHeaders = [
         { label: "No", key: "No", align: "text-left" },
         { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
-        { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
+        { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left", width: '200px' },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
     
@@ -190,7 +190,7 @@ export default function EditPemasukanJualCustom() {
         { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
         { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width:'110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
@@ -455,7 +455,7 @@ useEffect(() => {
 
     // Navigation configuration
     const breadcrumbItems = [
-        { label: "Daftar Penjualan Rumah Produksi", href: "/laporanKeuangan" },
+        { label: "Laporan Keuangan Toko", href: "/laporanKeuangan" },
         { label: "Edit Penjualan", href: "" },
     ];
 

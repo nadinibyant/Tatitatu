@@ -6,6 +6,7 @@ import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import InputDropdown from "../../../components/InputDropdown";
 
 export default function ProdukTerlaris() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,6 +18,22 @@ export default function ProdukTerlaris() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({});
 
+  const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+
+  const handleFilterClick = (event) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setFilterPosition({
+      top: buttonRect.bottom + window.scrollY + 5,
+      left: buttonRect.left + window.scrollX
+    });
+    setIsFilterModalOpen(prev => !prev);
+  };
+
+  const handleApplyFilter = () => {
+    setIsFilterModalOpen(false);
+  };
+
+
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
@@ -26,13 +43,6 @@ export default function ProdukTerlaris() {
     setSelectedStore("Semua");
   }, []);
 
-  const handleFilterClick = () => {
-    setIsFilterModalOpen(true);
-  };
-
-  const handleApplyFilter = () => {
-    setIsFilterModalOpen(false);
-  };
 
   const handleToday = () => {
     const today = moment().startOf("day");
@@ -473,8 +483,47 @@ export default function ProdukTerlaris() {
               </div>
           </section>
         </div>
-        {/* Filter Modal */}
+
         {isFilterModalOpen && (
+            <>
+                <div 
+                    className="fixed inset-0"
+                    onClick={() => setIsFilterModalOpen(false)}
+                />
+                <div 
+                    className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                    style={{ 
+                        top: filterPosition.top,
+                        left: filterPosition.left 
+                    }}
+                >
+                    <div className="space-y-4">
+                    {filterFields.map((field) => (
+                            <InputDropdown
+                                key={field.key}
+                                label={field.label}
+                                options={field.options}
+                                value={field.key === "Jenis" ? selectedJenis : selectedKategori}
+                                onSelect={(value) => 
+                                    field.key === "Jenis" 
+                                        ? setSelectedJenis(value.value)
+                                        : setSelectedKategori(value.value)
+                                }
+                                required={true}
+                            />
+                        ))}
+                        <button
+                            onClick={handleApplyFilter}
+                            className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                        >
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </>
+        )}
+        {/* Filter Modal */}
+        {/* {isFilterModalOpen && (
             <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
               <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
                 <button
@@ -508,7 +557,7 @@ export default function ProdukTerlaris() {
                 </form>
               </div>
             </div>
-          )}
+          )} */}
       </LayoutWithNav>
     </>
   );

@@ -12,7 +12,7 @@ import LayoutWithNav from "../../../../components/LayoutWithNav";
 export default function TambahNonHandmade() {
   const breadcrumbItems = [
     { label: "Daftar Barang Non-Handmade", href: "/dataBarang/non-handmade" },
-    { label: "Tambah Data Barang Non-Handmade", href: "" },
+    { label: "Tambah", href: "" },
   ];
 
   const dataKategori = [
@@ -32,7 +32,7 @@ export default function TambahNonHandmade() {
     { label: "No", key: "No", align: "text-left" },
     { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-    { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
     { label: "", key: "Aksi", align: "text-left" },
   ];
@@ -199,8 +199,6 @@ export default function TambahNonHandmade() {
 
   const formatCurrency = (amount) => {
     return amount.toLocaleString('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
     });
     };
 
@@ -369,6 +367,7 @@ export default function TambahNonHandmade() {
                                 Kuantitas: (
                                     <Input
                                     type={"number"}
+                                    showRequired={false}
                                     value={row.Kuantitas}
                                     onChange={(value) =>
                                         handlePackagingChange("Kuantitas", value, index)
@@ -389,17 +388,18 @@ export default function TambahNonHandmade() {
                             <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
                                 <div className="flex justify-between">
                                 <p className="font-bold">Total HPP</p>
-                                <p>{formatCurrency(data.info_barang["Total HPP"])}</p>
+                                <p>Rp{formatCurrency(data.info_barang["Total HPP"])}</p>
                                 </div>
                                 <div className="flex justify-between">
                                 <p className="font-bold">Keuntungan</p>
-                                <p>{formatCurrency(data.info_barang.Keuntungan)}</p>
+                                <p>Rp{formatCurrency(data.info_barang.Keuntungan)}</p>
                                 </div>
                                 <div className="flex justify-between">
                                 <p className="font-bold">Harga Jual</p>
                                 <Input
                                     type={"number"}
                                     width="w-1/2"
+                                    showRequired={false}
                                     onChange={(value) =>
                                     handleInfoBarangChange("Harga Jual", parseInt(value, 10))
                                     }

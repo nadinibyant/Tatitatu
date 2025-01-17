@@ -9,23 +9,32 @@ import { X } from "lucide-react";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import InputDropdown from "../../../components/InputDropdown";
 
 export default function IzinCuti() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
     const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-    const [selectedJenis, setSelectedJenis] = useState("Semua");
+    // const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isModalDetail, setModalDetail] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
+    const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    const [selectedDivisi, setSelectedDivisi] = useState("Semua");
 
-    const handleFilterClick = () => {
-        setIsFilterModalOpen(true);
+    const handleFilterClick = (event) => {
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      setFilterPosition({
+        top: buttonRect.bottom + window.scrollY + 5,
+        left: buttonRect.left + window.scrollX
+      });
+      setIsFilterModalOpen(prev => !prev);
     };
-
+  
     const handleApplyFilter = () => {
-        setIsFilterModalOpen(false);
+      setIsFilterModalOpen(false);
     };
+
 
     const handleStatusUpdate = (id, newStatus) => {
         setData(prevData => 
@@ -186,8 +195,8 @@ const ActionButtons = ({ id, status }) => {
     const filteredData = () => {
         let filteredItems = [...data];
 
-        if (selectedJenis !== "Semua") {
-            filteredItems = filteredItems.filter(item => item.Divisi === selectedJenis);
+        if (selectedDivisi !== "Semua") {
+            filteredItems = filteredItems.filter(item => item.Divisi === selectedDivisi);
         }
 
         return filteredItems;
@@ -382,39 +391,38 @@ const ActionButtons = ({ id, status }) => {
                   </div>
                 )}
                 {isFilterModalOpen && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg w-full">
-                            <button
-                                onClick={() => setIsFilterModalOpen(false)}
-                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                            <h2 className="text-lg font-bold mb-4">Filter</h2>
-                            <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                                {filterFields.map((field, index) => (
-                                    <div className="mb-4" key={index}>
-                                        <label className="block text-gray-700 font-medium mb-2">
-                                            {field.label}
-                                        </label>
-                                        <ButtonDropdown
-                                            options={field.options}
-                                            selectedStore={selectedJenis}
-                                            onSelect={(value) => setSelectedJenis(value)}
-                                        />
-                                    </div>
+                    <>
+                        <div 
+                            className="fixed inset-0"
+                            onClick={() => setIsFilterModalOpen(false)}
+                        />
+                        <div 
+                            className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                            style={{ 
+                                top: filterPosition.top,
+                                left: filterPosition.left 
+                            }}
+                        >
+                            <div className="space-y-4">
+                            {filterFields.map((field) => (
+                                    <InputDropdown
+                                        key={field.key}
+                                        label={field.label}
+                                        options={field.options}
+                                        value={selectedDivisi}
+                                        onSelect={(value) => setSelectedDivisi(value.value)}
+                                        required={true}
+                                    />
                                 ))}
                                 <button
-                                    type="submit"
-                                    className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
+                                    onClick={handleApplyFilter}
+                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
                                 >
-                                    Terapkan
+                                    Simpan
                                 </button>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+                    </>
                 )}
 
                 {isAcceptAlert && (

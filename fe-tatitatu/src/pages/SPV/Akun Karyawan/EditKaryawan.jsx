@@ -6,19 +6,23 @@ import { menuItems, userOptions } from "../../../data/menu";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs";
+import TimeInput from "../../../components/TimeInput";
 
 export default function EditKaryawan(){
-    const existingData = {
-        email: 'johndoe@example.com',
-        name: 'John Doe',
-        division: 'IT',
-        baseSalary: 5000000,
-        bonus: 1000000,
-        workHours: '160',
-        phone: '081234567890',
-        photoUrl: 'https://via.placeholder.com/50'
+      const existingData = {
+          email: 'johndoe@example.com',
+          name: 'John Doe',
+          division: 'IT',
+          baseSalary: 5000000,
+          bonus: 1000000,
+          workHours: {
+              amount: '160',
+              unit: 'Menit'  
+          },
+          phone: '081234567890',
+          photoUrl: 'https://via.placeholder.com/50'
       };
-    
+
       const [formData, setFormData] = useState(existingData);
       const [photoPreview, setPhotoPreview] = useState(existingData.photoUrl);
       const [isPasswordChanged, setIsPasswordChanged] = useState(false);
@@ -173,11 +177,12 @@ export default function EditKaryawan(){
                                 required={true}
                                 />
                                 
-                                <Input
-                                label="Waktu Kerja Sebulan"
-                                value={formData.workHours}
-                                onChange={handleInputChange('workHours')}
-                                required={true}
+                                <TimeInput
+                                    label="Waktu Kerja Sebulan"
+                                    value={formData.workHours}
+                                    onChange={handleInputChange('workHours')}
+                                    options={['Menit', 'Antar']}
+                                    required={true}
                                 />
                                 
                                 <Input

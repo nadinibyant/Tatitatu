@@ -15,8 +15,8 @@ export default function DetailPemasukanJual() {
     const { nomor, tipe } = location.state || {};
     const isCustom = tipe === 'custom';
     const breadcrumbItems = [
-        { label: "Daftar Pemasukan", href: "/laporanKeuangan" },
-        { label: "Detail Laporan Keuangan Toko", href: "" },
+        { label: "Laporan Keuangan Toko", href: "/laporanKeuangan" },
+        { label: "Detail Pemasukan", href: "" },
     ];
     const [isModalDel, setModalDel] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
@@ -96,12 +96,12 @@ export default function DetailPemasukanJual() {
         { label: "Total Biaya", key: "Total Biaya", align: "text-left"},
     ];
 
-    const formatCurrency = (amount) => {
-        return amount.toLocaleString('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-        });
-    };
+    // const formatCurrency = (amount) => {
+    //     return amount.toLocaleString('id-ID', {
+    //         style: 'currency',
+    //         currency: 'IDR',
+    //     });
+    // };
 
     const navigate = useNavigate()
     const handleEdit = () => {
@@ -189,7 +189,7 @@ export default function DetailPemasukanJual() {
                                 data={data.data_produk.map((item, index) => ({
                                     ...item,
                                     "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
+                                    "kuantitas": item["kuantitas"].toLocaleString('id-ID'),
                                     "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
                                     "Total Biaya": formatRupiah(item["Total Biaya"]),  
                                     No: index + 1  
@@ -225,7 +225,7 @@ export default function DetailPemasukanJual() {
                                     ...(isCustom && {
                                         "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />
                                     }),
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
+                                    "kuantitas": item["kuantitas"].toLocaleString('id-ID'),
                                     "Harga Satuan": formatRupiah(item["Harga Satuan"]),
                                     "Total Biaya": formatRupiah(item["Total Biaya"])
                                 }))}
@@ -252,7 +252,7 @@ export default function DetailPemasukanJual() {
                             {/* Sub Total */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Sub Total</p>
-                                <p>{formatCurrency(data.sub_total) || 0}</p>
+                                <p>{formatRupiah(data.sub_total) || 0}</p>
                             </div>
                             {/* Diskon Keseluruhan */}
                             <div className="flex justify-between border-b pb-2">
@@ -262,12 +262,12 @@ export default function DetailPemasukanJual() {
                             {/* pajak */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Pajak</p>
-                                <p>{formatCurrency(data.pajak) || 0}</p>
+                                <p>{formatRupiah(data.pajak) || 0}</p>
                             </div>
                             {/* Total Penjualan */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Total Penjualan</p>
-                                <p className="font-bold">{formatCurrency(data.total_penjualan) || 0}</p>
+                                <p className="font-bold">{formatRupiah(data.total_penjualan) || 0}</p>
                             </div>
                         </div>
                     </section>

@@ -32,7 +32,7 @@ export default function TambahBarang() {
     { label: "No", key: "No", align: "text-left" },
     { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-    { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px'},
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
     { label: "", key: "Aksi", align: "text-left" },
   ];
@@ -199,8 +199,6 @@ export default function TambahBarang() {
 
   const formatCurrency = (amount) => {
     return amount.toLocaleString('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
     });
     };
 
@@ -394,11 +392,11 @@ export default function TambahBarang() {
                             <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
                                 <div className="flex justify-between">
                                 <p className="font-bold">Total HPP</p>
-                                <p>{formatCurrency(data.info_barang["Total HPP"])}</p>
+                                <p>Rp{formatCurrency(data.info_barang["Total HPP"])}</p>
                                 </div>
                                 <div className="flex justify-between">
                                 <p className="font-bold">Keuntungan</p>
-                                <p>{formatCurrency(data.info_barang.Keuntungan)}</p>
+                                <p>Rp{formatCurrency(data.info_barang.Keuntungan)}</p>
                                 </div>
                                 <div className="flex justify-between">
                                 <p className="font-bold">Harga Jual</p>

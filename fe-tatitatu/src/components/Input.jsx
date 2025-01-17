@@ -7,9 +7,10 @@ const Input = ({
   value, 
   onChange, 
   width = "w-full", 
-  required = true,  // Default true untuk konsistensi dengan versi sebelumnya
+  required = true,  
   onKeyDown,
-  showRequired = true // Prop baru untuk mengontrol tampilan tanda *
+  showRequired = true ,
+  disabled = false
 }) => {
   const [rawValue, setRawValue] = useState(value || "");
 
@@ -44,6 +45,7 @@ const Input = ({
         placeholder={label}
         required={required}
         onKeyDown={onKeyDown}
+        disabled={disabled}
       />
     </div>
   );

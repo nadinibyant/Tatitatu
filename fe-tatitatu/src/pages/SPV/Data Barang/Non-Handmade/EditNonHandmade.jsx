@@ -26,7 +26,7 @@ export default function EditNonHandmade({ existingData }) {
   const headers = [
     { label: "No", key: "No", align: "text-left" },
     { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
-    { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
+    { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left", width: '200px' },
     { label: "", key: "Aksi", align: "text-left" },
   ];
 
@@ -34,7 +34,7 @@ export default function EditNonHandmade({ existingData }) {
     { label: "No", key: "No", align: "text-left" },
     { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-    { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
     { label: "", key: "Aksi", align: "text-left" },
   ];

@@ -20,7 +20,14 @@ export default function DetailKaryawan(){
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
         const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-    
+        const [selectedMonth, setSelectedMonth] = useState(moment().format("MM"));
+        const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
+
+        const formatMonthYear = () => {
+            const monthName = moment(selectedMonth, "MM").format("MMMM");
+            return `${monthName} ${selectedYear}`;
+        };
+        
       const handleToday = () => {
         const today = moment().startOf("day");
         setStartDate(today.format("YYYY-MM-DD"));
@@ -272,11 +279,18 @@ export default function DetailKaryawan(){
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                         <div className="w-full md:w-auto">
-                            <Button label={`${formatDate(startDate)} - ${formatDate(endDate)}`} icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" onClick={toggleModal} />
+                        <Button 
+                            label={formatMonthYear()}
+                            icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>} 
+                            bgColor="border border-secondary" 
+                            hoverColor="hover:bg-white" 
+                            textColor="text-black" 
+                            onClick={toggleModal} 
+                        />
                         </div>
                     </div>
 
@@ -284,57 +298,77 @@ export default function DetailKaryawan(){
                     {isModalOpen && (
                     <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                         <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                        <button
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <div className="flex space-x-4 w-full">
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            <div className="flex space-x-4 w-full">
+                                {/* Bulan */}
+                                <div className="flex flex-col w-full">
+                                    <label className="text-sm font-medium text-gray-600 pb-3">Bulan</label>
+                                    <select
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    >
+                                        {moment.months().map((month, index) => (
+                                            <option key={month} value={String(index + 1).padStart(2, '0')}>
+                                                {month}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Tahun */}
+                                <div className="flex flex-col w-full">
+                                    <label className="text-sm font-medium text-gray-600 pb-3">Tahun</label>
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => setSelectedYear(e.target.value)}
+                                        className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    >
+                                        {Array.from(
+                                            { length: moment().year() - 1999 }, 
+                                            (_, i) => moment().year() - i
+                                        ).map((year) => (
+                                            <option key={year} value={year}>
+                                                {year}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
+                            
+                            {/* Quick select buttons */}
+                            <div className="flex flex-col space-y-3 w-full">
+                                <button
+                                    onClick={() => {
+                                        setSelectedMonth(moment().format("MM"));
+                                        setSelectedYear(moment().format("YYYY"));
+                                        setIsModalOpen(false);
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                >
+                                    Bulan Ini
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const lastMonth = moment().subtract(1, 'months');
+                                        setSelectedMonth(lastMonth.format("MM"));
+                                        setSelectedYear(lastMonth.format("YYYY"));
+                                        setIsModalOpen(false);
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                >
+                                    Bulan Lalu
+                                </button>
                             </div>
-                        </div>
-                        <div className="flex flex-col space-y-3 w-full">
-                            <button
-                            onClick={handleToday}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Hari Ini
-                            </button>
-                            <button
-                            onClick={handleLast7Days}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            7 Hari Terakhir
-                            </button>
-                            <button
-                            onClick={handleThisMonth}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Bulan Ini
-                            </button>
-                        </div>
                         </div>
                     </div>
-                    )}
+                )}
                 </section>
 
                 <section className="mt-5 bg-primary rounded-xl p-5">

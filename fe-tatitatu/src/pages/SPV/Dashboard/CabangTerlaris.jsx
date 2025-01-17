@@ -174,7 +174,7 @@ export default function CabangTerlaris(){
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                    <p className="text-primary text-base font-bold">Laporan Keungan Toko</p>
+                    <p className="text-primary text-base font-bold">Cabang Terbaik</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">

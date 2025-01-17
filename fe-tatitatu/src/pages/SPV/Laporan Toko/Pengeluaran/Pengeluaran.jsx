@@ -52,12 +52,12 @@ export default function Pengeluaran() {
         return `Rp ${amount.toLocaleString('id-ID')}`;
     };
 
-    const formatCurrency = (amount) => {
-        return amount.toLocaleString('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-        });
-    };
+    // const formatCurrency = (amount) => {
+    //     return amount.toLocaleString('id-ID', {
+    //         style: 'currency',
+    //         currency: 'IDR',
+    //     });
+    // };
 
     return (
         <>
@@ -122,17 +122,17 @@ export default function Pengeluaran() {
                                 {/* Sub Total */}
                                 <div className="flex justify-between border-b pb-2">
                                     <p className="font-bold">Sub Total</p>
-                                    <p>{formatCurrency(data.sub_total) || 0}</p>
+                                    <p>{formatRupiah(data.sub_total) || 0}</p>
                                 </div>
                                 {/* Diskon Keseluruhan */}
                                 <div className="flex justify-between border-b pb-2">
                                     <p className="font-bold">Pemotongan</p>
-                                    <p>{formatCurrency(data.pemotongan) || 0}</p>
+                                    <p>{formatRupiah(data.pemotongan) || 0}</p>
                                 </div>
                                 {/* Total Penjualan */}
                                 <div className="flex justify-between border-b pb-2">
                                     <p className="font-bold">Total Penjualan</p>
-                                    <p className="font-bold">{formatCurrency(data.total_pengeluaran) || 0}</p>
+                                    <p className="font-bold">{formatRupiah(data.total_pengeluaran) || 0}</p>
                                 </div>
                             </div>
                         </section>

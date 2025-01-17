@@ -20,7 +20,7 @@ export default function DetailNonPenjualan() {
         { label: "Deskripsi", key: "deskripsi", align: "text-left" },
         { label: "Toko", key: "toko", align: "text-left" },
         { label: "Cabang", key: "cabang", align: "text-left" },
-        { label: "Pengeluaran", key: "pengeluaran", align: "text-left"},
+        { label: "Pemasukan", key: "pemasukan", align: "text-left"},
     ];
 
     const data = {
@@ -35,25 +35,25 @@ export default function DetailNonPenjualan() {
                 deskripsi: 'Dana Hibah',
                 toko: 'Tatitatu',
                 cabang: 'Cabang Gor HAS Padang',
-                pengeluaran: 1000000
+                pemasukan: 1000000
             },
             {
                 deskripsi: 'Dana Hibah',
                 toko: 'Tatitatu',
                 cabang: 'Cabang Gor HAS Padang',
-                pengeluaran: 1000000
+                pemasukan: 1000000
             },
             {
                 deskripsi: 'Dana Hibah',
                 toko: 'Tatitatu',
                 cabang: 'Cabang Gor HAS Padang',
-                pengeluaran: 1000000
+                pemasukan: 1000000
             },
         ],
         total_detail: 3000000
     };
 
-    const totalPengeluaran = data.dataDetail.reduce((sum, item) => sum + item.pengeluaran, 0);
+    const totalPemasukan = data.dataDetail.reduce((sum, item) => sum + item.pemasukan, 0);
 
     const formatRupiah = (amount) => {
         return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -98,7 +98,7 @@ export default function DetailNonPenjualan() {
                                 headers={headers}
                                 data={data.dataDetail.map((item, index) => ({
                                     ...item,
-                                    pengeluaran: formatRupiah(item.pengeluaran),  
+                                    pemasukan: formatRupiah(item.pemasukan),  
                                     No: index + 1  
                                 }))}
                             />
@@ -115,8 +115,8 @@ export default function DetailNonPenjualan() {
                                 />
                             </div>
                             <div className="flex items-start">
-                                <div className="font-bold px-5">Total Pengeluaran</div>
-                                <div className="font-bold">{formatRupiah(totalPengeluaran)}</div>
+                                <div className="font-bold px-5">Total</div>
+                                <div className="font-bold">{formatRupiah(totalPemasukan)}</div>
                             </div>
                         </div>
                     </section>

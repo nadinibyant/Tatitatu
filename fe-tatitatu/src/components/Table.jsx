@@ -134,14 +134,14 @@ const Table = ({
 
       {/* Submenu Section */}
       {hasSubmenu && submenuItems.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex space-x-6 border-b border-gray-200 mb-4">
           <button
             onClick={() => setActiveSubmenu('semua')}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors rounded-md
-              ${activeSubmenu === 'semua'
-                ? "bg-primary text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-              }`}
+            className={`pb-4 px-1 text-sm font-medium relative ${
+              activeSubmenu === 'semua'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-gray-500 hover:text-primary'
+            }`}
           >
             Semua
           </button>
@@ -149,11 +149,11 @@ const Table = ({
             <button
               key={item.value}
               onClick={() => setActiveSubmenu(item.value)}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors rounded-md
-                ${activeSubmenu === item.value
-                  ? "bg-primary text-white"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+              className={`pb-4 px-1 text-sm font-medium relative ${
+                activeSubmenu === item.value
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-gray-500 hover:text-primary'
+              }`}
             >
               {item.label}
             </button>
@@ -171,6 +171,7 @@ const Table = ({
                   {headers.map((header, index) => (
                     <th
                       key={index}
+                      style={{ width: header.width || 'auto' }}
                       className={`
                         text-sm font-semibold ${text_header} py-3 px-4 
                         ${header.align || "text-left"} whitespace-nowrap
@@ -195,6 +196,7 @@ const Table = ({
                     {headers.map((header, cellIndex) => (
                       <td
                         key={cellIndex}
+                        style={{ width: header.width || 'auto' }}
                         className={`
                           text-sm text-gray-700 py-4 px-4 
                           ${header.align || "text-left"} 

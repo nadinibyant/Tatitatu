@@ -12,7 +12,7 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 export default function TambahKPISeluruhDivisi() {
     const breadcrumbItems = [
         { label: "Daftar KPI Seluruh Divisi", href: "/daftarPenilaianKPI/seluruh-divisi" },
-        { label: "Tambah KPI", href: "" },
+        { label: "Tambah", href: "" },
     ];
 
     const [data, setData] = useState({
@@ -27,10 +27,10 @@ export default function TambahKPISeluruhDivisi() {
 
     const headers = [
         { label: "No", key: "Nomor", align: "text-left" },
-        { label: "Nama KPI", key: "NamaKPI", align: "text-center" },
-        { label: "Persentase", key: "Persentase", align: "text-left" },
+        { label: "Nama KPI", key: "NamaKPI", align: "text-left" },
+        { label: "Persentase", key: "Persentase", align: "text-left", width: '110px' },
         { label: "Waktu", key: "Waktu", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-center" },
+        { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
     const dataWaktu = [

@@ -156,7 +156,7 @@ function App() {
 
         {/* dashboard owner */}
         <Route path='/dashboard/toko-terbaik' element={getProtectedRoute(TokoTerbaik, ['owner', 'manajer'])} />
-        <Route path='/dashboard/hari-terlaris' element={getProtectedRoute(HariTerlaris, ['owner', 'manajer'])} />
+        <Route path='/dashboard/hari-terlaris' element={getProtectedRoute(HariTerlaris, ['admin','owner', 'manajer'])} />
 
 
         {/* Pembelian Stok Routes */}

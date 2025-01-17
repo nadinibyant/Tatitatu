@@ -7,6 +7,7 @@ import { useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import TimeInput from "../../../components/TimeInput";
 
 export default function TambahAkunKaryawan(){
     const [formData, setFormData] = useState({
@@ -17,7 +18,10 @@ export default function TambahAkunKaryawan(){
         division: '',
         baseSalary: '',
         bonus: '',
-        workHours: '',
+        workHours: {
+          amount: '',
+          unit: 'Menit'
+        },
         phone: ''
       });
     
@@ -37,6 +41,8 @@ export default function TambahAkunKaryawan(){
           [field]: value
         }));
       };
+
+      
     
       const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -70,11 +76,14 @@ export default function TambahAkunKaryawan(){
           division: '',
           baseSalary: '',
           bonus: '',
-          workHours: '',
+          workHours: {
+            amount: '',
+            unit: 'Menit'
+          },
           phone: ''
         });
         setPhotoPreview(null);
-        navigate('/akunKaryawan')
+        navigate('/akunKaryawan');
       };
 
       const breadcrumbItems = [
@@ -132,10 +141,11 @@ export default function TambahAkunKaryawan(){
                             
                             <Input
                                 label="Password"
-                                value={formData.password}
+                                value="12345678"
                                 onChange={handleInputChange('password')}
                                 type1="password"
                                 required={true}
+                                disabled={true}
                             />
                             
                             <Input
@@ -168,7 +178,7 @@ export default function TambahAkunKaryawan(){
                                 required={true}
                             />
                             
-                            <Input
+                            <TimeInput
                                 label="Waktu Kerja Sebulan"
                                 value={formData.workHours}
                                 onChange={handleInputChange('workHours')}
