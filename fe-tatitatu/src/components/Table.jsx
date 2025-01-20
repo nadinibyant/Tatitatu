@@ -88,7 +88,7 @@ const Table = ({
                 placeholder="Cari..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none"
               />
             </div>
           )}

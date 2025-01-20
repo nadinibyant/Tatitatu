@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import Table from "../../../components/Table";
@@ -8,6 +8,8 @@ import MoreOptionsModal from "../../../components/MoreModal";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function KPISeluruhDivisi() {
     const [isModalMore, setIsModalMore] = useState(false);
@@ -15,6 +17,8 @@ export default function KPISeluruhDivisi() {
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const [isModalSucc, setModalSucc] = useState(false)
     const [isModalDel, setModalDel] = useState(false)
+    const [isLoading, setLoading] = useState(false)
+    const [data,setData] = useState([])
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -23,21 +27,44 @@ export default function KPISeluruhDivisi() {
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
-    const data = [
-        {
-            id: 1,
-            Divisi: "Kasir",
-            JumlahKPI: 10,
-            // Aksi: (
-            //     <img
-            //     src="/icon/more.svg"
-            //     alt="More Options"
-            //     className="w-5 h-5 cursor-pointer"
-            //     onClick={(event) => handleMoreClick(1, event)}
-            //     />
-            // ),
-        },
-    ];
+    // const data = [
+    //     {
+    //         id: 1,
+    //         Divisi: "Kasir",
+    //         JumlahKPI: 10,
+    //         // Aksi: (
+    //         //     <img
+    //         //     src="/icon/more.svg"
+    //         //     alt="More Options"
+    //         //     className="w-5 h-5 cursor-pointer"
+    //         //     onClick={(event) => handleMoreClick(1, event)}
+    //         //     />
+    //         // ),
+    //     },
+    // ];
+    const fetchKPIDivisi = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/kpi-divisi'); 
+
+            const formattedData = response.data.data.map(item => ({
+                id: item.divisi_karyawan_id,
+                Divisi: item.nama_divisi,
+                JumlahKPI: item.kpi_count,
+            }));
+            
+            setData(formattedData);
+        } catch (error) {
+            console.error('Error fetching KPI:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+
+    useEffect(() => {
+        fetchKPIDivisi();
+    }, []);
 
     const handleMoreClick = (item, event) => {
         event.stopPropagation();
@@ -257,6 +284,11 @@ export default function KPISeluruhDivisi() {
                     onConfirm={() => setModalSucc(false)}
                     />
                 )}
+                
+                {isLoading && (
+                    <Spinner/>
+                )}
+
             </LayoutWithNav>
         </>
     );

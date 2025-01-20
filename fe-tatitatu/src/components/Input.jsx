@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Input = ({ 
   label, 
@@ -9,10 +9,16 @@ const Input = ({
   width = "w-full", 
   required = true,  
   onKeyDown,
-  showRequired = true ,
-  disabled = false
+  showRequired = true,
+  disabled = false,
 }) => {
   const [rawValue, setRawValue] = useState(value || "");
+  const [isTouched, setIsTouched] = useState(false);
+
+  useEffect(() => {
+    setRawValue(value || "");
+  }, [value]);
+
 
   const formatNumber = (num) => {
     if (num === "" || num === undefined || num === null) return "";
@@ -31,6 +37,8 @@ const Input = ({
     }
   };
 
+  const showError = required && isTouched && !rawValue;
+
   return (
     <div className={`mb-2 sm:mb-4 ${width}`}>
       <label className="block text-gray-700 font-medium mb-1 sm:text-sm text-base">
@@ -41,12 +49,22 @@ const Input = ({
         type={type1}
         value={type === "number" ? formatNumber(rawValue) : rawValue}
         onChange={handleInputChange}
-        className="w-full border border-gray-300 rounded-md sm:py-1 sm:px-4 py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+        onBlur={() => setIsTouched(true)}
+        className={`w-full border rounded-md sm:py-1 sm:px-4 py-2 px-3 focus:outline-none focus:ring-2 
+          ${showError 
+            ? 'border-red-500 focus:ring-red-200' 
+            : 'border-gray-300 focus:ring-blue-500'
+          } text-base`}
         placeholder={label}
         required={required}
         onKeyDown={onKeyDown}
         disabled={disabled}
       />
+      {showError && (
+        <p className="text-red-500 text-sm mt-1">
+          {label} harus diisi
+        </p>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MoreVertical, Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -15,7 +15,7 @@ const Gallery = ({
   url=''
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeSubMenu, setActiveSubMenu] = useState("Gelang");
+  const [activeSubMenu, setActiveSubMenu] = useState('Semua')
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -28,10 +28,10 @@ const Gallery = ({
       );
   
       const matchesCategory = enableSubMenus
-        ? !searchQuery
-          ? (!activeSubMenu || item.category === activeSubMenu)
+      ? !searchQuery
+          ? (!activeSubMenu || activeSubMenu === 'Semua' || item.category === activeSubMenu)
           : true
-        : true; 
+      : true; 
   
       return matchesSearch && matchesCategory;
     });
@@ -51,6 +51,7 @@ const Gallery = ({
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  
   const getVisiblePages = () => {
     let pages = [];
     if (totalPages <= 3) {
@@ -79,7 +80,7 @@ const Gallery = ({
   const navigate = useNavigate()
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
+    <div className="w-full mx-auto p-4">
       {/* Search Bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="relative flex-1 max-w-md">

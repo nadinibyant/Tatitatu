@@ -7,6 +7,11 @@ import { menuItems, userOptions } from "../../../data/menu";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
+import AlertError from "../../../components/AlertError";
+import Spinner from "../../../components/Spinner";
 
 export default function AkunKaryawan() {
     const [showModal, setShowModal] = useState(false);
@@ -19,6 +24,14 @@ export default function AkunKaryawan() {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
     const detailModalRef = useRef(null);
+    const [isLoading, setLoading] = useState(false)
+    const [divisions, setDivisions] = useState([]);
+    const [id,setId] = useState('')
+    const [isAlert, setAllert] = useState(false)
+    const [isAlertSuccess, setAlertSucc] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [filterFields, setFilterFields] = useState([]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -52,22 +65,18 @@ export default function AkunKaryawan() {
     const navigate = useNavigate();
 
     const handleMoreClick = (id, event) => {
-        // Prevent event bubbling
         event.stopPropagation();
 
-        // Get button position
         const rect = event.currentTarget.getBoundingClientRect();
         
-        // Calculate modal position
         const modalTop = rect.bottom + window.scrollY;
-        const modalLeft = rect.left + window.scrollX - 100; // Offset to align with button
+        const modalLeft = rect.left + window.scrollX - 100;
 
         setModalPosition({ top: modalTop, left: modalLeft });
         setSelectedId(id);
         setShowModal(true);
     };
 
-    // Close modal when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -85,10 +94,30 @@ export default function AkunKaryawan() {
     };
 
     const handleDelete = (id) => {
-        console.log('Deleting account with id:', id);
-        // Add your delete logic here
+        setId(id)
+        setAllert(true)
         setShowModal(false);
     };
+
+    const handleConfirmDel = async() => {
+        try {
+            setLoading(true)
+            const response = await api.delete(`/karyawan/${id}`)
+            if (response.data.success) {
+                setAlertSucc(true);
+                fetchKaryawan()
+            } else {
+                setErrorMessage(response.data.message);
+                setErrorAlert(true);
+            }
+        } catch (error) {
+            console.error('Error Deleted Data', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -99,48 +128,84 @@ export default function AkunKaryawan() {
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
-    const data = [
-        {
-            id: 1,
-            Nama: 'Hamzah Abdillah Arif',
-            Divisi: 'Content Creator',
-            "No.Handphone": "083380220292",
-            Email: 'hamzah123@gmail.com',
-            password: '123456789',
-            foto: '/path/to/profile.jpg',
-            "Jumlah Gaji Pokok": "Rp1.500.000",
-            Bonus: "Rp500.000",
-            "Waktu Kerja": "11.000 Menit",
-            Aksi: (
-                <img
-                    src="/icon/more.svg"
-                    alt="More Options"
-                    className="w-5 h-5 cursor-pointer"
-                    onClick={(event) => handleMoreClick(1, event)}
-                />
-            ),
-        },
-        {
-            id: 2,
-            Nama: 'John Doe',
-            Divisi: 'Designer',
-            "No.Handphone": "081234567890",
-            Email: 'john@example.com',
-            password: 'password123',
-            foto: '/path/to/profile2.jpg',
-            "Jumlah Gaji Pokok": "Rp2.000.000",
-            Bonus: "Rp800.000",
-            "Waktu Kerja": "12.000 Menit",
-            Aksi: (
-                <img
-                    src="/icon/more.svg"
-                    alt="More Options"
-                    className="w-5 h-5 cursor-pointer"
-                    onClick={(event) => handleMoreClick(2, event)}
-                />
-            ),
-        },
-    ];
+    const formatCurrency = (amount) => {
+        return `Rp${amount?.toLocaleString('id-ID')}`;
+    };
+
+    // get data akun
+    const fetchKaryawan = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/karyawan');
+            
+            const formattedData = response.data.data.map(item => ({
+                id: item.karyawan_id,
+                Nama: item.nama_karyawan,
+                Divisi: item.divisi.nama_divisi,
+                "No.Handphone": item.nomor_handphone || '-',
+                Email: item.email,
+                password: item.password,
+                foto: item.image || '/default-profile.jpg',
+                "Jumlah Gaji Pokok": formatCurrency(item.jumlah_gaji_pokok),
+                Bonus: formatCurrency(item.bonus),
+                "Waktu Kerja": item.waktu_kerja_sebulan_menit ? 
+                    `${item.waktu_kerja_sebulan_menit} Menit` : 
+                    item.waktu_kerja_sebulan_antar ? 
+                    `${item.waktu_kerja_sebulan_antar} Antar` : "-",
+                Aksi: (
+                    <img
+                        src="/icon/more.svg"
+                        alt="More Options"
+                        className="w-5 h-5 cursor-pointer"
+                        onClick={(event) => handleMoreClick(item.karyawan_id, event)}
+                    />
+                ),
+            }));
+    
+            setData(formattedData);
+    
+            const divisions = [...new Set(response.data.data.map(item => item.divisi.nama_divisi))];
+            setFilterFields([{
+                label: "Divisi",
+                key: "Divisi",
+                options: [
+                    { label: "Semua", value: "Semua" },
+                    ...divisions.map(div => ({ label: div, value: div }))
+                ]
+            }]);
+        } catch (error) {
+            console.error('Error fetching karyawan:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const [data, setData] = useState([])
+
+    const fetchDivisi = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get('/divisi-karyawan')
+            const divisiList = response.data.data.map(div => ({
+                label: div.nama_divisi,
+                value: div.nama_divisi 
+            }))
+            setDivisions(divisiList)
+            
+            setFilterFields([{
+                label: "Divisi",
+                key: "Divisi",
+                options: [
+                    { label: "Semua", value: "Semua" },
+                    ...divisiList
+                ]
+            }]);
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleDetail = (row) => {
         const employeeData = data.find(item => item.id === row.id);
@@ -154,20 +219,12 @@ export default function AkunKaryawan() {
         navigate('/akunKaryawan/tambah')
     }
 
-    const filterFields = [
-        {
-            label: "Divisi",
-            key: "Divisi",
-            options: [
-                { label: "Semua", value: "Semua" },
-                { label: "SPV", value: "SPV" },
-                { label: "Content Creator", value: "Content Creator" },
-                { label: "Produksi", value: "Produksi" },
-                { label: "Transportasi", value: "Transportasi" },
-                { label: "Admin", value: "Admin" },
-            ]
-        }
-    ];
+    useEffect(() => {
+        fetchKaryawan();
+        fetchDivisi()
+    }, []);
+
+
 
     const filteredData = () => {
         let dataToDisplay = [...data];
@@ -178,6 +235,7 @@ export default function AkunKaryawan() {
     
         return dataToDisplay;
     };
+    console.log(selectedEmployee)
 
     return (
         <>
@@ -318,9 +376,9 @@ export default function AkunKaryawan() {
                             {/* Profile Image Column */}
                             <div className="flex justify-center items-start">
                                 <img
-                                src={selectedEmployee?.foto || "/default-profile.jpg"}
-                                alt={selectedEmployee?.Nama}
-                                className="w-32 h-32 object-cover rounded-lg"
+                                    src={`${import.meta.env.VITE_API_URL}/images-karyawan/${selectedEmployee.foto}` || "https://via.placeholder.com/150"}
+                                    alt={selectedEmployee?.Nama}
+                                    className="w-32 h-32 object-cover rounded-lg"
                                 />
                             </div>
 
@@ -332,7 +390,7 @@ export default function AkunKaryawan() {
                                 </div>
                                 <div>
                                 <p className="text-gray-500">Password</p>
-                                <p className="font-medium">{selectedEmployee?.password}</p>
+                                <p className="font-medium break-all max-w-[200px]">{selectedEmployee?.password}</p>
                                 </div>
                                 <div>
                                 <p className="text-gray-500">Divisi</p>
@@ -395,42 +453,41 @@ export default function AkunKaryawan() {
                             </div>
                         </>
                     )}
-                    {/* Filter Modal */}
-                    {/* {isFilterModalOpen && (
-                        <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                            <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
-                                <button
-                                    onClick={() => setIsFilterModalOpen(false)}
-                                    className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                                <h2 className="text-lg font-bold mb-4">Filter</h2>
-                                <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                                    {filterFields.map((field, index) => (
-                                        <div className="mb-4" key={index}>
-                                            <label className="block text-gray-700 font-medium mb-2">
-                                                {field.label}
-                                            </label>
-                                            <ButtonDropdown
-                                                options={field.options}
-                                                selectedStore={selectedKategori}
-                                                onSelect={(value) => setSelectedKategori(value)}
-                                            />
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="submit"
-                                        className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                                    >
-                                        Terapkan
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    )} */}
+
+                {isAlert && (
+                    <Alert
+                        title="Hapus Data"
+                        description="Apakah kamu yakin ingin menghapus data ini?"
+                        confirmLabel="Hapus"
+                        cancelLabel="Kembali"
+                        onConfirm={handleConfirmDel}
+                        onCancel={() => setAllert(false)}
+                        open={isAlert}
+                        onClose={() => setAllert(false)}
+                    />
+                )}   
+
+            {isAlertSuccess && (
+                <AlertSuccess
+                    title="Berhasil!!"
+                    description="Data Berhasil Diupdate"
+                    confirmLabel="Ok"
+                    onConfirm={() => setAlertSucc(false)}
+                />
+            )}
+
+            {isErrorAlert && (
+                <AlertError
+                    title="Gagal!!"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorAlert(false)}
+                />
+            )}
+
+            {isLoading && (
+                <Spinner/>
+            )}       
         </>
     );
 }

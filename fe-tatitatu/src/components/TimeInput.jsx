@@ -4,8 +4,8 @@ const TimeInput = ({
   label, 
   value = { amount: '', unit: 'Menit' },
   onChange,
-  options = ['Menit', 'Antar'], // Default options jika tidak ada yang diberikan
-  defaultUnit = 'Menit', // Default unit yang dipilih
+  options = ['Menit', 'Antar'], 
+  defaultUnit = 'Menit', 
   required = true,
   width = "w-full"
 }) => {
@@ -13,6 +13,11 @@ const TimeInput = ({
   const [inputValue, setInputValue] = useState(value.amount || '');
   const [timeUnit, setTimeUnit] = useState(value.unit || defaultUnit);
   const dropdownRef = useRef(null);
+  
+  useEffect(() => {
+    setInputValue(value.amount || '');
+    setTimeUnit(value.unit || defaultUnit);
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,7 +60,7 @@ const TimeInput = ({
           type="number"
           value={inputValue}
           onChange={handleInputChange}
-          className="w-full rounded-l-md border border-r-0 border-gray-300 p-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+          className="w-full rounded-l-md border border-r-0 border-gray-300 px-5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="Masukkan Jumlah"
           required={required}
         />

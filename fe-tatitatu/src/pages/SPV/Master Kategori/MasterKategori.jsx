@@ -7,6 +7,12 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import { useNavigate } from "react-router-dom";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Alert from "../../../components/Alert";
+import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import AlertError from "../../../components/AlertError";
 
 export default function MasterKategori() {
     const [showListModal, setShowListModal] = useState(false);
@@ -17,6 +23,14 @@ export default function MasterKategori() {
     const [formData, setFormData] = useState('');
     const navigate = useNavigate();
     const [userData, setUserData] = useState(null);
+    const [isLoading, setLoading] = useState(false)
+    const [isAlertSuccess, setAlertSucc] = useState(false)
+    const [id,setId] = useState('')
+    const [isAlertDel, setAlertDel] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isAlertSuccDel, setAlertDelSucc] = useState(false)
+    const [tableData, setTableData] = useState([]);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('userData'));
@@ -27,24 +41,128 @@ export default function MasterKategori() {
         setUserData(user);
     }, [navigate]);
 
+    // get data divisi
+    const fetchDivisi = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/divisi-karyawan');
+            const items = response.data.data.map(item => ({
+                id: item.divisi_karyawan_id,
+                kategori: item.nama_divisi
+            }));
+    
+            setData(prevData => ({
+                ...prevData,
+                categories: prevData.categories.map(category => {
+                    if (category.title === 'Divisi') {
+                        return {
+                            ...category,
+                            data: items
+                        };
+                    }
+                    return category;
+                })
+            }));
+    
+            if (selectedCategory?.title === 'Divisi') {
+                setTableData(items);
+            }
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // get kategori barang
+    const fetchBarang = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/kategori-barang');
+            const items = response.data.data.map(item => ({
+                id: item.kategori_barang_id,
+                kategori: item.nama_kategori_barang
+            }));
+    
+            setData(prevData => ({
+                ...prevData,
+                categories: prevData.categories.map(category => {
+                    if (category.title === 'Kategori Barang') {
+                        return {
+                            ...category,
+                            data: items
+                        };
+                    }
+                    return category;
+                })
+            }));
+    
+            if (selectedCategory?.title === 'Kategori Barang') {
+                setTableData(items);
+            }
+        } catch (error) {
+            console.error('Error fetching kategori barang:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchMetode = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/metode-pembayaran');
+            const items = response.data.data.map(item => ({
+                id: item.metode_id,
+                kategori: item.nama_metode
+            }));
+    
+            setData(prevData => ({
+                ...prevData,
+                categories: prevData.categories.map(category => {
+                    if (category.title === 'Metode Pembayaran') {
+                        return {
+                            ...category,
+                            data: items
+                        };
+                    }
+                    return category;
+                })
+            }));
+    
+            if (selectedCategory?.title === 'Metode Pembayaran') {
+                setTableData(items);
+            }
+        } catch (error) {
+            console.error('Error fetching metode pembayaran:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDivisi();
+        fetchBarang()
+        fetchMetode()
+    }, []);
+
     const [data, setData] = useState({
         categories: [
             { 
                 title: 'Metode Pembayaran', 
                 id: 1,
                 data: [
-                    { id: 1, kategori: "Cash", no: 1, aksi: getActionButtons() },
-                    { id: 2, kategori: "Transfer Bank", no: 2, aksi: getActionButtons() },
-                    { id: 3, kategori: "E-Wallet", no: 3, aksi: getActionButtons() }
+                    // { id: 1, kategori: "Cash", no: 1, aksi: getActionButtons() },
+                    // { id: 2, kategori: "Transfer Bank", no: 2, aksi: getActionButtons() },
+                    // { id: 3, kategori: "E-Wallet", no: 3, aksi: getActionButtons() }
                 ]
             },
             { 
                 title: 'Kategori Barang', 
                 id: 2,
                 data: [
-                    { id: 1, kategori: "Makanan", no: 1, aksi: getActionButtons() },
-                    { id: 2, kategori: "Minuman", no: 2, aksi: getActionButtons() },
-                    { id: 3, kategori: "Snack", no: 3, aksi: getActionButtons() }
+                    // { id: 1, kategori: "Makanan", no: 1, aksi: getActionButtons() },
+                    // { id: 2, kategori: "Minuman", no: 2, aksi: getActionButtons() },
+                    // { id: 3, kategori: "Snack", no: 3, aksi: getActionButtons() }
                 ]
             },
             { 
@@ -70,9 +188,6 @@ export default function MasterKategori() {
                 title: 'Divisi', 
                 id: 5,
                 data: [
-                    { id: 1, kategori: "Marketing", no: 1, aksi: getActionButtons() },
-                    { id: 2, kategori: "Finance", no: 2, aksi: getActionButtons() },
-                    { id: 3, kategori: "HR", no: 3, aksi: getActionButtons() }
                 ]
             }
         ]
@@ -106,13 +221,15 @@ export default function MasterKategori() {
     }
 
 
-    function getActionButtons(item) {
+    function getActionButtons(item = {}) {
         return (
             <div className="flex gap-2 justify-end">
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleEditItem(item);
+                        if(item?.id) { 
+                            handleEditItem(item);
+                        }
                     }} 
                     className="text-orange-500"
                 >
@@ -124,7 +241,9 @@ export default function MasterKategori() {
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteItem(item);
+                        if(item?.id) { 
+                            handleDeleteItem(item);
+                        }
                     }} 
                     className="text-red-500"
                 >
@@ -151,6 +270,7 @@ export default function MasterKategori() {
             }))
         };
         setSelectedCategory(categoryWithActions);
+        setTableData(category.data); 
         setShowListModal(true);
     };
 
@@ -164,19 +284,120 @@ export default function MasterKategori() {
     const handleEditItem = (item) => {
         setFormType('edit');
         setSelectedItem(item);
+        setId(item.id)
         setFormData(item.kategori);
         setShowFormModal(true);
     };
 
-    const handleFormSubmit = () => {
-        // Handle form submission logic
-        setShowFormModal(false);
+    const handleFormSubmit = async () => {
+        if (!formData.trim()) {
+            return;
+        }
+    
+        try {
+            setLoading(true);
+            if(selectedCategory.title === 'Divisi') {
+                if(formType === 'add') {
+                    await api.post('/divisi-karyawan', {
+                        nama_divisi: formData
+                    });
+                    await fetchDivisi();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } else {
+                    await api.put(`/divisi-karyawan/${id}`, {
+                        nama_divisi: formData
+                    });
+                    await fetchDivisi();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                }
+            } else if (selectedCategory.title === 'Kategori Barang'){
+                if(formType === 'add') {
+                    await api.post('/kategori-barang', {
+                        nama_kategori_barang: formData
+                    });
+                    await fetchBarang();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } else {
+                    await api.put(`/kategori-barang/${id}`, {
+                        nama_kategori_barang: formData
+                    });
+                    await fetchBarang();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                }
+            } else if (selectedCategory.title === 'Metode Pembayaran'){
+                if(formType === 'add') {
+                    await api.post('/metode-pembayaran', {
+                        nama_metode: formData
+                    });
+                    await fetchMetode();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } else {
+                    await api.put(`/metode-pembayaran/${id}`, {
+                        nama_metode: formData
+                    });
+                    await fetchMetode();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                }
+            }
+        } catch (error) {
+            console.error('Error submitting data:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-
     const handleDeleteItem = (item) => {
-        // Implement delete functionality
-        console.log('Delete item:', item);
+        setAlertDel(true)
+        setId(item.id)
+    };
+
+    const handleConfirmDel = async () => {
+        try {
+            setLoading(true);
+            if (selectedCategory.title === 'Kategori Barang') {
+                const response = await api.delete(`/kategori-barang/${id}`);
+                if (response.data.success) {
+                    await fetchBarang(); 
+                    setAlertDel(false);
+                    setAlertDelSucc(true);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            } else if(selectedCategory.title === 'Metode Pembayaran'){
+                const response = await api.delete(`/metode-pembayaran/${id}`);
+                if (response.data.success) {
+                    await fetchMetode(); 
+                    setAlertDel(false);
+                    setAlertDelSucc(true);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            } else if (selectedCategory.title === 'Divisi'){
+                const response = await api.delete(`/divisi-karyawan/${id}`);
+                if (response.data.success) {
+                    await fetchDivisi(); 
+                    setAlertDel(false);
+                    setAlertDelSucc(true);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            }
+        } catch (error) {
+            console.error('Kesalahan Server', error);
+            setErrorMessage('Terjadi kesalahan saat menghapus data');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -223,7 +444,7 @@ export default function MasterKategori() {
 
                 {showListModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+                        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold">{selectedCategory.title}</h3>
                                 <button onClick={() => setShowListModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -247,11 +468,15 @@ export default function MasterKategori() {
                                 />
                             </div>
 
-                            <div className="mt-4">
-                                <Table
-                                    headers={tableHeaders}
-                                    data={selectedCategory.data}
-                                />
+                            <div className="mt-4 flex-1 overflow-y-auto">
+                            <Table
+                                headers={tableHeaders}
+                                data={tableData.map((item, index) => ({
+                                    ...item,
+                                    no: index + 1,
+                                    aksi: getActionButtons(item)
+                                }))}
+                            />
                             </div>
                         </div>
                     </div>
@@ -276,7 +501,7 @@ export default function MasterKategori() {
                                 label={`Nama ${selectedCategory.title}`}
                                 value={formData}
                                 onChange={(value) => setFormData(value)}
-                                required={true}
+                                required='true'
                             />
                         </div>
 
@@ -289,7 +514,12 @@ export default function MasterKategori() {
                             </button>
                             <button
                                 onClick={handleFormSubmit}
-                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                                disabled={!formData.trim()}
+                                className={`px-4 py-2 rounded-md ${
+                                    !formData.trim() 
+                                        ? 'bg-gray-300 cursor-not-allowed' 
+                                        : 'bg-primary hover:bg-primary/90'
+                                } text-white`}
                             >
                                 Simpan
                             </button>
@@ -297,6 +527,53 @@ export default function MasterKategori() {
                     </div>
                 </div>
             )}
+
+                {isLoading && (
+                    <Spinner/>
+                )}
+
+                {isAlertSuccess && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Ditambahkan/Diperbaharui"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertSucc(false)}
+                    />
+                )}
+
+                {isAlertDel && (
+                    <Alert
+                        title="Hapus Data"
+                        description="Apakah kamu yakin ingin menghapus data ini?"
+                        confirmLabel="Hapus"
+                        cancelLabel="Kembali"
+                        onConfirm={handleConfirmDel}
+                        onCancel={() => setAlertDel(false)}
+                        open={isAlertDel}
+                        onClose={() => setAlertDel(false)}
+                    />
+                )}
+
+                {isAlertSuccDel && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Dihapus"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertDelSucc(false)}
+                    />
+                )}
+
+                {isErrorAlert && (
+                <AlertError
+                    title="Gagal!!"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorAlert(false)}
+                />
+                )}
+                
+
+                
             </div>
         </LayoutWithNav>
     );

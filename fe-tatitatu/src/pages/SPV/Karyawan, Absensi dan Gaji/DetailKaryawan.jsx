@@ -1,68 +1,43 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Button from "../../../components/Button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import moment from "moment";
 import Table from "../../../components/Table";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function DetailKaryawan(){
+    const [isLoading, setLoading] = useState(false)
     const location = useLocation()
     const {id, divisi} = location.state || {}
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const monthValue = `${selectedYear}-${selectedMonth}`;
 
+    const handleMonthChange = (e) => {
+        const value = e.target.value; 
+        const [year, month] = value.split('-');
+        setSelectedMonth(month);
+        setSelectedYear(year);
+    };
+    
     const breadcrumbItems = [
         { label: "Data Karyawan Absensi dan Gaji", href: "/dataKaryawanAbsenGaji" },
         { label: "Detail", href: "" },
     ];
 
         const [isModalOpen, setIsModalOpen] = useState(false);
-        const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-        const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-        const [selectedMonth, setSelectedMonth] = useState(moment().format("MM"));
-        const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
 
-        const formatMonthYear = () => {
-            const monthName = moment(selectedMonth, "MM").format("MMMM");
-            return `${monthName} ${selectedYear}`;
-        };
-        
-      const handleToday = () => {
-        const today = moment().startOf("day");
-        setStartDate(today.format("YYYY-MM-DD"));
-        setEndDate(today.format("YYYY-MM-DD"));
-        setIsModalOpen(false);
-      };
-    
-      const handleLast7Days = () => {
-        const today = moment().startOf("day");
-        const sevenDaysAgo = today.clone().subtract(7, "days");
-        setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-        setEndDate(today.format("YYYY-MM-DD"));
-        setIsModalOpen(false);
-      };
-    
-      const handleThisMonth = () => {
-        const startMonth = moment().startOf("month");
-        const endMonth = moment().endOf("month");
-        setStartDate(startMonth.format("YYYY-MM-DD"));
-        setEndDate(endMonth.format("YYYY-MM-DD"));
-        setIsModalOpen(false);
-      };
+        const navigate = useNavigate()
     
         const handleRowClick = (row) => {
             navigate(`/pembelianStok/detail`, { state: { id: row.id } });
         };
     
-        const toggleModal = () => setIsModalOpen(!isModalOpen);
-    
-        const formatDate = (date) =>
-            new Date(date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-            year: "numeric",
-        });
 
         const formatDate2 = (date) =>
             new Date(date).toLocaleDateString("id-ID", {
@@ -80,8 +55,8 @@ export default function DetailKaryawan(){
             { label: "Foto", key: "Foto", align: "text-left" },
             { label: "Jam Masuk", key: "Jam Masuk", align: "text-left" },
             { label: "Jam Keluar", key: "Jam Keluar", align: "text-left" },
-            { label: "Total Waktu", key: "Total Waktu", align: "text-center" },
-            { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-center" },
+            { label: "Total Waktu", key: "Total Waktu", align: "text-left" },
+            { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-left" },
         ];
 
         const headersProduksi = [
@@ -89,143 +64,261 @@ export default function DetailKaryawan(){
             { label: "Foto", key: "Foto", align: "text-left" },
             { label: "Jumlah Produksi", key: "Jumlah Produksi", align: "text-left" },
             { label: "Total Menit", key: "Total Menit", align: "text-left" },
-            { label: "Status", key: "Status", align: "text-center" },
-            { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-center" },
+            { label: "Status", key: "Status", align: "text-left" },
+            { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-left" },
         ];
     
         const headersTransportasi = [
             { label: "Tanggal", key: "Tanggal", align: "text-left" },
             { label: "Foto", key: "Foto", align: "text-left" },
             { label: "Lokasi", key: "Lokasi", align: "text-left" },
-            { label: "Status", key: "Status", align: "text-center" },
+            { label: "Status", key: "Status", align: "text-left" },
         ];
 
         const [data, setData] = useState({
-            "Gaji Pokok": 1000000,
-            "Total Menit Kerja": 10200,
-            "Persentase KPI Tercapai": 80,
-            "Total Bonus": 245000,
-            "Total Gaji Akhir": 1220000,
+            "Gaji Pokok": 0,
+            "Total Menit Kerja": 0,
+            "Persentase KPI Tercapai": 0,
+            "Total Bonus": 0,
+            "Total Gaji Akhir": 0,
             profile: {
-                nama: 'Nadini Annisa Byant',
-                phone: '082283426568',
-                email: 'nadini@gmail.com',
-                toko: 'Tatitatu',
-                cabang: 'Gor Agus',
-                divisi: 'Kasir',
-                total_gaji_pokok: 1000000,
-                total_bonus: 500000,
-                waktu_kerja_sebulan: 11200,
-                kehadiran:11,
-                izin:1,
-                tidak_ada_kejelasan: 10
+                nama: '',
+                phone: '',
+                email: '',
+                toko: '',
+                cabang: '',
+                divisi: '',
+                total_gaji_pokok: 0,
+                total_bonus: 0,
+                waktu_kerja_sebulan: 0,
+                kehadiran:0,
+                izin:0,
+                tidak_ada_kejelasan: 0,
+                foto: ''
             },
             data: [
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                }
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // },
+                // {
+                //     id:1,
+                //     Tanggal: '2024-12-11',
+                //     Foto: 'https://via.placeholder.com/50',
+                //     "Jam Masuk": '13.00',
+                //     "Jam Keluar": '19.00',
+                //     "Total Waktu": 500,
+                //     "Gaji Pokok Perhari": 35000
+                // }
             ]
         })
+    
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get(`/data-absensi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
+                const { 
+                    karyawan, 
+                    kehadiran, 
+                    totalCutiDays, 
+                    tidakHadir,
+                    totalGajiPokok,
+                    totalMenit,
+                    totalPersentaseTercapai,
+                    totalBonusDiterima,
+                    totalGajiAkhir
+                } = response.data.data;
+         
+                setData(prevData => ({
+                    ...prevData,
+                    "Gaji Pokok": totalGajiPokok || 0,
+                    "Total Menit Kerja": totalMenit || 0,
+                    "Persentase KPI Tercapai": totalPersentaseTercapai || 0,
+                    "Total Bonus": totalBonusDiterima || 0,
+                    "Total Gaji Akhir": totalGajiAkhir || 0,
+                    profile: {
+                        nama: karyawan.nama_karyawan,
+                        phone: karyawan.nomor_handphone || '-',
+                        email: karyawan.email,
+                        toko: 'Tatitatu', 
+                        cabang: karyawan.cabang.nama_cabang,
+                        divisi: karyawan.divisi.nama_divisi,
+                        total_gaji_pokok: karyawan.jumlah_gaji_pokok || 0,
+                        total_bonus: karyawan.bonus || 0,
+                        waktu_kerja_sebulan: karyawan.waktu_kerja_sebulan_menit || karyawan.waktu_kerja_sebulan_antar || 0,
+                        kehadiran: kehadiran || 0,
+                        izin: totalCutiDays || 0,
+                        tidak_ada_kejelasan: tidakHadir || 0,
+                        foto: karyawan.image || 'https://via.placeholder.com/50'
+                    }
+                }));
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-            // Data berbeda untuk setiap divisi
-    const dataProduksi = {
-        ...data,
-        data: [
-            {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                "Jumlah Produksi": "13 Pcs",
-                "Total Menit": "20 Menit",
-                "Status": "Diterima",
-                "Gaji Pokok Perhari": 30000
-            },
-        ]
-    };
 
-    const dataTransportasi = {
-        ...data,
-        data: [
-            {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                Lokasi: "Youth Center Padang",
-                Status: "Antar"
-            },
-            {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                Lokasi: "Youth Center Padang",
-                Status: "Jemput"
-            },
-        ]
-    };
+        const fetchAbsensiData = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get(`/list-absensi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
+                const { absensiRecord, totalGajiPokok, totalMenit } = response.data.data;
+        
+                // Format data berdasarkan divisi
+                if (divisi === 'Transportasi') {
+                    setData(prevData => ({
+                        ...prevData,
+                        "Total Menit Kerja": totalMenit || 0,
+                        "Gaji Pokok": totalGajiPokok || 0,
+                        data: absensiRecord.map(item => ({
+                            Tanggal: item.tanggal,
+                            Foto: `${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
+                            Lokasi: item.lokasi,
+                            Status: item.status
+                        }))
+                    }));
+                } 
+                else if (divisi === 'Produksi') {
+                    setData(prevData => ({
+                        ...prevData,
+                        "Total Menit Kerja": totalMenit || 0,
+                        "Gaji Pokok": totalGajiPokok || 0,
+                        data: absensiRecord.map(item => ({
+                            Tanggal: item.tanggal,
+                            Foto: `${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
+                            "Jumlah Produksi": item.jumlah_produksi || "0 Pcs",
+                            "Total Menit": item.total_menit ? `${item.total_menit} Menit` : "0 Menit",
+                            "Status": item.status || "Pending",
+                            "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0
+                        }))
+                    }));
+                } 
+                else {
+                    // Format default untuk divisi lainnya
+                    setData(prevData => ({
+                        ...prevData,
+                        "Total Menit Kerja": totalMenit || 0,
+                        "Gaji Pokok": totalGajiPokok || 0,
+                        data: absensiRecord.map(item => ({
+                            id: item.absensi_karyawan_id,
+                            Tanggal: item.tanggal,
+                            Foto:`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
+                            "Jam Masuk": item.jam_masuk || '-',
+                            "Jam Keluar": item.jam_keluar || '-',
+                            "Total Waktu": item.total_menit || 0,
+                            "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0
+                        }))
+                    }));
+                }
+        
+            } catch (error) {
+                console.error('Error fetching absensi data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            const fetchData = async () => {
+                await Promise.all([
+                    fetchProfile(),
+                    fetchAbsensiData()
+                ]);
+            };
+            fetchData();
+        }, [selectedMonth, selectedYear]);
+
+     // Data berbeda untuk setiap divisi
+    // const dataProduksi = {
+    //     ...data,
+    //     data: [
+    //         {
+    //             Tanggal: '2024-12-11',
+    //             Foto: 'https://via.placeholder.com/50',
+    //             "Jumlah Produksi": "13 Pcs",
+    //             "Total Menit": "20 Menit",
+    //             "Status": "Diterima",
+    //             "Gaji Pokok Perhari": 30000
+    //         },
+    //     ]
+    // };
+
+    // const dataTransportasi = {
+    //     ...data,
+    //     data: [
+    //         {
+    //             Tanggal: '2024-12-11',
+    //             Foto: 'https://via.placeholder.com/50',
+    //             Lokasi: "Youth Center Padang",
+    //             Status: "Antar"
+    //         },
+    //         {
+    //             Tanggal: '2024-12-11',
+    //             Foto: 'https://via.placeholder.com/50',
+    //             Lokasi: "Youth Center Padang",
+    //             Status: "Jemput"
+    //         },
+    //     ]
+    // };
 
     const renderTable = () => {
         if (divisi === 'Produksi') {
           return (
             <Table
               headers={headersProduksi}
-              data={dataProduksi.data.map((item, index) => ({
+              data={data.data.map((item, index) => ({
                 ...item,
                 Tanggal: formatDate2(item.Tanggal),
                 Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
@@ -240,7 +333,7 @@ export default function DetailKaryawan(){
           return (
             <Table
               headers={headersTransportasi}
-              data={dataTransportasi.data.map((item, index) => ({
+              data={data.data.map((item, index) => ({
                 ...item,
                 Tanggal: formatDate2(item.Tanggal),
                 Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
@@ -279,18 +372,15 @@ export default function DetailKaryawan(){
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                         <div className="w-full md:w-auto">
-                        <Button 
-                            label={formatMonthYear()}
-                            icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>} 
-                            bgColor="border border-secondary" 
-                            hoverColor="hover:bg-white" 
-                            textColor="text-black" 
-                            onClick={toggleModal} 
-                        />
+                                <input 
+                                    type="month"
+                                    value={monthValue}
+                                    onChange={handleMonthChange}
+                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    style={{
+                                        maxWidth: '200px',
+                                    }}
+                                />
                         </div>
                     </div>
 
@@ -393,7 +483,7 @@ export default function DetailKaryawan(){
                             <img src="/icon/gajiAkhir.svg" alt="Icon Gaji Akhir" className="w-6 h-6" />
                             <div>
                             <p className="text-sm">Total Gaji Akhir</p>
-                            <p className="font-bold">{`Rp${formatNumberWithDots(data["Total Gaji Akhir"])}`}</p>
+                            <p className="font-bold text-start">{`Rp${formatNumberWithDots(data["Total Gaji Akhir"])}`}</p>
                             </div>
                         </div>
                     </div>
@@ -404,7 +494,7 @@ export default function DetailKaryawan(){
                         {/* Profile Section */}
                         <div className="flex items-center space-x-4">
                             <img
-                                src="https://via.placeholder.com/50"
+                                src={`${import.meta.env.VITE_API_URL}/images-karyawan/${data.profile.foto}`}
                                 alt="profile"
                                 className="w-20 h-20 rounded-full"
                             />
@@ -486,7 +576,7 @@ export default function DetailKaryawan(){
                     </div>
                 </section>
 
-
+                {isLoading && <Spinner />}
             </div>
         </LayoutWithNav>
         </>

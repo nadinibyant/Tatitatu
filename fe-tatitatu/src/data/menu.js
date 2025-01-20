@@ -56,11 +56,11 @@ export const menuItems = [
         iconWarna: '/Icon Warna/kpi.svg',
         submenu: [
             {label: "Daftar Penilaian KPI", link: '/daftarPenilaianKPI'},
-            {label: "KPI Seluruh Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
+            {label: "KPI Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
           ],
     },
     {
-        label: "Karyawan Absens & Gaji",
+        label: "Karyawan Absensi & Gaji",
         link: "/dataKaryawanAbsenGaji",
         icon: "/Menu/karyawanAbsensi.svg",
         iconWarna: '/Icon Warna/karyawanAbsensi.svg',
@@ -93,8 +93,7 @@ export const menuItems = [
         label: "Target Kasir",
         link: "/target-bulanan",
         icon: "/Menu/targetKasir.svg",
-        iconWarna: "/Menu/targetKasir.svg",
-        // iconWarna: '/Icon Warna/targetKasir.svg',
+        iconWarna: '/Icon Warna/targetKasir.svg',
 
     },
     {
@@ -141,7 +140,7 @@ export const menuItems = [
           ],
     },
     {
-        label: "Karyawan Absens & Gaji",
+        label: "Karyawan Absensi & Gaji",
         link: "/dataKaryawanAbsenGaji",
         icon: "/Menu/karyawanAbsensi.svg",
         iconWarna: '/Icon Warna/karyawanAbsensi.svg',
@@ -364,7 +363,7 @@ export const menuItems = [
         ],
     },
     {
-      label: "Karyawan Absens & Gaji",
+      label: "Karyawan Absensi & Gaji",
       link: "/karyawan-absen-gaji",
       icon: "/Menu/karyawanAbsensi.svg",
       iconWarna: '/Icon Warna/karyawanAbsensi.svg',

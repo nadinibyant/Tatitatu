@@ -3,37 +3,98 @@ import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import TimeInput from "../../../components/TimeInput";
+import api from "../../../utils/api";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
+import AlertError from "../../../components/AlertError";
 
 export default function TambahAkunKaryawan(){
+    const [branchList, setBranchList] = useState([]);
+    const [divisiList, setDivisiList] = useState([]);
+    const [isLoading, setLoading] = useState(false)
+    const [isAlertSuccess, setAlertSucc] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const [formData, setFormData] = useState({
-        photo: null,
-        email: '',
-        password: '',
-        name: '',
-        division: '',
-        baseSalary: '',
-        bonus: '',
-        workHours: {
+      photo: null,
+      email: '',
+      password: '12345678',
+      name: '',
+      division: '',
+      store: 'Tatitatu',
+      branch: '',        
+      baseSalary: '',
+      bonus: '',
+      workHours: {
           amount: '',
           unit: 'Menit'
-        },
-        phone: ''
-      });
+      },
+      phone: '' 
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.division) {
+      newErrors.division = 'divisi harus dipilih';
+    } else if(!formData.branch){
+        newErrors.branch = 'cabang harus dipilih';
+
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+      const fetchBranches = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get('/cabang');
+            if (response.data.success) {
+                const options = response.data.data.map(branch => ({
+                    value: branch.cabang_id,
+                    label: branch.nama_cabang
+                }));
+                setBranchList(options);
+            }
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        } finally {
+          setLoading(false)
+        }
+      };
+
+      const fetchDivisi = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get('/divisi-karyawan');
+            if (response.data.success) {
+                // Transform data untuk InputDropdown
+                const options = response.data.data.map(div => ({
+                    value: div.divisi_karyawan_id,
+                    label: div.nama_divisi
+                }));
+                setDivisiList(options);
+            }
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        } finally {
+          setLoading(false)
+        }
+      };
     
+      useEffect(() => {
+        fetchBranches();
+        fetchDivisi();
+      }, []);
+
       const [photoPreview, setPhotoPreview] = useState(null);
-    
-      const divisions = [
-        'HR',
-        'IT',
-        'Finance',
-        'Marketing',
-        'Operations'
-      ];
+  
     
       const handleInputChange = (field) => (value) => {
         setFormData(prev => ({
@@ -61,10 +122,59 @@ export default function TambahAkunKaryawan(){
         }
       };
     
-      const handleSubmit = (e) => {
+      const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form data:', formData);
-      };
+        const isValid = validateForm();
+        if (isValid) {
+            try {
+                setLoading(true);
+                const formDataToSend = new FormData();
+        
+                if (formData.photo) {
+                    formDataToSend.append('image', formData.photo);
+                }
+                
+                formDataToSend.append('email', formData.email);
+                formDataToSend.append('nama_karyawan', formData.name);
+                formDataToSend.append('password', '12345678');
+                formDataToSend.append('divisi_karyawan_id', formData.division);
+                formDataToSend.append('cabang_id', formData.branch);
+                formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
+                formDataToSend.append('bonus', formData.bonus);
+                
+                if (formData.workHours.unit === 'Menit') {
+                    formDataToSend.append('waktu_kerja_sebulan_menit', formData.workHours.amount.toString());
+                } else {
+                    formDataToSend.append('waktu_kerja_sebulan_antar', formData.workHours.amount.toString());
+                }
+                
+                formDataToSend.append('nomor_handphone', formData.phone);
+        
+                const response = await api.post('/karyawan', formDataToSend, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+        
+                if (response.data.success) {
+                    setAlertSucc(true);
+                    setTimeout(() => {
+                        navigate('/akunKaryawan');
+                    }, 2000);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat menambahkan data');
+                setErrorAlert(true);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+    };
     
       const navigate = useNavigate()
       const handleCancel = () => {
@@ -91,6 +201,7 @@ export default function TambahAkunKaryawan(){
         { label: "Tambah Data Karyawan", href: "" },
         ];
 
+        console.log(formData)
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -123,7 +234,7 @@ export default function TambahAkunKaryawan(){
                                         <path d="M2 29.0833L11.8019 20.0982C12.1323 19.7954 12.5621 19.6241 13.0102 19.6166C13.4583 19.6092 13.8936 19.7662 14.2338 20.0578L25.8333 30M22.1667 25.4167L26.5419 21.0414C26.854 20.7291 27.2683 20.54 27.7086 20.5086C28.149 20.4773 28.5859 20.606 28.939 20.8709L35 25.4167M24 8H35M29.5 2.5V13.5" stroke="#7B0C42" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
                                     </div>
-                                    <p className="mt-2 text-sm text-primary">Masukan Foto Barang</p>
+                                    <p className="mt-2 text-sm text-primary">Masukan Foto</p>
                                 </div>
                                 )}
                             </div>
@@ -157,11 +268,29 @@ export default function TambahAkunKaryawan(){
                             
                             <InputDropdown
                                 label="Divisi"
-                                options={divisions}
+                                options={divisiList}
                                 value={formData.division}
-                                onSelect={(option) => handleInputChange('division')(option)}
+                                error={!!errors.division}
+                                errorMessage={errors.division}
+                                onSelect={(option) => handleInputChange('division')(option.value)}
                             />
-                            
+
+                            <Input
+                              label="Toko"
+                              value="Tatitatu"
+                              disabled={true}
+                              required={true}
+                            />
+
+                            <InputDropdown
+                                label="Cabang"
+                                options={branchList}
+                                value={formData.branch}
+                                onSelect={(option) => handleInputChange('branch')(option.value)}
+                                required={true}
+                                error={!!errors.branch}
+                                errorMessage={errors.branch}
+                            />
                             <Input
                                 label="Jumlah Gaji Pokok"
                                 value={formData.baseSalary}
@@ -214,6 +343,27 @@ export default function TambahAkunKaryawan(){
                     </div>
                 </section>
             </div>
+              {isAlertSuccess && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Ditambahkan"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertSucc(false)}
+                    />
+                )}
+
+                {isLoading && (
+                    <Spinner/>
+                )}
+
+                {isErrorAlert && (
+                <AlertError
+                    title="Gagal!!"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorAlert(false)}
+                />
+                )}
         </LayoutWithNav>
         </>
     )

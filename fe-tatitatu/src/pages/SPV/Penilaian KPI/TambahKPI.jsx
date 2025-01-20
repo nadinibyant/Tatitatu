@@ -7,14 +7,17 @@ import moment from "moment";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
 
 export default function TambahKPI(){
     const location = useLocation()
     const {id} = location.state || {}
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [startDate, setStartDate] = useState(moment().format("MM-DD"));
+    const [startDate, setStartDate] = useState(moment().format("YYYY-MM"));
     const [daysInMonth, setDaysInMonth] = useState(moment(startDate).daysInMonth()); 
-
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   const formatDate = (date) =>
@@ -29,196 +32,244 @@ export default function TambahKPI(){
     ];
 
     const [data, setData] = useState({
-        totalPercentage: 80.35,
-        bonus: 30000,
+        totalPercentage: 0,
+        bonus: 0,
         profile: {
-        phone: "081357897222239",
-        email: "example@gmail.com",
-        name: "Hamzah Abdillah Arif",
-        role: "Content Creator",
-        department: "Tatitatu/GOR. Haji Agus Salim",
-        stats: {
-            kehadiran: 17,
-            izin: 1,
-            tanpakejelasan: 10,
-            totalBonus: 500000
-        }
+            phone: "",
+            email: "",
+            name: "",
+            role: "",
+            department: "",
+            stats: {
+                kehadiran: 0,
+                izin: 0,
+                tanpakejelasan: 0,
+                totalBonus: 0
+            }
         },
-        kpi1: {
-        title: "Ketepatan Waktu Datang",
-        percentage: 35,
-        checkedDays: [
-            true, true, true, true, true, true, true, true, true, true, 
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false             
-        ],
-        stats: {
-            tercapai: 28,
-            tidakTercapai: 3,
-            percentage: 8.35,
-            bonus: 30000
-        }
-        },
-        kpi2: {
-        title: "Gokil Parah",
-        percentage: 40,
-        weeks: [
-            true, true, true, false           
-        ],
-        stats: {
-            tercapai: 3,
-            tidakTercapai: 1,
-            percentage: 8.35,
-            bonus: 30000
-        }
-        },
-        kpi3: {
-        title: "Pecah Parah",
-        percentage: 50,
-        monthlyCheck: false,
-        stats: {
-            tercapai: 28,
-            tidakTercapai: 3,
-            percentage: 8.35,
-            bonus: 30000
-        }
-        }
+        kpiList: [] // Array untuk menyimpan semua KPI
     });
+
+     const fetchProfileData = async () => {
+        try {
+            const response = await api.get(`/data-absensi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
+            
+            if (response.data.success) {
+                const profileData = response.data.data;
+                const karyawanData = profileData.karyawan;
+                
+                setData(prev => ({
+                    ...prev,
+                    profile: {
+                        phone: karyawanData.nomor_handphone || "",
+                        email: karyawanData.email || "",
+                        name: karyawanData.nama_karyawan || "",
+                        role: karyawanData.divisi.nama_divisi || "",
+                        department: karyawanData.cabang.nama_cabang || "",
+                        image: karyawanData.image || "",
+                        stats: {
+                            kehadiran: profileData.kehadiran || 0,
+                            izin: profileData.totalCutiDays || 0,
+                            tanpakejelasan: profileData.tidakHadir || 0,
+                            totalBonus: profileData.totalBonus || 0
+                        }
+                    }
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching profile data:', error);
+        }
+    };
+
+    const fetchKPIDefinitions = async () => {
+        try {
+            const response = await api.get(`/kpi`);
+            if (response.data.success) {
+                // Format definisi KPI
+                const formattedKPIs = response.data.data.map(kpi => ({
+                    kpi_id: kpi.kpi_id,
+                    title: kpi.nama_kpi,
+                    percentage: kpi.persentase,
+                    waktu: kpi.waktu,
+                    checks: kpi.waktu === 'Harian' ? Array(daysInMonth).fill(false) 
+                          : kpi.waktu === 'Mingguan' ? Array(4).fill(false)
+                          : [false], // Bulanan
+                    stats: {
+                        tercapai: 0,
+                        tidakTercapai: 0,
+                        percentage: 0,
+                        bonus: 0
+                    }
+                }));
+    
+                setData(prev => ({
+                    ...prev,
+                    kpiList: formattedKPIs
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching KPI definitions:', error);
+        }
+    };
+
+    const fetchKPIData = async () => {
+        try {
+            const response = await api.get(`/kpi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
+            
+            if (response.data.success) {
+                const apiData = response.data.data;
+                
+                setData(prev => {
+                    const updatedKPIList = prev.kpiList.map(kpi => {
+                        // Cari data KPI karyawan yang sesuai
+                        const karyawanKPI = apiData.result.find(k => k.kpi_id === kpi.kpi_id);
+                        
+                        if (karyawanKPI) {
+                            // Reset checks
+                            let newChecks;
+                            if (kpi.waktu === 'Harian') {
+                                newChecks = Array(daysInMonth).fill(false);
+                            } else if (kpi.waktu === 'Mingguan') {
+                                newChecks = Array(4).fill(false);
+                            } else { // Bulanan
+                                newChecks = [false];
+                            }
+                            
+                            // Set checks berdasarkan kpiKaryawanList
+                            if (karyawanKPI.kpiKaryawanList) {
+                                karyawanKPI.kpiKaryawanList.forEach(item => {
+                                    newChecks[item.point_ke - 1] = true;
+                                });
+                            }
+    
+                            return {
+                                ...kpi,
+                                checks: newChecks,
+                                stats: {
+                                    tercapai: karyawanKPI.tercapai,
+                                    tidakTercapai: karyawanKPI.tidakTercapai,
+                                    percentage: karyawanKPI.persentaseTercapai,
+                                    bonus: karyawanKPI.bonusDiterima
+                                }
+                            };
+                        }
+                        return kpi;
+                    });
+    
+                    return {
+                        ...prev,
+                        kpiList: updatedKPIList,
+                        totalPercentage: apiData.totalPersentaseTercapai,
+                        bonus: apiData.totalBonusDiterima
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching KPI data:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchKPIDefinitions();
+    }, [id]); 
+    
+    useEffect(() => {
+        fetchProfileData()
+        if (data.kpiList.length > 0) { 
+            fetchKPIData(); 
+        }
+    }, [selectedMonth, selectedYear, data.kpiList.length]);
+
+    const handleKPICheck = async (kpiIndex, checkIndex) => {
+        try {
+            // Kirim data ke API
+            const response = await api.post('/kpi-karyawan', {
+                kpi_id: data.kpiList[kpiIndex].kpi_id,
+                karyawan_id: id, 
+                point_ke: checkIndex + 1 
+            });
+    
+            if (response.data.success) {
+                // Jika API berhasil, update state lokal
+                setData(prev => {
+                    const newKPIList = [...prev.kpiList];
+                    const kpi = newKPIList[kpiIndex];
+                    
+                    const newChecks = [...kpi.checks];
+                    newChecks[checkIndex] = !newChecks[checkIndex];
+                    
+                    const tercapai = newChecks.filter(check => check).length;
+                    const tidakTercapai = kpi.waktu === 'Harian' ? daysInMonth - tercapai
+                                       : kpi.waktu === 'Mingguan' ? 4 - tercapai
+                                       : 1 - tercapai;
+                                       
+                    const percentage = (tercapai / newChecks.length) * kpi.percentage;
+                    
+                    // Hitung bonus berdasarkan jenis KPI
+                    let bonus;
+                    switch (kpi.waktu) {
+                        case 'Harian':
+                            bonus = (kpi.percentage / 100) * tercapai * 50000;
+                            break;
+                        case 'Mingguan':
+                            bonus = (kpi.percentage / 100) * tercapai * 200000;
+                            break;
+                        case 'Bulanan':
+                            bonus = (kpi.percentage / 100) * tercapai * 1000000;
+                            break;
+                        default:
+                            bonus = 0;
+                    }
+            
+                    // Update KPI
+                    newKPIList[kpiIndex] = {
+                        ...kpi,
+                        checks: newChecks,
+                        stats: {
+                            tercapai,
+                            tidakTercapai,
+                            percentage,
+                            bonus
+                        }
+                    };
+            
+                    // Hitung total
+                    const totalPercentage = newKPIList.reduce((sum, k) => sum + k.stats.percentage, 0);
+                    const totalBonus = newKPIList.reduce((sum, k) => sum + k.stats.bonus, 0);
+            
+                    return {
+                        ...prev,
+                        kpiList: newKPIList,
+                        totalPercentage,
+                        bonus: totalBonus
+                    };
+                });
+            } else {
+                console.error('Failed to update KPI:', response.data.message);
+            }
+        } catch (error) {
+            console.error('Error updating KPI:', error);
+        }
+    };
+      
 
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
     }
 
-    const handleDayCheck = (day) => {
-        setData((prev) => {
-          const newCheckedDays = [...prev.kpi1.checkedDays];
-          newCheckedDays[day - 1] = !newCheckedDays[day - 1];
 
-          const updatedData = {
-            ...prev,
-            kpi1: {
-              ...prev.kpi1,
-              checkedDays: newCheckedDays
-            }
-          };
-          
-          const newStats = calculateKPI1Stats();
-
-          return {
-            ...updatedData,
-            kpi1: {
-              ...updatedData.kpi1,
-              stats: newStats
-            }
-          };
-        });
-      };
-      
-      const handleWeekCheck = (week) => {
-        setData(prev => {
-          const newWeeks = [...prev.kpi2.weeks];
-          newWeeks[week - 1] = !newWeeks[week - 1];
-          
-          const newStats = calculateKPI2Stats();
-          
-          return {
-            ...prev,
-            kpi2: {
-              ...prev.kpi2,
-              weeks: newWeeks,
-              stats: newStats
-            }
-          };
-        });
-      };
-      
-      const handleMonthCheck = () => {
-        setData(prev => {
-          const newMonthlyCheck = !prev.kpi3.monthlyCheck;
-          
-          const newStats = calculateKPI3Stats();
-          
-          return {
-            ...prev,
-            kpi3: {
-              ...prev.kpi3,
-              monthlyCheck: newMonthlyCheck,
-              stats: newStats
-            }
-          };
-        });
-      };
-
-      useEffect(() => {
-        const kpi1Stats = calculateKPI1Stats();
-        const kpi2Stats = calculateKPI2Stats();
-        const kpi3Stats = calculateKPI3Stats();
-        
-        const totalBonus = kpi1Stats.bonus + kpi2Stats.bonus + kpi3Stats.bonus;
-        const totalPercentage = (
-          (Number(kpi1Stats.percentage) + Number(kpi2Stats.percentage) + Number(kpi3Stats.percentage)) / 3
-        ).toFixed(2);
-        
-        setData(prev => ({
-          ...prev,
-          totalPercentage,
-          bonus: totalBonus
-        }));
-      }, [data.kpi1.checkedDays, data.kpi2.weeks, data.kpi3.monthlyCheck]);
+      const handleMonthChange = (e) => {
+        const value = e.target.value; 
+        const [year, month] = value.split('-');
+        setSelectedMonth(month);
+        setSelectedYear(year);
+        setStartDate(value); 
+    };
 
       useEffect(() => {
         setDaysInMonth(moment(startDate).daysInMonth());
       }, [startDate]);
 
-      const calculateKPI1Stats = () => {
-        const totalDays = data.kpi1.checkedDays.length;
-        
-        const tercapai = data.kpi1.checkedDays.filter(day => day).length;
-        
-        const tidakTercapai = totalDays - tercapai;
-        
-        const percentage = (tercapai / totalDays) * data.kpi1.percentage;
-        
-        // Hitung bonus
-        const bonus = (data.kpi1.percentage / 100) * tercapai * 50000;
-      
-        return {
-          tercapai, 
-          tidakTercapai, 
-          percentage: percentage.toFixed(2),
-          bonus
-        };
-      };
-      
-      const calculateKPI2Stats = () => {
-        const totalWeeks = data.kpi2.weeks.length;
-        const tercapai = data.kpi2.weeks.filter(week => week).length;
-        const tidakTercapai = totalWeeks - tercapai;
-        const percentage = (tercapai / totalWeeks) * data.kpi2.percentage;
-        const bonus = (data.kpi2.percentage / 100) * tercapai * 200000;
-      
-        return {
-          tercapai,
-          tidakTercapai,
-          percentage: percentage.toFixed(2),
-          bonus
-        };
-      };
-      
-      const calculateKPI3Stats = () => {
-        const tercapai = data.kpi3.monthlyCheck ? 1 : 0;
-        const tidakTercapai = data.kpi3.monthlyCheck ? 0 : 1;
-        const percentage = tercapai * data.kpi3.percentage;
-        const bonus = (data.kpi3.percentage / 100) * tercapai * 1000000;
-      
-        return {
-          tercapai,
-          tidakTercapai,
-          percentage: percentage.toFixed(2),
-          bonus
-        };
-      };
 
     return(
         <>
@@ -292,7 +343,7 @@ export default function TambahKPI(){
                         {/* Profile Section */}
                         <div className="flex items-center space-x-4">
                             <img
-                                src="https://via.placeholder.com/50"
+                                src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${data.profile}`}
                                 alt="profile"
                                 className="w-20 h-20 rounded-full"
                             />
@@ -358,189 +409,94 @@ export default function TambahKPI(){
                 </section>
 
                 {/* kpi 1 */}
-                <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
-                        <p className="text-gray-500 text-sm">Persentase: {data.kpi1.percentage}%</p>
-                        <p className="text-primary font-bold">KPI1 - Ketepatan Waktu Datang</p>
-                    </div>
-
-                    <section>
-                        <p className="text-center font-bold">Bulan {moment(startDate).format("MMMM")}</p>
-                        <div className="grid text-center grid-cols-10 gap-10 p-5">
-                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
-                                <label key={day} className="">
-                                    <div className="text-sm mb-1">{day}</div>
-                                    <input
-                                    type="checkbox"
-                                    checked={data.kpi1.checkedDays[day - 1]}
-                                    onChange={() => handleDayCheck(day)}
-                                    className="w-4 h-4"
-                                    />
-                                </label>
-                            ))}
+                {data.kpiList.map((kpi, index) => (
+                    <section key={kpi.kpi_id} className="mt-5 bg-white rounded-xl">
+                        <div className="p-5">
+                            <p className="text-gray-500 text-sm">Persentase: {kpi.percentage}%</p>
+                            <p className="text-primary font-bold">KPI{index + 1} - {kpi.title}</p>
                         </div>
 
-                        <div className="mt-5 p-5">
-                            <div className="flex bg-pink rounded-xl p-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-4 w-full">
-                                    {/* Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi1.checkedDays.filter(day => day).length}</p>
-                                    </div>
-
-                                    {/* Tidak Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">
-                                            {data.kpi1.checkedDays.length - data.kpi1.checkedDays.filter(day => day).length}
-                                        </p>
-                                    </div>
-
-                                    {/* Persentase Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">
-                                            {((data.kpi1.checkedDays.filter(day => day).length / data.kpi1.checkedDays.length) * data.kpi1.percentage).toFixed(2)}%
-                                        </p>
-                                    </div>
+                        <section>
+                            <p className="text-center font-bold">Bulan {moment(startDate).format("MMMM")}</p>
+                            
+                            {kpi.waktu === 'Harian' && (
+                                <div className="grid text-center grid-cols-10 gap-10 p-5">
+                                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
+                                        <label key={day} className="">
+                                            <div className="text-sm mb-1">{day}</div>
+                                            <input
+                                                type="checkbox"
+                                                checked={kpi.checks[day - 1]}
+                                                onChange={() => handleKPICheck(index, day - 1)}
+                                                className="w-4 h-4"
+                                            />
+                                        </label>
+                                    ))}
                                 </div>
+                            )}
 
-                                {/* Bonus Yang Diterima */}
-                                <div className="text-end w-1/5">
-                                    <div className="">
-                                        <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">
-                                            Rp{formatNumberWithDots((data.kpi1.percentage / 100) * data.kpi1.checkedDays.filter(day => day).length * 50000)}
-                                        </p>
-                                    </div>
+                            {kpi.waktu === 'Mingguan' && (
+                                <div className="grid text-center grid-cols-4 pb-2">
+                                    {Array.from({ length: 4 }, (_, i) => i + 1).map(week => (
+                                        <label key={week} className="">
+                                            <div className="">Minggu {week}</div>
+                                            <input
+                                                type="checkbox"
+                                                checked={kpi.checks[week - 1]}
+                                                onChange={() => handleKPICheck(index, week - 1)}
+                                                className="w-4 h-4"
+                                            />
+                                        </label>
+                                    ))}
                                 </div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
+                            )}
 
-                {/* kpi2 */}
-                <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
-                        <p className="text-gray-500 text-sm">Persentase: {data.kpi2.percentage}%</p>
-                        <p className="text-primary font-bold">KPI2 - Gokil Parah</p>
-                    </div>
-
-                    <section>
-                        <p className="text-center pb-10 font-bold">Bulan {moment(startDate).format("MMMM")}</p>
-                        <div className="grid text-center grid-cols-4 pb-2">
-                            {Array.from({ length: 4 }, (_, i) => i + 1).map(week => (
-                            <label key={week} className="">
-                                <div className="">Minggu {week}</div>
-                                <input
-                                type="checkbox"
-                                checked={data.kpi2.weeks[week - 1]}
-                                onChange={() => handleWeekCheck(week)}
-                                className="w-4 h-4"
-                                />
-                            </label>
-                            ))}
-                        </div>
-
-                        <div className="mt-5 p-5">
-                            <div className="flex bg-pink rounded-xl p-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-4 w-full">
-                                    {/* Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi2.weeks.filter(week => week).length}</p>
-                                    </div>
-
-                                    {/* Tidak Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">
-                                            {data.kpi2.weeks.length - data.kpi2.weeks.filter(week => week).length}
-                                        </p>
-                                    </div>
-
-                                    {/* Persentase Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">
-                                            {((data.kpi2.weeks.filter(week => week).length / data.kpi2.weeks.length) * data.kpi2.percentage).toFixed(2)}%
-                                        </p>
-                                    </div>
+                            {kpi.waktu === 'Bulanan' && (
+                                <div className="flex justify-center mb-4">
+                                    <label className="text-center">
+                                        <div className="mr-2">Bulan {moment(startDate).format("MMMM")}</div>
+                                        <input
+                                            type="checkbox"
+                                            checked={kpi.checks[0]}
+                                            onChange={() => handleKPICheck(index, 0)}
+                                            className="w-4 h-4"
+                                        />
+                                    </label>
                                 </div>
+                            )}
 
-                                {/* Bonus Yang Diterima */}
-                                <div className="text-end w-1/5">
-                                    <div className="">
-                                        <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">
-                                            Rp{formatNumberWithDots((data.kpi2.percentage / 100) * data.kpi2.weeks.filter(week => week).length * 200000)}
-                                        </p>
+                            <div className="mt-5 p-5">
+                                <div className="flex bg-pink rounded-xl p-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 w-full">
+                                        <div className="flex flex-col">
+                                            <p className="text-sm text-primary">Tercapai</p>
+                                            <p className="text-primary font-bold text-lg">{kpi.stats.tercapai}</p>
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <p className="text-sm text-primary">Tidak Tercapai</p>
+                                            <p className="text-primary font-bold text-lg">{kpi.stats.tidakTercapai}</p>
+                                        </div>
+
+                                        <div className="flex flex-col">
+                                            <p className="text-sm text-primary">Persentase Tercapai</p>
+                                            <p className="text-primary font-bold text-lg">{kpi.stats.percentage}%</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-end w-1/5">
+                                        <div className="">
+                                            <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
+                                            <p className="text-primary font-bold text-start">
+                                                Rp{formatNumberWithDots(kpi.stats.bonus)}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     </section>
-                </section>
-
-                {/* kpi3 */}
-                <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
-                        <p className="text-gray-500 text-sm">Persentase: {data.kpi3.percentage}%</p>
-                        <p className="text-primary font-bold">KPI3 - Pecah Parah</p>
-                    </div>
-
-                    <section>
-                        <p className="text-center pb-10 font-bold">Desember</p>
-                        <div className="flex justify-center mb-4">
-                            <label className="text-center">
-                            <div className="mr-2">Bulan Desember</div>
-                            <input
-                                type="checkbox"
-                                checked={data.kpi3.monthlyCheck}
-                                onChange={handleMonthCheck}
-                                className="w-4 h-4"
-                            />
-                            </label>
-                        </div>
-
-                        <div className="mt-5 p-5">
-                            <div className="flex bg-pink rounded-xl p-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-4 w-full">
-                                    {/* Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi3.monthlyCheck ? 1 : 0}</p>
-                                    </div>
-
-                                    {/* Tidak Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Tidak Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">{data.kpi3.monthlyCheck ? 0 : 1}</p>
-                                    </div>
-
-                                    {/* Persentase Tercapai */}
-                                    <div className="flex flex-col">
-                                        <p className="text-sm text-primary">Persentase Tercapai</p>
-                                        <p className="text-primary font-bold text-lg">
-                                            {data.kpi3.monthlyCheck ? data.kpi3.percentage : 0}%
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Bonus Yang Diterima */}
-                                <div className="text-end w-1/5">
-                                    <div className="">
-                                        <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                        <p className="text-primary font-bold text-start">
-                                            Rp{formatNumberWithDots((data.kpi3.percentage / 100) * (data.kpi3.monthlyCheck ? 1 : 0) * 1000000)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
+                ))}
 
             </div>
         </LayoutWithNav>

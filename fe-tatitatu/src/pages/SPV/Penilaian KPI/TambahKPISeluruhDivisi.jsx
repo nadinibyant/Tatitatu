@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
@@ -8,8 +8,38 @@ import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
 
 export default function TambahKPISeluruhDivisi() {
+    const [divisions, setDivisions] = useState([]);
+    const [isLoading, setLoading] = useState(false)
+    const [isAlertSuccess, setAlertSucc] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+
+    // Fungsi untuk fetch data divisi
+    const fetchDivisi = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/divisi-karyawan');
+            
+            const formattedDivisions = response.data.data.map(div => ({
+                id: div.divisi_karyawan_id,
+                label: div.nama_divisi
+            }));
+            
+            setDivisions(formattedDivisions);
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDivisi();
+    }, []);
     const breadcrumbItems = [
         { label: "Daftar KPI Seluruh Divisi", href: "/daftarPenilaianKPI/seluruh-divisi" },
         { label: "Tambah", href: "" },
@@ -19,11 +49,7 @@ export default function TambahKPISeluruhDivisi() {
         divisi: "",
         data: [],
     });
-
-    const dataDivisi = [
-        { id: 1, label: "Kasir" },
-        { id: 2, label: "Non-Kasir" },
-    ];
+    
 
     const headers = [
         { label: "No", key: "Nomor", align: "text-left" },
@@ -36,7 +62,7 @@ export default function TambahKPISeluruhDivisi() {
     const dataWaktu = [
         { id: 1, label: "Bulanan" },
         { id: 2, label: "Harian" },
-        { id: 3, label: "Tahunan" },
+        { id: 3, label: "Mingguan" },
     ];
 
     const handleDivisiChange = (value) => {
@@ -71,6 +97,55 @@ export default function TambahKPISeluruhDivisi() {
         navigate('/daftarPenilaianKPI/seluruh-divisi')
     }
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Validasi input
+        if (!data.divisi) {
+            alert("Silakan pilih divisi terlebih dahulu");
+            return;
+        }
+    
+        if (data.data.length === 0) {
+            alert("Silakan tambahkan minimal 1 KPI");
+            return;
+        }
+    
+        // Validasi setiap baris KPI
+        for (let row of data.data) {
+            if (!row.NamaKPI || !row.Persentase || !row.Waktu) {
+                alert("Silakan lengkapi semua data KPI");
+                return;
+            }
+        }
+    
+        try {
+            const selectedDivision = divisions.find(div => div.label === data.divisi);
+            
+            const formattedData = data.data.map(row => ({
+                divisi_karyawan_id: selectedDivision.id, 
+                nama_kpi: row.NamaKPI,
+                persentase: parseInt(row.Persentase),
+                waktu: row.Waktu
+            }));
+    
+            // Kirim ke API
+            const response = await api.post('/kpi', formattedData);
+    
+            if (response.data.success) {
+                alert("Data KPI berhasil disimpan");
+                navigate('/daftarPenilaianKPI/seluruh-divisi');
+            } else {
+                alert(response.data.message || "Gagal menyimpan data");
+            }
+        } catch (error) {
+            console.error('Error saving KPI:', error);
+            alert("Terjadi kesalahan saat menyimpan data");
+        }
+    };
+
+    console.log(data)
+
     return (
         <>
             <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -79,7 +154,7 @@ export default function TambahKPISeluruhDivisi() {
 
                     <section className="mt-5 bg-white rounded-xl">
                         <div className="p-5">
-                            <form action="">
+                            <form onSubmit={handleSubmit}>
                                 <div className="sm:w-1/3">
                                     <label className="p-2">
                                         Divisi <span className="text-merah">*</span>
@@ -87,7 +162,7 @@ export default function TambahKPISeluruhDivisi() {
                                     <div className="pt-3">
                                         <ButtonDropdown 
                                             label={data.divisi || "Masukan Divisi"} 
-                                            options={dataDivisi} 
+                                            options={divisions} 
                                             onSelect={handleDivisiChange} 
                                         />
                                     </div>

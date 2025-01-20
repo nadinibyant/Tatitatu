@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../../components/Button";
 import Navbar from "../../../../components/Navbar";
 import { menuItems, userOptions } from "../../../../data/menu";
@@ -11,6 +11,7 @@ import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
 import InputDropdown from "../../../../components/InputDropdown";
+import api from "../../../../utils/api";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
@@ -21,96 +22,55 @@ export default function BarangCustom() {
   const [modalMode, setModalMode] = useState("add");
   const [isModalDetail, setModalDetail] = useState(false)
   const [id, setId] = useState("");
+  const [isLoading, setIsLoading] = useState(false)
   const [data,setData] = useState([
-    {
-        id: 1,
-        title: "Gelang Barbie 123",
-        price: "Rp10.000",
-        image: "https://via.placeholder.com/50",
-        type: "Zipper",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 2,
-        title: "Cincin Diamond",
-        price: "Rp15.000",
-        image: "https://via.placeholder.com/50",
-        type: "Box",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 3,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 4,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 5,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 6,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 7,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 8,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 9,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 10,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
-      {
-        id: 11,
-        title: "Anting Kristal",
-        price: "Rp12.000",
-        image: "https://via.placeholder.com/50",
-        type: "Paper Bag",
-        kategori: 'Aksesoris'
-      },
+    // {
+    //     id: 1,
+    //     title: "Gelang Barbie 123",
+    //     price: "Rp10.000",
+    //     image: "https://via.placeholder.com/50",
+    //     type: "Zipper",
+    //     kategori: 'Aksesoris'
+    //   },
+    //   {
+    //     id: 2,
+    //     title: "Cincin Diamond",
+    //     price: "Rp15.000",
+    //     image: "https://via.placeholder.com/50",
+    //     type: "Box",
+    //     kategori: 'Aksesoris'
+    //   },
 ])
+
+const fetchDataBarang = async () => {
+  try {
+      setIsLoading(true);
+      const response = await api.get('/barang-custom');
+      
+      if (response.data.success) {
+          const transformedData = response.data.data.map(item => {
+              return {
+                  id: item.barang_custom_id,
+                  title: item.nama_barang,
+                  price: `Rp${item.harga.toLocaleString('id-ID')}`,
+                  image: item.image || "https://via.placeholder.com/50",
+                  type: '',
+                  category: item.kategori_barang_id
+              };
+          });
+          
+          setData(transformedData);
+      }
+  } catch (error) {
+      console.error('Error fetching data barang:', error);
+  } finally {
+      setIsLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchDataBarang(); 
+}, []);
 
 const categoryOptions = [
   "Aksesoris",
@@ -224,16 +184,23 @@ const [data2, setData2] = useState({
 
   // console.log(data2)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (modalMode === "add") {
       console.log("Add item", data2);
+      // const response = await api.post('/barang-custom', {
+      //   nama_barang: data2.info_barang["Nama Barang"],
+      //   jumlah_minimum_stok: data2.info_barang["Jumlah Minimum Stok"],
+      //   harga: data2.info_barang
+      // })
       setModal(false);
     } else if (modalMode === "edit") {
       console.log("Edit item with id", id, data2);
       setModal(false);
     }
   };
+
+  console.log(data2)
 
   const [selectedId, setSelectedId] = useState(null);
   

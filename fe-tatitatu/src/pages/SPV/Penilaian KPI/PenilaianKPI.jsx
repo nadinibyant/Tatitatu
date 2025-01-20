@@ -8,19 +8,56 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
 
 export default function PenilaianKPI() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
     const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedJenis, setSelectedJenis] = useState("Semua");
-    const [selectedKategori, setSelectedKategori] = useState("Semua");
-    const [selectedStore, setSelectedStore] = useState("Semua");
+    const [selectedKategori, setSelectedKategori] = useState({ value: "Semua", label: "Semua" });
+    const [selectedStore, setSelectedStore] = useState({ value: "Semua", label: "Semua" });
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
-    const [selectedMonth, setSelectedMonth] = useState(moment().format("MM"));
-    const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [divisions, setDivisions] = useState([])
+    const [filterFields, setFilterFields] = useState([]);
+    const [isLoading,setLoading] = useState(false)
+    const [branchList, setBranchList] = useState([])
+
+    useEffect(() => {
+        const newFilterFields = isHeadGudang ? [
+            {
+                label: "Divisi",
+                key: "Divisi",
+                options: divisions
+            }
+        ] : [
+            {
+                label: "Cabang",
+                key: "Cabang",
+                options: branchList
+            },
+            {
+                label: "Divisi",
+                key: "Divisi",
+                options: divisions
+            }
+        ];
+        
+        setFilterFields(newFilterFields);
+    }, [branchList, divisions, isHeadGudang]);
+
+    const monthValue = `${selectedYear}-${selectedMonth}`;
+
+    const handleMonthChange = (e) => {
+        const value = e.target.value; 
+        const [year, month] = value.split('-');
+        setSelectedMonth(month);
+        setSelectedYear(year);
+    };
 
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
 
@@ -45,102 +82,133 @@ export default function PenilaianKPI() {
 
     const toggleModal = () => setIsModalOpen(!isModalOpen);
 
+    const [data, setData] = useState([]);
 
-    const data = [
-        {
-            id: 1,
-            Nama: 'Nadini Annisa',
-            Divisi: 'SPV',
-            Cabang: 'Gor Agus',
-            KPI: 15,
-            "Total Gaji Akhir": 15000000
-        },
-        {
-            id:2,
-            Nama: 'Nadini Annisa',
-            Divisi: 'SPV',
-            Cabang: 'Gor Agus',
-            KPI: 15,
-            "Total Gaji Akhir": 15000000
-        },
-        {
-            id: 3,
-            Nama: 'Nadini Annisa',
-            Divisi: 'Content Creator',
-            Cabang: 'Lubeg',
-            KPI: 10,
-            "Total Gaji Akhir": 14000000
-        },
-        {
-            id:4,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-        { 
-            id: 5,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-        {
-            id:6,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-        {
-            id:7,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-        {
-            id:8,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-        {
-            id:9,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },{
-            id:10,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },{
-            id:11,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },{
-            id:12,
-            Nama: 'John Doe',
-            Divisi: 'Admin',
-            Cabang: 'Lubeg',
-            KPI: 20,
-            "Total Gaji Akhir": 16000000
-        },
-    ];
+    const fetchKPIData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/kpi-karyawan/${selectedMonth}/${selectedYear}`); 
+            
+            if (response.data.success) {
+                const formattedData = response.data.data.map(item => ({
+                    id: item.karyawan_id,
+                    Nama: item.nama_karyawan,
+                    Divisi: item.divisi,
+                    Cabang: item.cabang,
+                    KPI: item.kpi_count || 0,
+                    "Total Gaji Akhir": item.total_gaji_akhir || 0
+                }));
+                
+                setData(formattedData);
+            }
+        } catch (error) {
+            console.error('Error fetching KPI data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchKPIData();
+    }, [selectedMonth, selectedYear, selectedStore, selectedKategori]);
+
+
+    // const data = [
+    //     {
+    //         id: 1,
+    //         Nama: 'Nadini Annisa',
+    //         Divisi: 'SPV',
+    //         Cabang: 'Gor Agus',
+    //         KPI: 15,
+    //         "Total Gaji Akhir": 15000000
+    //     },
+    //     {
+    //         id:2,
+    //         Nama: 'Nadini Annisa',
+    //         Divisi: 'SPV',
+    //         Cabang: 'Gor Agus',
+    //         KPI: 15,
+    //         "Total Gaji Akhir": 15000000
+    //     },
+    //     {
+    //         id: 3,
+    //         Nama: 'Nadini Annisa',
+    //         Divisi: 'Content Creator',
+    //         Cabang: 'Lubeg',
+    //         KPI: 10,
+    //         "Total Gaji Akhir": 14000000
+    //     },
+    //     {
+    //         id:4,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    //     { 
+    //         id: 5,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    //     {
+    //         id:6,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    //     {
+    //         id:7,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    //     {
+    //         id:8,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    //     {
+    //         id:9,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },{
+    //         id:10,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },{
+    //         id:11,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },{
+    //         id:12,
+    //         Nama: 'John Doe',
+    //         Divisi: 'Admin',
+    //         Cabang: 'Lubeg',
+    //         KPI: 20,
+    //         "Total Gaji Akhir": 16000000
+    //     },
+    // ];
+
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
@@ -155,39 +223,80 @@ export default function PenilaianKPI() {
         return number.toLocaleString('id-ID');
     }
 
-    const filterFields = [
-        // Filter Cabang hanya untuk admin
-        ...(!isHeadGudang ? [{
-            label: "Cabang",
-            key: "Cabang",
-            options: [
+    const fetchBranches = async () => {
+        try {
+            const response = await api.get('/cabang');
+            const branchList = [
                 { label: "Semua", value: "Semua" },
-                { label: "Gor Agus", value: "Gor Agus" },
-                { label: "Lubeg", value: "Lubeg" },
-            ]
-        }] : []),
-        // Filter Divisi untuk semua role
-        {
-            label: "Divisi",
-            key: "Divisi",
-            options: [
-                { label: "Semua", value: "Semua" },
-                { label: "SPV", value: "SPV" },
-                { label: "Content Creator", value: "Content Creator" },
-                { label: "Admin", value: "Admin" },
-            ]
+                ...response.data.data.map(div => ({
+                    label: div.nama_cabang,
+                    value: div.cabang_id
+                }))
+            ];
+            setBranchList(branchList);
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
         }
-    ];
+    };
+
+    const fetchDivisi = async () => {
+        try {
+            const response = await api.get('/divisi-karyawan');
+            const divisiList = [
+                { label: "Semua", value: "Semua" },
+                ...response.data.data.map(div => ({
+                    label: div.nama_divisi,
+                    value: div.divisi_karyawan_id
+                }))
+            ];
+            setDivisions(divisiList);
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchBranches();
+        fetchDivisi()
+    }, []);
+
+    // const filterFields = [
+    //     // Filter Cabang hanya untuk admin
+    //     ...(!isHeadGudang ? [{
+    //         label: "Cabang",
+    //         key: "Cabang",
+    //         options: [
+    //             { label: "Semua", value: "Semua" },
+    //             { label: "Gor Agus", value: "Gor Agus" },
+    //             { label: "Lubeg", value: "Lubeg" },
+    //         ]
+    //     }] : []),
+    //     // Filter Divisi untuk semua role
+    //     {
+    //         label: "Divisi",
+    //         key: "Divisi",
+    //         options: [
+    //             { label: "Semua", value: "Semua" },
+    //             { label: "SPV", value: "SPV" },
+    //             { label: "Content Creator", value: "Content Creator" },
+    //             { label: "Admin", value: "Admin" },
+    //         ]
+    //     }
+    // ];
 
     const filteredData = () => {
         let dataToDisplay = [...data];
     
-        if (selectedKategori !== "Semua") {
-            dataToDisplay = dataToDisplay.filter(item => item.Divisi === selectedKategori);
+        if (selectedKategori.value !== "Semua") {
+            dataToDisplay = dataToDisplay.filter(item => 
+                item.Divisi === selectedKategori.label
+            );
         }
     
-        if (!isHeadGudang && selectedStore !== "Semua") {
-            dataToDisplay = dataToDisplay.filter(item => item.Cabang === selectedStore);
+        if (!isHeadGudang && selectedStore.value !== "Semua") {
+            dataToDisplay = dataToDisplay.filter(item => 
+                item.Cabang === selectedStore.label
+            );
         }
     
         return dataToDisplay;
@@ -214,7 +323,7 @@ export default function PenilaianKPI() {
                                 </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" />
                             </div>
                             <div className="w-full md:w-auto">
-                            <Button 
+                            {/* <Button 
                                 label={formatMonthYear()}
                                 icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -225,12 +334,21 @@ export default function PenilaianKPI() {
                                 hoverColor="hover:bg-white" 
                                 textColor="text-black" 
                                 onClick={toggleModal} 
-                            />
+                            /> */}
+                                <input 
+                                    type="month"
+                                    value={monthValue}
+                                    onChange={handleMonthChange}
+                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    style={{
+                                        maxWidth: '200px',
+                                    }}
+                                />
                             </div>
                         </div>
 
                             {/* Modal */}
-                            {isModalOpen && (
+                            {/* {isModalOpen && (
                             <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                                 <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
                                     <button
@@ -242,7 +360,7 @@ export default function PenilaianKPI() {
                                         </svg>
                                     </button>
                                     <div className="flex space-x-4 w-full">
-                                        {/* Bulan */}
+                                       
                                         <div className="flex flex-col w-full">
                                             <label className="text-sm font-medium text-gray-600 pb-3">Bulan</label>
                                             <select
@@ -257,7 +375,7 @@ export default function PenilaianKPI() {
                                                 ))}
                                             </select>
                                         </div>
-                                        {/* Tahun */}
+                                       
                                         <div className="flex flex-col w-full">
                                             <label className="text-sm font-medium text-gray-600 pb-3">Tahun</label>
                                             <select
@@ -265,7 +383,7 @@ export default function PenilaianKPI() {
                                                 onChange={(e) => setSelectedYear(e.target.value)}
                                                 className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             >
-                                                {/* Generate tahun dari 2000 sampai tahun sekarang */}
+                                                
                                                 {Array.from(
                                                     { length: moment().year() - 1999 }, 
                                                     (_, i) => moment().year() - i
@@ -277,8 +395,7 @@ export default function PenilaianKPI() {
                                             </select>
                                         </div>
                                     </div>
-                                    
-                                    {/* Quick select buttons */}
+   
                                     <div className="flex flex-col space-y-3 w-full">
                                         <button
                                             onClick={() => {
@@ -304,7 +421,7 @@ export default function PenilaianKPI() {
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        )} */}
                     </section>
 
                     <section className="mt-5 bg-white rounded-xl">
@@ -338,20 +455,20 @@ export default function PenilaianKPI() {
                             }}
                         >
                             <div className="space-y-4">
-                                {filterFields.map((field) => (
-                                    <InputDropdown
-                                        key={field.key}
-                                        label={field.label}
-                                        options={field.options}
-                                        value={field.key === "Cabang" ? selectedStore : selectedKategori}
-                                        onSelect={(value) => 
-                                            field.key === "Cabang" 
-                                                ? setSelectedStore(value.value)
-                                                : setSelectedKategori(value.value)
-                                        }
-                                        required={true}
-                                    />
-                                ))}
+                            {filterFields.map((field) => (
+                                <InputDropdown
+                                    key={field.key}
+                                    label={field.label}
+                                    options={field.options}
+                                    value={field.key === "Cabang" ? selectedStore.value : selectedKategori.value}
+                                    onSelect={(value) => 
+                                        field.key === "Cabang" 
+                                            ? setSelectedStore(value) 
+                                            : setSelectedKategori(value) 
+                                    }
+                                    required={true}
+                                />
+                            ))}
                                 <button
                                     onClick={handleApplyFilter}
                                     className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
@@ -362,42 +479,6 @@ export default function PenilaianKPI() {
                         </div>
                     </>
                 )}
-                {/* Filter Modal */}
-                {/* {isFilterModalOpen && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
-                            <button
-                                onClick={() => setIsFilterModalOpen(false)}
-                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                            <h2 className="text-lg font-bold mb-4">Filter</h2>
-                            <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                                {filterFields.map((field, index) => (
-                                    <div className="mb-4" key={index}>
-                                        <label className="block text-gray-700 font-medium mb-2">
-                                            {field.label}
-                                        </label>
-                                        <ButtonDropdown
-                                            options={field.options}
-                                            selectedStore={field.key === "Cabang" ? selectedStore : selectedKategori}
-                                            onSelect={(value) => field.key === "Cabang" ? setSelectedStore(value) : setSelectedKategori(value)}
-                                        />
-                                    </div>
-                                ))}
-                                <button
-                                    type="submit"
-                                    className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                                >
-                                    Terapkan
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )} */}
             </LayoutWithNav>
         </>
     );
