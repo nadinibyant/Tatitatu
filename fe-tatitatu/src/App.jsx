@@ -79,6 +79,7 @@ import KaryawanGaji from './pages/Manajer/Karyawan,Absensi,Gaji/KaryawanGaji';
 import DetailKaryawanGaji from './pages/Manajer/Karyawan,Absensi,Gaji/DetailKaryawanGaji';
 import BayarGaji from './pages/Manajer/Karyawan,Absensi,Gaji/BayarGaji';
 import Toko from './pages/Manajer/Toko/Toko';
+import EditPenjualanGudang from './pages/Manajer/Laporan Keuangan/EditPenjualanGudang';
 
 
 function App() {
@@ -176,6 +177,7 @@ function App() {
         <Route path='/laporanKeuangan/pemasukan/penjualan' element={getProtectedRoute(DetailPemasukanJual, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
         <Route path='/laporanKeuangan/pemasukan/penjualan/edit/non-custom/:id' element={getProtectedRoute(EditPemasukanJual, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
         <Route path='/laporanKeuangan/pemasukan/penjualan/edit/custom/:id' element={getProtectedRoute(EditPemasukanJualCustom, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan/edit/gudang/:id' element={getProtectedRoute(EditPenjualanGudang, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
         <Route path='/laporanKeuangan/pengeluaran' element={getProtectedRoute(Pengeluaran, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
         <Route path='/laporanKeuangan/pengeluaran/gaji' element={getProtectedRoute(PengeluaranGaji, ['admin', 'headgudang', 'owner', 'finance', 'manajer'])} />
 
@@ -251,7 +253,7 @@ function App() {
         <Route path='/absensi-karyawan-produksi/tambah' element={getProtectedRoute(TambahAbsensiProduksi, ['karyawanproduksi' ])} />
 
         {/* catatan */}
-        <Route path='/catatan' element={getProtectedRoute(Catatan, ['owner' ])} />
+        <Route path='/catatan' element={getProtectedRoute(Catatan, ['owner', 'manajer'])} />
 
         {/* finance tambahan */}
         <Route path='/pemasukan' element={getProtectedRoute(Pemasukan, ['finance' ])} />

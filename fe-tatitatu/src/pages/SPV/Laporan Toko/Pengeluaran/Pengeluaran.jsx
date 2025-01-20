@@ -25,6 +25,7 @@ export default function Pengeluaran() {
     const data = {
         nomor: 'EXP123',
         tanggal: '2024-12-12',
+        waktu: '12:00',
         kategori: 'Hibah',
         bayar: 'Cash',
         metode: '-' ,
@@ -77,8 +78,12 @@ export default function Pengeluaran() {
                                 <p className="font-bold text-lg">{data.nomor}</p>
                             </div>
                             <div className="">
-                                <p className="text-gray-500 text-sm">Tanggal</p>
-                                <p className="font-bold text-lg">{new Date(data.tanggal).toLocaleDateString()}</p>
+                                <p className="text-gray-500 text-sm">Tanggal dan Waktu</p>
+                                <p className="font-bold text-lg">{new Date(data.tanggal).toLocaleDateString()},{data.waktu}</p>
+                            </div>
+                            <div className="">
+                                <p className="text-gray-500 text-sm">Kategori</p>
+                                <p className="font-bold text-lg">{data.kategori}</p>
                             </div>
                             <div className="">
                                 <p className="text-gray-500 text-sm">Cash/Non-Cash</p>

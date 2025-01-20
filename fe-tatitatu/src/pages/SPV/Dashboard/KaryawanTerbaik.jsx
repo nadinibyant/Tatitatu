@@ -103,17 +103,17 @@ export default function KaryawanTerbaik() {
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
-        { label: "Nama", key: "Nama", align: "text-center" },
+        { label: "Nama", key: "Nama", align: "text-left" },
         { label: "Toko", key: "Toko", align: "text-left" },
         { label: "Divisi", key: "Divisi", align: "text-left" },
-        { label: "KPI", key: "KPI", align: "text-center" },
+        { label: "KPI", key: "KPI", align: "text-left" },
     ];
 
     const headers2 = [
         { label: "#", key: "nomor", align: "text-left" },
         { label: "Foto", key: "Foto", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },
-        { label: "KPI", key: "KPI", align: "text-center" },
+        { label: "KPI", key: "KPI", align: "text-left" },
     ];
 
     function formatNumberWithDots(number) {
@@ -254,9 +254,9 @@ export default function KaryawanTerbaik() {
                     </section>
 
                     <section className="mt-5">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                             {/* Main table */}
-                            <div className="bg-white rounded-xl p-4">
+                            <div className="md:col-span-7 bg-white rounded-xl p-4">
                                 <div className="overflow-x-auto">
                                     <Table
                                         headers={headers}
@@ -273,7 +273,7 @@ export default function KaryawanTerbaik() {
                             </div>
 
                             {/* Top 10 table */}
-                            <div className="bg-white rounded-xl p-4">
+                            <div className="lg:col-span-5 bg-white rounded-xl p-4">
                                 <h3 className="font-bold text-lg mb-4">
                                     {isHeadGudang 
                                         ? "10 Karyawan Terbaik di Rumah Produksi"

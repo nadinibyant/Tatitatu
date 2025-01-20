@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
@@ -6,27 +7,44 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
+import api from "../../../utils/api";
 
 export default function EditKPISeluruhDivisi() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const [dataDivisi, setDataDivisi] = useState([]);
+
     const breadcrumbItems = [
         { label: "Daftar KPI Seluruh Divisi", href: "/daftarPenilaianKPI/seluruh-divisi" },
         { label: "Edit KPI", href: "" },
     ];
 
     const [data, setData] = useState({
-        divisi: "Kasir",
-        data: [
-            { Nomor: 1, NamaKPI: "Peningkatan Penjualan", Persentase: "20", Waktu: "Bulanan" },
-            { Nomor: 2, NamaKPI: "Kepuasan Pelanggan", Persentase: "30", Waktu: "Harian" },
-            { Nomor: 3, NamaKPI: "Efisiensi Operasional", Persentase: "50", Waktu: "Tahunan" },
-        ],
+        divisi: "",
+        data: [],
     });
 
-    const dataDivisi = [
-        { id: 1, label: "Kasir" },
-        { id: 2, label: "Non-Kasir" },
-    ];
+    const fetchDivisi = async () => {
+        try {
+            const response = await api.get('/divisi-karyawan'); 
+            const formattedDivisi = response.data.data
+                .filter(div => !div.is_deleted)
+                .map(div => ({
+                    id: div.divisi_karyawan_id,
+                    label: div.nama_divisi
+                }));
+            setDataDivisi(formattedDivisi);
+        } catch (error) {
+            console.error('Error fetching divisi:', error);
+        }
+    };
 
+    useEffect(() => {
+        fetchDivisi();
+    }, []);
+
+    console.log(data)
     const headers = [
         { label: "No", key: "Nomor", align: "text-left" },
         { label: "Nama KPI", key: "NamaKPI", align: "text-left" },
@@ -38,8 +56,37 @@ export default function EditKPISeluruhDivisi() {
     const dataWaktu = [
         { id: 1, label: "Bulanan" },
         { id: 2, label: "Harian" },
-        { id: 3, label: "Tahunan" },
+        { id: 3, label: "Mingguan" },
+        { id: 4, label: "Tahunan" },
     ];
+
+    // Current code
+    useEffect(() => {
+        // Add check for location.state
+        if (location.state?.divisionData) {
+            const divisionData = location.state.divisionData;
+            
+            // Log to verify data
+            console.log('Received division data:', divisionData);
+            
+            try {
+                setData({
+                    divisi: divisionData.nama_divisi,
+                    data: divisionData.kpi.map((item, index) => ({
+                        Nomor: index + 1,
+                        NamaKPI: item.nama_kpi,
+                        Persentase: item.persentase.toString(), 
+                        Waktu: item.waktu,
+                        kpi_id: item.kpi_id
+                    }))
+                });
+            } catch (error) {
+                console.error('Error processing division data:', error);
+            }
+        } else {
+            console.warn('No division data received in location state');
+        }
+    }, [location.state]);
 
     const handleDivisiChange = (value) => {
         setData((prevState) => ({ ...prevState, divisi: value }));
@@ -68,6 +115,16 @@ export default function EditKPISeluruhDivisi() {
         setData((prevState) => ({ ...prevState, data: updatedData }));
     };
 
+    const handleCancel = () => {
+        navigate('/daftarPenilaianKPI/seluruh-divisi');
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // TODO: Implement API call to update KPI
+        console.log("Submitted data:", data);
+    };
+
     return (
         <>
             <Navbar menuItems={menuItems} userOptions={userOptions}>
@@ -76,7 +133,7 @@ export default function EditKPISeluruhDivisi() {
 
                     <section className="mt-5 bg-white rounded-xl">
                         <div className="p-5">
-                            <form action="">
+                            <form onSubmit={handleSubmit}>
                                 <div className="sm:w-1/3">
                                     <label className="p-2">
                                         Divisi <span className="text-merah">*</span>
@@ -85,6 +142,7 @@ export default function EditKPISeluruhDivisi() {
                                         <ButtonDropdown 
                                             label={data.divisi || "Masukan Divisi"} 
                                             options={dataDivisi} 
+                                            selectedStore={data.divisi}
                                             onSelect={handleDivisiChange} 
                                         />
                                     </div>
@@ -98,7 +156,7 @@ export default function EditKPISeluruhDivisi() {
                                             Nomor: row.Nomor,
                                             NamaKPI: (
                                                 <Input
-                                                showRequired={false}
+                                                    showRequired={false}
                                                     type1="text"
                                                     value={row.NamaKPI}
                                                     onChange={(value) => handleInputChange(index, "NamaKPI", value)}
@@ -106,7 +164,7 @@ export default function EditKPISeluruhDivisi() {
                                             ),
                                             Persentase: (
                                                 <Input
-                                                showRequired={false}
+                                                    showRequired={false}
                                                     type="number"
                                                     value={row.Persentase}
                                                     onChange={(value) => handleInputChange(index, "Persentase", value)}
@@ -167,6 +225,7 @@ export default function EditKPISeluruhDivisi() {
                                         textColor="text-black" 
                                         type="button" 
                                         hoverColor="hover:bg-primary hover:text-white" 
+                                        onClick={handleCancel}
                                     />
                                     <Button 
                                         label={"Simpan"} 

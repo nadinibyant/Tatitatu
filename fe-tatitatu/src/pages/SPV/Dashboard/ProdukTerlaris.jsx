@@ -17,6 +17,17 @@ export default function ProdukTerlaris() {
   const [selectedStore, setSelectedStore] = useState("Semua");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState({});
+  const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+  const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+
+  const monthValue = `${selectedYear}-${selectedMonth}`;
+
+  const handleMonthChange = (e) => {
+    const value = e.target.value; 
+    const [year, month] = value.split('-');
+    setSelectedMonth(month);
+    setSelectedYear(year);
+  };  
 
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
 
@@ -67,14 +78,14 @@ export default function ProdukTerlaris() {
     setIsModalOpen(false);
   };
 
-  const toggleModal = () => setIsModalOpen(!isModalOpen);
+  // const toggleModal = () => setIsModalOpen(!isModalOpen);
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    });
+  // const formatDate = (date) =>
+  //   new Date(date).toLocaleDateString("en-US", {
+  //     month: "short",
+  //     day: "2-digit",
+  //     year: "numeric",
+  //   });
 
   const dataCabang = [
     { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
@@ -266,10 +277,8 @@ export default function ProdukTerlaris() {
 
   const selectedData = filteredData().filter((item) => {
     const isStoreMatch = selectedStore === "Semua" || item.Cabang === selectedStore;
-    const itemDate = moment(item.Tanggal);
-    const isDateMatch = itemDate.isBetween(startDate, endDate, null, "[]");
 
-    return isStoreMatch && isDateMatch;
+    return isStoreMatch
   });
 
   function formatNumberWithDots(number) {
@@ -310,18 +319,15 @@ export default function ProdukTerlaris() {
                   </div>
               )}
               <div className="w-full md:w-auto">
-                  <Button 
-                      label={`${formatDate(startDate)} - ${formatDate(endDate)}`} 
-                      icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>} 
-                      bgColor="border border-secondary" 
-                      hoverColor="hover:bg-white" 
-                      textColor="text-black" 
-                      onClick={toggleModal} 
-                  />
+                <input 
+                  type="month"
+                  value={monthValue}
+                  onChange={handleMonthChange}
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                      maxWidth: '200px',
+                  }}
+                />                     
               </div>
           </div>
 

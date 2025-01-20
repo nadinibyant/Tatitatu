@@ -1,17 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
-import Breadcrumbs from "../../../../components/Breadcrumbs";
-import Navbar from "../../../../components/Navbar";
-import { menuItems, userOptions } from "../../../../data/menu";
-import Input from "../../../../components/Input";
-import InputDropdown from "../../../../components/InputDropdown";
-import Table from "../../../../components/Table";
-import Button from "../../../../components/Button";
-import LayoutWithNav from "../../../../components/LayoutWithNav";
+import { useEffect, useMemo, useState } from "react";
+import InputDropdown from "../../../components/InputDropdown";
+import Input from "../../../components/Input";
+import LayoutWithNav from "../../../components/LayoutWithNav";
+import Breadcrumbs from "../../../components/Breadcrumbs";
+import { menuItems, userOptions } from "../../../data/menu";
+import Table from "../../../components/Table";
+import Button from "../../../components/Button";
 
-export default function EditPemasukanJualCustom() {
+export default function EditPenjualanGudang() {
 
-    const [customTableData, setCustomTableData] = useState([]);
-    const [biayaTableData, setBiayaTableData] = useState([]);
+    const [listProdukData, setListProdukData] = useState([]);
     const [packagingTableData, setPackagingTableData] = useState([]);
 
     const PAYMENT_METHODS = {
@@ -40,25 +38,17 @@ export default function EditPemasukanJualCustom() {
 
     const dataBarang = [
         {
-            jenis: "Barang Custom",
-            kategori: ["Semua", "Gelang", "Anting-Anting", "Cincin"],
+            jenis: "Barang Handmade",
             items: [
-                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: 10000, kategori: "Gelang" },
-                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: 15000, kategori: "Anting-Anting" },
-                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: 20000, kategori: "Cincin" },
-                { id: 4, image: "https://via.placeholder.com/150", code: "MMM456", name: "Gelang Modern", price: 12000, kategori: "Gelang" },
-            ],
+                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Barbie", price: 15000 },
+                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Gelang Custom", price: 20000 },
+                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Kalung Custom", price: 25000 }
+            ]
         },
         {
             jenis: "Packaging",
             items: [
-                {
-                    id: 1,
-                    title: "Gelang Barbie 123",
-                    price: 10000,
-                    image: "https://via.placeholder.com/50",
-                    type: "Zipper",
-                },
+                { id: 1, image: "https://via.placeholder.com/50", type: "Zipper", price: 1000 }
             ]
         }
     ];
@@ -69,22 +59,12 @@ export default function EditPemasukanJualCustom() {
         namaPembeli: "John Doe",
         cashNonCash: PAYMENT_METHODS.NON_CASH,
         metodePembayaran: BANK_OPTIONS.MANDIRI,
-        // Data untuk custom products
-        customItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Gelang Barbie 123
-            { id: 2, productId: 2, quantity: 5 },  // Anting Keren 123
-            { id: 3, productId: 3, quantity: 3 }   // Cincin Cantik 123
+        // List Produk data
+        listProduk: [
+            { id: 1, productId: 1, quantity: 10 } 
         ],
-        // Data untuk biaya
-        biayaItems: [
-            { id: 1, name: "Jasa Design", amount: 24000 },
-            { id: 2, name: "Jasa Pemasangan", amount: 15000 },
-            { id: 3, name: "Ongkos Kirim", amount: 10000 }
-        ],
-        // Data untuk packaging
         packagingItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Zipper
-            { id: 2, productId: 1, quantity: 5 }   // Zipper lagi
+            { id: 1, productId: 1, quantity: 10 }  
         ],
         catatan: "Catatan pesanan default",
         diskonPersen: 30,
@@ -92,35 +72,27 @@ export default function EditPemasukanJualCustom() {
     };
     
         // Initialize tables
-    useEffect(() => {
-        // Initialize Custom Items
-        if (initialData.customItems?.length > 0) {
-            const customItems = initialData.customItems.map((item, index) => {
-                const product = dataBarang[0].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createCustomRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setCustomTableData(customItems);
-        }
-
-        // Initialize Biaya Items
-        if (initialData.biayaItems?.length > 0) {
-            const biayaItems = initialData.biayaItems.map((item, index) => 
-                createBiayaRow(index, item.name, item.amount)
-            );
-            setBiayaTableData(biayaItems);
-        }
-
-        // Initialize Packaging Items
-        if (initialData.packagingItems?.length > 0) {
-            const packagingItems = initialData.packagingItems.map((item, index) => {
-                const product = dataBarang[1].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createPackagingRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setPackagingTableData(packagingItems);
-        }
-    }, []);
+        useEffect(() => {
+            // Initialize List Produk
+            if (initialData.listProduk?.length > 0) {
+                const listProdukItems = initialData.listProduk.map((item, index) => {
+                    const product = dataBarang[0].items.find(p => p.id === item.productId);
+                    if (!product) return null;
+                    return createListProdukRow(index, product, item.quantity);
+                }).filter(Boolean);
+                setListProdukData(listProdukItems);
+            }
+        
+            // Initialize Packaging Items
+            if (initialData.packagingItems?.length > 0) {
+                const packagingItems = initialData.packagingItems.map((item, index) => {
+                    const product = dataBarang[1].items.find(p => p.id === item.productId);
+                    if (!product) return null;
+                    return createPackagingRow(index, product, item.quantity);
+                }).filter(Boolean);
+                setPackagingTableData(packagingItems);
+            }
+        }, []);
 
     const [catatan, setCatatan] = useState(initialData.catatan);
     const [diskonPersen, setDiskonPersen] = useState(initialData.diskonPersen);
@@ -168,22 +140,23 @@ export default function EditPemasukanJualCustom() {
     }, [selectBayar]);
 
     // Table headers configuration
-    const customHeaders = [
+    const listProdukHeaders = [
         { label: "No", key: "No", align: "text-left" },
         { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
-        { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
+        { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
+        { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
         { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
     
-    const biayaHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
-        { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left", width: '200px' },
-        { label: "Aksi", key: "Aksi", align: "text-left" }
-    ];
+    // const biayaHeaders = [
+    //     { label: "No", key: "No", align: "text-left" },
+    //     { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
+    //     { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left", width: '200px' },
+    //     { label: "Aksi", key: "Aksi", align: "text-left" }
+    // ];
     
     const packagingHeaders = [
         { label: "No", key: "No", align: "text-left" },
@@ -196,91 +169,129 @@ export default function EditPemasukanJualCustom() {
     ];
 
     // Helper functions untuk masing-masing tabel
-const createCustomRow = (index, product, quantity = 0) => {
-    quantity = Math.max(0, Number(quantity) || 0);
-    const totalBiaya = product.price * quantity;
-
-    return {
-        No: index + 1,
-        "Foto Produk": (
-            <img
-                src={product.image}
-                alt={product.name}
-                className="w-16 h-16 object-cover rounded-md"
-            />
-        ),
-        "Nama Bahan": (
-            <InputDropdown
-                showRequired={false}
-                value={product.id}  
-                options={dataBarang[0].items.map(p => ({
-                    id: p.id,
-                    label: p.name,
-                    value: p.id 
-                }))}
-                onSelect={(selected) => handleCustomProductSelect(index, selected)}
-            />
-        ),
-        "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-        "Kuantitas": (
-            <Input
-                type="number"
-                value={quantity}
-                onChange={(value) => handleCustomQuantityChange(index, value)}
-                showRequired={false}
-                min={0}
-            />
-        ),
-        "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-        "Aksi": (
-            <button 
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleCustomDeleteRow(index)}
-            >
-                Hapus
-            </button>
-        ),
-        productName: product.name,
-        productPrice: product.price,
-        quantity: quantity,
-        numericTotalBiaya: totalBiaya,
-        productId: product.id
+    const createListProdukRow = (index, product, quantity = 0) => {
+        quantity = Math.max(0, Number(quantity) || 0);
+        const totalBiaya = product.price * quantity;
+    
+        return {
+            No: index + 1,
+            "Foto Produk": (
+                <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-16 h-16 object-cover rounded-md"
+                />
+            ),
+            "Nama Produk": (
+                <InputDropdown
+                    showRequired={false}
+                    value={product.id}
+                    options={dataBarang[0].items.map(p => ({
+                        id: p.id,
+                        label: p.name,
+                        value: p.id
+                    }))}
+                    onSelect={(selected) => handleListProdukSelect(index, selected)}
+                />
+            ),
+            "Jenis Barang": dataBarang[0].jenis,
+            "Harga Satuan": `Rp${product.price.toLocaleString()}`,
+            "Kuantitas": (
+                <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(value) => handleListProdukQuantityChange(index, value)}
+                    showRequired={false}
+                    min={0}
+                />
+            ),
+            "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
+            "Aksi": (
+                <button 
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleListProdukDeleteRow(index)}
+                >
+                    Hapus
+                </button>
+            ),
+            productName: product.name,
+            productPrice: product.price,
+            quantity: quantity,
+            numericTotalBiaya: totalBiaya,
+            productId: product.id
+        };
     };
-};
 
-const createBiayaRow = (index, name = "", amount = 0) => {
-    return {
-        No: index + 1,
-        "Nama Biaya": (
-            <Input
-                type="text"
-                value={name}
-                onChange={(value) => handleBiayaNameChange(index, value)}
-                showRequired={false}
-            />
-        ),
-        "Jumlah Biaya": (
-            <Input
-                type="number"
-                value={amount}
-                onChange={(value) => handleBiayaAmountChange(index, value)}
-                showRequired={false}
-                min={0}
-            />
-        ),
-        "Aksi": (
-            <button 
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleBiayaDeleteRow(index)}
-            >
-                Hapus
-            </button>
-        ),
-        name,
-        amount,
-        numericTotalBiaya: amount
+    const handleListProdukAddRow = () => {
+        const defaultProduct = dataBarang[0].items[0];
+        const newRow = createListProdukRow(listProdukData.length, defaultProduct, 1);
+        setListProdukData([...listProdukData, newRow]);
     };
-};
+
+    const handleListProdukSelect = (rowIndex, selectedProduct) => {
+        const product = dataBarang[0].items.find(p => p.id === selectedProduct.value);
+        if (!product) return;
+
+        setListProdukData(prevData => {
+            const updatedData = [...prevData];
+            const currentQuantity = updatedData[rowIndex]?.quantity || 1;
+            updatedData[rowIndex] = createListProdukRow(rowIndex, product, currentQuantity);
+            return updatedData.map((row, index) => ({...row, No: index + 1}));
+        });
+    };
+
+    const handleListProdukQuantityChange = (rowIndex, newQuantity) => {
+        setListProdukData(prevData => {
+            const updatedData = [...prevData];
+            const currentRow = {...updatedData[rowIndex]};
+            const product = dataBarang[0].items.find(p => p.name === currentRow.productName);
+            updatedData[rowIndex] = createListProdukRow(rowIndex, product, newQuantity);
+            return updatedData.map((row, index) => ({...row, No: index + 1}));
+        });
+    };
+
+    const handleListProdukDeleteRow = (rowIndex) => {
+        setListProdukData(prevData => 
+            prevData
+                .filter((_, index) => index !== rowIndex)
+                .map((row, index) => ({...row, No: index + 1}))
+        );
+    };
+
+
+// const createBiayaRow = (index, name = "", amount = 0) => {
+//     return {
+//         No: index + 1,
+//         "Nama Biaya": (
+//             <Input
+//                 type="text"
+//                 value={name}
+//                 onChange={(value) => handleBiayaNameChange(index, value)}
+//                 showRequired={false}
+//             />
+//         ),
+//         "Jumlah Biaya": (
+//             <Input
+//                 type="number"
+//                 value={amount}
+//                 onChange={(value) => handleBiayaAmountChange(index, value)}
+//                 showRequired={false}
+//                 min={0}
+//             />
+//         ),
+//         "Aksi": (
+//             <button 
+//                 className="text-red-500 hover:text-red-700"
+//                 onClick={() => handleBiayaDeleteRow(index)}
+//             >
+//                 Hapus
+//             </button>
+//         ),
+//         name,
+//         amount,
+//         numericTotalBiaya: amount
+//     };
+// };
 
 const createPackagingRow = (index, product, quantity = 0) => {
     quantity = Math.max(0, Number(quantity) || 0);
@@ -335,73 +346,73 @@ const createPackagingRow = (index, product, quantity = 0) => {
     };
 
     // Handle functions untuk custom products
-const handleCustomAddRow = () => {
-    const defaultProduct = dataBarang[0].items[0];
-    const newRow = createCustomRow(customTableData.length, defaultProduct, 1);
-    setCustomTableData([...customTableData, newRow]);
-};
+// const handleCustomAddRow = () => {
+//     const defaultProduct = dataBarang[0].items[0];
+//     const newRow = createCustomRow(customTableData.length, defaultProduct, 1);
+//     setCustomTableData([...customTableData, newRow]);
+// };
 
-const handleCustomProductSelect = (rowIndex, selectedProduct) => {
-    const product = dataBarang[0].items.find(p => p.id === selectedProduct.value);
-    if (!product) return;
+// const handleCustomProductSelect = (rowIndex, selectedProduct) => {
+//     const product = dataBarang[0].items.find(p => p.id === selectedProduct.value);
+//     if (!product) return;
 
-    setCustomTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-        updatedData[rowIndex] = createCustomRow(rowIndex, product, currentQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
+//     setCustomTableData(prevData => {
+//         const updatedData = [...prevData];
+//         const currentQuantity = updatedData[rowIndex]?.quantity || 1;
+//         updatedData[rowIndex] = createCustomRow(rowIndex, product, currentQuantity);
+//         return updatedData.map((row, index) => ({...row, No: index + 1}));
+//     });
+// };
 
-const handleCustomQuantityChange = (rowIndex, newQuantity) => {
-    setCustomTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        const product = dataBarang[0].items.find(p => p.name === currentRow.productName);
-        updatedData[rowIndex] = createCustomRow(rowIndex, product, newQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
+// const handleCustomQuantityChange = (rowIndex, newQuantity) => {
+//     setCustomTableData(prevData => {
+//         const updatedData = [...prevData];
+//         const currentRow = {...updatedData[rowIndex]};
+//         const product = dataBarang[0].items.find(p => p.name === currentRow.productName);
+//         updatedData[rowIndex] = createCustomRow(rowIndex, product, newQuantity);
+//         return updatedData.map((row, index) => ({...row, No: index + 1}));
+//     });
+// };
 
-const handleCustomDeleteRow = (rowIndex) => {
-    setCustomTableData(prevData => 
-        prevData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({...row, No: index + 1}))
-    );
-};
+// const handleCustomDeleteRow = (rowIndex) => {
+//     setCustomTableData(prevData => 
+//         prevData
+//             .filter((_, index) => index !== rowIndex)
+//             .map((row, index) => ({...row, No: index + 1}))
+//     );
+// };
 
-// Handle functions untuk biaya
-const handleBiayaAddRow = () => {
-    const newRow = createBiayaRow(biayaTableData.length);
-    setBiayaTableData([...biayaTableData, newRow]);
-};
+// // Handle functions untuk biaya
+// const handleBiayaAddRow = () => {
+//     const newRow = createBiayaRow(biayaTableData.length);
+//     setBiayaTableData([...biayaTableData, newRow]);
+// };
 
-const handleBiayaNameChange = (rowIndex, newName) => {
-    setBiayaTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        updatedData[rowIndex] = createBiayaRow(rowIndex, newName, currentRow.amount);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
+// const handleBiayaNameChange = (rowIndex, newName) => {
+//     setBiayaTableData(prevData => {
+//         const updatedData = [...prevData];
+//         const currentRow = {...updatedData[rowIndex]};
+//         updatedData[rowIndex] = createBiayaRow(rowIndex, newName, currentRow.amount);
+//         return updatedData.map((row, index) => ({...row, No: index + 1}));
+//     });
+// };
 
-const handleBiayaAmountChange = (rowIndex, newAmount) => {
-    setBiayaTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        updatedData[rowIndex] = createBiayaRow(rowIndex, currentRow.name, newAmount);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
+// const handleBiayaAmountChange = (rowIndex, newAmount) => {
+//     setBiayaTableData(prevData => {
+//         const updatedData = [...prevData];
+//         const currentRow = {...updatedData[rowIndex]};
+//         updatedData[rowIndex] = createBiayaRow(rowIndex, currentRow.name, newAmount);
+//         return updatedData.map((row, index) => ({...row, No: index + 1}));
+//     });
+// };
 
-const handleBiayaDeleteRow = (rowIndex) => {
-    setBiayaTableData(prevData => 
-        prevData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({...row, No: index + 1}))
-    );
-};
+// const handleBiayaDeleteRow = (rowIndex) => {
+//     setBiayaTableData(prevData => 
+//         prevData
+//             .filter((_, index) => index !== rowIndex)
+//             .map((row, index) => ({...row, No: index + 1}))
+//     );
+// };
 
 // Handle functions untuk packaging
 const handlePackagingAddRow = () => {
@@ -441,17 +452,17 @@ const handlePackagingDeleteRow = (rowIndex) => {
 };
 
 // Update useEffect for calculating totals
-useEffect(() => {
-    const customTotal = customTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
-    const biayaTotal = biayaTableData.reduce((sum, row) => sum + (row.amount || 0), 0);
-    const packagingTotal = packagingTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
+// useEffect(() => {
+//     const customTotal = customTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
+//     const biayaTotal = biayaTableData.reduce((sum, row) => sum + (row.amount || 0), 0);
+//     const packagingTotal = packagingTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
     
-    setTotalHarga(customTotal + biayaTotal + packagingTotal);
-    setTotalItems(
-        customTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0) +
-        packagingTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0)
-    );
-}, [customTableData, biayaTableData, packagingTableData]);
+//     setTotalHarga(customTotal + biayaTotal + packagingTotal);
+//     setTotalItems(
+//         customTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0) +
+//         packagingTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0)
+//     );
+// }, [customTableData, biayaTableData, packagingTableData]);
 
     // Navigation configuration
     const breadcrumbItems = [
@@ -667,35 +678,35 @@ useEffect(() => {
     
 
     // Initialize tables
-    useEffect(() => {
-        // Initialize Custom Items
-        if (initialData.customItems?.length > 0) {
-            const customItems = initialData.customItems.map((item, index) => {
-                const product = dataBarang[0].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createCustomRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setCustomTableData(customItems);
-        }
+    // useEffect(() => {
+    //     // Initialize Custom Items
+    //     if (initialData.customItems?.length > 0) {
+    //         const customItems = initialData.customItems.map((item, index) => {
+    //             const product = dataBarang[0].items.find(p => p.id === item.productId);
+    //             if (!product) return null;
+    //             return createCustomRow(index, product, item.quantity);
+    //         }).filter(Boolean);
+    //         setCustomTableData(customItems);
+    //     }
     
-        // Initialize Biaya Items
-        if (initialData.biayaItems?.length > 0) {
-            const biayaItems = initialData.biayaItems.map((item, index) => 
-                createBiayaRow(index, item.name, item.amount)
-            );
-            setBiayaTableData(biayaItems);
-        }
+    //     // Initialize Biaya Items
+    //     if (initialData.biayaItems?.length > 0) {
+    //         const biayaItems = initialData.biayaItems.map((item, index) => 
+    //             createBiayaRow(index, item.name, item.amount)
+    //         );
+    //         setBiayaTableData(biayaItems);
+    //     }
     
-        // Initialize Packaging Items
-        if (initialData.packagingItems?.length > 0) {
-            const packagingItems = initialData.packagingItems.map((item, index) => {
-                const product = dataBarang[1].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createPackagingRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setPackagingTableData(packagingItems);
-        }
-    }, []);
+    //     // Initialize Packaging Items
+    //     if (initialData.packagingItems?.length > 0) {
+    //         const packagingItems = initialData.packagingItems.map((item, index) => {
+    //             const product = dataBarang[1].items.find(p => p.id === item.productId);
+    //             if (!product) return null;
+    //             return createPackagingRow(index, product, item.quantity);
+    //         }).filter(Boolean);
+    //         setPackagingTableData(packagingItems);
+    //     }
+    // }, []);
     
     // Handle submit untuk data terpisah
     const handleSubmit = async () => {
@@ -707,14 +718,14 @@ useEffect(() => {
                 cashNonCash: selectBayar,
                 metodePembayaran: selectMetode,
                 // Data terpisah untuk setiap kategori
-                customItems: customTableData.map(row => ({
-                    productId: row.productId,
-                    quantity: row.quantity
-                })),
-                biayaItems: biayaTableData.map(row => ({
-                    name: row.name,
-                    amount: row.amount
-                })),
+                // customItems: customTableData.map(row => ({
+                //     productId: row.productId,
+                //     quantity: row.quantity
+                // })),
+                // biayaItems: biayaTableData.map(row => ({
+                //     name: row.name,
+                //     amount: row.amount
+                // })),
                 packagingItems: packagingTableData.map(row => ({
                     productId: row.productId,
                     quantity: row.quantity
@@ -811,42 +822,22 @@ useEffect(() => {
                         <div className="mt-10 space-y-8">
                         {/* Custom Products Table */}
                             <div>
-                                <h2 className="text-lg font-semibold mb-4">Rincian Jumlah dan Bahan*</h2>
+                                <h2 className="text-lg font-semibold mb-4">List Produk</h2>
                                 <Table
-                                    headers={customHeaders}
-                                    data={customTableData}
+                                    headers={listProdukHeaders}
+                                    data={listProdukData}
                                     text_header="text-primary"
                                     hasSearch={false}
                                     hasPagination={false}
                                 />
                                 <button 
-                                    onClick={handleCustomAddRow}
+                                    onClick={handleListProdukAddRow}
                                     className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                                     </svg>
                                     Tambah Baris
-                                </button>
-                            </div>
-
-                            <div>
-                                <h2 className="text-lg font-semibold mb-4">Rincian Biaya</h2>
-                                <Table
-                                    headers={biayaHeaders}
-                                    data={biayaTableData}
-                                    text_header="text-primary"
-                                    hasSearch={false}
-                                    hasPagination={false}
-                                />
-                                <button 
-                                    onClick={handleBiayaAddRow}
-                                    className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                    </svg>
-                                Tambah Baris
                                 </button>
                             </div>
 

@@ -9,28 +9,47 @@ import LayoutWithNav from "../../../../components/LayoutWithNav";
 import { useNavigate } from "react-router-dom";
 
 // Constants
-const PAYMENT_METHODS = {
-  CASH: 1,
-  NON_CASH: 2
-};
 
-const BANK_OPTIONS = {
-  NONE: 1,
-  MANDIRI: 2,
-  BANK_NAGARI: 3
-};
 
 export default function EditPemasukanJual() {
-    // Data constants
-    const dataMetode = [
-        { id: BANK_OPTIONS.NONE, label: "-" },
-        { id: BANK_OPTIONS.MANDIRI, label: "Mandiri" },
-        { id: BANK_OPTIONS.BANK_NAGARI, label: "Bank Nagari" }
-    ];
+    const [packagingData, setPackagingData] = useState([]);
+    const PAYMENT_METHODS = {
+        CASH: 1,
+        NON_CASH: 2
+      };
+      
+      const BANK_OPTIONS = {
+        NONE: 1,
+        MANDIRI: 2,
+        BANK_NAGARI: 3
+      };
 
+    // Data constants
     const dataBayar = [
-        { id: PAYMENT_METHODS.CASH, label: "Cash" },
-        { id: PAYMENT_METHODS.NON_CASH, label: "Non-Cash" }
+        { id: PAYMENT_METHODS.CASH, label: "Cash", value: PAYMENT_METHODS.CASH },
+        { id: PAYMENT_METHODS.NON_CASH, label: "Non-Cash", value: PAYMENT_METHODS.NON_CASH }
+    ];
+    
+    const dataMetode = [
+        { id: BANK_OPTIONS.NONE, label: "-", value: BANK_OPTIONS.NONE },
+        { id: BANK_OPTIONS.MANDIRI, label: "Mandiri", value: BANK_OPTIONS.MANDIRI },
+        { id: BANK_OPTIONS.BANK_NAGARI, label: "Bank Nagari", value: BANK_OPTIONS.BANK_NAGARI }
+    ];
+    
+    useEffect(() => {
+        const isCash = initialData.cashNonCash === PAYMENT_METHODS.CASH;
+        setIsMetodeDisabled(isCash);
+        if (isCash) {
+            setSelectMetode(BANK_OPTIONS.NONE);
+        }
+    }, []);
+    
+
+    const dataPackaging = [
+        { id: 1, image: "https://via.placeholder.com/150", name: "Paper Bag Small" },
+        { id: 2, image: "https://via.placeholder.com/150", name: "Paper Bag Medium" },
+        { id: 3, image: "https://via.placeholder.com/150", name: "Paper Bag Large" },
+        { id: 4, image: "https://via.placeholder.com/150", name: "Gift Box Small" },
     ];
 
     const dataBarang = [
@@ -109,14 +128,6 @@ export default function EditPemasukanJual() {
         }, []);
     }, []);
 
-    const selectedMetodeLabel = useMemo(() => {
-        return dataMetode.find(option => option.id === selectMetode)?.label || "";
-    }, [selectMetode]);
-
-    const selectedBayarLabel = useMemo(() => {
-        return dataBayar.find(option => option.id === selectBayar)?.label || "";
-    }, [selectBayar]);
-
     // Table headers configuration
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -126,6 +137,14 @@ export default function EditPemasukanJual() {
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
         { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
+        { label: "Aksi", key: "Aksi", align: "text-left" }
+    ];
+
+    const packagingHeaders = [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
+        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
 
@@ -176,13 +195,13 @@ export default function EditPemasukanJual() {
             "Nama Produk": (
                 <InputDropdown
                     showRequired={false}
-                    value={product.name}
+                    value={product.id}  // Gunakan ID sebagai value
                     options={allProducts.map(p => ({
                         id: p.id,
                         label: p.name,
-                        value: p.price
+                        value: p.id    // Gunakan ID sebagai value
                     }))}
-                    onSelect={(selected) => handleProductSelect(index, selected)}
+                    onSelect={(selected) => handleProductSelect(rowIndex, selected)}
                 />
             ),
             "Jenis Barang": jenisBarang,
@@ -213,6 +232,94 @@ export default function EditPemasukanJual() {
         };
     };
 
+    const createPackagingRow = (index, packaging, quantity = 0) => {
+        quantity = Math.max(0, Number(quantity) || 0);
+    
+        return {
+            No: index + 1,
+            "Foto Produk": (
+                <img
+                    src={packaging.image}
+                    alt={packaging.name}
+                    className="w-16 h-16 object-cover rounded-md"
+                />
+            ),
+            "Nama Packaging": (
+                <InputDropdown
+                    showRequired={false}
+                    value={packaging.id}  // Gunakan ID sebagai value
+                    options={dataPackaging.map(p => ({
+                        id: p.id,
+                        label: p.name,
+                        value: p.id  // Tambahkan value yang konsisten
+                    }))}
+                    onSelect={(selected) => handlePackagingSelect(index, selected)}
+                />
+            ),
+            "Kuantitas": (
+                <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(value) => handlePackagingQuantityChange(index, value)}
+                    showRequired={false}
+                    min={0}
+                />
+            ),
+            "Aksi": (
+                <button 
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleDeletePackagingRow(index)}
+                >
+                    Hapus
+                </button>
+            ),
+            packagingName: packaging.name,
+            quantity: quantity,
+            packagingId: packaging.id
+        };
+    };
+
+    const handleAddPackagingRow = () => {
+        if (packagingData.length === 0) {
+            const defaultPackaging = dataPackaging[0];
+            const newRow = createPackagingRow(0, defaultPackaging, 1);
+            setPackagingData([newRow]);
+        }
+    };
+    
+    const handlePackagingSelect = (rowIndex, selectedPackaging) => {
+        const packaging = dataPackaging.find(p => p.id === selectedPackaging.value);
+        if (!packaging) return;
+    
+        setPackagingData(prevData => {
+            const updatedData = [...prevData];
+            const currentQuantity = updatedData[rowIndex]?.quantity || 1;
+    
+            updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, currentQuantity);
+            return updatedData;
+        });
+    };
+    
+    const handlePackagingQuantityChange = (rowIndex, newQuantity) => {
+        const quantity = Math.max(0, Number(newQuantity) || 0);
+        
+        setPackagingData(prevData => {
+            const updatedData = [...prevData];
+            const currentRow = { ...updatedData[rowIndex] };
+            
+            if (currentRow) {
+                const packaging = dataPackaging.find(p => p.id === currentRow.packagingId);
+                updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, quantity);
+                return updatedData;
+            }
+            return prevData;
+        });
+    };
+
+    const handleDeletePackagingRow = () => {
+        setPackagingData([]);
+    };
+
     // Event handlers
     const handleInputChange = (field) => (value) => {
         setFormData(prev => ({
@@ -221,21 +328,27 @@ export default function EditPemasukanJual() {
         }));
     };
 
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
+    const handleSelectMetode = (selected) => {
+        setSelectMetode(selected.value);
     };
 
-    const handleSelectBayar = (selectedOption) => {
-        setSelectBayar(selectedOption.id);
-        if (selectedOption.id === PAYMENT_METHODS.NON_CASH) {
-            setSelectMetode(BANK_OPTIONS.MANDIRI);
-        } else {
+    const handleSelectBayar = (selected) => {
+        const isCash = selected.value === PAYMENT_METHODS.CASH;
+        setSelectBayar(selected.value);
+        
+        if (isCash) {
             setSelectMetode(BANK_OPTIONS.NONE);
+            setIsMetodeDisabled(true);
+        } else {
+            setSelectMetode(BANK_OPTIONS.MANDIRI);
+            setIsMetodeDisabled(false);
         }
     };
 
+    
+
     const handleProductSelect = (rowIndex, selectedProduct) => {
-        const product = allProducts.find(p => p.name === selectedProduct.label);
+        const product = allProducts.find(p => p.id === selectedProduct.value);
         if (!product) return;
 
         const categoryData = dataBarang.find(category => 
@@ -256,11 +369,11 @@ export default function EditPemasukanJual() {
                 "Nama Produk": (
                     <InputDropdown
                         showRequired={false}
-                        value={product.name}
+                        value={product.id} 
                         options={allProducts.map(p => ({
                             id: p.id,
                             label: p.name,
-                            value: p.price
+                            value: p.id   
                         }))}
                         onSelect={(selected) => handleProductSelect(rowIndex, selected)}
                     />
@@ -431,8 +544,8 @@ export default function EditPemasukanJual() {
                             />
                             
                             <Input 
-                                label="Tanggal"
-                                type="date"
+                                label="Tanggal dan Waktu"
+                                type1={'datetime-local'}
                                 value={formData.tanggal}
                                 onChange={handleInputChange("tanggal")}
                                 required={true}
@@ -448,7 +561,7 @@ export default function EditPemasukanJual() {
                             <InputDropdown 
                                 label="Cash/Non-Cash" 
                                 options={dataBayar} 
-                                value={selectedBayarLabel} 
+                                value={selectBayar} 
                                 onSelect={handleSelectBayar}
                                 required={true}
                             />
@@ -457,14 +570,14 @@ export default function EditPemasukanJual() {
                                 label="Metode Pembayaran" 
                                 disabled={isMetodeDisabled} 
                                 options={dataMetode} 
-                                value={selectedMetodeLabel} 
+                                value={selectMetode} 
                                 onSelect={handleSelectMetode}
                                 required={!isMetodeDisabled}
                             />
                         </div>
 
                         <div className="mt-10">
-                            <h2 className="text-lg font-semibold mb-4">List Produk</h2>
+                            <h2 className="text-lg font-semibold mb-4">Rincian Produk</h2>
                             <Table
                                 headers={headers}
                                 data={tableData}
@@ -481,6 +594,28 @@ export default function EditPemasukanJual() {
                                 </svg>
                                 Tambah Baris
                             </button>
+
+                            <div className="mt-10">
+                                <h2 className="text-lg font-semibold mb-4">Packaging</h2>
+                                <Table
+                                    headers={packagingHeaders}
+                                    data={packagingData}
+                                    text_header="text-primary"
+                                    hasSearch={false}
+                                    hasPagination={false}
+                                />
+                                {packagingData.length === 0 && (
+                                    <button 
+                                        onClick={handleAddPackagingRow}
+                                        className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                        </svg>
+                                        Tambah Packaging
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                             {/* Left Column - Notes */}

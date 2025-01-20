@@ -9,6 +9,9 @@ import Input from "../../../components/Input";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
+import AlertError from "../../../components/AlertError";
 
 export default function TambahKPISeluruhDivisi() {
     const [divisions, setDivisions] = useState([]);
@@ -99,27 +102,8 @@ export default function TambahKPISeluruhDivisi() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Validasi input
-        if (!data.divisi) {
-            alert("Silakan pilih divisi terlebih dahulu");
-            return;
-        }
-    
-        if (data.data.length === 0) {
-            alert("Silakan tambahkan minimal 1 KPI");
-            return;
-        }
-    
-        // Validasi setiap baris KPI
-        for (let row of data.data) {
-            if (!row.NamaKPI || !row.Persentase || !row.Waktu) {
-                alert("Silakan lengkapi semua data KPI");
-                return;
-            }
-        }
-    
         try {
+            setLoading(true);
             const selectedDivision = divisions.find(div => div.label === data.divisi);
             
             const formattedData = data.data.map(row => ({
@@ -128,23 +112,24 @@ export default function TambahKPISeluruhDivisi() {
                 persentase: parseInt(row.Persentase),
                 waktu: row.Waktu
             }));
-    
-            // Kirim ke API
             const response = await api.post('/kpi', formattedData);
     
             if (response.data.success) {
-                alert("Data KPI berhasil disimpan");
-                navigate('/daftarPenilaianKPI/seluruh-divisi');
+                setAlertSucc(true);
+                setTimeout(() => {
+                    navigate('/daftarPenilaianKPI/seluruh-divisi');
+                }, 2000);
             } else {
-                alert(response.data.message || "Gagal menyimpan data");
+                setErrorMessage(response.data.message);
+                setErrorAlert(true);
             }
         } catch (error) {
             console.error('Error saving KPI:', error);
             alert("Terjadi kesalahan saat menyimpan data");
-        }
+        } finally {
+            setLoading(false)
+        } 
     };
-
-    console.log(data)
 
     return (
         <>
@@ -179,6 +164,7 @@ export default function TambahKPISeluruhDivisi() {
                                                 showRequired={false}
                                                     type1="text"
                                                     value={row.NamaKPI}
+                                                    required={true}
                                                     onChange={(value) => handleInputChange(index, "NamaKPI", value)}
                                                 />
                                             ),
@@ -186,6 +172,7 @@ export default function TambahKPISeluruhDivisi() {
                                                 <Input
                                                 showRequired={false}
                                                     type="number"
+                                                    required={true}
                                                     value={row.Persentase}
                                                     onChange={(value) => handleInputChange(index, "Persentase", value)}
                                                 />
@@ -199,6 +186,7 @@ export default function TambahKPISeluruhDivisi() {
                                             ),
                                             Aksi: (
                                                 <button
+                                                    required={true}
                                                     className="text-red-500 hover:text-red-700"
                                                     onClick={(e) => {
                                                         e.preventDefault();
@@ -259,6 +247,27 @@ export default function TambahKPISeluruhDivisi() {
                         </div>
                     </section>
                 </div>
+                {isAlertSuccess && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Ditambahkan"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertSucc(false)}
+                    />
+                )}
+
+                {isLoading && (
+                    <Spinner/>
+                )}
+
+                {isErrorAlert && (
+                <AlertError
+                    title="Gagal!!"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorAlert(false)}
+                />
+                )}
             </LayoutWithNav>
         </>
     );

@@ -1,27 +1,41 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
-import { Pencil, Trash2, Plus, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, EyeOff, Eye } from 'lucide-react';
 import Input from "../../../components/Input";
 import FileInput from "../../../components/FileInput";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
+import AlertError from "../../../components/AlertError";
+import Alert from "../../../components/Alert";
+import api from "../../../utils/api";
 
 export default function Toko(){
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
     }
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModal2Open, setIsModal2Open] = useState(false);
     const [modalMode, setModalMode] = useState('add');
     const [selectedBranch, setSelectedBranch] = useState(null);
+    const [isLoading, setLoading] = useState(false);
+    const [isAlertSuccess, setAlertSucc] = useState(false);
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isAlertDel, setAlertDel] = useState(false);
+    const [isAlertSuccDel, setAlertDelSucc] = useState(false);
+    const [id, setId] = useState('');
+    const [branchData, setBranchData] = useState([]);
+    
     const [formData, setFormData] = useState({
         branchName: '',
         logo: null,
         email: '',
         password: '',
         confirmPassword: '',
+        imagePreview: ''
     });
 
     const [dataTerbanyak, setDataTerbanyak] = useState({
@@ -43,92 +57,208 @@ export default function Toko(){
         },
     })
 
-    const branchData = [
-        {
-          id: 1,
-          nama: "Tatitatu",
-          email: "bonifadetatitatu321@gmail.com",
-          username: "Tatitatu123",
-          logo: "logo.png"
-        },
-        {
-          id: 2,
-          nama: "Tatitatu",
-          email: "bonifadetatitatu321@gmail.com",
-          username: "Tatitatu123",
-          logo: "logo.png"
+    // Fetch data function
+    const fetchTokoData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/toko');
+            
+            if (response.data.success) {
+                // Filter out deleted items and transform the data
+                const transformedData = response.data.data
+                    .filter(toko => !toko.is_deleted)
+                    .map(toko => ({
+                        id: toko.toko_id,
+                        nama: toko.nama_toko,
+                        email: toko.email,
+                        password: toko.password,
+                        logo: toko.image,
+                        imageUrl: toko.image ? `${import.meta.env.VITE_API_URL}/toko/${toko.image}` : "/logo.png" 
+                    }));
+                    
+                setBranchData(transformedData);
+            } else {
+                setErrorMessage('Gagal mengambil data toko');
+                setErrorAlert(true);
+            }
+        } catch (error) {
+            console.error('Error fetching toko data:', error);
+            setErrorMessage('Gagal mengambil data toko');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    useEffect(() => {
+        fetchTokoData();
+    }, []);
+
+    // Handle file input
+    const handleFileChange = (file) => {
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            setFormData(prev => ({
+                ...prev,
+                logo: file,
+                imagePreview: imageUrl
+            }));
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (formData.imagePreview && formData.imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(formData.imagePreview);
+            }
+        };
+    }, [isModalOpen]);
+
+    // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
-          ...prev,
-          [name]: value
+            ...prev,
+            [name]: value
         }));
-      };
+    };
 
-      const handleFileChange = (file) => {
-        setFormData(prev => ({
-          ...prev,
-          logo: file,
-        }));
-      };
-    
-      const handleEdit = (branch) => {
-        setSelectedBranch(branch);
-        setFormData({
-          branchName: branch.nama,
-          logo: null,
-          email: branch.email,
-          password: '',
-          confirmPassword: '',
-          username: branch.username,
-        });
-        setModalMode('edit');
-        setIsModalOpen(true);
-      };
-    
-
-      const handleAdd = () => {
+    // Handle add new toko
+    const handleAdd = () => {
         setSelectedBranch(null);
         setFormData({
-          branchName: '',
-          logo: null,
-          email: '',
-          password: '',
-          confirmPassword: '',
+            branchName: '',
+            logo: null,
+            email: '',
+            password: '',
+            confirmPassword: ''
         });
         setModalMode('add');
         setIsModalOpen(true);
-      };
-    
-      const handleDelete = (branchId) => {
-        if (window.confirm('Apakah Anda yakin ingin menghapus cabang ini?')) {
-          console.log('Deleting branch with ID:', branchId);
-          // Add your delete logic here
+    };
+
+    // Handle edit toko
+    const handleEdit = (branch) => {
+        setSelectedBranch(branch);
+        setFormData({
+            branchName: branch.nama,
+            logo: null,
+            email: branch.email,
+            password: '',
+            confirmPassword: '',
+            imagePreview: branch.imageUrl
+        });
+        setModalMode('edit');
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        if (formData.imagePreview && formData.imagePreview.startsWith('blob:')) {
+            URL.revokeObjectURL(formData.imagePreview);
         }
-      };
-    
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (modalMode === 'add') {
-          console.log('Adding new branch:', formData);
-          // Add your create logic here
-          setIsModal2Open(true);
-        } else {
-          console.log('Updating branch:', selectedBranch.id, formData);
-          // Add your update logic here
-          setIsModal2Open(true);
-        }
+        setFormData({
+            branchName: '',
+            logo: null,
+            email: '',
+            password: '',
+            confirmPassword: '',
+            imagePreview: ''
+        });
         setIsModalOpen(false);
-      };
+    };
 
-      const handleModal2Submit = (updatedFormData) => {
-        setFormData(updatedFormData);
-        setIsModal2Open(false);
-      };
+    // Handle delete toko
+    const handleDelete = (branchId) => {
+        setAlertDel(true);
+        setId(branchId);
+    };
 
-      console.log(formData)
+    // Handle confirm delete
+    const handleConfirmDel = async () => {
+        try {
+            setLoading(true);
+            const response = await api.delete(`/toko/${id}`);
+            if (response.data.success) {
+                await fetchTokoData();
+                setAlertDel(false);
+                setAlertDelSucc(true);
+            } else {
+                setErrorMessage(response.data.message);
+                setErrorAlert(true);
+            }
+        } catch (error) {
+            console.error('Kesalahan Server', error);
+            setErrorMessage('Terjadi kesalahan saat menghapus data');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsModalOpen(false);
+        setIsModal2Open(true);
+    };
+
+
+    const handleModal2Submit = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const formDataToSend = new FormData();
+            
+            if (modalMode === 'edit' && !formData.logo && selectedBranch) {
+                formDataToSend.append('image', selectedBranch.logo); 
+            } else if (formData.logo) {
+                formDataToSend.append('image', formData.logo); 
+            }
+
+            formDataToSend.append('nama_toko', formData.branchName);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('password', formData.password);
+            formDataToSend.append('confirmPassword', formData.confirmPassword);
+
+            if (modalMode === 'add') {
+                const response = await api.post('/toko', formDataToSend, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+
+                if (response.data.success) {
+                    await fetchTokoData();
+                    setAlertSucc(true);
+                    setIsModal2Open(false);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            } else {
+                const response = await api.put(`/toko/${selectedBranch.id}`, formDataToSend, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+
+                if (response.data.success) {
+                    await fetchTokoData();
+                    setAlertSucc(true);
+                    setIsModal2Open(false);
+                } else {
+                    setErrorMessage(response.data.message);
+                    setErrorAlert(true);
+                }
+            }
+        } catch (error) {
+            console.error('Kesalahan Server', error);
+            setErrorMessage('Terjadi kesalahan saat menyimpan data');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
+    };
     
     return(
         <>
@@ -237,9 +367,9 @@ export default function Toko(){
                             <div key={branch.id} className="bg-white rounded-lg shadow-sm border p-4">
                                 <div className="flex items-center gap-3 mb-10">
                                 <img
-                                    src={branch.logo}
+                                    src={branch.imageUrl} 
                                     alt="Store Logo"
-                                    className="px-2 border-r-2 object-contain"
+                                    className="w-40 h-20 object-contain px-2 border-r-2"
                                 />
                                 <div>
                                     <div className="text-gray-500 text-sm">Nama Toko</div>
@@ -259,7 +389,25 @@ export default function Toko(){
                                     <div className="w-8 h-8 bg-pink rounded-full flex items-center justify-center">
                                     <div className="text-pink-600">***</div>
                                     </div>
-                                    <div className="text-sm">{branch.username}</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-sm font-mono">
+                                            {branch.showPassword ? branch.password : '••••••••••••'}
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                setBranchData(prevData => 
+                                                    prevData.map(item => 
+                                                        item.id === branch.id 
+                                                            ? { ...item, showPassword: !item.showPassword }
+                                                            : item
+                                                    )
+                                                );
+                                            }}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            {branch.showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 </div>
 
@@ -292,149 +440,195 @@ export default function Toko(){
 
                 {/* Modal */}
                 {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-lg w-full max-w-md">
-                    <div className="p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-semibold">
-                        {modalMode === 'add' ? 'Buat Toko Baru' : 'Edit Toko'}
-                        </h2>
-                        <button
-                        onClick={() => setIsModalOpen(false)}
-                        className="text-gray-500 hover:text-gray-700"
-                        >
-                        <X size={24} />
-                        </button>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="">
-                            <div className="">
-                                <FileInput
-                                    label="Logo Toko"
-                                    onFileChange={handleFileChange}
-                                    width="w-full md:w-1/2"
-                                />
-                            </div>
-                            <div className="pt-5">
-                                <input
-                                    type="Nama Toko"
-                                    name="branchName"
-                                    value={formData.branchName}
-                                    onChange={handleInputChange}
-                                    placeholder="Masukan Nama Toko"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 mt-6">
-                        <button
-                            type="button"
-                            onClick={() => setIsModalOpen(false)}
-                            className="px-4 py-2 border rounded-md hover:bg-gray-50 transition-colors"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            type="button"
-                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-black-800 transition-colors"
-                        >
-                            {modalMode === 'add' ? 'Lanjut' : 'Lanjut'}
-                        </button>
-                        </div>
-                    </form>
-                    </div>
-                </div>
-                </div>
-            )}
-
-                {isModal2Open && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-lg w-full max-w-md">
                             <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-semibold">
-                                {modalMode === 'add' ? 'Buat Toko Baru' : 'Edit Toko'}
-                                </h2>
-                                <button
-                                onClick={() => setIsModal2Open(false)}
-                                className="text-gray-500 hover:text-gray-700"
-                                >
-                                <X size={24} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={(e) => {
-                                e.preventDefault();
-                                handleModal2Submit(formData);
-                            }} className="space-y-4">
-                                <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email<span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    placeholder="Masukan Email"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    required
-                                />
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold">
+                                        {modalMode === 'add' ? 'Masukan Logo Toko' : 'Edit Toko'}
+                                    </h2>
+                                    <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700">
+                                        <X size={24} />
+                                    </button>
                                 </div>
 
-                                <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Password{modalMode === 'add' && <span className="text-red-500">*</span>}
-                                </label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    placeholder="Masukan Password"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    required={modalMode === 'add'}
-                                />
-                                </div>
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    {modalMode === 'edit' && formData.imagePreview && (
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Logo Saat Ini
+                                            </label>
+                                            <img
+                                                src={formData.imagePreview}
+                                                alt="Current Logo"
+                                                className="w-40 h-20 object-contain border rounded-md"
+                                            />
+                                        </div>
+                                    )}
+                                    <FileInput
+                                        label="Logo Toko"
+                                        onFileChange={handleFileChange}
+                                        width="w-full"
+                                        required={modalMode === 'add'}
+                                    />
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Nama Toko<span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="branchName"
+                                            value={formData.branchName}
+                                            onChange={handleInputChange}
+                                            placeholder="Masukan Nama Toko"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            required
+                                        />
+                                    </div>
 
-                                <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Masukan Ulang Password{modalMode === 'add' && <span className="text-red-500">*</span>}
-                                </label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleInputChange}
-                                    placeholder="Masukan Ulang Password"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                                    required={modalMode === 'add'}
-                                />
-                                </div>
-                                <div className="flex justify-end gap-2 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModal2Open(false)}
-                                    className="px-4 py-2 border rounded-md hover:bg-gray-50 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-black-800 transition-colors"
-                                >
-                                    {modalMode === 'add' ? 'Daftar' : 'Simpan'}
-                                </button>
-                                </div>
-                            </form>
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsModalOpen(false)}
+                                            className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90"
+                                        >
+                                            Lanjut
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
+                    </div>
+                )}
+
+{isModal2Open && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-lg w-full max-w-md">
+                            <div className="p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-semibold">
+                                        {modalMode === 'add' ? 'Buat Akun Super Admin' : 'Edit Akun Super Admin'}
+                                    </h2>
+                                    <button onClick={() => setIsModal2Open(false)} className="text-gray-500 hover:text-gray-700">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleModal2Submit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Email<span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder="Masukan Email"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Password{modalMode === 'add' && <span className="text-red-500">*</span>}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleInputChange}
+                                            placeholder="Masukan Password"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            required={modalMode === 'add'}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Masukan Ulang Password{modalMode === 'add' && <span className="text-red-500">*</span>}
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={formData.confirmPassword}
+                                            onChange={handleInputChange}
+                                            placeholder="Masukan Ulang Password"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            required={modalMode === 'add'}
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsModal2Open(false)}
+                                            className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90"
+                                        >
+                                            {modalMode === 'add' ? 'Daftar' : 'Simpan'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                    )}
+                    </div>
+                )}
+
+                {isAlertSuccess && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Ditambahkan/Diperbaharui"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertSucc(false)}
+                    />
+                )}
+
+                {isLoading && <Spinner />}
+
+                {isErrorAlert && (
+                    <AlertError
+                        title="Gagal!!"
+                        description={errorMessage}
+                        confirmLabel="Ok"
+                        onConfirm={() => setErrorAlert(false)}
+                    />
+                )}
+
+                {isAlertDel && (
+                    <Alert
+                        title="Hapus Data"
+                        description="Apakah kamu yakin ingin menghapus data ini?"
+                        confirmLabel="Hapus"
+                        cancelLabel="Kembali"
+                        onConfirm={handleConfirmDel}
+                        onCancel={() => setAlertDel(false)}
+                        open={isAlertDel}
+                        onClose={() => setAlertDel(false)}
+                    />
+                )}
+
+                {isAlertSuccDel && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Dihapus"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertDelSucc(false)}
+                    />
+                )}
             </div>
         </LayoutWithNav>
         </>

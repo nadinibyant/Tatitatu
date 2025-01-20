@@ -20,12 +20,14 @@ export default function PenilaianKPI() {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isManajer = userData?.role === 'manajer';
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const [divisions, setDivisions] = useState([])
     const [filterFields, setFilterFields] = useState([]);
     const [isLoading,setLoading] = useState(false)
     const [branchList, setBranchList] = useState([])
+    const [tokoList, setTokoList] = useState([]);
 
     useEffect(() => {
         const newFilterFields = isHeadGudang ? [
@@ -36,9 +38,9 @@ export default function PenilaianKPI() {
             }
         ] : [
             {
-                label: "Cabang",
-                key: "Cabang",
-                options: branchList
+                label: isManajer ? "Toko" : "Cabang", 
+                key: isManajer ? "Toko" : "Cabang",  
+                options: isManajer ? tokoList : branchList
             },
             {
                 label: "Divisi",
@@ -48,7 +50,8 @@ export default function PenilaianKPI() {
         ];
         
         setFilterFields(newFilterFields);
-    }, [branchList, divisions, isHeadGudang]);
+    }, [branchList, divisions, isHeadGudang, isManajer]);
+    
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
 
@@ -214,10 +217,15 @@ export default function PenilaianKPI() {
         { label: "#", key: "nomor", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },
         { label: "Divisi", key: "Divisi", align: "text-left" },
-        ...(!isHeadGudang ? [{ label: "Cabang", key: "Cabang", align: "text-left" }] : []),
+        ...(!isHeadGudang ? [{ 
+            label: isManajer ? "Toko" : "Cabang", 
+            key: isManajer ? "Toko" : "Cabang", 
+            align: "text-left" 
+        }] : []),
         { label: "KPI", key: "KPI", align: "text-left" },
         { label: "Total Gaji Akhir", key: "Total Gaji Akhir", align: "text-left" },
     ];
+    
 
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
@@ -239,6 +247,23 @@ export default function PenilaianKPI() {
         }
     };
 
+    const fetchToko = async () => {
+        try {
+            const response = await api.get('/toko'); // Sesuaikan dengan endpoint toko
+            const filteredToko = response.data.data.filter(toko => !toko.is_deleted); // Filter hanya toko yang aktif
+            const tokoList = [
+                { label: "Semua", value: "Semua" },
+                ...filteredToko.map(toko => ({
+                    label: toko.nama_toko,
+                    value: toko.toko_id
+                }))
+            ];
+            setTokoList(tokoList);
+        } catch (error) {
+            console.error('Error fetching toko:', error);
+        }
+    };
+
     const fetchDivisi = async () => {
         try {
             const response = await api.get('/divisi-karyawan');
@@ -256,9 +281,13 @@ export default function PenilaianKPI() {
     };
 
     useEffect(() => {
-        fetchBranches();
-        fetchDivisi()
-    }, []);
+        if (isManajer) {
+            fetchToko();
+        } else {
+            fetchBranches();
+        }
+        fetchDivisi();
+    }, [isManajer]);
 
     // const filterFields = [
     //     // Filter Cabang hanya untuk admin
@@ -294,9 +323,13 @@ export default function PenilaianKPI() {
         }
     
         if (!isHeadGudang && selectedStore.value !== "Semua") {
-            dataToDisplay = dataToDisplay.filter(item => 
-                item.Cabang === selectedStore.label
-            );
+            dataToDisplay = dataToDisplay.filter(item => {
+                if (isManajer) {
+                    return item.Toko === selectedStore.label;
+                } else {
+                    return item.Cabang === selectedStore.label;
+                }
+            });
         }
     
         return dataToDisplay;
@@ -460,9 +493,11 @@ export default function PenilaianKPI() {
                                     key={field.key}
                                     label={field.label}
                                     options={field.options}
-                                    value={field.key === "Cabang" ? selectedStore.value : selectedKategori.value}
+                                    value={field.key === "Toko" || field.key === "Cabang" 
+                                        ? selectedStore.value 
+                                        : selectedKategori.value}
                                     onSelect={(value) => 
-                                        field.key === "Cabang" 
+                                        field.key === "Toko" || field.key === "Cabang"
                                             ? setSelectedStore(value) 
                                             : setSelectedKategori(value) 
                                     }

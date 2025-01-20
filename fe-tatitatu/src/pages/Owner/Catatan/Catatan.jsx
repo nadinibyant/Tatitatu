@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import moment from "moment";
 import Table from "../../../components/Table";
+import api from "../../../utils/api";
 
 export default function Catatan(){
       const [isModalOpen, setIsModalOpen] = useState(false);
@@ -10,6 +11,31 @@ export default function Catatan(){
       const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
       const [selectedData, setSelectedData] = useState(null);
       const [showDetailModal, setShowDetailModal] = useState(false);
+      const [data, setData] = useState([]);
+
+      useEffect(() => {
+        fetchData();
+    }, [startDate, endDate]);
+
+    const fetchData = async () => {
+        try {
+            const response = await api.get('/catatan');
+            if (response.data.success) {
+
+                const transformedData = response.data.data.map(item => ({
+                    Tanggal: item.tanggal ? moment(item.tanggal).format('DD/MM/YYYY') : '-',
+                    Nama: item.nama,
+                    Judul: item.judul,
+                    Isi: item.isi,
+                    originalIsi: item.isi, 
+                    ...item         
+                }));
+                setData(transformedData);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
 
       const handleToday = () => {
         const today = moment().startOf("day");
@@ -44,36 +70,41 @@ export default function Catatan(){
         });
 
         const handleRowClick = (row) => {
-            setSelectedData(row);
+            setSelectedData({
+                Nama: row.nama,
+                Tanggal: row.Tanggal,
+                Judul: row.Judul,
+                Isi: row.originalIsi,
+            });
             setShowDetailModal(true);
         };
 
-    const [data,setData] = useState([
-        {
-            Tanggal: '12/05/2024',
-            Nama: 'Nadini Annisa Byant',
-            Judul: 'Penjualan Meningkat',
-            Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-        },
-        {
-            Tanggal: '12/05/2024',
-            Nama: 'Nadini Annisa Byant',
-            Judul: 'Penjualan Meningkat',
-            Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-        },
-        {
-            Tanggal: '12/05/2024',
-            Nama: 'Nadini Annisa Byant',
-            Judul: 'Penjualan Meningkat',
-            Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-        },
-        {
-            Tanggal: '12/05/2024',
-            Nama: 'Nadini Annisa Byant',
-            Judul: 'Penjualan Meningkat',
-            Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-        }
-    ])
+    // const [data,setData] = useState([
+    //     {
+    //         Tanggal: '12/05/2024',
+    //         Nama: 'Nadini Annisa Byant',
+    //         Judul: 'Penjualan Meningkat',
+    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
+    //     },
+    //     {
+    //         Tanggal: '12/05/2024',
+    //         Nama: 'Nadini Annisa Byant',
+    //         Judul: 'Penjualan Meningkat',
+    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
+    //     },
+    //     {
+    //         Tanggal: '12/05/2024',
+    //         Nama: 'Nadini Annisa Byant',
+    //         Judul: 'Penjualan Meningkat',
+    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
+    //     },
+    //     {
+    //         Tanggal: '12/05/2024',
+    //         Nama: 'Nadini Annisa Byant',
+    //         Judul: 'Penjualan Meningkat',
+    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
+    //     }
+    // ])
 
     const headers = [
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
