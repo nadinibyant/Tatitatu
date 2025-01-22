@@ -60,6 +60,7 @@ const [data2, setData2] = useState({
   info_barang: {
     Nomor: "",
     "Nama Barang": "",
+    "Ukuran": "", 
     "Jumlah Minimum Stok": "",
     Kategori: "",
     Foto: null,
@@ -80,6 +81,7 @@ const handleAddBtn = () => {
     info_barang: {
       Nomor: "",
       "Nama Barang": "",
+      "Ukuran": "", 
       "Jumlah Minimum Stok": "",
       Kategori: "",
       Foto: null,
@@ -92,7 +94,7 @@ const handleAddBtn = () => {
       },
     ],
   });
-};  
+}; 
 
 const handleEdit = (itemId) => {
   setModalMode("edit");
@@ -105,6 +107,7 @@ const handleEdit = (itemId) => {
     info_barang: {
       Nomor: "123",
       "Nama Barang": "Barbie",
+      "Ukuran": "Sedang",  
       "Jumlah Minimum Stok": 12,
       Kategori: itemToEdit?.kategori || "", 
       Foto: "https://via.placeholder.com/50",
@@ -251,7 +254,7 @@ const handleEdit = (itemId) => {
           </section>
 
           <section className="mt-5 bg-white rounded-xl">
-            <div className="p-5">
+            <div className="p-1">
               <Gallery data={data} onEdit={handleEdit} onDelete={handleBtnDelete} onItemClick={handleDetail}/>
             </div>
           </section>
@@ -304,6 +307,16 @@ const handleEdit = (itemId) => {
                         placeholder="Masukan Nama Barang"
                         value={data2.info_barang["Nama Barang"]}
                         onChange={(value) => handleInfoBarangChange("Nama Barang", value)}
+                      />
+                    </div>
+
+                    <div className="">
+                      <Input
+                        label={"Ukuran"}
+                        required={true}
+                        placeholder="Masukan Ukuran"
+                        value={data2.info_barang["Ukuran"]}
+                        onChange={(value) => handleInfoBarangChange("Ukuran", value)}
                       />
                     </div>
 
@@ -417,6 +430,11 @@ const handleEdit = (itemId) => {
                     <div>
                       <p className="text-gray-500">Nama Barang</p>
                       <p className="font-medium">{data2.info_barang["Nama Barang"]}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-gray-500">Ukuran</p>
+                      <p className="font-medium">{data2.info_barang["Ukuran"]}</p>
                     </div>
                     
                     <div>

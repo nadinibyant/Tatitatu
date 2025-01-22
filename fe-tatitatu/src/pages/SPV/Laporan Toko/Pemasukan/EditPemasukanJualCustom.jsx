@@ -63,17 +63,29 @@ export default function EditPemasukanJualCustom() {
         }
     ];
 
+    const formatToDateTimeLocal = (dateStr) => {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+
     const initialData = {
         nomor: "SO123",
-        tanggal: "2024-01-05", 
+        tanggal: formatToDateTimeLocal("2024-01-05"),
         namaPembeli: "John Doe",
         cashNonCash: PAYMENT_METHODS.NON_CASH,
         metodePembayaran: BANK_OPTIONS.MANDIRI,
         // Data untuk custom products
         customItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Gelang Barbie 123
-            { id: 2, productId: 2, quantity: 5 },  // Anting Keren 123
-            { id: 3, productId: 3, quantity: 3 }   // Cincin Cantik 123
+            { id: 1, productId: 1, quantity: 10 }, 
+            { id: 2, productId: 2, quantity: 5 },  
+            { id: 3, productId: 3, quantity: 3 }  
         ],
         // Data untuk biaya
         biayaItems: [
@@ -83,8 +95,7 @@ export default function EditPemasukanJualCustom() {
         ],
         // Data untuk packaging
         packagingItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Zipper
-            { id: 2, productId: 1, quantity: 5 }   // Zipper lagi
+            { id: 1, productId: 1, quantity: 10 }, 
         ],
         catatan: "Catatan pesanan default",
         diskonPersen: 30,
@@ -405,10 +416,17 @@ const handleBiayaDeleteRow = (rowIndex) => {
 
 // Handle functions untuk packaging
 const handlePackagingAddRow = () => {
-    const defaultProduct = dataBarang[1].items[0];
-    const newRow = createPackagingRow(packagingTableData.length, defaultProduct, 1);
-    setPackagingTableData([...packagingTableData, newRow]);
+    if (packagingTableData.length === 0) {
+        const defaultProduct = dataBarang[1].items[0];
+        const newRow = createPackagingRow(0, defaultProduct, 1);
+        setPackagingTableData([newRow]);
+    }
 };
+
+const canAddPackagingRow = () => {
+    return packagingTableData.length === 0;
+};
+
 
 const handlePackagingProductSelect = (rowIndex, selectedProduct) => {
     const product = dataBarang[1].items.find(p => p.id === selectedProduct.value);
@@ -776,8 +794,8 @@ useEffect(() => {
                             />
                             
                             <Input 
-                                label="Tanggal"
-                                type="date"
+                                label="Tanggal dan Waktu"
+                                type1={'datetime-local'}
                                 value={formData.tanggal}
                                 onChange={handleInputChange("tanggal")}
                                 required={true}
@@ -860,15 +878,17 @@ useEffect(() => {
                                     hasSearch={false}
                                     hasPagination={false}
                                 />
-                                <button 
-                                    onClick={handlePackagingAddRow}
-                                    className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                    </svg>
-                                    Tambah Baris
-                                </button>
+                                {canAddPackagingRow() && (
+                                    <button 
+                                        onClick={handlePackagingAddRow}
+                                        className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                        </svg>
+                                        Tambah Baris
+                                    </button>
+                                )}
                             </div>
 
                             

@@ -8,21 +8,17 @@ import Table from "../../../../components/Table";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
 import { useNavigate } from "react-router-dom";
 
-// Constants
-
-
 export default function EditPemasukanJual() {
-    const [packagingData, setPackagingData] = useState([]);
     const PAYMENT_METHODS = {
         CASH: 1,
         NON_CASH: 2
-      };
+    };
       
-      const BANK_OPTIONS = {
+    const BANK_OPTIONS = {
         NONE: 1,
         MANDIRI: 2,
         BANK_NAGARI: 3
-      };
+    };
 
     // Data constants
     const dataBayar = [
@@ -43,14 +39,6 @@ export default function EditPemasukanJual() {
             setSelectMetode(BANK_OPTIONS.NONE);
         }
     }, []);
-    
-
-    const dataPackaging = [
-        { id: 1, image: "https://via.placeholder.com/150", name: "Paper Bag Small" },
-        { id: 2, image: "https://via.placeholder.com/150", name: "Paper Bag Medium" },
-        { id: 3, image: "https://via.placeholder.com/150", name: "Paper Bag Large" },
-        { id: 4, image: "https://via.placeholder.com/150", name: "Gift Box Small" },
-    ];
 
     const dataBarang = [
         {
@@ -75,10 +63,21 @@ export default function EditPemasukanJual() {
         },
     ];
 
+    const formatToDateTimeLocal = (dateStr) => {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     // Initial data for editing
     const initialData = {
         nomor: "SO123",
-        tanggal: "2024-01-05",
+        tanggal: formatToDateTimeLocal("2024-01-05"),
         namaPembeli: "John Doe",
         cashNonCash: PAYMENT_METHODS.NON_CASH,
         metodePembayaran: BANK_OPTIONS.MANDIRI,
@@ -140,14 +139,6 @@ export default function EditPemasukanJual() {
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
 
-    const packagingHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
-        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
-        { label: "Aksi", key: "Aksi", align: "text-left" }
-    ];
-
     // Navigation configuration
     const breadcrumbItems = [
         { label: "Laporan Keuangan Toko", href: "/laporanKeuangan" },
@@ -195,13 +186,13 @@ export default function EditPemasukanJual() {
             "Nama Produk": (
                 <InputDropdown
                     showRequired={false}
-                    value={product.id}  // Gunakan ID sebagai value
+                    value={product.id}
                     options={allProducts.map(p => ({
                         id: p.id,
                         label: p.name,
-                        value: p.id    // Gunakan ID sebagai value
+                        value: p.id
                     }))}
-                    onSelect={(selected) => handleProductSelect(rowIndex, selected)}
+                    onSelect={(selected) => handleProductSelect(index, selected)}
                 />
             ),
             "Jenis Barang": jenisBarang,
@@ -232,94 +223,6 @@ export default function EditPemasukanJual() {
         };
     };
 
-    const createPackagingRow = (index, packaging, quantity = 0) => {
-        quantity = Math.max(0, Number(quantity) || 0);
-    
-        return {
-            No: index + 1,
-            "Foto Produk": (
-                <img
-                    src={packaging.image}
-                    alt={packaging.name}
-                    className="w-16 h-16 object-cover rounded-md"
-                />
-            ),
-            "Nama Packaging": (
-                <InputDropdown
-                    showRequired={false}
-                    value={packaging.id}  // Gunakan ID sebagai value
-                    options={dataPackaging.map(p => ({
-                        id: p.id,
-                        label: p.name,
-                        value: p.id  // Tambahkan value yang konsisten
-                    }))}
-                    onSelect={(selected) => handlePackagingSelect(index, selected)}
-                />
-            ),
-            "Kuantitas": (
-                <Input
-                    type="number"
-                    value={quantity}
-                    onChange={(value) => handlePackagingQuantityChange(index, value)}
-                    showRequired={false}
-                    min={0}
-                />
-            ),
-            "Aksi": (
-                <button 
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleDeletePackagingRow(index)}
-                >
-                    Hapus
-                </button>
-            ),
-            packagingName: packaging.name,
-            quantity: quantity,
-            packagingId: packaging.id
-        };
-    };
-
-    const handleAddPackagingRow = () => {
-        if (packagingData.length === 0) {
-            const defaultPackaging = dataPackaging[0];
-            const newRow = createPackagingRow(0, defaultPackaging, 1);
-            setPackagingData([newRow]);
-        }
-    };
-    
-    const handlePackagingSelect = (rowIndex, selectedPackaging) => {
-        const packaging = dataPackaging.find(p => p.id === selectedPackaging.value);
-        if (!packaging) return;
-    
-        setPackagingData(prevData => {
-            const updatedData = [...prevData];
-            const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-    
-            updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, currentQuantity);
-            return updatedData;
-        });
-    };
-    
-    const handlePackagingQuantityChange = (rowIndex, newQuantity) => {
-        const quantity = Math.max(0, Number(newQuantity) || 0);
-        
-        setPackagingData(prevData => {
-            const updatedData = [...prevData];
-            const currentRow = { ...updatedData[rowIndex] };
-            
-            if (currentRow) {
-                const packaging = dataPackaging.find(p => p.id === currentRow.packagingId);
-                updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, quantity);
-                return updatedData;
-            }
-            return prevData;
-        });
-    };
-
-    const handleDeletePackagingRow = () => {
-        setPackagingData([]);
-    };
-
     // Event handlers
     const handleInputChange = (field) => (value) => {
         setFormData(prev => ({
@@ -344,8 +247,6 @@ export default function EditPemasukanJual() {
             setIsMetodeDisabled(false);
         }
     };
-
-    
 
     const handleProductSelect = (rowIndex, selectedProduct) => {
         const product = allProducts.find(p => p.id === selectedProduct.value);
@@ -507,23 +408,6 @@ export default function EditPemasukanJual() {
         };
     };
 
-    // Log semua data saat ada perubahan apa pun
-    // useEffect(() => {
-    //     const allData = {
-    //         ...formData,
-    //         cashNonCash: selectBayar,
-    //         metodePembayaran: selectMetode,
-    //         items: tableData,
-    //         catatan,
-    //         diskonPersen,
-    //         pajak,
-    //         totalHarga,
-    //         totalSetelahDiskonPajak: calculateFinalTotals().finalTotal
-    //     };
-        
-    //     console.log('Complete Data State:', allData);
-    // }, [formData, selectBayar, selectMetode, tableData, catatan, diskonPersen, pajak, totalHarga]);
-
     const navigate = useNavigate()
     const handleBack = () => {
         navigate(-1);
@@ -595,87 +479,65 @@ export default function EditPemasukanJual() {
                                 Tambah Baris
                             </button>
 
-                            <div className="mt-10">
-                                <h2 className="text-lg font-semibold mb-4">Packaging</h2>
-                                <Table
-                                    headers={packagingHeaders}
-                                    data={packagingData}
-                                    text_header="text-primary"
-                                    hasSearch={false}
-                                    hasPagination={false}
-                                />
-                                {packagingData.length === 0 && (
-                                    <button 
-                                        onClick={handleAddPackagingRow}
-                                        className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                        </svg>
-                                        Tambah Packaging
-                                    </button>
-                                )}
-                            </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-                            {/* Left Column - Notes */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Catatan<span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary min-h-[150px]"
-                                    placeholder="Masukan Catatan Disini"
-                                    value={catatan}
-                                    onChange={(e) => setCatatan(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Right Column - Calculations */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Subtotal</span>
-                                    <span className="font-semibold">
-                                        Rp{totalHarga.toLocaleString()}
-                                    </span>
+                                {/* Left Column - Notes */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Catatan<span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary min-h-[150px]"
+                                        placeholder="Masukan Catatan Disini"
+                                        value={catatan}
+                                        onChange={(e) => setCatatan(e.target.value)}
+                                    />
                                 </div>
 
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Diskon Keseluruhan</span>
-                                    <div className="w-32">
-                                        <Input
-                                            type="number"
-                                            value={diskonPersen}
-                                            onChange={(value) => setDiskonPersen(Number(value))}
-                                            min={0}
-                                            max={100}
-                                            showRequired={false}
-                                        />
+                                {/* Right Column - Calculations */}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600">Subtotal</span>
+                                        <span className="font-semibold">
+                                            Rp{totalHarga.toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600">Diskon Keseluruhan</span>
+                                        <div className="w-32">
+                                            <Input
+                                                type="number"
+                                                value={diskonPersen}
+                                                onChange={(value) => setDiskonPersen(Number(value))}
+                                                min={0}
+                                                max={100}
+                                                showRequired={false}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600">Pajak</span>
+                                        <div className="w-32">
+                                            <Input
+                                                type="number"
+                                                value={pajak}
+                                                onChange={(value) => setPajak(Number(value))}
+                                                showRequired={false}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-4 border-t">
+                                        <span className="text-gray-600 font-medium">Total Penjualan</span>
+                                        <span className="font-bold text-lg">
+                                            Rp{calculateFinalTotals().finalTotal.toLocaleString()}
+                                        </span>
                                     </div>
                                 </div>
-
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Pajak</span>
-                                    <div className="w-32">
-                                        <Input
-                                            type="number"
-                                            value={pajak}
-                                            onChange={(value) => setPajak(Number(value))}
-                                            showRequired={false}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center pt-4 border-t">
-                                    <span className="text-gray-600 font-medium">Total Penjualan</span>
-                                    <span className="font-bold text-lg">
-                                        Rp{calculateFinalTotals().finalTotal.toLocaleString()}
-                                    </span>
-                                </div>
                             </div>
 
-                        </div>
-                        <div className="flex justify-end gap-4 mt-8">
+                            <div className="flex justify-end gap-4 mt-8">
                                 <button
                                     onClick={handleBack}
                                     className="px-20 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -692,22 +554,6 @@ export default function EditPemasukanJual() {
                         </div>
                     </div>
                 </section>
-
-                {/* Error Alert - Optional */}
-                {/* {error && (
-                    <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        <span className="font-bold">Error!</span>
-                        <span className="block">{error}</span>
-                    </div>
-                )} */}
-
-                {/* Success Alert - Optional */}
-                {/* {success && (
-                    <div className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        <span className="font-bold">Success!</span>
-                        <span className="block">{success}</span>
-                    </div>
-                )} */}
             </div>
         </LayoutWithNav>
     );

@@ -12,10 +12,10 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 import ActionMenu from "../../../components/ActionMenu";
 
 export default function PembelianStok() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalMore, setModalMore] = useState(false)
-    const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
+    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
+    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const navigate = useNavigate()
@@ -23,6 +23,17 @@ export default function PembelianStok() {
     const [isSuccess, setSuccess] = useState(false)
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+
+    const monthValue = `${selectedYear}-${selectedMonth}`;
+
+    const handleMonthChange = (e) => {
+        const value = e.target.value; 
+        const [year, month] = value.split('-');
+        setSelectedMonth(month);
+        setSelectedYear(year);
+    };
 
     const handleMoreClick = (item, event) => {
         event.stopPropagation();
@@ -71,51 +82,51 @@ export default function PembelianStok() {
         });
     };
 
-  const handleToday = () => {
-    const today = moment().startOf("day");
-    setStartDate(today.format("YYYY-MM-DD"));
-    setEndDate(today.format("YYYY-MM-DD"));
-    setIsModalOpen(false);
-  };
+//   const handleToday = () => {
+//     const today = moment().startOf("day");
+//     setStartDate(today.format("YYYY-MM-DD"));
+//     setEndDate(today.format("YYYY-MM-DD"));
+//     setIsModalOpen(false);
+//   };
 
-  const handleLast7Days = () => {
-    const today = moment().startOf("day");
-    const sevenDaysAgo = today.clone().subtract(7, "days");
-    setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-    setEndDate(today.format("YYYY-MM-DD"));
-    setIsModalOpen(false);
-  };
+//   const handleLast7Days = () => {
+//     const today = moment().startOf("day");
+//     const sevenDaysAgo = today.clone().subtract(7, "days");
+//     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
+//     setEndDate(today.format("YYYY-MM-DD"));
+//     setIsModalOpen(false);
+//   };
 
-  const handleThisMonth = () => {
-    const startMonth = moment().startOf("month");
-    const endMonth = moment().endOf("month");
-    setStartDate(startMonth.format("YYYY-MM-DD"));
-    setEndDate(endMonth.format("YYYY-MM-DD"));
-    setIsModalOpen(false);
-  };
+//   const handleThisMonth = () => {
+//     const startMonth = moment().startOf("month");
+//     const endMonth = moment().endOf("month");
+//     setStartDate(startMonth.format("YYYY-MM-DD"));
+//     setEndDate(endMonth.format("YYYY-MM-DD"));
+//     setIsModalOpen(false);
+//   };
 
     const handleRowClick = (row) => {
         navigate(`/pembelianStok/detail`, { state: { id: row.id } });
     };
 
-    const toggleModal = () => setIsModalOpen(!isModalOpen);
+    // const toggleModal = () => setIsModalOpen(!isModalOpen);
 
-    const formatDate = (date) =>
-        new Date(date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-    });
+    // const formatDate = (date) =>
+    //     new Date(date).toLocaleDateString("en-US", {
+    //     month: "short",
+    //     day: "2-digit",
+    //     year: "numeric",
+    // });
 
     const headers = [
         { label: "Nomor", key: "Nomor", align: "text-left" },
-        { label: "Tanggal", key: "Tanggal", align: "text-center" },
+        { label: "Tanggal", key: "Tanggal", align: "text-left" },
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
         { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-left" },
-        { label: "Diskon", key: "Diskon", align: "text-center" },
-        { label: "Pajak", key: "Pajak", align: "text-center" },
+        { label: "Diskon", key: "Diskon", align: "text-left" },
+        { label: "Pajak", key: "Pajak", align: "text-left" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
-        { label: "Aksi", key: "action", align: "text-center" },
+        { label: "Aksi", key: "action", align: "text-left" },
       ];
     
       const data = [
@@ -178,26 +189,26 @@ export default function PembelianStok() {
         },
       ];
 
-    const [filteredData, setFilteredData] = useState(data);
+    // const [filteredData, setFilteredData] = useState(data);
 
-    const filterDataByDate = () => {
-        if (!startDate || !endDate) {
-        setFilteredData(data);
-        } else {
-        const filtered = data.filter((item) => {
-            const itemDate = moment(item.Tanggal, "DD/MM/YYYY"); 
-            const start = moment(startDate);
-            const end = moment(endDate);
+    // const filterDataByDate = () => {
+    //     if (!startDate || !endDate) {
+    //     setFilteredData(data);
+    //     } else {
+    //     const filtered = data.filter((item) => {
+    //         const itemDate = moment(item.Tanggal, "DD/MM/YYYY"); 
+    //         const start = moment(startDate);
+    //         const end = moment(endDate);
 
-            return itemDate.isBetween(start, end, null, "[]"); 
-        });
-        setFilteredData(filtered);
-        }
-    };
+    //         return itemDate.isBetween(start, end, null, "[]"); 
+    //     });
+    //     setFilteredData(filtered);
+    //     }
+    // };
 
-    useEffect(() => {
-        filterDataByDate();
-    }, [startDate, endDate]);
+    // useEffect(() => {
+    //     filterDataByDate();
+    // }, [startDate, endDate]);
 
     const handleAddBtn = () => {
         if (isAdminGudang) {
@@ -207,14 +218,16 @@ export default function PembelianStok() {
         }
     }
 
-    const handleEdit = () => {
+    const handleEdit = (item) => {
         if (isAdminGudang) {
-            navigate(`/pembelianStok/edit-admin-gudang`, { state: { id: selectedItem.id } });
+            navigate(`/pembelianStok/edit-admin-gudang`, { 
+                state: { id: item.id } 
+            });
         } else {
-            navigate(`/pembelianStok/edit`, { state: { id: selectedItem.id } });
+            navigate(`/pembelianStok/edit`, { 
+                state: { id: item.id } 
+            });
         }
-    
-        setModalMore(false);
     };
     
     const handleDelete = () => {
@@ -268,30 +281,22 @@ return (
                             />
                     </div>
                     <div className="w-full md:w-auto">
-                        <Button label={`${formatDate(startDate)} - ${formatDate(endDate)}`} icon={ <svg width="17" height="18"
-                            viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2"
-                                strokeLinecap="round" strokeLinejoin="round" />
-                            <path
-                                d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z"
-                                stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round"
-                                strokeLinejoin="round" />
-                            </svg>
-                            }
-                            bgColor="border border-secondary"
-                            hoverColor="hover:bg-white"
-                            textColor="text-black"
-                            onClick={toggleModal}
-                            />
+                                <input 
+                                    type="month"
+                                    value={monthValue}
+                                    onChange={handleMonthChange}
+                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    style={{
+                                        maxWidth: '200px',
+                                    }}
+                                />
                     </div>
 
                     {/* Modal */}
-                    {isModalOpen && (
+                    {/* {isModalOpen && (
                         <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                             <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
                             
-                            {/* Tombol X untuk menutup modal */}
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
@@ -300,8 +305,6 @@ return (
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
-
-                            {/* Tanggal Dari dan Ke */}
                             <div className="flex space-x-4 w-full">
                                 <div className="flex flex-col w-full">
                                 <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
@@ -323,7 +326,6 @@ return (
                                 </div>
                             </div>
 
-                            {/* Tombol Pilihan */}
                             <div className="flex flex-col space-y-3 w-full">
                                 <button
                                 onClick={handleToday}
@@ -346,7 +348,7 @@ return (
                             </div>
                             </div>
                         </div>
-                        )}
+                        )} */}
 
                     <div className="w-full md:w-auto">
                         <Button label="Tambah" icon={ <svg width="16" height="16" viewBox="0 0 13 13" fill="none"
@@ -369,7 +371,7 @@ return (
                 {/* <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="semua" /> */}
                 <Table
                     headers={headers}
-                    data={filteredData.map((item, index) => ({
+                    data={data.map((item, index) => ({
                         ...item,
                         action: <ActionMenu 
                             onEdit={() => handleEdit(item)} 

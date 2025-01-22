@@ -21,7 +21,7 @@ export default function DetailPemasukanJual() {
 
     const data = {
         nomor: 'INV123',
-        tanggal: '2024-12-12',
+        tanggal: '2024-12-12T14:30:00',
         nama_pembeli: 'Suryani',
         bayar: 'Cash',
         metode: '-',
@@ -52,10 +52,10 @@ export default function DetailPemasukanJual() {
         ],
         data_packaging: [
             {
-                "Foto Produk": "https://via.placeholder.com/150",
+                "Foto Produk": "https://via.placeholder.com/50",
                 "Nama Packaging": "zipper",
                 "Harga Satuan": 1000,
-                kuantitas: 10,
+                kuantitas: 1000,
                 "Total Biaya": 10000
             }
         ],
@@ -85,9 +85,16 @@ export default function DetailPemasukanJual() {
         return `Rp ${amount.toLocaleString('id-ID')}`;
     };
 
-    const headers2 = [
+    const headers2 = !isCustom ? [
         { label: "No", key: "No", align: "text-left" },
-        ...(isCustom ? [{ label: "Foto Produk", key: "Foto Produk", align: "text-left" }] : []),
+        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
+        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
+        // { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
+        { label: "Kuantitas", key: "kuantitas", align: "text-left" },
+        // { label: "Total Biaya", key: "Total Biaya", align: "text-left"},
+    ] : [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
         { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
         { label: "Kuantitas", key: "kuantitas", align: "text-left" },
@@ -163,9 +170,21 @@ export default function DetailPemasukanJual() {
                                 <p className="font-bold text-lg">{data.nomor}</p>
                             </div>
                             <div className="">
-                                <p className="text-gray-500 text-sm">Tanggal</p>
-                                <p className="font-bold text-lg">{new Date(data.tanggal).toLocaleDateString()}</p>
+                                <p className="text-gray-500 text-sm">Tanggal dan Waktu</p>
+                                <p className="font-bold text-lg">
+                                    {new Date(data.tanggal).toLocaleString('id-ID', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </p>
                             </div>
+                            <div className="">
+                                    <p className="text-gray-500 text-sm">Nama Pembeli</p>
+                                    <p className="font-bold text-lg">{data.nama_pembeli}</p>
+                                </div>
                             <div className="">
                                 <p className="text-gray-500 text-sm">Cash/Non-Cash</p>
                                 <p className="font-bold text-lg">{data.bayar}</p>
@@ -187,7 +206,7 @@ export default function DetailPemasukanJual() {
                                 data={data.data_produk.map((item, index) => ({
                                     ...item,
                                     "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
+                                    "kuantitas": item.kuantitas.toLocaleString(),
                                     "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
                                     "Total Biaya": formatRupiah(item["Total Biaya"]),  
                                     No: index + 1  
@@ -215,19 +234,15 @@ export default function DetailPemasukanJual() {
                     <section className="pt-10">
                         <p className="font-bold">Packging</p>
                         <div className="pt-5">
-                            <Table
-                                headers={headers2}
-                                data={data.data_packaging.map((item, index) => ({
-                                    ...item,
-                                    "No": index + 1,
-                                    ...(isCustom && {
-                                        "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />
-                                    }),
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
-                                    "Harga Satuan": formatRupiah(item["Harga Satuan"]),
-                                    "Total Biaya": formatRupiah(item["Total Biaya"])
-                                }))}
-                            />
+                        <Table
+                            headers={headers2}
+                            data={data.data_packaging.map((item, index) => ({
+                                ...item,
+                                "No": index + 1,
+                                "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />,
+                                "kuantitas": item.kuantitas.toLocaleString(),
+                            }))}
+                        />
                         </div>
                     </section>
 

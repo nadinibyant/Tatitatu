@@ -131,8 +131,8 @@ export default function EditPenjualanCustom() {
         tanggal: initialData.tanggal,
         namaPembeli: initialData.namaPembeli,
     });
-    const [selectMetode, setSelectMetode] = useState(initialData.metodePembayaran);
     const [selectBayar, setSelectBayar] = useState(initialData.cashNonCash);
+    const [selectMetode, setSelectMetode] = useState(initialData.metodePembayaran);
     const [tableData, setTableData] = useState([]);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
     const [totalItems, setTotalItems] = useState(0);
@@ -158,13 +158,15 @@ export default function EditPenjualanCustom() {
         }, []);
     }, []);
 
-    const selectedMetodeLabel = useMemo(() => {
-        return dataMetode.find(option => option.id === selectMetode)?.label || "";
-    }, [selectMetode]);
-
     const selectedBayarLabel = useMemo(() => {
-        return dataBayar.find(option => option.id === selectBayar)?.label || "";
+        const option = dataBayar.find(opt => opt.id === selectBayar);
+        return option?.label || "";
     }, [selectBayar]);
+    
+    const selectedMetodeLabel = useMemo(() => {
+        const option = dataMetode.find(opt => opt.id === selectMetode);
+        return option?.label || "";
+    }, [selectMetode]);
 
     // Table headers configuration
     const customHeaders = [
@@ -195,57 +197,57 @@ export default function EditPenjualanCustom() {
     ];
 
     // Helper functions untuk masing-masing tabel
-const createCustomRow = (index, product, quantity = 0) => {
-    quantity = Math.max(0, Number(quantity) || 0);
-    const totalBiaya = product.price * quantity;
-
-    return {
-        No: index + 1,
-        "Foto Produk": (
-            <img
-                src={product.image}
-                alt={product.name}
-                className="w-16 h-16 object-cover rounded-md"
-            />
-        ),
-        "Nama Bahan": (
-            <InputDropdown
-                showRequired={false}
-                value={product.name}
-                options={dataBarang[0].items.map(p => ({
-                    id: p.id,
-                    label: p.name,
-                    value: p.price
-                }))}
-                onSelect={(selected) => handleCustomProductSelect(index, selected)}
-            />
-        ),
-        "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-        "Kuantitas": (
-            <Input
-                type="number"
-                value={quantity}
-                onChange={(value) => handleCustomQuantityChange(index, value)}
-                showRequired={false}
-                min={0}
-            />
-        ),
-        "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-        "Aksi": (
-            <button 
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleCustomDeleteRow(index)}
-            >
-                Hapus
-            </button>
-        ),
-        productName: product.name,
-        productPrice: product.price,
-        quantity: quantity,
-        numericTotalBiaya: totalBiaya,
-        productId: product.id
+    const createCustomRow = (index, product, quantity = 0) => {
+        quantity = Math.max(0, Number(quantity) || 0);
+        const totalBiaya = product.price * quantity;
+    
+        return {
+            No: index + 1,
+            "Foto Produk": (
+                <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-16 h-16 object-cover rounded-md"
+                />
+            ),
+            "Nama Bahan": (
+                <InputDropdown
+                    showRequired={false}
+                    value={product.name}
+                    options={dataBarang[0].items.map(p => ({
+                        id: p.id,
+                        label: p.name,
+                        value: p.name  // Changed from p.price to p.name to match the value type
+                    }))}
+                    onSelect={(selected) => handleCustomProductSelect(index, selected)}
+                />
+            ),
+            "Harga Satuan": `Rp${product.price.toLocaleString()}`,
+            "Kuantitas": (
+                <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(value) => handleCustomQuantityChange(index, value)}
+                    showRequired={false}
+                    min={0}
+                />
+            ),
+            "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
+            "Aksi": (
+                <button 
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleCustomDeleteRow(index)}
+                >
+                    Hapus
+                </button>
+            ),
+            productName: product.name,
+            productPrice: product.price,
+            quantity: quantity,
+            numericTotalBiaya: totalBiaya,
+            productId: product.id
+        };
     };
-};
 
 const createBiayaRow = (index, name = "", amount = 0) => {
     return {
@@ -301,7 +303,7 @@ const createPackagingRow = (index, product, quantity = 0) => {
                 options={dataBarang[1].items.map(p => ({
                     id: p.id,
                     label: p.type,
-                    value: p.price
+                    value: p.type  // Changed from p.price to p.type
                 }))}
                 onSelect={(selected) => handlePackagingProductSelect(index, selected)}
             />
@@ -331,7 +333,8 @@ const createPackagingRow = (index, product, quantity = 0) => {
         numericTotalBiaya: totalBiaya,
         productId: product.id
     };
-    };
+};
+
 
     // Handle functions untuk custom products
 const handleCustomAddRow = () => {
@@ -341,7 +344,7 @@ const handleCustomAddRow = () => {
 };
 
 const handleCustomProductSelect = (rowIndex, selectedProduct) => {
-    const product = dataBarang[0].items.find(p => p.name === selectedProduct.label);
+    const product = dataBarang[0].items.find(p => p.name === selectedProduct.value);
     if (!product) return;
 
     setCustomTableData(prevData => {
@@ -410,7 +413,7 @@ const handlePackagingAddRow = () => {
 };
 
 const handlePackagingProductSelect = (rowIndex, selectedProduct) => {
-    const product = dataBarang[1].items.find(p => p.type === selectedProduct.label);
+    const product = dataBarang[1].items.find(p => p.type === selectedProduct.value);
     if (!product) return;
 
     setPackagingTableData(prevData => {
@@ -525,16 +528,24 @@ useEffect(() => {
         }));
     };
 
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
+    const handleSelectMetode = (selected) => {
+        const selectedOption = dataMetode.find(opt => opt.label === selected.value);
+        if (selectedOption) {
+            setSelectMetode(selectedOption.id);
+        }
     };
 
-    const handleSelectBayar = (selectedOption) => {
-        setSelectBayar(selectedOption.id);
-        if (selectedOption.id === PAYMENT_METHODS.NON_CASH) {
-            setSelectMetode(BANK_OPTIONS.MANDIRI);
-        } else {
-            setSelectMetode(BANK_OPTIONS.NONE);
+    const handleSelectBayar = (selected) => {
+        const selectedOption = dataBayar.find(opt => opt.label === selected.value);
+        if (selectedOption) {
+            setSelectBayar(selectedOption.id);
+            if (selectedOption.id === PAYMENT_METHODS.CASH) {
+                setSelectMetode(BANK_OPTIONS.NONE);
+                setIsMetodeDisabled(true);
+            } else {
+                setSelectMetode(BANK_OPTIONS.MANDIRI);
+                setIsMetodeDisabled(false);
+            }
         }
     };
 
@@ -788,7 +799,11 @@ useEffect(() => {
 
                             <InputDropdown 
                                 label="Cash/Non-Cash" 
-                                options={dataBayar} 
+                                options={dataBayar.map(option => ({
+                                    id: option.id,
+                                    label: option.label,
+                                    value: option.label
+                                }))} 
                                 value={selectedBayarLabel} 
                                 onSelect={handleSelectBayar}
                                 required={true}
@@ -797,7 +812,11 @@ useEffect(() => {
                             <InputDropdown 
                                 label="Metode Pembayaran" 
                                 disabled={isMetodeDisabled} 
-                                options={dataMetode} 
+                                options={dataMetode.map(option => ({
+                                    id: option.id,
+                                    label: option.label,
+                                    value: option.label
+                                }))}
                                 value={selectedMetodeLabel} 
                                 onSelect={handleSelectMetode}
                                 required={!isMetodeDisabled}

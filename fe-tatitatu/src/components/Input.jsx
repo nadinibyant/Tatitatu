@@ -19,6 +19,23 @@ const Input = ({
     setRawValue(value || "");
   }, [value]);
 
+  useEffect(() => {
+    if (!value && (type1 === "date" || type1 === "datetime-local")) {
+      const today = new Date();
+      
+      if (type1 === "date" || type1 === 'date') {
+        const formattedDate = today.toISOString().split('T')[0];
+        setRawValue(formattedDate);
+        if (onChange) onChange(formattedDate);
+      } else if (type1 === "datetime-local" || type1 === 'datetime-local') {
+        const formattedDateTime = today.toISOString().slice(0, 16);
+        setRawValue(formattedDateTime);
+        if (onChange) onChange(formattedDateTime);
+      }
+    } else {
+      setRawValue(value || "");
+    }
+  }, [value, type1, onChange]);
 
   const formatNumber = (num) => {
     if (num === "" || num === undefined || num === null) return "";
@@ -26,7 +43,7 @@ const Input = ({
   };
 
   const handleInputChange = (e) => {
-    const inputValue = e.target.value;
+    let inputValue = e.target.value;
     if (type === "number") {
       const raw = inputValue.replace(/\./g, "");
       setRawValue(raw);

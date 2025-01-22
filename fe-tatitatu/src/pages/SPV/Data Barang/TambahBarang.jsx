@@ -3,13 +3,13 @@ import Breadcrumbs from "../../../components/Breadcrumbs";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import FileInput from "../../../components/FileInput";
 import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function TambahBarang() {
+  const [selectedCabang, setSelectedCabang] = useState("GOR HAS");
   const breadcrumbItems = [
     { label: "Daftar Barang Handmade", href: "/dataBarang/handmade" },
     { label: "Tambah", href: "" },
@@ -28,95 +28,100 @@ export default function TambahBarang() {
     { label: "", key: "Aksi", align: "text-left" },
   ];
 
-  const headers2 = [
-    { label: "No", key: "No", align: "text-left" },
-    { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
-    { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px'},
-    { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
-    { label: "", key: "Aksi", align: "text-left" },
+  const dataCabangOptions = [
+    { label: "GOR HAS", value: "GOR HAS" },
+    { label: "Lubeg", value: "Lubeg" },
+    { label: "Bypass", value: "Bypass" }
   ];
 
-  const [data, setData] = useState({
-    info_barang: {
-        Nomor: "",
-        "Nama Barang": "",
-        Kategori: "",
-        "Jumlah Minimum Stok": "",
-        Foto: null,
-        "Total HPP": 0,
-        Keuntungan: 0,
-        "Harga Jual": 0,
-      },
-    rincian_biaya: [
+  const [rincianBiayaPerCabang, setRincianBiayaPerCabang] = useState({
+    "GOR HAS": [
       {
         id: 1,
-        "Nama Biaya": "Biaya Operasional Gor Agus",
+        "Nama Biaya": "Biaya Operasional dan Staff GOR. Haji Agus Salim",
         "Jumlah Biaya": 24000,
         isEditable: false,
       },
       {
         id: 2,
-        "Nama Biaya": "Biaya Maintenance",
-        "Jumlah Biaya": 15000,
-        isEditable: false,
+        "Nama Biaya": "Modal",
+        "Jumlah Biaya": 24000,
+        isEditable: true,
       },
       {
         id: 3,
-        "Nama Biaya": "Biaya Lain-lain",
-        "Jumlah Biaya": 10000,
-        isEditable: false,
-      },
+        "Nama Biaya": "Packaging",
+        "Jumlah Biaya": 4000,
+        isEditable: true,
+      }
     ],
-    packaging: [
+    "Lubeg": [
       {
         id: 1,
-        "Nama Packaging": "Zipper",
-        "Harga Satuan": 1000,
-        Kuantitas: 1,
-        "Total Biaya": 1000,
-      },
+        "Nama Biaya": "Biaya Operasional dan Staff Lubeg",
+        "Jumlah Biaya": 20000,
+        isEditable: false,
+      }
     ],
+    "Bypass": [
+      {
+        id: 1,
+        "Nama Biaya": "Biaya Operasional dan Staff Bypass",
+        "Jumlah Biaya": 22000,
+        isEditable: false,
+      }
+    ]
   });
 
-  const dataPackaging = [
-    { label: "Zipper", value: "Zipper", "Harga Satuan": 1000 },
-    { label: "Box", value: "Box", "Harga Satuan": 2000 },
-    { label: "Pouch", value: "Pouch", "Harga Satuan": 1500 },
-  ];
+  const [data, setData] = useState({
+    info_barang: {
+      Nomor: "",
+      "Nama Barang": "",
+      Kategori: "",
+      "Jumlah Minimum Stok": "",
+      Foto: null,
+      "Total HPP": 0,
+      Keuntungan: 0,
+      "Harga Jual": 0,
+    },
+    hargaPerCabang: {
+      "GOR HAS": { totalHPP: 0, hargaJual: 0, keuntungan: 0 },
+      "Lubeg": { totalHPP: 0, hargaJual: 0, keuntungan: 0 },
+      "Bypass": { totalHPP: 0, hargaJual: 0, keuntungan: 0 },
+      "Lumin": { totalHPP: 0, hargaJual: 0, keuntungan: 0 },
+    }
+  });
 
-  const calculateTotalHPP = () => {
-    const totalRincianBiaya = data.rincian_biaya.reduce(
-      (sum, item) => sum + (item["Jumlah Biaya"] || 0),
+  const calculateTotalHPP = (cabang) => {
+    return rincianBiayaPerCabang[cabang]?.reduce(
+      (sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0),
       0
-    );
-    const totalPackaging = data.packaging.reduce(
-      (sum, item) => sum + (item["Total Biaya"] || 0),
-      0
-    );
-
-    return totalRincianBiaya + totalPackaging;
+    ) || 0;
   };
 
-  const calculateKeuntungan = () => {
-    return (
-      data.info_barang["Harga Jual"] - data.info_barang["Total HPP"] || 0
-    );
+  const calculateKeuntungan = (hargaJual, totalHPP) => {
+    return (hargaJual || 0) - (totalHPP || 0);
   };
 
   useEffect(() => {
-    const totalHPP = calculateTotalHPP();
-    const keuntungan = calculateKeuntungan();
+    const totalHPP = calculateTotalHPP(selectedCabang);
+    const keuntungan = calculateKeuntungan(
+      data.hargaPerCabang[selectedCabang].hargaJual,
+      totalHPP
+    );
 
     setData((prevData) => ({
       ...prevData,
-      info_barang: {
-        ...prevData.info_barang,
-        "Total HPP": totalHPP,
-        Keuntungan: keuntungan,
-      },
+      hargaPerCabang: {
+        ...prevData.hargaPerCabang,
+        [selectedCabang]: {
+          ...prevData.hargaPerCabang[selectedCabang],
+          totalHPP,
+          keuntungan
+        }
+      }
     }));
-  }, [data.rincian_biaya, data.packaging, data.info_barang["Harga Jual"]]);
+  }, [selectedCabang, rincianBiayaPerCabang, data.hargaPerCabang[selectedCabang].hargaJual]);
 
   const handleInfoBarangChange = (key, value) => {
     setData((prevData) => ({
@@ -128,299 +133,276 @@ export default function TambahBarang() {
     }));
   };
 
-  const handlePackagingChange = (key, value, index) => {
-    setData((prevData) => {
-      const updatedPackaging = prevData.packaging.map((row, i) => {
-        if (i === index) {
-          if (key === "Nama Packaging") {
-            const selectedPackaging = dataPackaging.find(
-              (packaging) => packaging.value === value
-            );
-            return {
-              ...row,
-              [key]: value,
-              "Harga Satuan": selectedPackaging["Harga Satuan"],
-              "Total Biaya": selectedPackaging["Harga Satuan"] * row.Kuantitas,
-            };
-          } else if (key === "Kuantitas") {
-            return {
-              ...row,
-              [key]: parseInt(value, 10) || 0,
-              "Total Biaya": row["Harga Satuan"] * (parseInt(value, 10) || 0),
-            };
-          }
-        }
-        return row;
-      });
+  const handleHargaJualChange = (cabang, value) => {
+    const numValue = Number(value) || 0;
+    const totalHPP = calculateTotalHPP(cabang);
+    const keuntungan = calculateKeuntungan(numValue, totalHPP);
 
-      return {
-        ...prevData,
-        packaging: updatedPackaging,
-      };
-    });
-  };
-
-
-  const handleInputChange = (section, rowIndex, key, value) => {
-    const updatedData = data[section].map((row, index) =>
-      index === rowIndex ? { ...row, [key]: value } : row
-    );
     setData((prevData) => ({
       ...prevData,
-      [section]: updatedData,
+      hargaPerCabang: {
+        ...prevData.hargaPerCabang,
+        [cabang]: {
+          ...prevData.hargaPerCabang[cabang],
+          hargaJual: numValue,
+          keuntungan
+        }
+      }
     }));
   };
 
-  const handleDeleteRow = (section, rowId) => {
-    setData((prevData) => {
-      const updatedSectionData = prevData[section].filter(
-        (row) => row.id !== rowId
-      );
-      return {
-        ...prevData,
-        [section]: updatedSectionData,
-      };
-    });
+  const handleInputChange = (cabang, rowIndex, key, value) => {
+    setRincianBiayaPerCabang(prevData => ({
+      ...prevData,
+      [cabang]: prevData[cabang].map((row, index) =>
+        index === rowIndex ? { ...row, [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value } : row
+      )
+    }));
   };
 
-  const handleAddRow = (section) => {
+  const handleDeleteRow = (cabang, rowId) => {
+    setRincianBiayaPerCabang(prevData => ({
+      ...prevData,
+      [cabang]: prevData[cabang].filter(row => row.id !== rowId)
+    }));
+  };
+
+  const handleAddRow = (cabang) => {
     const newRow = {
       id: Date.now(),
       "Nama Biaya": "",
-      "Jumlah Biaya": "",
+      "Jumlah Biaya": 0,
       isEditable: true,
     };
-
-    setData((prevData) => ({
+  
+    setRincianBiayaPerCabang(prevData => ({
       ...prevData,
-      [section]: [...prevData[section], newRow],
+      [cabang]: [...prevData[cabang], newRow]
     }));
   };
 
   const formatCurrency = (amount) => {
-    return amount.toLocaleString('id-ID', {
-    });
-    };
+    return Number(amount).toLocaleString('id-ID');
+  };
 
   return (
-    <>
-      <LayoutWithNav
-        menuItems={menuItems}
-        userOptions={userOptions}
-        label={"Tambah Data Barang Handmade"}
-      >
-        <div className="p-5">
-          <Breadcrumbs items={breadcrumbItems} />
+    <LayoutWithNav
+      menuItems={menuItems}
+      userOptions={userOptions}
+      label={"Tambah Data Barang Handmade"}
+    >
+      <div className="p-5">
+        <Breadcrumbs items={breadcrumbItems} />
 
-          <section className="mt-5 bg-white rounded-xl">
-            <section className="">
-              <div className="pt-5 px-5">
-                <form action="">
-                  <div className="">
-                    <p className="pb-5 font-bold">Masukan Foto Barang</p>
-                    <FileInput 
-                        label={"Masukan Foto Barang"}
-                        onFileChange={(file) =>
-                            handleInfoBarangChange("Foto", file)
-                        }
+        <section className="mt-5 bg-white rounded-xl">
+          <div className="pt-5 px-5">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              // Add your form submission logic here
+            }}>
+              {/* File Input Section */}
+              <div>
+                <p className="pb-5 font-bold">Masukan Foto Barang</p>
+                <FileInput 
+                  label={"Masukan Foto Barang"}
+                  onFileChange={(file) => handleInfoBarangChange("Foto", file)}
+                />
+              </div>
+
+              {/* Basic Info Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5">
+                <Input 
+                  label={"Nomor"} 
+                  required={true} 
+                  onChange={(value) => handleInfoBarangChange("Nomor", value)}
+                />
+                <Input
+                  label={"Nama Barang"}
+                  required={true}
+                  placeholder="Masukan Nama Barang"
+                  onChange={(value) => handleInfoBarangChange("Nama Barang", value)}
+                />
+                <div>
+                  <p className="text-gray-700 font-medium">
+                    Kategori<span className="text-red-500">*</span>
+                  </p>
+                  <ButtonDropdown
+                    label={"Pilih Kategori Barang"}
+                    options={dataKategori}
+                    onSelect={(value) => handleInfoBarangChange("Kategori", value)}
+                  />
+                </div>
+                <Input
+                  label={"Jumlah Minimum Stok"}
+                  type={"number"}
+                  required={true}
+                  placeholder="Masukan Jumlah Minimum Stok Untuk mendapatkan Notifikasi"
+                  onChange={(value) => handleInfoBarangChange("Jumlah Minimum Stok", value)}
+                />
+              </div>
+
+              {/* Branch Selection Section */}
+              <section className="mt-8">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="font-bold text-base text-primary">Rincian Berdasarkan Cabang</p>
+                  <div className="w-60">
+                    <ButtonDropdown
+                      label={selectedCabang}
+                      options={dataCabangOptions}
+                      onSelect={setSelectedCabang}
+                      icon={
+                        <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                        </svg>
+                      }
                     />
                   </div>
+                </div>
+              </section>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5">
-                    {/* Input Nomor */}
-                    <div className="">
-                      <Input label={"Nomor"} required={true} onChange={(value) =>
-                          handleInfoBarangChange("Nomor", value)
-                        }/>
-                    </div>
-
-                    {/* Input Nama Barang */}
-                    <div className="">
-                      <Input
-                        label={"Nama Barang"}
-                        required={true}
-                        placeholder="Masukan Nama Barang"
-                        onChange={(value) =>
-                            handleInfoBarangChange("Nama Barang", value)
+              {/* Cost Details Table */}
+              <section className="pt-5">
+                <p className="font-bold">Rincian Biaya</p>
+                <div className="pt-3">
+                  <Table
+                    headers={headers}
+                    data={rincianBiayaPerCabang[selectedCabang]?.map((row, index) => ({
+                      No: index + 1,
+                      "Nama Biaya": row.isEditable ? (
+                        <Input
+                          showRequired={false}
+                          className="w-full max-w-xs sm:max-w-sm"
+                          value={row["Nama Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange(selectedCabang, index, "Nama Biaya", value)
                           }
-                      />
-                    </div>
-
-                    {/* Dropdown Kategori */}
-                    <div className="">
-                      <p className="text-gray-700 font-medium">
-                        Kategori<span className="text-red-500">*</span>
-                      </p>
-                      <ButtonDropdown
-                        label={"Pilih Kategori Barang"}
-                        options={dataKategori}
-                        onSelect={(value) =>
-                            handleInfoBarangChange("Kategori", value)
-                          }
-                      />
-                    </div>
-
-                    {/* Input Jumlah Barang */}
-                    <div className="">
-                      <Input
-                        label={"Jumlah Minimum Stok"}
-                        type={"number"}
-                        required={true}
-                        placeholder="Masukan Jumlah Minimum Stok Untuk mendapatkan Notifikasi"
-                        onChange={(value) =>
-                            handleInfoBarangChange("Jumlah Minimum Stok", value)
-                          }
-                      />
-                    </div>
-                  </div>
-
-                  <section className="">
-                    <div className="pt-5">
-                        <p className="font-bold">Rincian Biaya</p>
-                        <div className="pt-3">
-                        <Table
-                            headers={headers}
-                            data={data.rincian_biaya.map((row, index) => ({
-                            No: index + 1,
-                            "Nama Biaya": row.isEditable ? (
-                                <Input
-                                showRequired={false}
-                                className="w-full max-w-xs sm:max-w-sm"
-                                value={row["Nama Biaya"]}
-                                onChange={(value) =>
-                                    handleInputChange("rincian_biaya", index, "Nama Biaya", value)
-                                }
-                                />
-                            ) : (
-                                row["Nama Biaya"]
-                            ),
-                            "Jumlah Biaya": row.isEditable ? (
-                                <Input
-                                showRequired={false}
-                                type="number"
-                                width="w-full"
-                                value={row["Jumlah Biaya"]}
-                                onChange={(value) =>
-                                    handleInputChange("rincian_biaya", index, "Jumlah Biaya", value)
-                                }
-                                />
-                            ) : (
-                                `Rp${row["Jumlah Biaya"].toLocaleString("id-ID")}`
-                            ),
-                            Aksi: (
-                                <Button
-                                label="Hapus"
-                                bgColor=""
-                                textColor="text-red-600"
-                                hoverColor="hover:text-red-800"
-                                onClick={() =>
-                                    handleDeleteRow("rincian_biaya", row.id)
-                                }
-                                />
-                            ),
-                            }))}
                         />
+                      ) : (
+                        row["Nama Biaya"]
+                      ),
+                      "Jumlah Biaya": row.isEditable ? (
+                        <Input
+                          showRequired={false}
+                          type="number"
+                          width="w-full"
+                          value={row["Jumlah Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
+                          }
+                        />
+                      ) : (
+                        `Rp${formatCurrency(row["Jumlah Biaya"])}`
+                      ),
+                      Aksi: row.isEditable && (
                         <Button
-                            label="Tambah Baris"
-                            icon={
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                className="w-5 h-5"
-                            >
-                                <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 4v16m8-8H4"
-                                />
-                            </svg>
-                            }
-                            bgColor="focus:ring-primary"
-                            hoverColor="hover:border-primary hover:border"
-                            textColor="text-primary"
-                            onClick={() => handleAddRow("rincian_biaya")}
+                          label="Hapus"
+                          bgColor=""
+                          textColor="text-red-600"
+                          hoverColor="hover:text-red-800"
+                          onClick={() => handleDeleteRow(selectedCabang, row.id)}
                         />
+                      ),
+                    }))}
+                  />
+                  <Button
+                    label="Tambah Baris"
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    }
+                    bgColor="focus:ring-primary"
+                    hoverColor="hover:border-primary hover:border"
+                    textColor="text-primary"
+                    onClick={() => handleAddRow(selectedCabang)}
+                  />
+                </div>
+              </section>
+
+              {/* Totals Section */}
+              <section className="flex justify-end text-base p-5">
+                <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
+                  <div className="flex justify-between">
+                    <p className="font-bold">Total HPP</p>
+                    <p>Rp{formatCurrency(data.hargaPerCabang[selectedCabang].totalHPP)}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="font-bold">Keuntungan</p>
+                    <p>Rp{formatCurrency(data.hargaPerCabang[selectedCabang].keuntungan)}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="font-bold">Harga Jual</p>
+                    <Input
+                      showRequired={false}
+                      type={"number"}
+                      width="w-1/2"
+                      value={data.hargaPerCabang[selectedCabang].hargaJual}
+                      onChange={(value) => handleHargaJualChange(selectedCabang, value)}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Branch Summary Section */}
+              <section className="px-5">
+                <p className="font-bold text-base mb-4">Ringkasan Harga Jual Seluruh Cabang</p>
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                  {Object.entries(data.hargaPerCabang).map(([cabangName, cabangData]) => (
+                    <div 
+                      key={cabangName} 
+                      className="border border-[#7E7E7E] bg-[#F9F9F9] rounded-2xl p-4"
+                    >
+                      <h3 className="text-primary mb-4 font-medium">Cabang {cabangName}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-gray-500 text-sm mb-1">Total HPP</p>
+                          <p className="font-medium">Rp{formatCurrency(cabangData.totalHPP)}</p>
                         </div>
+                        <div>
+                          <p className="text-gray-500 text-sm mb-1">Harga Jual</p>
+                          <p className="font-medium">Rp{formatCurrency(cabangData.hargaJual)}</p>
+                        </div>
+                      </div>
                     </div>
-                    </section>
+                  ))}
+                </div>
+              </section>
 
-                    <section className="">
-                        <div className="pt-5">
-                            <p className="font-bold">Packaging</p>
-                            <div className="pt-3">
-                            <Table
-                                headers={headers2}
-                                data={data.packaging.map((row, index) => ({
-                                No: index + 1,
-                                "Nama Packaging": (
-                                    <ButtonDropdown
-                                    showRequired={false}
-                                    label={row["Nama Packaging"]}
-                                    options={dataPackaging}
-                                    onSelect={(value) =>
-                                        handlePackagingChange("Nama Packaging", value, index)
-                                    }
-                                    />
-                                ),
-                                "Harga Satuan": `Rp${row["Harga Satuan"].toLocaleString(
-                                    "id-ID"
-                                )}`,
-                                Kuantitas: (
-                                    <Input
-                                    showRequired={false}
-                                    type={"number"}
-                                    value={row.Kuantitas}
-                                    onChange={(value) =>
-                                        handlePackagingChange("Kuantitas", value, index)
-                                    }
-                                    />
-                                ),
-                                "Total Biaya": `Rp${row["Total Biaya"].toLocaleString(
-                                    "id-ID"
-                                )}`,
-                                }))}
-                            />
-                            </div>
-                        </div>
-                        </section>
-
-                        {/* Section Total */}
-                        <section className="flex justify-end text-base p-5">
-                            <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
-                                <div className="flex justify-between">
-                                <p className="font-bold">Total HPP</p>
-                                <p>Rp{formatCurrency(data.info_barang["Total HPP"])}</p>
-                                </div>
-                                <div className="flex justify-between">
-                                <p className="font-bold">Keuntungan</p>
-                                <p>Rp{formatCurrency(data.info_barang.Keuntungan)}</p>
-                                </div>
-                                <div className="flex justify-between">
-                                <p className="font-bold">Harga Jual</p>
-                                <Input
-                                showRequired={false}
-                                    type={"number"}
-                                    width="w-1/2"
-                                    onChange={(value) =>
-                                    handleInfoBarangChange("Harga Jual", parseInt(value, 10))
-                                    }
-                                />
-                                </div>
-
-                                <div className="">
-                                    <Button label={'Simpan'} bgColor="bg-primary w-full" textColor="text-white" type="submit"/>
-                                </div>
-                            </div>
-                        </section>
-                </form>
-              </div>
-            </section>
-          </section>
-        </div>
-      </LayoutWithNav>
-    </>
+              {/* Action Buttons */}
+              <section className="p-5">
+                <div className="flex w-full justify-end gap-4">
+                  <Button 
+                    label={'Batal'} 
+                    bgColor="bg-white border border-secondary" 
+                    textColor="text-gray-600"
+                    className="border border-gray-300"
+                    onClick={() => {
+                      // Add your cancel logic here
+                    }}
+                  />
+                  <Button 
+                    label={'Simpan'} 
+                    bgColor="bg-primary" 
+                    textColor="text-white" 
+                    type="submit"
+                  />
+                </div>
+              </section>
+            </form>
+          </div>
+        </section>
+      </div>
+    </LayoutWithNav>
   );
 }

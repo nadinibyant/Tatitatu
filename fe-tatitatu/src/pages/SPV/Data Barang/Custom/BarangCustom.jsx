@@ -12,6 +12,7 @@ import AlertSuccess from "../../../../components/AlertSuccess";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
 import InputDropdown from "../../../../components/InputDropdown";
 import api from "../../../../utils/api";
+import Spinner from "../../../../components/Spinner";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
@@ -53,7 +54,7 @@ const fetchDataBarang = async () => {
                   id: item.barang_custom_id,
                   title: item.nama_barang,
                   price: `Rp${item.harga.toLocaleString('id-ID')}`,
-                  image: item.image || "https://via.placeholder.com/50",
+                  image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}` || "https://via.placeholder.com/50",
                   type: '',
                   category: item.kategori_barang_id
               };
@@ -283,7 +284,7 @@ const [data2, setData2] = useState({
           </section>
 
           <section className="mt-5 bg-white rounded-xl">
-            <div className="p-5">
+            <div className="p-1">
               <Gallery data={data} onEdit={handleEdit} onDelete={handleBtnDelete} onItemClick={handleDetail}/>
             </div>
           </section>
@@ -340,16 +341,6 @@ const [data2, setData2] = useState({
                     </div>
 
                     <div className="">
-                      <InputDropdown
-                        label="Kategori"
-                        options={categoryOptions}
-                        value={data2.info_barang.Kategori}
-                        onSelect={(value) => handleInfoBarangChange("Kategori", value)}
-                        required={true}
-                      />
-                    </div>
-
-                    <div className="">
                       <Input
                         label={"Jumlah Minimum Stok"}
                         type={"number"}
@@ -359,6 +350,16 @@ const [data2, setData2] = useState({
                         onChange={(value) =>
                           handleInfoBarangChange("Jumlah Minimum Stok", value)
                         }
+                      />
+                    </div>
+
+                    <div className="">
+                      <InputDropdown
+                        label="Kategori"
+                        options={categoryOptions}
+                        value={data2.info_barang.Kategori}
+                        onSelect={(value) => handleInfoBarangChange("Kategori", value)}
+                        required={true}
                       />
                     </div>
                   </div>
@@ -500,6 +501,8 @@ const [data2, setData2] = useState({
             </div>
           </div>
         )}
+
+        {isLoading && (<Spinner/>)}
 
         {/* modal delete */}
         {isModalDelete && (

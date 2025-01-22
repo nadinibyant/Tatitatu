@@ -15,7 +15,40 @@ export default function DataBarang(){
     const [isModalDelete, setModalDelete] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [data, setData] = useState([]);
+    const [data, setData] = useState([
+        {
+            id: 213123,
+            title: 'Gelang Barbie 123',
+            price: 10000,
+            image: 'https://via.placeholder.com/50',
+            type: 213123,
+            category: 'Gelang'
+        },
+        {
+            id: 213124,
+            title: 'Gelang Barbie 123',
+            price: 10000,
+            image: 'https://via.placeholder.com/50',
+            type: 213124,
+            category: 'Gelang'
+        },
+        {
+            id: 213125,
+            title: 'Gelang Barbie 123',
+            price: 10000,
+            image: 'https://via.placeholder.com/50',
+            type: 213125,
+            category: 'Cincin'
+        },
+        {
+            id: 213126,
+            title: 'Gelang Barbie 123',
+            price: 10000,
+            image: 'https://via.placeholder.com/50',
+            type: 213126,
+            category: 'Kalung'
+        }
+    ]);
 
     const [subMenus, setSubMenus] = useState([]);
 
@@ -51,7 +84,7 @@ export default function DataBarang(){
                       title: item.nama_barang,
                       price: `Rp${item.harga_jual.toLocaleString('id-ID')}`,
                       image: item.img || "https://via.placeholder.com/50",
-                      type: item.packaging.nama_packaging,
+                      type: item.barang_id,
                       category: item.jenis.jenis_barang
                   };
               });
@@ -140,7 +173,7 @@ export default function DataBarang(){
                 </section>
 
                 <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
+                    <div className="py-5 px-1">
                         <Gallery 
                             data={data} 
                             subMenus={subMenus} 

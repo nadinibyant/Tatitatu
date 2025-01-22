@@ -250,7 +250,7 @@ export default function CabangTerlaris(){
                 </section>
 
                 <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5 max-w-[1200px] mx-auto">
+                    <div className="p-5 mx-auto">
                         {/* Changed to grid layout for better responsiveness */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {/* keuntungan */}

@@ -67,16 +67,16 @@ export default function TambahPembelianStok() {
     };
 
     const handleSelectBayar = (selectedOption) => {
-        setSelectedBayar(selectedOption.id); 
-        if (selectedOption.id === 2) { 
-            setSelectMetode(dataMetode[1].id); 
+        setSelectedBayar(selectedOption.value); 
+        if (selectedOption.value === 2) { 
+            setSelectMetode(dataMetode[1].value); 
         } else {
-            setSelectMetode(dataMetode[0].id); 
+            setSelectMetode(dataMetode[0].value); 
         }
     };
     
     const handleSelectMetode = (selectedOption) => {
-        setSelectMetode(selectedOption.id);
+        setSelectMetode(selectedOption.value);
     };
 
     const breadcrumbItems = [
@@ -121,6 +121,24 @@ export default function TambahPembelianStok() {
                 { id: 8, image: "https://via.placeholder.com/150", code: "MMM460", name: "Kalung Perak", price: 45000, kategori: "Kalung" },
             ],
         },
+        {
+            jenis: "Barang Custom",
+            kategori: ["Semua", "Kalung", "Topi", "Tas"],
+            items: [
+                { id: 5, image: "https://via.placeholder.com/150", code: "MMM457", name: "Kalung Emas", price: 50000, kategori: "Kalung" },
+                { id: 6, image: "https://via.placeholder.com/150", code: "MMM458", name: "Topi Keren", price: 30000, kategori: "Topi" },
+                { id: 7, image: "https://via.placeholder.com/150", code: "MMM459", name: "Tas Ransel", price: 100000, kategori: "Tas" },
+                { id: 8, image: "https://via.placeholder.com/150", code: "MMM460", name: "Kalung Perak", price: 45000, kategori: "Kalung" },
+            ],
+        },
+        {
+            jenis: "Packaging",
+            kategori: ["Semua", "Kalung", "Topi", "Tas"],
+            items: [
+                { id: 9, image: "https://via.placeholder.com/150", code: "MMM457", name: "Zipper", price: 20000, kategori: "Kalung" },
+                { id: 10, image: "https://via.placeholder.com/150", code: "MMM458", name: "Plastik", price: 30000, kategori: "Topi" },
+            ],
+        }
     ];
 
     
@@ -170,6 +188,7 @@ const handleModalSubmit = () => {
         const updatedCabang = [...dataCabang];
         const newItems = selectedItems.map((item) => {
             const totalBiaya = parseInt(item.price) * item.count;
+            const dropdownValue = item.id;
             return {
                 id: item.id,
                 No: updatedCabang[activeCabang].data.length + 1,
@@ -186,160 +205,44 @@ const handleModalSubmit = () => {
                         options={dataBarang.reduce((allItems, data) => {
                             const items = data.items.map(item => ({
                                 label: item.name,
-                                value: item.price,
+                                value: item.id,
                                 jenis: data.jenis,
                                 kategori: item.kategori,
                                 image: item.image,
-                                code: item.code,
-                                id: item.id
+                                code: item.code
                             }));
                             return [...allItems, ...items];
                         }, [])}
-                        value={item.name}
+                        value={dropdownValue}
                         onSelect={(newSelection) => {
-                            const updatedDataCabang = [...dataCabang];
-                            const itemIndex = updatedDataCabang[activeCabang].data.findIndex(
-                                (data) => data.id === item.id
-                            );
-
-                            if (itemIndex !== -1) {
-                                let selectedItem = null;
-                                let jenisBarang = '';
-                                
-                                for (const category of dataBarang) {
-                                    const found = category.items.find(i => i.name === newSelection.label);
-                                    if (found) {
-                                        selectedItem = found;
-                                        jenisBarang = category.jenis;
-                                        break;
-                                    }
+                            let selectedItem = null;
+                            let jenisBarang = '';
+                            
+                            for (const category of dataBarang) {
+                                const found = category.items.find(i => i.id === newSelection.value);
+                                if (found) {
+                                    selectedItem = found;
+                                    jenisBarang = category.jenis;
+                                    break;
                                 }
+                            }
 
-                                if (selectedItem) {
-                                    const createNewOnSelect = (itemId) => (nextSelection) => {
-                                        const newUpdatedDataCabang = [...dataCabang];
-                                        const newItemIndex = newUpdatedDataCabang[activeCabang].data.findIndex(
-                                            (data) => data.id === itemId
-                                        );
+                            if (selectedItem) {
+                                const updatedDataCabang = [...dataCabang];
+                                const itemIndex = updatedDataCabang[activeCabang].data.findIndex(
+                                    (data) => data.id === item.id
+                                );
 
-                                        if (newItemIndex !== -1) {
-                                            let newSelectedItem = null;
-                                            let newJenisBarang = '';
-                                            const currentQuantity = newUpdatedDataCabang[activeCabang].data[newItemIndex].quantity || 0;
-                                            
-                                            for (const category of dataBarang) {
-                                                const found = category.items.find(i => i.name === nextSelection.label);
-                                                if (found) {
-                                                    newSelectedItem = found;
-                                                    newJenisBarang = category.jenis;
-                                                    break;
-                                                }
-                                            }
-
-                                            if (newSelectedItem) {
-                                                const newTotalBiaya = newSelectedItem.price * currentQuantity;
-                                                newUpdatedDataCabang[activeCabang].data[newItemIndex] = {
-                                                    ...newUpdatedDataCabang[activeCabang].data[newItemIndex],
-                                                    "Nama Produk": (
-                                                        <InputDropdown
-                                                            showRequired={false}
-                                                            options={dataBarang.reduce((allItems, data) => {
-                                                                const items = data.items.map(item => ({
-                                                                    label: item.name,
-                                                                    value: item.price,
-                                                                    jenis: data.jenis,
-                                                                    kategori: item.kategori,
-                                                                    image: item.image,
-                                                                    code: item.code,
-                                                                    id: item.id
-                                                                }));
-                                                                return [...allItems, ...items];
-                                                            }, [])}
-                                                            value={nextSelection.label}
-                                                            onSelect={createNewOnSelect(itemId)}
-                                                        />
-                                                    ),
-                                                    "Jenis Barang": newJenisBarang,
-                                                    "Harga Satuan": `Rp${newSelectedItem.price.toLocaleString()}`,
-                                                    "Kuantitas": (
-                                                        <Input
-                                                            showRequired={false}
-                                                            type="number"
-                                                            value={currentQuantity}
-                                                            onChange={(newCount) => {
-                                                                const updatedCabangCopy = [...dataCabang];
-                                                                const rowIndex = newItemIndex;
-                                                                if (rowIndex !== -1) {
-                                                                    updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
-                                                                    const newTotal = newSelectedItem.price * Number(newCount);
-                                                                    updatedCabangCopy[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
-                                                                    updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
-                                                                    setDataCabang(updatedCabangCopy);
-                                                                }
-                                                            }}
-                                                        />
-                                                    ),
-                                                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                                                    rawTotalBiaya: newTotalBiaya, // Menyimpan nilai numerik
-                                                    name: nextSelection.label,
-                                                    currentPrice: newSelectedItem.price,
-                                                    quantity: currentQuantity
-                                                };
-
-                                                setDataCabang(newUpdatedDataCabang);
-                                            }
-                                        }
-                                    };
-
+                                if (itemIndex !== -1) {
                                     const currentQuantity = updatedDataCabang[activeCabang].data[itemIndex].quantity || 0;
                                     const newTotalBiaya = selectedItem.price * currentQuantity;
                                     
                                     updatedDataCabang[activeCabang].data[itemIndex] = {
                                         ...updatedDataCabang[activeCabang].data[itemIndex],
-                                        "Nama Produk": (
-                                            <InputDropdown
-                                                showRequired={false}
-                                                options={dataBarang.reduce((allItems, data) => {
-                                                    const items = data.items.map(item => ({
-                                                        label: item.name,
-                                                        value: item.price,
-                                                        jenis: data.jenis,
-                                                        kategori: item.kategori,
-                                                        image: item.image,
-                                                        code: item.code,
-                                                        id: item.id
-                                                    }));
-                                                    return [...allItems, ...items];
-                                                }, [])}
-                                                value={newSelection.label}
-                                                onSelect={createNewOnSelect(item.id)}
-                                            />
-                                        ),
                                         "Jenis Barang": jenisBarang,
                                         "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
-                                        "Kuantitas": (
-                                            <Input
-                                                showRequired={false}
-                                                type="number"
-                                                value={currentQuantity}
-                                                onChange={(newCount) => {
-                                                    const updatedCabangCopy = [...dataCabang];
-                                                    const rowIndex = itemIndex;
-                                                    if (rowIndex !== -1) {
-                                                        updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
-                                                        const newTotal = selectedItem.price * Number(newCount);
-                                                        updatedCabangCopy[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
-                                                        updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
-                                                        setDataCabang(updatedCabangCopy);
-                                                    }
-                                                }}
-                                            />
-                                        ),
+                                        rawTotalBiaya: newTotalBiaya,
                                         "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                                        rawTotalBiaya: newTotalBiaya, // Menyimpan nilai numerik
-                                        name: newSelection.label,
-                                        currentPrice: selectedItem.price,
-                                        quantity: currentQuantity
                                     };
 
                                     setDataCabang(updatedDataCabang);
@@ -359,12 +262,10 @@ const handleModalSubmit = () => {
                         value={item.count}
                         onChange={(newCount) => {
                             const updatedCabangCopy = [...dataCabang];
-                            // Cari item berdasarkan id bukan berdasarkan index
                             const itemIndex = updatedCabangCopy[activeCabang].data.findIndex(
                                 (row) => row.id === item.id
                             );
 
-                            // Kalau ini item baru yang belum ada di array
                             if (itemIndex === -1) {
                                 const newTotal = item.price * Number(newCount);
                                 const updatedItem = {
@@ -415,18 +316,18 @@ const handleModalSubmit = () => {
     };
 
     const dataBayar = [
-        { id: 1, label: "Cash" },
-        { id: 2, label: "Non-Cash" }
+        { id: 1, label: "Cash", value:1},
+        { id: 2, label: "Non-Cash", value: 2}
     ]
 
     const dataMetode = [
-        { id: 1, label: "-" },
-        { id: 2, label: "Mandiri" },
-        { id: 3, label: "Bank Nagari" }
+        { id: 1, label: "-", value:1 },
+        { id: 2, label: "Mandiri", value:2 },
+        { id: 3, label: "Bank Nagari", value:3 }
     ]
 
-    const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
-    const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
+    // const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
+    // const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
 
     const subtotal = calculateSubtotal();
     const totalPenjualan = calculateTotalPenjualan(subtotal);
@@ -461,10 +362,10 @@ const handleModalSubmit = () => {
                             <section>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <Input label={"Nomor"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
-                                    <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                    <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
+                                    <Input label={"Tanggal dan Waktu"} type1={"datetime-local"} value={tanggal} onChange={(e) => setTanggal(e)} />
+                                    <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectBayar} onSelect={handleSelectBayar} />
                                     <div className="md:col-span-3 md:w-1/3">
-                                        <InputDropdown label={"Metode Pembayaran"} disabled={isMetodeDisabled} options={dataMetode} value={selectedMetodeLabel} onSelect={handleSelectMetode} />
+                                        <InputDropdown label={"Metode Pembayaran"} disabled={isMetodeDisabled} options={dataMetode} value={selectMetode} onSelect={handleSelectMetode} />
                                     </div>
                                 </div>
                             </section>
@@ -634,7 +535,7 @@ const handleModalSubmit = () => {
 
                                     {/* Tabs for Barang Types */}
                                     <div className="flex border-b border-gray-300 mb-4">
-                                        {["Barang Handmade", "Barang Non-Handmade"].map((jenis) => (
+                                        {["Barang Handmade", "Barang Non-Handmade", "Barang Custom", "Packaging"].map((jenis) => (
                                             <button
                                                 key={jenis}
                                                 onClick={() => setSelectedJenis(jenis)}

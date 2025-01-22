@@ -8,29 +8,32 @@ import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 
 // Constants
-const PAYMENT_METHODS = {
-  CASH: 1,
-  NON_CASH: 2
-};
 
-const BANK_OPTIONS = {
-  NONE: 1,
-  MANDIRI: 2,
-  BANK_NAGARI: 3
-};
 
 export default function EditPenjualanNon() {
-    // Data constants
-    const dataMetode = [
-        { id: BANK_OPTIONS.NONE, label: "-" },
-        { id: BANK_OPTIONS.MANDIRI, label: "Mandiri" },
-        { id: BANK_OPTIONS.BANK_NAGARI, label: "Bank Nagari" }
-    ];
+    const [packagingData, setPackagingData] = useState([]);
+    const PAYMENT_METHODS = {
+        CASH: 1,
+        NON_CASH: 2
+      };
+      
+      const BANK_OPTIONS = {
+        NONE: 1,
+        MANDIRI: 2,
+        BANK_NAGARI: 3
+      };
 
     const dataBayar = [
-        { id: PAYMENT_METHODS.CASH, label: "Cash" },
-        { id: PAYMENT_METHODS.NON_CASH, label: "Non-Cash" }
+        { id: PAYMENT_METHODS.CASH, label: "Cash", value: PAYMENT_METHODS.CASH },
+        { id: PAYMENT_METHODS.NON_CASH, label: "Non-Cash", value: PAYMENT_METHODS.NON_CASH }
     ];
+    
+    const dataMetode = [
+        { id: BANK_OPTIONS.NONE, label: "-", value: BANK_OPTIONS.NONE },
+        { id: BANK_OPTIONS.MANDIRI, label: "Mandiri", value: BANK_OPTIONS.MANDIRI },
+        { id: BANK_OPTIONS.BANK_NAGARI, label: "Bank Nagari", value: BANK_OPTIONS.BANK_NAGARI }
+    ];
+    
 
     const dataBarang = [
         {
@@ -55,10 +58,42 @@ export default function EditPenjualanNon() {
         },
     ];
 
+    const dataPackaging = [
+        { 
+            id: 1, 
+            name: "Paper Bag Small", 
+            image: "https://via.placeholder.com/50",
+        },
+        { 
+            id: 2, 
+            name: "Paper Bag Medium", 
+            image: "https://via.placeholder.com/50",
+        }
+    ];
+
+    const packagingHeaders = [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
+        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
+        { label: "Aksi", key: "Aksi", align: "text-left" }
+    ];
+
+    const formatToDateTimeLocal = (dateStr) => {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     // Initial data for editing
     const initialData = {
         nomor: "SO123",
-        tanggal: "2024-01-05",
+        tanggal: formatToDateTimeLocal("2024-01-05 14:30:00"),
         namaPembeli: "John Doe",
         cashNonCash: PAYMENT_METHODS.NON_CASH,
         metodePembayaran: BANK_OPTIONS.MANDIRI,
@@ -66,6 +101,10 @@ export default function EditPenjualanNon() {
             { id: 1, productId: 1, quantity: 10 },
             { id: 2, productId: 5, quantity: 5 }
         ],
+        packaging: { 
+            productId: 1,
+            quantity: 1
+        },
         catatan: "Catatan pesanan default",
         diskonPersen: 30,
         pajak: 1000 
@@ -97,6 +136,16 @@ export default function EditPenjualanNon() {
         setTotalHarga(newTotalHarga);
     }, [tableData]);
 
+    useEffect(() => {
+        if (initialData.packaging) {
+            const packaging = dataPackaging.find(p => p.id === initialData.packaging.productId);
+            if (packaging) {
+                const packagingRow = createPackagingRow(0, packaging, initialData.packaging.quantity);
+                setPackagingData([packagingRow]);
+            }
+        }
+    }, []);
+
     // Memoized values
     const allProducts = useMemo(() => {
         return dataBarang.reduce((acc, category) => {
@@ -108,13 +157,13 @@ export default function EditPenjualanNon() {
         }, []);
     }, []);
 
-    const selectedMetodeLabel = useMemo(() => {
-        return dataMetode.find(option => option.id === selectMetode)?.label || "";
-    }, [selectMetode]);
+    // const selectedMetodeLabel = useMemo(() => {
+    //     return dataMetode.find(option => option.id === selectMetode)?.label || "";
+    // }, [selectMetode]);
 
-    const selectedBayarLabel = useMemo(() => {
-        return dataBayar.find(option => option.id === selectBayar)?.label || "";
-    }, [selectBayar]);
+    // const selectedBayarLabel = useMemo(() => {
+    //     return dataBayar.find(option => option.id === selectBayar)?.label || "";
+    // }, [selectBayar]);
 
     // Table headers configuration
     const headers = [
@@ -123,7 +172,7 @@ export default function EditPenjualanNon() {
         { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
         { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
+        { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px'},
         { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
@@ -163,7 +212,7 @@ export default function EditPenjualanNon() {
     const createTableRow = (index, product, quantity = 0, jenisBarang) => {
         quantity = Math.max(0, Number(quantity) || 0);
         const totalBiaya = product.price * quantity;
-
+    
         return {
             No: index + 1,
             "Foto Produk": (
@@ -176,11 +225,11 @@ export default function EditPenjualanNon() {
             "Nama Produk": (
                 <InputDropdown
                     showRequired={false}
-                    value={product.name}
+                    value={product.id}
                     options={allProducts.map(p => ({
                         id: p.id,
                         label: p.name,
-                        value: p.price
+                        value: p.id
                     }))}
                     onSelect={(selected) => handleProductSelect(index, selected)}
                 />
@@ -213,6 +262,87 @@ export default function EditPenjualanNon() {
         };
     };
 
+    const createPackagingRow = (index, packaging, quantity = 0) => {
+        return {
+            No: index + 1,
+            "Foto Produk": (
+                <img
+                    src={packaging.image}
+                    alt={packaging.name}
+                    className="w-16 h-16 object-cover rounded-md"
+                />
+            ),
+            "Nama Packaging": (
+                <InputDropdown
+                    showRequired={false}
+                    value={packaging.id}
+                    options={dataPackaging.map(p => ({
+                        id: p.id,
+                        label: p.name,
+                        value: p.id
+                    }))}
+                    onSelect={(selected) => handlePackagingSelect(index, selected)}
+                />
+            ),
+            "Kuantitas": (
+                <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(value) => handlePackagingQuantityChange(index, value)}
+                    showRequired={false}
+                    min={0}
+                />
+            ),
+            "Aksi": (
+                <button 
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handlePackagingDelete()}
+                >
+                    Hapus
+                </button>
+            ),
+            packagingName: packaging.name,
+            quantity: quantity,
+            packagingId: packaging.id
+        };
+    };
+
+    const handleAddPackaging = () => {
+        if (packagingData.length === 0) {
+            const defaultPackaging = dataPackaging[0];
+            const newRow = createPackagingRow(0, defaultPackaging, 1);
+            setPackagingData([newRow]);
+        }
+    };
+    
+    const handlePackagingSelect = (rowIndex, selectedPackaging) => {
+        const packaging = dataPackaging.find(p => p.id === selectedPackaging.value);
+        if (!packaging) return;
+    
+        setPackagingData(prevData => {
+            const updatedData = [...prevData];
+            const currentQuantity = updatedData[rowIndex]?.quantity || 1;
+            updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, currentQuantity);
+            return updatedData;
+        });
+    };
+    
+    const handlePackagingQuantityChange = (rowIndex, newQuantity) => {
+        const quantity = Math.max(0, Number(newQuantity) || 0);
+        
+        setPackagingData(prevData => {
+            const updatedData = [...prevData];
+            const currentRow = {...updatedData[rowIndex]};
+            const packaging = dataPackaging.find(p => p.id === currentRow.packagingId);
+            updatedData[rowIndex] = createPackagingRow(rowIndex, packaging, quantity);
+            return updatedData;
+        });
+    };
+    
+    const handlePackagingDelete = () => {
+        setPackagingData([]);
+    };
+
     // Event handlers
     const handleInputChange = (field) => (value) => {
         setFormData(prev => ({
@@ -221,23 +351,25 @@ export default function EditPenjualanNon() {
         }));
     };
 
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
+    const handleSelectMetode = (selectedOption) => {
+        setSelectMetode(selectedOption.value);
     };
 
     const handleSelectBayar = (selectedOption) => {
-        setSelectBayar(selectedOption.id);
-        if (selectedOption.id === PAYMENT_METHODS.NON_CASH) {
+        setSelectBayar(selectedOption.value);
+        if (selectedOption.value === PAYMENT_METHODS.NON_CASH) {
             setSelectMetode(BANK_OPTIONS.MANDIRI);
+            setIsMetodeDisabled(false);
         } else {
             setSelectMetode(BANK_OPTIONS.NONE);
+            setIsMetodeDisabled(true);
         }
     };
 
     const handleProductSelect = (rowIndex, selectedProduct) => {
-        const product = allProducts.find(p => p.name === selectedProduct.label);
+        const product = allProducts.find(p => p.id === selectedProduct.value);
         if (!product) return;
-
+    
         const categoryData = dataBarang.find(category => 
             category.items.some(item => item.id === product.id)
         );
@@ -245,52 +377,8 @@ export default function EditPenjualanNon() {
         setTableData(prevTableData => {
             const updatedData = [...prevTableData];
             const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-            const totalBiaya = product.price * currentQuantity;
-
-            updatedData[rowIndex] = {
-                ...updatedData[rowIndex],
-                productId: product.id,
-                productName: product.name,
-                productPrice: product.price,
-                "Jenis Barang": categoryData.jenis,
-                "Nama Produk": (
-                    <InputDropdown
-                        showRequired={false}
-                        value={product.name}
-                        options={allProducts.map(p => ({
-                            id: p.id,
-                            label: p.name,
-                            value: p.price
-                        }))}
-                        onSelect={(selected) => handleProductSelect(rowIndex, selected)}
-                    />
-                ),
-                "Foto Produk": (
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded-md"
-                    />
-                ),
-                "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-                quantity: currentQuantity,
-                numericTotalBiaya: totalBiaya,
-                "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-                "Kuantitas": (
-                    <Input
-                        type="number"
-                        value={currentQuantity}
-                        onChange={(value) => handleQuantityChange(rowIndex, value)}
-                        showRequired={false}
-                        min={0}
-                    />
-                )
-            };
-            
-            return updatedData.map((row, index) => ({
-                ...row,
-                No: index + 1
-            }));
+            updatedData[rowIndex] = createTableRow(rowIndex, product, currentQuantity, categoryData.jenis);
+            return updatedData.map((row, index) => ({...row, No: index + 1}));
         });
     };
 
@@ -369,6 +457,10 @@ export default function EditPenjualanNon() {
                     productId: row.productId,
                     quantity: row.quantity
                 })),
+                packaging: packagingData.length > 0 ? {
+                    productId: packagingData[0].packagingId,
+                    quantity: packagingData[0].quantity
+                } : null,
                 catatan: catatan,
                 subtotal: subtotal,
                 diskonPersen: diskonPersen,
@@ -443,7 +535,7 @@ export default function EditPenjualanNon() {
                             <InputDropdown 
                                 label="Cash/Non-Cash" 
                                 options={dataBayar} 
-                                value={selectedBayarLabel} 
+                                value={selectBayar} 
                                 onSelect={handleSelectBayar}
                                 required={true}
                             />
@@ -452,14 +544,14 @@ export default function EditPenjualanNon() {
                                 label="Metode Pembayaran" 
                                 disabled={isMetodeDisabled} 
                                 options={dataMetode} 
-                                value={selectedMetodeLabel} 
+                                value={selectMetode} 
                                 onSelect={handleSelectMetode}
                                 required={!isMetodeDisabled}
                             />
                         </div>
 
                         <div className="mt-10">
-                            <h2 className="text-lg font-semibold mb-4">List Produk</h2>
+                            <h2 className="text-lg font-semibold mb-4">Rincian Produk</h2>
                             <Table
                                 headers={headers}
                                 data={tableData}
@@ -476,6 +568,28 @@ export default function EditPenjualanNon() {
                                 </svg>
                                 Tambah Baris
                             </button>
+
+                            <div className="mt-10">
+                                <h2 className="text-lg font-semibold mb-4">Packaging</h2>
+                                <Table
+                                    headers={packagingHeaders}
+                                    data={packagingData}
+                                    text_header="text-primary"
+                                    hasSearch={false}
+                                    hasPagination={false}
+                                />
+                                {packagingData.length === 0 && (
+                                    <button 
+                                        onClick={handleAddPackaging}
+                                        className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                        </svg>
+                                        Tambah Packaging
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                             {/* Left Column - Notes */}
