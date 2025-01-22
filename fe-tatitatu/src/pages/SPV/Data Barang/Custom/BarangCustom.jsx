@@ -13,6 +13,7 @@ import LayoutWithNav from "../../../../components/LayoutWithNav";
 import InputDropdown from "../../../../components/InputDropdown";
 import api from "../../../../utils/api";
 import Spinner from "../../../../components/Spinner";
+import AlertError from "../../../../components/AlertError";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
@@ -24,24 +25,10 @@ export default function BarangCustom() {
   const [isModalDetail, setModalDetail] = useState(false)
   const [id, setId] = useState("");
   const [isLoading, setIsLoading] = useState(false)
-  const [data,setData] = useState([
-    // {
-    //     id: 1,
-    //     title: "Gelang Barbie 123",
-    //     price: "Rp10.000",
-    //     image: "https://via.placeholder.com/50",
-    //     type: "Zipper",
-    //     kategori: 'Aksesoris'
-    //   },
-    //   {
-    //     id: 2,
-    //     title: "Cincin Diamond",
-    //     price: "Rp15.000",
-    //     image: "https://via.placeholder.com/50",
-    //     type: "Box",
-    //     kategori: 'Aksesoris'
-    //   },
-])
+  const [isAlertSUcc, setAlertSucc] = useState(false)
+  const [data,setData] = useState([])
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
 const fetchDataBarang = async () => {
   try {
@@ -49,16 +36,17 @@ const fetchDataBarang = async () => {
       const response = await api.get('/barang-custom');
       
       if (response.data.success) {
-          const transformedData = response.data.data.map(item => {
-              return {
-                  id: item.barang_custom_id,
-                  title: item.nama_barang,
-                  price: `Rp${item.harga.toLocaleString('id-ID')}`,
-                  image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}` || "https://via.placeholder.com/50",
-                  type: '',
-                  category: item.kategori_barang_id
-              };
-          });
+          const transformedData = response.data.data.map(item => ({
+            id: item.barang_custom_id,
+            title: item.nama_barang,
+            price: `Rp${item.harga.toLocaleString('id-ID')}`,
+            image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}` || "https://via.placeholder.com/50",
+            type: item.barang_custom_id,
+            category: item.kategori_barang_id,
+            jumlah_minimum_stok: item.jumlah_minimum_stok,
+            isi: item.isi,
+            harga_satuan: item.harga_satuan
+        }));
           
           setData(transformedData);
       }
@@ -69,18 +57,7 @@ const fetchDataBarang = async () => {
   }
 };
 
-useEffect(() => {
-  fetchDataBarang(); 
-}, []);
-
-const categoryOptions = [
-  "Aksesoris",
-  "Perhiasan",
-  "Mainan",
-  "Dekorasi",
-  "Pakaian",
-  "Lainnya"
-];
+const [categoryOptions, setCategoryOptions] = useState([]);
 
 const [data2, setData2] = useState({
   info_barang: {
@@ -99,25 +76,46 @@ const [data2, setData2] = useState({
   ],
 });
 
-  const handleAddBtn = () => {
-    setModalMode("add");
-    setModal(true);
-    setData2({
-      info_barang: {
-        Nomor: "",
-        "Nama Barang": "",
-        "Jumlah Minimum Stok": "",
-        Foto: null,
+const fetchCategories = async () => {
+  try {
+    const response = await api.get('/kategori-barang');
+    if (response.data.success) {
+      const options = response.data.data.map(item => ({
+        value: item.kategori_barang_id.toString(),
+        label: item.nama_kategori_barang
+      }));
+      setCategoryOptions(options);
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  }
+};
+
+useEffect(() => {
+  fetchCategories();
+  fetchDataBarang(); 
+}, []);
+
+const handleAddBtn = () => {
+  setModalMode("add");
+  setModal(true);
+  setData2({
+    info_barang: {
+      Nomor: "",
+      "Nama Barang": "",
+      "Jumlah Minimum Stok": "",
+      Kategori: "",
+      Foto: null,
+    },
+    rincian_biaya: [
+      {
+        Harga: "",
+        Isi: "",
+        HargaSatuan: "",
       },
-      rincian_biaya: [
-        {
-          Harga: "",
-          Isi: "",
-          HargaSatuan: "",
-        },
-      ],
-    });
-  };
+    ],
+  });
+};
 
   const handleEdit = (itemId) => {
     setModalMode("edit");
@@ -125,20 +123,21 @@ const [data2, setData2] = useState({
     setModal(true);
     
     const itemToEdit = data.find(item => item.id === itemId.id);
+    const priceNumber = parseInt(itemToEdit.price.replace(/\D/g, ''));
     
     setData2({
       info_barang: {
-        Nomor: "123",
+        Nomor: itemToEdit.id.toString(),
         "Nama Barang": itemToEdit.title,
-        "Jumlah Minimum Stok": 12,
-        Kategori: itemToEdit.kategori, 
+        "Jumlah Minimum Stok": itemToEdit.jumlah_minimum_stok,
+        Kategori: itemToEdit.category,
         Foto: itemToEdit.image,
       },
       rincian_biaya: [
         {
-          Harga: 1000,
-          Isi: 20,
-          HargaSatuan: 50,
+          Harga: priceNumber,
+          Isi: itemToEdit.isi,
+          HargaSatuan: itemToEdit.harga_satuan,
         },
       ],
     });
@@ -183,25 +182,53 @@ const [data2, setData2] = useState({
     return amount.toLocaleString('id-ID', {});
   };
 
-  // console.log(data2)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modalMode === "add") {
-      console.log("Add item", data2);
-      // const response = await api.post('/barang-custom', {
-      //   nama_barang: data2.info_barang["Nama Barang"],
-      //   jumlah_minimum_stok: data2.info_barang["Jumlah Minimum Stok"],
-      //   harga: data2.info_barang
-      // })
-      setModal(false);
-    } else if (modalMode === "edit") {
-      console.log("Edit item with id", id, data2);
-      setModal(false);
+  
+    if (modalMode === "add" && !data2.info_barang.Foto) {
+      setErrorMessage('Silakan upload foto barang');
+      setErrorAlert(true);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      if (modalMode === "add") {
+        formData.append('image', data2.info_barang.Foto);
+      } else if (modalMode === "edit" && data2.info_barang.Foto instanceof File) {
+        formData.append('image', data2.info_barang.Foto);
+      }
+      
+      formData.append('kategori_barang_id', data2.info_barang.Kategori);
+      formData.append('nama_barang', data2.info_barang["Nama Barang"]);
+      formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
+      formData.append('harga', data2.rincian_biaya[0].Harga);
+      formData.append('isi', data2.rincian_biaya[0].Isi);
+      formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+  
+      const response = modalMode === "add" 
+        ? await api.post('/barang-custom', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        : await api.put(`/barang-custom/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+  
+      if (response.data.success) {
+        setAlertSucc(true);
+        setModal(false);
+        fetchDataBarang();
+      }
+    } catch (error) {
+      setErrorMessage('Terjadi kesalahan saat menyimpan data', error);
+      setErrorAlert(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  console.log(data2)
 
   const [selectedId, setSelectedId] = useState(null);
   
@@ -210,10 +237,21 @@ const [data2, setData2] = useState({
     setModalDelete(true);
   };
   
-  const handleDelete = () => {
-    setData(prevData => prevData.filter(item => item.id !== selectedId));
-    setModalSucc(true);
-    setModalDelete(false);
+  const handleDelete = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.delete(`/barang-custom/${selectedId}`);
+      
+      if (response.data.success) {
+        await fetchDataBarang();
+        setModalSucc(true);
+        setModalDelete(false);
+      }
+    } catch (error) {
+      console.error('Error deleting data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleBtnDelCancel = () => {
@@ -226,25 +264,31 @@ const [data2, setData2] = useState({
     setModalSucc(false);
   };
 
-  const handleDetail = (id) => {
-    setId(id.id)
-    setModalDetail(true)
+  const handleDetail = (itemId) => {
+    setId(itemId.id);
+    setModalDetail(true);
+    
+    const itemToShow = data.find(item => item.id === itemId.id);
+    const priceNumber = parseInt(itemToShow.price.replace(/\D/g, ''));
+    
     setData2({
       info_barang: {
-        Nomor: "123",
-        "Nama Barang":  "Barbie",
-        "Jumlah Minimum Stok": 12, 
-        Foto: "https://via.placeholder.com/50",
+        Nomor: itemToShow.id.toString(),
+        "Nama Barang": itemToShow.title,
+        "Jumlah Minimum Stok": itemToShow.jumlah_minimum_stok,
+        Kategori: itemToShow.category,
+        Foto: itemToShow.image,
       },
       rincian_biaya: [
         {
-          Harga: 1000,
-          Isi: 20, 
-          HargaSatuan: 50,
+          Harga: priceNumber,
+          Isi: itemToShow.isi,
+          HargaSatuan: itemToShow.harga_satuan,
         },
       ],
     });
   }
+
   return (
     <>
       <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -309,13 +353,12 @@ const [data2, setData2] = useState({
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div>
-                    <div className="">
-                      <p className="pb-5 font-bold">Foto Barang</p>
+                    <div className="flex flex-wrap gap-4">
                       <FileInput
                         label={"Foto Barang"}
                         width="w-1/3"
                         onFileChange={(file) => handleInfoBarangChange("Foto", file)}
-                        defaultValue={data2.info_barang.Foto}
+                        defaultValue={modalMode === "edit" ? data2.info_barang.Foto : null}
                       />
                     </div>
                   </div>
@@ -357,8 +400,10 @@ const [data2, setData2] = useState({
                       <InputDropdown
                         label="Kategori"
                         options={categoryOptions}
-                        value={data2.info_barang.Kategori}
-                        onSelect={(value) => handleInfoBarangChange("Kategori", value)}
+                        value={data2.info_barang.Kategori} 
+                        onSelect={(selectedValue) => handleInfoBarangChange("Kategori", selectedValue)}
+                        onChange={(e) => handleInfoBarangChange("Kategori", e.target.value)}
+                        name="kategori"
                         required={true}
                       />
                     </div>
@@ -513,8 +558,10 @@ const [data2, setData2] = useState({
             cancelLabel="Kembali"
             onConfirm={handleDelete}
             onCancel={handleBtnDelCancel}
+            open={isModalDelete}
+            onClose={() => setModalDelete(false)}
             />
-        )}
+        )} 
 
         {/* modal success */}
         {isModalSucc&& (
@@ -525,6 +572,24 @@ const [data2, setData2] = useState({
             onConfirm={handleConfirmSucc}
             />
         )}
+
+        {isAlertSUcc&& (
+            <AlertSuccess
+            title="Berhasil!!"
+            description="Data berhasil ditambahkan/diperbaharui"
+            confirmLabel="Ok"
+            onConfirm={handleConfirmSucc}
+            />
+        )}
+
+        {isErrorAlert && (
+            <AlertError
+            title="Gagal!!"
+            description={errorMessage}
+            confirmLabel="Ok"
+            onConfirm={() => setErrorAlert(false)}
+          />
+        )}       
       </LayoutWithNav>
     </>
   );

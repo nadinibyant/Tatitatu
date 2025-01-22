@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
-const FileInput = ({ label, onFileChange, width='sm:w-1/6 w-1/3' }) => {
-  const [preview, setPreview] = useState(null);
+const FileInput = ({ label, onFileChange, width='sm:w-1/6 w-1/3', defaultValue }) => {
+  const [preview, setPreview] = useState(defaultValue || null);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
