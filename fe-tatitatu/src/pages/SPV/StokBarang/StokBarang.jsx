@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
@@ -7,6 +7,7 @@ import ButtonDropdown from "../../../components/ButtonDropdown";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
 import { X } from "lucide-react";
+import api from "../../../utils/api";
 
 export default function StokBarang() {
     const headers = [
@@ -24,6 +25,50 @@ export default function StokBarang() {
     const [selectedStore, setSelectedStore] = useState("Semua");
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
+    const [kategoriOptions, setKategoriOptions] = useState([
+        { label: "Semua", value: "Semua" }
+    ]);
+    const [jenisOptions, setJenisOptions] = useState([
+        { label: "Semua", value: "Semua" }
+    ]);
+
+    const fetchFilterOptions = async () => {
+        if (isAdminGudang) {
+          try {
+            const [jenisResponse, kategoriResponse] = await Promise.all([
+              api.get('/jenis-barang-gudang'),
+              api.get('/kategori-barang-gudang')
+            ]);
+       
+            if (jenisResponse.data.success) {
+              const jenisOpts = jenisResponse.data.data.map(item => ({
+                label: item.nama_jenis_barang,
+                value: item.nama_jenis_barang
+              }));
+              setJenisOptions([{ label: "Semua", value: "Semua" }, ...jenisOpts]);
+            }
+       
+            if (kategoriResponse.data.success) {
+              const kategoriOpts = kategoriResponse.data.data.map(item => ({
+                label: item.nama_kategori_barang,
+                value: item.nama_kategori_barang
+              }));
+              setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
+            }
+          } catch (error) {
+            console.error('Error fetching filter options:', error);
+          }
+        }
+       };
+       
+       useEffect(() => {
+        if (isAdminGudang) {
+          fetchFilterOptions();
+        }
+       }, [isAdminGudang]);
+
 
     const dataCabang = [
         { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
@@ -84,28 +129,28 @@ export default function StokBarang() {
 
     const filterFields = [
         {
-            label: "Jenis",
-            key: "Jenis",
-            options: [
-                { label: "Semua", value: "Semua" },
-                { label: "Handmade", value: "Handmade" },
-                { label: "Non-Handmade", value: "Non-Handmade" },
-                { label: "Custom", value: "Custom" },
-                { label: "Packaging", value: "Packaging" },
-            ]
+          label: "Jenis",
+          key: "Jenis", 
+          options: isAdminGudang ? jenisOptions : [
+            { label: "Semua", value: "Semua" },
+            { label: "Handmade", value: "Handmade" },
+            { label: "Non-Handmade", value: "Non-Handmade" },
+            { label: "Custom", value: "Custom" },
+            { label: "Packaging", value: "Packaging" },
+          ]
         },
         {
-            label: "Kategori",
-            key: "Kategori",
-            options: [
-                { label: "Semua", value: "Semua" },
-                { label: "Gelang", value: "Gelang" },
-                { label: "Cincin", value: "Cincin" },
-                { label: "Anting-Anting", value: "Anting-Anting" },
-                { label: "Packaging", value: "Packaging" }
-            ]
+          label: "Kategori",
+          key: "Kategori",
+          options: isAdminGudang ? kategoriOptions : [
+            { label: "Semua", value: "Semua" },
+            { label: "Gelang", value: "Gelang" },
+            { label: "Cincin", value: "Cincin" },
+            { label: "Anting-Anting", value: "Anting-Anting" },
+            { label: "Packaging", value: "Packaging" }
+          ]
         }
-    ];
+       ];
 
     // Fungsi untuk memfilter data
     const filteredData = () => {
@@ -149,13 +194,16 @@ export default function StokBarang() {
                                 />
                             </div>
 
-                            <div className="w-full md:w-auto">
-                                <ButtonDropdown 
-                                    selectedIcon={'/icon/toko.svg'} 
-                                    options={dataCabang} 
-                                    onSelect={(value) => setSelectedStore(value)} 
-                                />
-                            </div>
+                            {!isAdminGudang && (
+                                <div className="w-full md:w-auto">
+                                    <ButtonDropdown 
+                                        selectedIcon={'/icon/toko.svg'} 
+                                        options={dataCabang} 
+                                        onSelect={(value) => setSelectedStore(value)} 
+                                    />
+                                </div>
+                            )}
+                            
                         </div>
                     </section>
 
@@ -169,7 +217,7 @@ export default function StokBarang() {
                                 }))}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
-                                onRowClick={handleRowClick}
+                                onRowClick={isAdminGudang ? undefined : handleRowClick}
                             />
                         </div>
                     </section>

@@ -9,6 +9,7 @@ const Input = ({
   width = "w-full", 
   required = true,  
   onKeyDown,
+  placeholder,
   showRequired = true,
   disabled = false,
 }) => {
@@ -72,7 +73,7 @@ const Input = ({
             ? 'border-red-500 focus:ring-red-200' 
             : 'border-gray-300 focus:ring-blue-500'
           } text-base`}
-        placeholder={label}
+        placeholder={placeholder || label}
         required={required}
         onKeyDown={onKeyDown}
         disabled={disabled}

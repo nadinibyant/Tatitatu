@@ -11,6 +11,7 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
 import Spinner from "../../../components/Spinner";
 import ActionMenu from "../../../components/ActionMenu";
+import AlertError from "../../../components/AlertError";
 
 export default function KPISeluruhDivisi() {
     const [isModalMore, setIsModalMore] = useState(false);
@@ -21,6 +22,8 @@ export default function KPISeluruhDivisi() {
     const [isLoading, setLoading] = useState(false)
     const [data,setData] = useState([])
     const [fullApiData, setFullApiData] = useState([])
+    const [errorMessage, setErrorMessage] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false)
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -104,8 +107,6 @@ export default function KPISeluruhDivisi() {
             item => item.divisi_karyawan_id === divisiId
         );
         
-        console.log('Selected division data:', selectedDivisionData);
-        
         navigate(`/daftarPenilaianKPI/seluruh-divisi/edit/${divisiId}`, {
             state: { 
                 divisionData: selectedDivisionData 
@@ -113,13 +114,32 @@ export default function KPISeluruhDivisi() {
         });
     };
 
-    const handleDelete = () => {
-        setModalDel(true)
+    const handleDelete = (itemId) => {
+        const selectedDivisi = data.find(item => item.id === itemId);
+        if (selectedDivisi.JumlahKPI === 0) {
+            setErrorMessage("Tidak Terdapat KPI Divisi")
+            setErrorAlert(true)
+            return;
+        }
+        setModalDel(true);
     };
 
-    const handleConfirmDel = () => {
-        setModalSucc(true)
-    }
+    const handleConfirmDel = async () => {
+        try {
+            setLoading(true);
+            const response = await api.delete(`/kpi/${selectedItem}`);
+            
+            if (response.data.success) {
+                setModalDel(false);
+                setModalSucc(true);
+                fetchKPIDivisi(); 
+            }
+        } catch (error) {
+            console.error('Error deleting KPI:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     
     const handleAddBtn = () => {
@@ -176,7 +196,7 @@ export default function KPISeluruhDivisi() {
                                             onEdit={() => handleEdit(item.id)} 
                                             onDelete={() => {
                                                 setSelectedItem(item.id);
-                                                handleDelete();
+                                                handleDelete(item.id);
                                             }}
                                         />
                                     ),
@@ -201,8 +221,9 @@ export default function KPISeluruhDivisi() {
                     confirmLabel="Hapus"
                     cancelLabel="Kembali"
                     onConfirm={handleConfirmDel}
+                    open={isModalDel}
                     onCancel={() => setModalDel(false)}
-                    onClose={isModalDel}
+                    onClose={() => setModalDel(false)}
                     />
                 )}
 
@@ -219,6 +240,15 @@ export default function KPISeluruhDivisi() {
                 {isLoading && (
                     <Spinner/>
                 )}
+
+                {isErrorAlert && (
+                        <AlertError
+                        title="Gagal!!"
+                        description={errorMessage}
+                        confirmLabel="Ok"
+                        onConfirm={() => setErrorAlert(false)}
+                        />
+                    )}
 
             </LayoutWithNav>
         </>

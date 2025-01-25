@@ -134,60 +134,50 @@ export default function PembelianStok() {
             id: 1,
             Nomor: "STK1323",
             Tanggal: "31/05/2024",
-            "Nama Barang": "Gelang Barbie, Gelang Bulan, +3 Lainnya",
+            namaBarang: [
+                "Gelang Barbie",
+                "Gelang Bulan",
+                "Gelang Perak",
+                "Gelang Emas",
+                "Gelang Berlian"
+            ],
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
             type: 'cash',
             "Total Transaksi": "Rp.200.000",
-            Aksi: (
-                <img
-                src="/icon/more.svg"
-                alt="More Options"
-                className="w-5 h-5 cursor-pointer"
-                onClick={(event) => handleMoreClick(1, event)}
-                />
-            ),
         },
         {
             id: 2,
-            Nomor: "STK1323",
+            Nomor: "STK1324",
             Tanggal: "31/05/2024",
-            "Nama Barang": "Gelang Barbie, Gelang Bulan, +3 Lainnya",
+            namaBarang: [
+                "Kalung Silver",
+                "Cincin Emas",
+                "Gelang Perak"
+            ],
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
             type: "cash",
             "Total Transaksi": "Rp.200.000",
-            Aksi: (
-                <img
-                src="/icon/more.svg"
-                alt="More Options"
-                className="w-5 h-5 cursor-pointer"
-                onClick={(event) => handleMoreClick(2, event)}
-                />
-            ),
         },
         {
             id: 3,
-            Nomor: "STK1323",
+            Nomor: "STK1325",
             Tanggal: "31/05/2024",
-            "Nama Barang": "Gelang Barbie, Gelang Bulan, +3 Lainnya",
+            namaBarang: [
+                "Cincin Berlian",
+                "Liontin Gold"
+            ],
             "Jumlah Barang": "30%",
             Diskon: "11%",
             Pajak: "11%",
             type: "non-cash",
             "Total Transaksi": "Rp.200.000",
-            Aksi: (
-                <img
-                src="/icon/more.svg"
-                alt="More Options"
-                className="w-5 h-5 cursor-pointer"
-                onClick={(event) => handleMoreClick(3, event)}
-                />
-            ),
         },
-      ];
+    ];
+
 
     // const [filteredData, setFilteredData] = useState(data);
 
@@ -369,20 +359,26 @@ return (
 
             <section className="bg-white p-5 mt-5 rounded-xl">
                 {/* <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="semua" /> */}
-                <Table
-                    headers={headers}
-                    data={data.map((item, index) => ({
-                        ...item,
-                        action: <ActionMenu 
-                            onEdit={() => handleEdit(item)} 
-                            onDelete={() => handleDelete(item)} 
-                        />
-                    }))}
-                    onRowClick={handleRowClick}
-                    hasSubmenu={true}
-                    submenuItems={submenuItems}
-                    defaultSubmenu="semua"
-                />        
+                    <Table
+                        headers={headers}
+                        data={data.map((item, index) => ({
+                            ...item,
+                            "Nama Barang": item.namaBarang.length > 2 
+                                ? `${item.namaBarang[0]}, ${item.namaBarang[1]}, +${item.namaBarang.length - 2} Lainnya`
+                                : item.namaBarang.join(", "),
+                            action: <ActionMenu 
+                                onEdit={() => handleEdit(item)} 
+                                onDelete={() => {
+                                    setSelectedItem(item);
+                                    handleDelete();
+                                }} 
+                            />
+                        }))}
+                        onRowClick={handleRowClick}
+                        hasSubmenu={true}
+                        submenuItems={submenuItems}
+                        defaultSubmenu="semua"
+                    />    
                 {/* Modal for More Options */}
                 {isModalMore && selectedItem && (
                 <div

@@ -196,7 +196,7 @@ export const menuItems = [
     },
     {
       label: "Biaya Rumah Produksi",
-      link: "/biayaGudang",
+      link: "/biaya-gudang",
       icon: "/Menu/biayaToko.svg",
       iconWarna: '/Icon Warna/biayaToko.svg',
     },
@@ -236,6 +236,12 @@ export const menuItems = [
       icon: "/Menu/absensi.svg",
       iconWarna: '/Icon Warna/absensi.svg',
     },
+    {
+      label: "Master Kategori",
+      link: "/master-kategori",
+      icon: "/Menu/masterKategori.svg",
+      iconWarna: '/Icon Warna/masterKategori.svg',
+  },
   ]
 
   export const menuKaryawan = [

@@ -58,7 +58,7 @@ const headers = [
 { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
 { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
 { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
-];
+]
 
 const data = {
     id: 1,
@@ -157,6 +157,34 @@ const data = {
     totalpenjualan: 18000
 }
 
+const dataAdminGudang = {
+    id: 1,
+    nomor: 'STK1133',
+    invoice: 'INV123',
+    tanggal: '21/12/2024',
+    pembayaran: 'Cash',
+    metode: '-',
+    data: [
+        {
+            id: 1,
+            No: "1",
+            "Foto Produk" : (
+                <img src="/api/placeholder/50/50" alt="Foto Produk" />
+            ),
+            "Nama Produk": "Barbie",
+            "Jenis Barang": "Barang Handmade", 
+            "Harga Satuan": "Rp15.000",
+            Kuantitas: 10,
+            "Total Biaya": "Rp150.000"
+        },
+        // ... data lainnya
+    ],
+    subtotal: 8000,
+    diskon: 30,
+    pajak: 1000,
+    totalpenjualan: 18000
+}
+
 const formatCurrency = (amount) => {
     return amount.toLocaleString('id-ID', {
         style: 'currency',
@@ -240,17 +268,23 @@ return (
                 </section>
 
                 {/* section cabang -> perulangan sesuai data cabang */}
+                {/* section tabel */}
                 <section className="pt-10">
-                    {data.dataCabang.map((cabang, index) => (
-                        <div key={index} className="pt-5">
-                        <p className="font-bold">{cabang.nama}</p>
+                    {isAdminGudang ? (
                         <div className="pt-5">
-                            <Table headers={headers} data={cabang.data} />
+                            <Table headers={headers} data={dataAdminGudang.data} />
                         </div>
-                        </div>
-                    ))}
+                    ) : (
+                        data.dataCabang.map((cabang, index) => (
+                            <div key={index} className="pt-5">
+                                <p className="font-bold">{cabang.nama}</p>
+                                <div className="pt-5">
+                                    <Table headers={headers} data={cabang.data} />
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </section>
-
 
                 {/* Section Total */}
                 <section className="flex justify-end text-base py-10">
@@ -289,6 +323,8 @@ return (
             cancelLabel="Kembali"
             onConfirm={handleConfirmDel}
             onCancel={handleCancelDel}
+            onClose={() => setModalDel(false)}
+            open={isModalDel}
             />
         )}
 

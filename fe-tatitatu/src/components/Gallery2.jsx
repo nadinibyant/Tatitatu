@@ -25,7 +25,7 @@ const GalleryItem = ({ item, onSelect, selectionCount }) => {
           )}
           <p className="text-sm text-gray-500">{item.code}</p>
           <h3 className="text-lg font-bold mb-1">{item.name}</h3>
-          <p className="text-sm text-gray-500">{item.price}</p>
+          <p className="text-sm text-gray-500">Rp{item.price.toLocaleString()}</p>
       </div>
   );
 };

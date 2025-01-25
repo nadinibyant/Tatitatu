@@ -78,7 +78,8 @@ export default function MasterKategori() {
     const fetchBarang = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/kategori-barang');
+            const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : '/kategori-barang';
+            const response = await api.get(endpoint);
             const items = response.data.data.map(item => ({
                 id: item.kategori_barang_id,
                 kategori: item.nama_kategori_barang
@@ -110,7 +111,8 @@ export default function MasterKategori() {
     const fetchMetode = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/metode-pembayaran');
+            const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
+            const response = await api.get(endpoint);
             const items = response.data.data.map(item => ({
                 id: item.metode_id,
                 kategori: item.nama_metode
@@ -141,29 +143,21 @@ export default function MasterKategori() {
 
     useEffect(() => {
         fetchDivisi();
-        fetchBarang()
-        fetchMetode()
-    }, []);
+        fetchBarang();
+        fetchMetode();
+    }, [userData]);
 
     const [data, setData] = useState({
         categories: [
             { 
                 title: 'Metode Pembayaran', 
                 id: 1,
-                data: [
-                    // { id: 1, kategori: "Cash", no: 1, aksi: getActionButtons() },
-                    // { id: 2, kategori: "Transfer Bank", no: 2, aksi: getActionButtons() },
-                    // { id: 3, kategori: "E-Wallet", no: 3, aksi: getActionButtons() }
-                ]
+                data: []
             },
             { 
                 title: 'Kategori Barang', 
                 id: 2,
-                data: [
-                    // { id: 1, kategori: "Makanan", no: 1, aksi: getActionButtons() },
-                    // { id: 2, kategori: "Minuman", no: 2, aksi: getActionButtons() },
-                    // { id: 3, kategori: "Snack", no: 3, aksi: getActionButtons() }
-                ]
+                data: []
             },
             { 
                 title: 'Kategori Pengeluaran', 
@@ -187,39 +181,10 @@ export default function MasterKategori() {
             { 
                 title: 'Divisi', 
                 id: 5,
-                data: [
-                ]
+                data: []
             }
         ]
     });
-
-    const getFilteredCategories = () => {
-        switch(userData?.role) {
-            case 'kasirtoko':
-                return data.categories.filter(category => 
-                    category.title === 'Metode Pembayaran'
-                );
-            case 'finance':
-                return data.categories.filter(category => 
-                    category.title === 'Metode Pembayaran' || 
-                    category.title === 'Kategori Pengeluaran' || 
-                    category.title === 'Kategori Pemasukan'
-                );
-            case 'admin':
-                return data.categories.filter(category => 
-                    category.title === 'Metode Pembayaran' || 
-                    category.title === 'Kategori Barang' || 
-                    category.title === 'Divisi'
-                );
-            default:
-                return data.categories;
-        }
-    };
-
-    if (!userData) {
-        return null;
-    }
-
 
     function getActionButtons(item = {}) {
         return (
@@ -254,6 +219,34 @@ export default function MasterKategori() {
             </div>
         );
     }
+
+    const getFilteredCategories = () => {
+        switch(userData?.role) {
+            case 'kasirtoko':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran'
+                );
+            case 'finance':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran' || 
+                    category.title === 'Kategori Pengeluaran' || 
+                    category.title === 'Kategori Pemasukan'
+                );
+            case 'admin':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran' || 
+                    category.title === 'Kategori Barang' || 
+                    category.title === 'Divisi'
+                );
+            case 'admingudang':
+                return data.categories.filter(category => 
+                    category.title === 'Metode Pembayaran' || 
+                    category.title === 'Kategori Barang'
+                )
+            default:
+                return data.categories;
+        }
+    };
 
     const tableHeaders = [
         { key: 'no', label: 'No' },
@@ -313,15 +306,16 @@ export default function MasterKategori() {
                     setAlertSucc(true);
                 }
             } else if (selectedCategory.title === 'Kategori Barang'){
+                const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : '/kategori-barang';
                 if(formType === 'add') {
-                    await api.post('/kategori-barang', {
+                    await api.post(endpoint, {
                         nama_kategori_barang: formData
                     });
                     await fetchBarang();
                     setShowFormModal(false);
                     setAlertSucc(true);
                 } else {
-                    await api.put(`/kategori-barang/${id}`, {
+                    await api.put(`${endpoint}/${id}`, {
                         nama_kategori_barang: formData
                     });
                     await fetchBarang();
@@ -329,15 +323,16 @@ export default function MasterKategori() {
                     setAlertSucc(true);
                 }
             } else if (selectedCategory.title === 'Metode Pembayaran'){
+                const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
                 if(formType === 'add') {
-                    await api.post('/metode-pembayaran', {
+                    await api.post(endpoint, {
                         nama_metode: formData
                     });
                     await fetchMetode();
                     setShowFormModal(false);
                     setAlertSucc(true);
                 } else {
-                    await api.put(`/metode-pembayaran/${id}`, {
+                    await api.put(`${endpoint}/${id}`, {
                         nama_metode: formData
                     });
                     await fetchMetode();
@@ -361,7 +356,8 @@ export default function MasterKategori() {
         try {
             setLoading(true);
             if (selectedCategory.title === 'Kategori Barang') {
-                const response = await api.delete(`/kategori-barang/${id}`);
+                const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : '/kategori-barang';
+                const response = await api.delete(`${endpoint}/${id}`);
                 if (response.data.success) {
                     await fetchBarang(); 
                     setAlertDel(false);
@@ -371,7 +367,8 @@ export default function MasterKategori() {
                     setErrorAlert(true);
                 }
             } else if(selectedCategory.title === 'Metode Pembayaran'){
-                const response = await api.delete(`/metode-pembayaran/${id}`);
+                const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
+                const response = await api.delete(`${endpoint}/${id}`);
                 if (response.data.success) {
                     await fetchMetode(); 
                     setAlertDel(false);
@@ -571,9 +568,6 @@ export default function MasterKategori() {
                     onConfirm={() => setErrorAlert(false)}
                 />
                 )}
-                
-
-                
             </div>
         </LayoutWithNav>
     );

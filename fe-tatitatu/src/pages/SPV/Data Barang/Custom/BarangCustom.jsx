@@ -30,32 +30,35 @@ export default function BarangCustom() {
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
-const fetchDataBarang = async () => {
-  try {
-      setIsLoading(true);
-      const response = await api.get('/barang-custom');
-      
-      if (response.data.success) {
+    const fetchDataBarang = async () => {
+      try {
+        setIsLoading(true);
+        const endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
+        const response = await api.get(endpoint);
+        
+        if (response.data.success) {
           const transformedData = response.data.data.map(item => ({
-            id: item.barang_custom_id,
+            id: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
             title: item.nama_barang,
             price: `Rp${item.harga.toLocaleString('id-ID')}`,
-            image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}` || "https://via.placeholder.com/50",
-            type: item.barang_custom_id,
+            image: item.image 
+              ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${item.image}` 
+              : "https://via.placeholder.com/50",
+            type: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
             category: item.kategori_barang_id,
             jumlah_minimum_stok: item.jumlah_minimum_stok,
             isi: item.isi,
             harga_satuan: item.harga_satuan
-        }));
+          }));
           
           setData(transformedData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
       }
-  } catch (error) {
-      console.error('Error fetching data barang:', error);
-  } finally {
-      setIsLoading(false);
-  }
-};
+    };
 
 const [categoryOptions, setCategoryOptions] = useState([]);
 
@@ -77,18 +80,19 @@ const [data2, setData2] = useState({
 });
 
 const fetchCategories = async () => {
-  try {
-    const response = await api.get('/kategori-barang');
-    if (response.data.success) {
-      const options = response.data.data.map(item => ({
-        value: item.kategori_barang_id.toString(),
-        label: item.nama_kategori_barang
-      }));
-      setCategoryOptions(options);
-    }
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-  }
+ try {
+   const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+   const response = await api.get(endpoint);
+   if (response.data.success) {
+     const options = response.data.data.map(item => ({
+       value: item.kategori_barang_id.toString(),
+       label: item.nama_kategori_barang
+     }));
+     setCategoryOptions(options);
+   }
+ } catch (error) {
+   console.error('Error fetching categories:', error);
+ }
 };
 
 useEffect(() => {
@@ -195,24 +199,44 @@ const handleAddBtn = () => {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      if (modalMode === "add") {
-        formData.append('image', data2.info_barang.Foto);
-      } else if (modalMode === "edit" && data2.info_barang.Foto instanceof File) {
-        formData.append('image', data2.info_barang.Foto);
-      }
       
-      formData.append('kategori_barang_id', data2.info_barang.Kategori);
-      formData.append('nama_barang', data2.info_barang["Nama Barang"]);
-      formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
-      formData.append('harga', data2.rincian_biaya[0].Harga);
-      formData.append('isi', data2.rincian_biaya[0].Isi);
-      formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+      if (isAdminGudang) {
+        // barang-mentah
+        if (modalMode === "add" && data2.info_barang.Foto) {
+          formData.append('image', data2.info_barang.Foto);
+        }
+        if (modalMode === "add" && data2.info_barang.Foto) {
+          formData.append('image', data2.info_barang.Foto);
+        }
+        formData.append('nama_barang', data2.info_barang["Nama Barang"]);
+        formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
+        formData.append('harga', data2.rincian_biaya[0].Harga);
+        formData.append('isi', data2.rincian_biaya[0].Isi);
+        formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+      } else {
+        // barang-custom
+        if (modalMode === "add") {
+          formData.append('image', data2.info_barang.Foto);
+        } else if (modalMode === "edit" && data2.info_barang.Foto instanceof File) {
+          formData.append('image', data2.info_barang.Foto);
+        }
+        formData.append('kategori_barang_id', data2.info_barang.Kategori);
+        formData.append('nama_barang', data2.info_barang["Nama Barang"]);
+        formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
+        formData.append('harga', data2.rincian_biaya[0].Harga);
+        formData.append('isi', data2.rincian_biaya[0].Isi);
+        formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+      }
   
-      const response = modalMode === "add" 
-        ? await api.post('/barang-custom', formData, {
+      const endpoint = isAdminGudang 
+        ? (modalMode === "add" ? '/barang-mentah' : `/barang-mentah/${id}`)
+        : (modalMode === "add" ? '/barang-custom' : `/barang-custom/${id}`);
+  
+      const response = modalMode === "add"
+        ? await api.post(endpoint, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           })
-        : await api.put(`/barang-custom/${id}`, formData, {
+        : await api.put(endpoint, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
   
@@ -222,7 +246,7 @@ const handleAddBtn = () => {
         fetchDataBarang();
       }
     } catch (error) {
-      setErrorMessage('Terjadi kesalahan saat menyimpan data', error);
+      setErrorMessage('Terjadi kesalahan saat menyimpan data');
       setErrorAlert(true);
     } finally {
       setIsLoading(false);
@@ -240,7 +264,8 @@ const handleAddBtn = () => {
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      const response = await api.delete(`/barang-custom/${selectedId}`);
+      const endpoint = isAdminGudang ? `/barang-mentah/${selectedId}` : `/barang-custom/${selectedId}`;
+      const response = await api.delete(endpoint);
       
       if (response.data.success) {
         await fetchDataBarang();
@@ -252,7 +277,7 @@ const handleAddBtn = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+   };
   
   const handleBtnDelCancel = () => {
     setSelectedId(null);
@@ -367,7 +392,7 @@ const handleAddBtn = () => {
                     <div className="">
                       <Input
                         label={"Nomor"}
-                        required={true}
+                        disabled={true}
                         value={data2.info_barang.Nomor}
                         onChange={(value) => handleInfoBarangChange("Nomor", value)}
                       />
@@ -396,17 +421,19 @@ const handleAddBtn = () => {
                       />
                     </div>
 
-                    <div className="">
-                      <InputDropdown
-                        label="Kategori"
-                        options={categoryOptions}
-                        value={data2.info_barang.Kategori} 
-                        onSelect={(selectedValue) => handleInfoBarangChange("Kategori", selectedValue)}
-                        onChange={(e) => handleInfoBarangChange("Kategori", e.target.value)}
-                        name="kategori"
-                        required={true}
-                      />
-                    </div>
+                    {!isAdminGudang && (
+                      <div className="">
+                        <InputDropdown
+                          label="Kategori"
+                          options={categoryOptions}
+                          value={data2.info_barang.Kategori} 
+                          onSelect={(selectedValue) => handleInfoBarangChange("Kategori", selectedValue)}
+                          onChange={(e) => handleInfoBarangChange("Kategori", e.target.value)}
+                          name="kategori"
+                          required={true}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <section className="">

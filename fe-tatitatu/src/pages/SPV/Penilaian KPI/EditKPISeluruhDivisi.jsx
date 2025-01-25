@@ -8,12 +8,19 @@ import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
+import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
 
 export default function EditKPISeluruhDivisi() {
     const location = useLocation();
     const navigate = useNavigate();
     const { id } = useParams();
     const [dataDivisi, setDataDivisi] = useState([]);
+    const [isLoading, setLoading] = useState(false)
+    const [isAlertSuccess, setAlertSucc] = useState(false)
+    const [isErrorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const breadcrumbItems = [
         { label: "Daftar KPI Seluruh Divisi", href: "/daftarPenilaianKPI/seluruh-divisi" },
@@ -119,10 +126,27 @@ export default function EditKPISeluruhDivisi() {
         navigate('/daftarPenilaianKPI/seluruh-divisi');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // TODO: Implement API call to update KPI
-        console.log("Submitted data:", data);
+        try {
+            const kpiPromises = data.data.map(async (item) => {
+                const payload = {
+                    kpi_id: item.kpi_id,
+                    divisi_karyawan_id: dataDivisi.find(div => div.label === data.divisi)?.id,
+                    nama_kpi: item.NamaKPI,
+                    persentase: parseInt(item.Persentase),
+                    waktu: item.Waktu
+                };
+                console.log(payload)
+                return api.put(`/kpi/${id}`, payload);
+            });
+
+            await Promise.all(kpiPromises);
+            navigate('/daftarPenilaianKPI/seluruh-divisi');
+        } catch (error) {
+            console.error('Error updating KPI:', error);
+            alert('Gagal mengupdate KPI. Silakan coba lagi.');
+        }
     };
 
     return (
@@ -239,6 +263,27 @@ export default function EditKPISeluruhDivisi() {
                         </div>
                     </section>
                 </div>
+                {isAlertSuccess && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data Berhasil Ditambahkan"
+                        confirmLabel="Ok"
+                        onConfirm={() => setAlertSucc(false)}
+                    />
+                )}
+
+                {isLoading && (
+                    <Spinner/>
+                )}
+
+                {isErrorAlert && (
+                <AlertError
+                    title="Gagal!!"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorAlert(false)}
+                />
+                )}
             </Navbar>
         </>
     );

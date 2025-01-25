@@ -25,61 +25,55 @@ export default function Packaging() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false)
-  const [isAlertSUcc, setAlertSucc] = useState(false)
-  const [data,setData] = useState([
-    // {
-    //   id: 1,
-    //   title: "Gelang Barbie 123",
-    //   price: "Rp10.000",
-    //   image: "https://via.placeholder.com/50",
-    //   type: "Zipper",
-    //   kategori: "Zipper",
-    // },
-    // {
-    //   id: 2,
-    //   title: "Cincin Diamond",
-    //   price: "Rp15.000",
-    //   image: "https://via.placeholder.com/50",
-    //   type: "Box",
-    //   kategori: "Box",
-    // },
-    // {
-    //   id: 3,
-    //   title: "Anting Kristal",
-    //   price: "Rp12.000",
-    //   image: "https://via.placeholder.com/50",
-    //   type: "Paper Bag",
-    //   kategori: "Paper Bag",
-    // },
-])
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userData?.role === 'admingudang';
 
-const fetchDataBarang = async () => {
-  try {
-      setIsLoading(true);
-      const response = await api.get('/packaging');
-      
-      if (response.data.success) {
-          const transformedData = response.data.data.map(item => ({
-            id: item.packaging_id,
-            title: item.nama_packaging,
-            ukuran: item.ukuran,
-            price: `Rp${item.harga.toLocaleString('id-ID')}`,
-            image: `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` || "https://via.placeholder.com/50",
-            type: item.packaging_id,
-            category: item.kategori_barang.kategori_barang_id,
-            jumlah_minimum_stok: item.jumlah_minimum_stok,
-            isi: item.isi,
-            harga_satuan: item.harga_satuan
-        }));
-          
-          setData(transformedData);
-      }
-  } catch (error) {
-      console.error('Error fetching data barang:', error);
-  } finally {
-      setIsLoading(false);
-  }
-};
+  const [isAlertSUcc, setAlertSucc] = useState(false)
+  const [data,setData] = useState([])
+
+  const fetchDataBarang = async () => {
+    try {
+        setIsLoading(true);
+        const endpoint = isAdminGudang ? '/packaging-gudang' : '/packaging';
+        const response = await api.get(endpoint);
+        
+        if (response.data.success) {
+            const transformedData = response.data.data.map(item => {
+              if (isAdminGudang) {
+                return {
+                  id: item.packaging_id,
+                  title: item.nama_packaging,
+                  ukuran: item.ukuran,
+                  price: `Rp${item.harga.toLocaleString('id-ID')}`,
+                  image: item.image ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : "https://via.placeholder.com/50",
+                  type: item.packaging_id,
+                  jumlah_minimum_stok: item.jumlah_minimum_stok,
+                  isi: item.isi,
+                  harga_satuan: item.harga_satuan
+                };
+              }
+              return {
+                id: item.packaging_id,
+                title: item.nama_packaging,
+                ukuran: item.ukuran,
+                price: `Rp${item.harga.toLocaleString('id-ID')}`,
+                image: `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` || "https://via.placeholder.com/50",
+                type: item.packaging_id,
+                category: item.kategori_barang.kategori_barang_id,
+                jumlah_minimum_stok: item.jumlah_minimum_stok,
+                isi: item.isi,
+                harga_satuan: item.harga_satuan
+              };
+            });
+            
+            setData(transformedData);
+        }
+    } catch (error) {
+        console.error('Error fetching data barang:', error);
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
 const [categoryOptions, setCategoryOptions] = useState([]);
 
@@ -272,7 +266,8 @@ const handleEdit = (itemId) => {
   const handleDelete = async () => {
     try {
       setIsLoading(true);
-      const response = await api.delete(`/packaging/${selectedId}`);
+      const endpoint = isAdminGudang ? '/packaging-gudang' : '/packaging';
+      const response = await api.delete(`${endpoint}/${selectedId}`);
       
       if (response.data.success) {
         await fetchDataBarang();
@@ -284,7 +279,7 @@ const handleEdit = (itemId) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
   
   const handleBtnDelCancel = () => {
     setSelectedId(null);
@@ -428,17 +423,19 @@ const handleEdit = (itemId) => {
                       />
                     </div>
 
-                    <div className="">
-                      <InputDropdown
-                        label="Kategori"
-                        options={categoryOptions}
-                        value={data2.info_barang.Kategori} 
-                        onSelect={(selectedValue) => handleInfoBarangChange("Kategori", selectedValue)}
-                        onChange={(e) => handleInfoBarangChange("Kategori", e.target.value)}
-                        name="kategori"
-                        required={true}
-                      />
-                    </div>
+                    {!isAdminGudang && (
+                      <div className="">
+                        <InputDropdown
+                          label="Kategori"
+                          options={categoryOptions}
+                          value={data2.info_barang.Kategori} 
+                          onSelect={(selectedValue) => handleInfoBarangChange("Kategori", selectedValue)}
+                          onChange={(e) => handleInfoBarangChange("Kategori", e.target.value)}
+                          name="kategori"
+                          required={true}
+                        />
+                      </div>
+                    )}
 
                     <div className="">
                       <Input

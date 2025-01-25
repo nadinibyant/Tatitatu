@@ -15,40 +15,9 @@ export default function DataBarang(){
     const [isModalDelete, setModalDelete] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [data, setData] = useState([
-        {
-            id: 213123,
-            title: 'Gelang Barbie 123',
-            price: 10000,
-            image: 'https://via.placeholder.com/50',
-            type: 213123,
-            category: 'Gelang'
-        },
-        {
-            id: 213124,
-            title: 'Gelang Barbie 123',
-            price: 10000,
-            image: 'https://via.placeholder.com/50',
-            type: 213124,
-            category: 'Gelang'
-        },
-        {
-            id: 213125,
-            title: 'Gelang Barbie 123',
-            price: 10000,
-            image: 'https://via.placeholder.com/50',
-            type: 213125,
-            category: 'Cincin'
-        },
-        {
-            id: 213126,
-            title: 'Gelang Barbie 123',
-            price: 10000,
-            image: 'https://via.placeholder.com/50',
-            type: 213126,
-            category: 'Kalung'
-        }
-    ]);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
+    const [data, setData] = useState([]);
 
     const [subMenus, setSubMenus] = useState([]);
 
@@ -56,47 +25,50 @@ export default function DataBarang(){
 
     // Fetch Sub Menus
     const fetchSubMenus = async () => {
-      try {
+        try {
           setIsLoading(true);
-          const response = await api.get('/kategori-barang');
+          const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+          const response = await api.get(endpoint);
           
           if (response.data.success) {
-              const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
-
-              setSubMenus(['Semua', ...subMenuOptions]);
+            const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
+            setSubMenus(['Semua', ...subMenuOptions]);
           }
-      } catch (error) {
+        } catch (error) {
           console.error('Error fetching sub menus:', error);
-      } finally {
+        } finally {
           setIsLoading(false);
-      }
-    };
+        }
+      };
     
-    const fetchDataBarang = async () => {
-      try {
+      const fetchDataBarang = async () => {
+        try {
           setIsLoading(true);
-          const response = await api.get('/barang-handmadenon');
+          const endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : '/barang-handmadenon';
+          const response = await api.get(endpoint);
           
           if (response.data.success) {
-              const transformedData = response.data.data.map(item => {
-                  return {
-                      id: item.barang_id,
-                      title: item.nama_barang,
-                      price: `Rp${item.harga_jual.toLocaleString('id-ID')}`,
-                      image: item.img || "https://via.placeholder.com/50",
-                      type: item.barang_id,
-                      category: item.jenis.jenis_barang
-                  };
+            const transformedData = response.data.data
+              .filter(item => item.jenis.nama_jenis_barang === 'Handmade')
+              .map(item => {
+                return {
+                  id: item.barang_id,
+                  title: item.nama_barang,
+                  price: `Rp${item.harga_jual.toLocaleString('id-ID')}`,
+                  image: item.image || "https://via.placeholder.com/50",
+                  type: item.barang_id,
+                  category: item.kategori.nama_kategori_barang
+                };
               });
-              
-              setData(transformedData);
+            
+            setData(transformedData);
           }
-      } catch (error) {
+        } catch (error) {
           console.error('Error fetching data barang:', error);
-      } finally {
+        } finally {
           setIsLoading(false);
-      }
-  };
+        }
+      };
   
   useEffect(() => {
       fetchSubMenus();
@@ -116,10 +88,24 @@ export default function DataBarang(){
         setModalDelete(true);
     };
       
-    const handleDelete = () => {
-        setData(prevData => prevData.filter(item => item.id !== selectedId));
-        setModalSucc(true);
-        setModalDelete(false);
+    const handleDelete = async () => {
+        try {
+            setIsLoading(true);
+            const endpoint = isAdminGudang ? `/barang-nonhandmade-gudang/${selectedId}` : `/barang-handmadenon/${selectedId}`;
+            const response = await api.delete(endpoint);
+            
+            if (response.data.success) {
+                setData(prevData => prevData.filter(item => item.id !== selectedId));
+                setModalSucc(true);
+                setModalDelete(false);
+            } else {
+                console.error('Failed to delete item');
+            }
+        } catch (error) {
+            console.error('Error deleting item:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
       
     const handleBtnDelCancel = () => {
@@ -194,6 +180,8 @@ export default function DataBarang(){
                     cancelLabel="Kembali"
                     onConfirm={handleDelete}
                     onCancel={handleBtnDelCancel}
+                    open={isModalDelete}
+                    onClose={() => setModalDelete(false)}
                     />
                 )}
 
