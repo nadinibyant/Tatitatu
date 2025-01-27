@@ -114,6 +114,7 @@ export default function KPISeluruhDivisi() {
         });
     };
 
+
     const handleDelete = (itemId) => {
         const selectedDivisi = data.find(item => item.id === itemId);
         if (selectedDivisi.JumlahKPI === 0) {

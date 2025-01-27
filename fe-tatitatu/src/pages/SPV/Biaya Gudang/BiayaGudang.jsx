@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
 
 export default function BiayaGudang() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingBranches, setEditingBranches] = useState({});
+  const [data, setData] = useState({ branches: [] });
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const toggleEdit = (branchId) => {
     setEditingBranches(prev => ({
@@ -14,65 +22,73 @@ export default function BiayaGudang() {
     }));
   };
 
-  // Struktur data baru berdasarkan cabang
-  const [data, setData] = useState({
-    branches: [
-      {
-        id: 1,
-        name: "Cabang GOR HAS",
-        operasional: {
-          data: [
-            {
-              id: 1,
-              "Nama Biaya": "Head",
-              "Jumlah Biaya": 500000,
-              isEditable: false,
-            }
-          ],
-          total: 500000,
-        },
-        staff: {
-          data: [
-            {
-              id: 1,
-              "Nama Biaya": "Produksi",
-              "Jumlah Biaya": 500000,
-              isEditable: false,
-            }
-          ],
-          total: 500000,
-        },
-        rataTerjual: 30,
-      },
-      {
-        id: 2,
-        name: "Cabang Lubeg",
-        operasional: {
-          data: [
-            {
-              id: 1,
-              "Nama Biaya": "Head",
-              "Jumlah Biaya": 500000,
-              isEditable: false,
-            }
-          ],
-          total: 500000,
-        },
-        staff: {
-          data: [
-            {
-              id: 1,
-              "Nama Biaya": "Produksi",
-              "Jumlah Biaya": 500000,
-              isEditable: false,
-            }
-          ],
-          total: 500000,
-        },
-        rataTerjual: 30,
-      },
-    ]
-  });
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [branchResponse, biayaResponse] = await Promise.all([
+        api.get('/cabang'),
+        api.get('/biaya-toko')
+      ]);
+  
+      if (branchResponse.data.success && biayaResponse.data.success) {
+        const branches = branchResponse.data.data
+          .filter(branch => !branch.is_deleted);
+        
+        const combinedData = {
+          branches: branches.map(branch => {
+            const biaya = biayaResponse.data.data.find(b => b.cabang_id === branch.cabang_id && !b.is_deleted);
+            
+            return {
+              id: branch.cabang_id,
+              name: branch.nama_cabang,
+              operasional: biaya ? {
+                data: biaya.biaya_operasional
+                  .filter(op => !op.is_deleted)
+                  .map(op => ({
+                    id: op.biaya_operasional_id,
+                    "Nama Biaya": op.nama_biaya,
+                    "Jumlah Biaya": op.jumlah_biaya,
+                    isEditable: false
+                  })),
+                total: biaya.biaya_operasional
+                  .filter(op => !op.is_deleted)
+                  .reduce((sum, op) => sum + op.jumlah_biaya, 0)
+              } : {
+                data: [],
+                total: 0
+              },
+              staff: biaya ? {
+                data: biaya.biaya_staff
+                  .filter(staff => !staff.is_deleted)
+                  .map(staff => ({
+                    id: staff.biaya_staff_id,
+                    "Nama Biaya": staff.nama_biaya,
+                    "Jumlah Biaya": staff.jumlah_biaya,
+                    isEditable: false
+                  })),
+                total: biaya.biaya_staff
+                  .filter(staff => !staff.is_deleted)
+                  .reduce((sum, staff) => sum + staff.jumlah_biaya, 0)
+              } : {
+                data: [],
+                total: 0
+              },
+              rataTerjual: biaya ? biaya.rata_rata : 0
+            };
+          })
+        };
+  
+        setData(combinedData);
+      } else {
+        setErrorMessage('Gagal mengambil data');
+      }
+    } catch (error) {
+      setErrorMessage('Terjadi kesalahan saat mengambil data');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCancel = (branchId) => {
     setEditingBranches(prev => ({
@@ -81,12 +97,55 @@ export default function BiayaGudang() {
     }));
   };
 
-  const handleSave = (branchId) => {
-    setEditingBranches(prev => ({
-      ...prev,
-      [branchId]: false
-    }));
-    // logic untuk menyimpan ke backend
+  const handleSave = async (branchId) => {
+    try {
+      setLoading(true);
+      const branch = data.branches.find(b => b.id === branchId);
+      
+      const payload = {
+        cabang_id: branchId,
+        biaya_operasional: branch.operasional.data.map(op => ({
+          nama_biaya: op["Nama Biaya"],
+          jumlah_biaya: parseInt(op["Jumlah Biaya"])
+        })),
+        biaya_staff: branch.staff.data.map(staff => ({
+          nama_biaya: staff["Nama Biaya"],
+          jumlah_biaya: parseInt(staff["Jumlah Biaya"])
+        })),
+        total: branch.operasional.data.reduce((sum, op) => sum + parseInt(op["Jumlah Biaya"]), 0) +
+               branch.staff.data.reduce((sum, staff) => sum + parseInt(staff["Jumlah Biaya"]), 0),
+        rata_rata: parseInt(branch.rataTerjual),
+        total_biaya: calculateTotalBiaya(branch)
+      };
+  
+      // Get current biaya data
+      const biayaResponse = await api.get('/biaya-toko');
+      const existingData = biayaResponse.data.data.find(
+        b => b.cabang_id === branchId && !b.is_deleted
+      );
+  
+      let response;
+      if (existingData) {
+        response = await api.put(`/biaya-toko/${branchId}`, payload);
+      } else {
+        response = await api.post('/biaya-toko', payload);
+      }
+      
+      if (response.data.success) {
+        setEditingBranches(prev => ({
+          ...prev,
+          [branchId]: false
+        }));
+        await fetchData();
+      } else {
+        setErrorMessage('Gagal menyimpan perubahan');
+      }
+    } catch (error) {
+      setErrorMessage('Terjadi kesalahan saat menyimpan data');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddOperasionalRow = (branchId) => {
@@ -238,7 +297,7 @@ export default function BiayaGudang() {
               <div>
                 <h3 className="font-bold mb-4 text-black">Biaya Operasional<span className="text-red-500">*</span></h3>
                 <table className="w-full">
-                  <thead className="bg-pink">
+                  <thead className="bg-pink ">
                     <tr>
                       <th className="py-2 px-4 text-left text-black">No</th>
                       <th className="py-2 px-4 text-left text-black">Nama Biaya</th>
@@ -380,12 +439,12 @@ export default function BiayaGudang() {
                           value={branch.rataTerjual}
                           onChange={(value) => handleRataTerjualChange(branch.id, value)}
                         />
-                      ) : `${branch.rataTerjual}%`}
+                      ) : `${branch.rataTerjual.toLocaleString('id-iD')}`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-2">
                     <span className="font-bold text-primary">Total Biaya</span>
-                    <span className="text-primary">Rp{calculateTotalBiaya(branch).toLocaleString("id-ID")}</span>
+                    <span className="text-primary font-bold">Rp{calculateTotalBiaya(branch).toLocaleString("id-ID")}</span>
                   </div>
                 </div>
               </div>

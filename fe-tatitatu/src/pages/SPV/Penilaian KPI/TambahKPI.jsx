@@ -47,7 +47,7 @@ export default function TambahKPI(){
                 totalBonus: 0
             }
         },
-        kpiList: [] // Array untuk menyimpan semua KPI
+        kpiList: []
     });
 
      const fetchProfileData = async () => {
@@ -65,6 +65,7 @@ export default function TambahKPI(){
                         email: karyawanData.email || "",
                         name: karyawanData.nama_karyawan || "",
                         role: karyawanData.divisi.nama_divisi || "",
+                        id_divisi: karyawanData.divisi_karyawan_id || "",
                         department: karyawanData.cabang.nama_cabang || "",
                         image: karyawanData.image || "",
                         stats: {
@@ -81,12 +82,24 @@ export default function TambahKPI(){
         }
     };
 
+    console.log(data)
+
     const fetchKPIDefinitions = async () => {
         try {
+            // First ensure we have the employee's division ID
+            if (!data.profile.id_divisi) {
+                return;
+            }
+    
             const response = await api.get(`/kpi`);
             if (response.data.success) {
-                // Format definisi KPI
-                const formattedKPIs = response.data.data.map(kpi => ({
+                // Filter KPIs based on employee's division ID
+                const filteredKPIs = response.data.data.filter(kpi => 
+                    kpi.divisi_karyawan_id === data.profile.id_divisi
+                );
+    
+                // Format the filtered KPIs
+                const formattedKPIs = filteredKPIs.map(kpi => ({
                     kpi_id: kpi.kpi_id,
                     title: kpi.nama_kpi,
                     percentage: kpi.persentase,
@@ -121,34 +134,35 @@ export default function TambahKPI(){
                 
                 setData(prev => {
                     const updatedKPIList = prev.kpiList.map(kpi => {
-                        // Cari data KPI karyawan yang sesuai
                         const karyawanKPI = apiData.result.find(k => k.kpi_id === kpi.kpi_id);
                         
                         if (karyawanKPI) {
-                            // Reset checks
                             let newChecks;
+                            let checkIds = {}; // Object untuk menyimpan kpi_karyawan_id
+    
                             if (kpi.waktu === 'Harian') {
                                 newChecks = Array(daysInMonth).fill(false);
                             } else if (kpi.waktu === 'Mingguan') {
                                 newChecks = Array(4).fill(false);
-                            } else { // Bulanan
+                            } else {
                                 newChecks = [false];
                             }
                             
-                            // Set checks berdasarkan kpiKaryawanList
                             if (karyawanKPI.kpiKaryawanList) {
                                 karyawanKPI.kpiKaryawanList.forEach(item => {
                                     newChecks[item.point_ke - 1] = true;
+                                    checkIds[item.point_ke - 1] = item.kpi_karyawan_id; // Simpan kpi_karyawan_id
                                 });
                             }
     
                             return {
                                 ...kpi,
                                 checks: newChecks,
+                                checkIds: checkIds, // Tambahkan checkIds ke objek KPI
                                 stats: {
                                     tercapai: karyawanKPI.tercapai,
                                     tidakTercapai: karyawanKPI.tidakTercapai,
-                                    percentage: karyawanKPI.persentaseTercapai,
+                                    percentage: parseFloat(karyawanKPI.persentaseTercapai).toFixed(2),
                                     bonus: karyawanKPI.bonusDiterima
                                 }
                             };
@@ -168,102 +182,205 @@ export default function TambahKPI(){
             console.error('Error fetching KPI data:', error);
         }
     };
-
+    
     useEffect(() => {
-        fetchKPIDefinitions();
-    }, [id]); 
+        if (data.profile.id_divisi) {
+            fetchKPIDefinitions();
+        }
+    }, [id, data.profile.id_divisi, daysInMonth]); 
     
     useEffect(() => {
         fetchProfileData()
         if (data.kpiList.length > 0) { 
             fetchKPIData(); 
         }
-    }, [selectedMonth, selectedYear, data.kpiList.length]);
+    }, [selectedMonth, selectedYear, data.kpiList.length, id]);
 
     const handleKPICheck = async (kpiIndex, checkIndex) => {
+        const kpi = data.kpiList[kpiIndex];
+        const isCurrentlyChecked = kpi.checks[checkIndex];
+        const kpiKaryawanId = kpi.checkIds?.[checkIndex];
+    
         try {
-            // Kirim data ke API
-            const response = await api.post('/kpi-karyawan', {
-                kpi_id: data.kpiList[kpiIndex].kpi_id,
-                karyawan_id: id, 
-                point_ke: checkIndex + 1 
+            // Update UI secara optomatis
+            setData(prev => {
+                const newKPIList = [...prev.kpiList];
+                const newChecks = [...newKPIList[kpiIndex].checks];
+                newChecks[checkIndex] = !isCurrentlyChecked;
+                
+                newKPIList[kpiIndex] = {
+                    ...newKPIList[kpiIndex],
+                    checks: newChecks
+                };
+    
+                return {
+                    ...prev,
+                    kpiList: newKPIList
+                };
             });
     
-            if (response.data.success) {
-                // Jika API berhasil, update state lokal
-                setData(prev => {
-                    const newKPIList = [...prev.kpiList];
-                    const kpi = newKPIList[kpiIndex];
-                    
-                    const newChecks = [...kpi.checks];
-                    newChecks[checkIndex] = !newChecks[checkIndex];
-                    
-                    const tercapai = newChecks.filter(check => check).length;
-                    const tidakTercapai = kpi.waktu === 'Harian' ? daysInMonth - tercapai
-                                       : kpi.waktu === 'Mingguan' ? 4 - tercapai
-                                       : 1 - tercapai;
-                                       
-                    const percentage = (tercapai / newChecks.length) * kpi.percentage;
-                    
-                    // Hitung bonus berdasarkan jenis KPI
-                    let bonus;
-                    switch (kpi.waktu) {
-                        case 'Harian':
-                            bonus = (kpi.percentage / 100) * tercapai * 50000;
-                            break;
-                        case 'Mingguan':
-                            bonus = (kpi.percentage / 100) * tercapai * 200000;
-                            break;
-                        case 'Bulanan':
-                            bonus = (kpi.percentage / 100) * tercapai * 1000000;
-                            break;
-                        default:
-                            bonus = 0;
-                    }
-            
-                    // Update KPI
-                    newKPIList[kpiIndex] = {
-                        ...kpi,
-                        checks: newChecks,
-                        stats: {
-                            tercapai,
-                            tidakTercapai,
-                            percentage,
-                            bonus
-                        }
-                    };
-            
-                    // Hitung total
-                    const totalPercentage = newKPIList.reduce((sum, k) => sum + k.stats.percentage, 0);
-                    const totalBonus = newKPIList.reduce((sum, k) => sum + k.stats.bonus, 0);
-            
-                    return {
-                        ...prev,
-                        kpiList: newKPIList,
-                        totalPercentage,
-                        bonus: totalBonus
-                    };
-                });
+            if (isCurrentlyChecked && kpiKaryawanId) {
+                // Jika sedang tercentang, kirim DELETE request
+                const response = await api.delete(`/kpi-karyawan/${kpiKaryawanId}`);
+                if (!response.data.success) {
+                    console.error('Failed to delete KPI:', response.data.message);
+                    // Kembalikan state jika gagal
+                    setData(prev => {
+                        const newKPIList = [...prev.kpiList];
+                        const newChecks = [...newKPIList[kpiIndex].checks];
+                        newChecks[checkIndex] = isCurrentlyChecked;
+                        
+                        newKPIList[kpiIndex] = {
+                            ...newKPIList[kpiIndex],
+                            checks: newChecks
+                        };
+    
+                        return {
+                            ...prev,
+                            kpiList: newKPIList
+                        };
+                    });
+                    return;
+                }
             } else {
-                console.error('Failed to update KPI:', response.data.message);
+                // Jika belum tercentang, kirim POST request
+                const response = await api.post('/kpi-karyawan', {
+                    kpi_id: kpi.kpi_id,
+                    karyawan_id: id,
+                    point_ke: checkIndex + 1
+                });
+                if (!response.data.success) {
+                    console.error('Failed to update KPI:', response.data.message);
+                    // Kembalikan state jika gagal
+                    setData(prev => {
+                        const newKPIList = [...prev.kpiList];
+                        const newChecks = [...newKPIList[kpiIndex].checks];
+                        newChecks[checkIndex] = isCurrentlyChecked;
+                        
+                        newKPIList[kpiIndex] = {
+                            ...newKPIList[kpiIndex],
+                            checks: newChecks
+                        };
+    
+                        return {
+                            ...prev,
+                            kpiList: newKPIList
+                        };
+                    });
+                    return;
+                }
             }
+    
+            // Setelah operasi API berhasil, refresh data KPI
+            await fetchKPIData();
         } catch (error) {
-            console.error('Error updating KPI:', error);
+            console.error('Error handling KPI check:', error);
+            // Kembalikan state jika terjadi error
+            setData(prev => {
+                const newKPIList = [...prev.kpiList];
+                const newChecks = [...newKPIList[kpiIndex].checks];
+                newChecks[checkIndex] = isCurrentlyChecked;
+                
+                newKPIList[kpiIndex] = {
+                    ...newKPIList[kpiIndex],
+                    checks: newChecks
+                };
+    
+                return {
+                    ...prev,
+                    kpiList: newKPIList
+                };
+            });
         }
     };
       
 
     function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+        if (number == null) return "0";
+        
+        const num = typeof number === 'string' ? parseFloat(number) : number;
+
+        return num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function formatPercentage(number) {
+        if (number == null) return "0";
+        const num = typeof number === 'string' ? parseFloat(number) : number;
+
+        return num.toFixed(2);
     }
 
 
-      const handleMonthChange = (e) => {
+    const handleMonthChange = async (e) => {
         const value = e.target.value; 
         const [year, month] = value.split('-');
+        
         setSelectedMonth(month);
         setSelectedYear(year);
-        setStartDate(value); 
+        setStartDate(value);
+        
+        // Tutup modal setelah memilih bulan
+        setIsModalOpen(false);
+        
+        try {
+            // Fetch data baru setelah bulan berubah
+            const response = await api.get(`/kpi-karyawan/${id}/${month}/${year}/karyawan`);
+            
+            if (response.data.success) {
+                const apiData = response.data.data;
+                
+                setData(prev => {
+                    const updatedKPIList = prev.kpiList.map(kpi => {
+                        const karyawanKPI = apiData.result.find(k => k.kpi_id === kpi.kpi_id);
+                        
+                        if (karyawanKPI) {
+                            let newChecks;
+                            let checkIds = {};
+    
+                            if (kpi.waktu === 'Harian') {
+                                newChecks = Array(moment(value).daysInMonth()).fill(false);
+                            } else if (kpi.waktu === 'Mingguan') {
+                                newChecks = Array(4).fill(false);
+                            } else {
+                                newChecks = [false];
+                            }
+                            
+                            if (karyawanKPI.kpiKaryawanList) {
+                                karyawanKPI.kpiKaryawanList.forEach(item => {
+                                    newChecks[item.point_ke - 1] = true;
+                                    checkIds[item.point_ke - 1] = item.kpi_karyawan_id;
+                                });
+                            }
+    
+                            return {
+                                ...kpi,
+                                checks: newChecks,
+                                checkIds: checkIds,
+                                stats: {
+                                    tercapai: karyawanKPI.tercapai,
+                                    tidakTercapai: karyawanKPI.tidakTercapai,
+                                    percentage: parseFloat(karyawanKPI.persentaseTercapai).toFixed(2),
+                                    bonus: karyawanKPI.bonusDiterima
+                                }
+                            };
+                        }
+                        return kpi;
+                    });
+    
+                    return {
+                        ...prev,
+                        kpiList: updatedKPIList,
+                        totalPercentage: apiData.totalPersentaseTercapai,
+                        bonus: apiData.totalBonusDiterima
+                    };
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching KPI data:', error);
+        }
     };
 
       useEffect(() => {
@@ -326,7 +443,7 @@ export default function TambahKPI(){
                         <img src="/icon/akumulasi.svg" alt="akumulasi" className="w-10 h-10" />
                         <div className="flex flex-col">
                             <p className="text-sm">Akumulasi Persentase KPI Tercapai</p>
-                            <p className="font-bold text-lg">{data.totalPercentage}%</p>
+                            <p className="font-bold text-lg">{formatPercentage(data.totalPercentage)}%</p>
                         </div>
                         </div>
 
@@ -480,7 +597,7 @@ export default function TambahKPI(){
 
                                         <div className="flex flex-col">
                                             <p className="text-sm text-primary">Persentase Tercapai</p>
-                                            <p className="text-primary font-bold text-lg">{kpi.stats.percentage}%</p>
+                                            <p className="text-primary font-bold text-lg">{formatPercentage(kpi.stats.percentage)}%</p>
                                         </div>
                                     </div>
 

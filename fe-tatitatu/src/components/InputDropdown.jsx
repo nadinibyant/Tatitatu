@@ -105,7 +105,7 @@ const InputDropdown = ({
           type="text"
           readOnly
           value={selectedValue}
-          placeholder={`Pilih ${label}`}
+          placeholder={`Pilih ${label || 'Data'}`}
           className={`w-full border rounded-md py-1 px-4 focus:outline-none text-ellipsis overflow-hidden whitespace-nowrap
             ${disabled 
               ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../../../utils/api";
+import Spinner from "../../../../components/Spinner";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Button from "../../../../components/Button";
@@ -8,20 +9,106 @@ import ButtonDropdown from "../../../../components/ButtonDropdown";
 import Table from "../../../../components/Table";
 import Alert from "../../../../components/Alert";
 import AlertSuccess from "../../../../components/AlertSuccess";
-import Spinner from "../../../../components/Spinner";
 
-export default function DetailNonHandmade() {
+export default function DetailBarang() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [selectedCabang, setSelectedCabang] = useState("GOR HAS");
+    const [selectedCabang, setSelectedCabang] = useState("");
     const [isModalDel, setModalDel] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
-    const [isLoading, setLoading] = useState(false)
+    const [isLoading, setLoading] = useState(true);
+    const [data, setData] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const itemResponse = await api.get(`/barang-non-handmade/${id}`);
+
+                if (itemResponse.data.success) {
+                    const itemData = itemResponse.data.data;
+                    const currentBranch = itemData.rincian_biaya[0];
+
+                    // Get biaya toko data if it exists
+                    const biayaTokoId = currentBranch.detail_rincian_biaya.find(detail => detail.biaya_toko_id)?.biaya_toko_id;
+                    let biayaTokoData;
+                    
+                    if (biayaTokoId) {
+                        const biayaTokoResponse = await api.get(`/biaya-toko/${biayaTokoId}`);
+                        if (biayaTokoResponse.data.success) {
+                            biayaTokoData = biayaTokoResponse.data.data;
+                        }
+                    }
+
+                    const biayaFromToko = [];
+                    if (biayaTokoData) {
+                        // Add operasional biaya
+                        biayaTokoData.biaya_operasional?.forEach(biaya => {
+                            if (!biaya.is_deleted) {
+                                biayaFromToko.push({
+                                    id: `op-${biaya.biaya_operasional_id}`,
+                                    "Nama Biaya": biaya.nama_biaya,
+                                    "Jumlah Biaya": biaya.jumlah_biaya
+                                });
+                            }
+                        });
+
+                        // Add staff biaya
+                        biayaTokoData.biaya_staff?.forEach(biaya => {
+                            if (!biaya.is_deleted) {
+                                biayaFromToko.push({
+                                    id: `staff-${biaya.biaya_staff_id}`,
+                                    "Nama Biaya": biaya.nama_biaya,
+                                    "Jumlah Biaya": biaya.jumlah_biaya
+                                });
+                            }
+                        });
+                    }
+
+                    // Get additional rincian biaya (non-biaya toko)
+                    const additionalBiaya = currentBranch.detail_rincian_biaya
+                        .filter(detail => !detail.is_deleted && !detail.biaya_toko_id && detail.nama_biaya)
+                        .map(detail => ({
+                            id: detail.detail_rincian_biaya_id,
+                            "Nama Biaya": detail.nama_biaya,
+                            "Jumlah Biaya": detail.jumlah_biaya
+                        }));
+
+                    // Combine all biaya
+                    const allBiaya = [...biayaFromToko, ...additionalBiaya];
+
+                    setData({
+                        "Nama Barang": itemData.nama_barang,
+                        "Nomor Barang": itemData.barang_non_handmade_id,
+                        "Kategori": itemData.kategori.nama_kategori_barang,
+                        "Total HPP": currentBranch.total_hpp,
+                        "Total Keuntungan": currentBranch.keuntungan,
+                        "Harga Jual": currentBranch.harga_jual,
+                        "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
+                        "image": itemData.image,
+                        "rincian_biaya": allBiaya,
+                        "dataCabang": itemData.rincian_biaya.map(rb => ({
+                            nama: rb.cabang.nama_cabang,
+                            totalHPP: rb.total_hpp,
+                            hargaJual: rb.harga_jual
+                        }))
+                    });
+
+                    setSelectedCabang(itemData.rincian_biaya[0]?.cabang.nama_cabang || '');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id]);
 
     const breadcrumbItems = [
-        { label: "List Data Barang Non-Handmade", href: "/dataBarang/non-handmade" },
+        { label: "List Data Barang Non Handmade", href: "/dataBarang/non-handmade" },
         { label: "Detail Barang", href: "" },
     ];
 
@@ -40,53 +127,14 @@ export default function DetailNonHandmade() {
         { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
     ];
 
-    const [data, setData] = useState({
-        "Nama Barang": "Gelang Matahari",
-        "Nomor Barang": "1910111",
-        Kategori: "Gelang",
-        "Total HPP": 11000,
-        "Total Keuntungan": 4000,
-        "Harga Jual": 20000,
-        "Jumlah Minimum Stok": 17,
-        rincian_biaya: [
-            {
-                id: 1,
-                "Nama Biaya": "Biaya Operasional dan Staff",
-                "Jumlah Biaya": 24
-            },
-            {
-                id: 2,
-                "Nama Biaya": "Biaya Operasional Produksi",
-                "Jumlah Biaya": 104
-            }
-        ],
-        rincian_bahan: [
-            {
-                id: 1,
-                "Foto": "https://via.placeholder.com/50",
-                "Nama Bahan": "Manik-Manik 1kg",
-                "Harga Satuan": 15000,
-                "Kuantitas": 10,
-                "Total Biaya": 150000
-            }
-        ]
-    });
-
-    const dataCabang = [
-        {
-            nama: "Cabang Lubeg",
-            totalHPP: 11000,
-            hargaJual: 15000
-        },
-        {
-            nama: "Cabang Lubeg",
-            totalHPP: 11000,
-            hargaJual: 15000
-        }
-    ];
+    const dataCabang = data?.rincian_biaya?.map(rb => ({
+        nama: `Cabang ${rb.cabang_id}`,
+        totalHPP: rb.total_hpp,
+        hargaJual: rb.harga_jual
+    })) || [];
 
     function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+        return number?.toLocaleString('id-ID') || '0';
     }
 
     const handleBtnDel = () => setModalDel(true);
@@ -94,7 +142,7 @@ export default function DetailNonHandmade() {
     const handleConfirmDel = async () => {
         try {
             setLoading(true)
-            const endpoint = isAdminGudang ? `/barang-nonhandmade-gudang/${id}` : `/barang-handmadenon/${id}`;
+            const endpoint = `/barang-handmade/${id}`;
             const response = await api.delete(endpoint);
             
             if (response.data.success) {
@@ -111,17 +159,19 @@ export default function DetailNonHandmade() {
     const handleCancelDel = () => setModalDel(false);
     const handleConfirmSucc = () => {
         setModalSucc(false);
-        navigate('/dataBarang/handmade');
+        navigate('/dataBarang/non-handmade');
     };
     const handleBtnEdit = () => navigate(`/dataBarang/non-handmade/edit/${id}`);
 
+    if (isLoading) return <Spinner />;
+    if (!data) return <div>Data tidak ditemukan</div>;
+
     return (
-        <LayoutWithNav>
+        <LayoutWithNav >
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
                 <section className="mt-5 bg-white rounded-xl p-6">
-                    {/* Header with Title and Action Buttons */}
                     <div className="flex justify-between items-center pb-5 border-b">
                         <h1 className="text-base font-bold">{data["Nama Barang"]}</h1>
                         <div className="flex gap-3">
@@ -151,12 +201,11 @@ export default function DetailNonHandmade() {
                         </div>
                     </div>
 
-                    {/* Branch Summary Section - Only show if not adminGudang */}
                     {!isAdminGudang && (
                         <div className="pt-5">
                             <h2 className="font-bold text-base mb-6">Ringkasan Harga Jual Seluruh Cabang</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                                {dataCabang.map((cabang, index) => (
+                                {data.dataCabang.map((cabang, index) => (
                                     <div key={index} className="border border-gray-300 rounded-xl p-4 bg-[#F9F9F9]">
                                         <h3 className="text-primary mb-4">{cabang.nama}</h3>
                                         <div className="grid grid-cols-2 gap-4">
@@ -175,19 +224,17 @@ export default function DetailNonHandmade() {
                         </div>
                     )}
 
-                    {/* Branch Details Section */}
                     <div>
-                    {!isAdminGudang && (
+                        {!isAdminGudang && (
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="font-bold text-lg">Rincian Berdasarkan Cabang</h2>
                                 <div className="w-48">
                                     <ButtonDropdown
                                         label={selectedCabang}
-                                        options={[
-                                            { label: "GOR HAS", value: "GOR HAS" },
-                                            { label: "Lubeg", value: "Lubeg" },
-                                            { label: "Bypass", value: "Bypass" }
-                                        ]}
+                                        options={data.dataCabang.map(c => ({
+                                            label: c.nama,
+                                            value: c.nama
+                                        }))}
                                         onSelect={setSelectedCabang}
                                         icon={
                                             <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -199,12 +246,11 @@ export default function DetailNonHandmade() {
                             </div>
                         )}
 
-                        {/* Product Details with Image */}
                         <div className="flex gap-8 my-6">
                             <div className="w-48 h-48">
                                 <img
-                                    src="https://via.placeholder.com/192"
-                                    alt="Product"
+                                    src={`/uploads/${data.image}`}
+                                    alt={data["Nama Barang"]}
                                     className="w-full h-full object-cover rounded-lg"
                                 />
                             </div>
@@ -242,7 +288,6 @@ export default function DetailNonHandmade() {
                             </div>
                         </div>
 
-                        {/* Cost Details Table */}
                         <div className="mb-6">
                             <h3 className="font-bold mb-4">Rincian Biaya</h3>
                             <Table
@@ -254,11 +299,34 @@ export default function DetailNonHandmade() {
                                 }))}
                             />
                         </div>
-                        
+
+                        {isAdminGudang && (
+                            <div>
+                                <h3 className="font-bold mb-4">Rincian Jumlah dan Bahan</h3>
+                                <Table
+                                    headers={materialHeaders}
+                                    data={data.rincian_bahan?.map((item, index) => ({
+                                        No: index + 1,
+                                        Foto: (
+                                            <div className="w-12 h-12">
+                                                <img
+                                                    src={item.Foto}
+                                                    alt={item["Nama Bahan"]}
+                                                    className="w-full h-full object-cover rounded"
+                                                />
+                                            </div>
+                                        ),
+                                        "Nama Bahan": item["Nama Bahan"],
+                                        "Harga Satuan": `Rp${formatNumberWithDots(item["Harga Satuan"])}`,
+                                        "Kuantitas": item["Kuantitas"],
+                                        "Total Biaya": `Rp${formatNumberWithDots(item["Total Biaya"])}`
+                                    })) || []}
+                                />
+                            </div>
+                        )}
                     </div>
                 </section>
 
-                {/* Alert Modals */}
                 {isModalDel && (
                     <Alert
                         title="Hapus Data"

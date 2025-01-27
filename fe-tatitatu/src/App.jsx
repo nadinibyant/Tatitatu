@@ -33,7 +33,7 @@ import Packaging from './pages/SPV/Data Barang/Packaging/Packaging';
 import TambahBarang from './pages/SPV/Data Barang/TambahBarang';
 import EditBarang from './pages/SPV/Data Barang/EditBarang';
 import DetailBarang from './pages/SPV/Data Barang/DetailBarang';
-import TambahNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
+// import TambahNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
 import DetailNonHandmade from './pages/SPV/Data Barang/Non-Handmade/DetailNonHandmade';
 import EditNonHandmade from './pages/SPV/Data Barang/Non-Handmade/EditNonHandmade';
 import AkunKaryawan from './pages/SPV/Akun Karyawan/AkunKaryawan';
@@ -56,7 +56,7 @@ import TambahPenjualanCustom from './pages/Kasir Toko/Penjualan/TambahPenjualanC
 import DetailPenjualanKasir from './pages/Kasir Toko/Penjualan/DetailPenjualan';
 import EditPenjualanCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanCustomKasir';
 import EditPenjualanNonCustomKasir from './pages/Kasir Toko/Penjualan/EditPenjualanNonCustomKasir';
-import DashboardAG from './pages/Admin Gudang/Dashboard/DashboardAG';
+// import DashboardAG from './pages/Admin Gudang/Dashboard/DashboardAG';
 import IzinCutiKaryawan from './pages/Karyawan/Izin/IzinCutiKaryawan';
 import Absensi from './pages/Karyawan/Absensi/Absensi';
 import AbsensiTransport from './pages/Karyawan/Absensi/Transportasi/AbsensiTransport';
@@ -85,6 +85,7 @@ import PenjualanGudang from './pages/Admin Gudang/Penjualan/PenjualanGudang';
 import DetailPenjualanGudang from './pages/Admin Gudang/Penjualan/DetailPenjualanGudang';
 import TambahPenjualanGudang from './pages/Admin Gudang/Penjualan/TambahPenjualanGudang';
 import EditPenjualanGudangAdmin from './pages/Admin Gudang/Penjualan/EditPenjualanGudang';
+import TambahBarangNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
 
 
 function App() {
@@ -232,7 +233,7 @@ function App() {
         <Route path='/dataBarang/handmade/edit/:id' element={getProtectedRoute(EditBarang, ['admin', 'admingudang'])} />
         <Route path='/dataBarang/handmade/detail/:id' element={getProtectedRoute(DetailBarang, ['admin', 'admingudang'])} />
         <Route path='/dataBarang/non-handmade' element={getProtectedRoute(DataNonHandmade, ['admin', 'admingudang'])} />
-        <Route path='/dataBarang/non-handmade/tambah' element={getProtectedRoute(TambahNonHandmade, ['admin', 'admingudang'])} />
+        <Route path='/dataBarang/non-handmade/tambah' element={getProtectedRoute(TambahBarangNonHandmade, ['admin', 'admingudang'])} />
         <Route path='/dataBarang/non-handmade/detail/:id' element={getProtectedRoute(DetailNonHandmade, ['admin', 'admingudang'])} />
         <Route path='/dataBarang/non-handmade/edit/:id' element={getProtectedRoute(EditNonHandmade, ['admin', 'admingudang'])} />
         <Route path='/dataBarang/custom' element={getProtectedRoute(BarangCustom, ['admin', 'admingudang'])} />

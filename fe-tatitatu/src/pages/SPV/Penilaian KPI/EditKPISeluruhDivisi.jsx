@@ -67,6 +67,8 @@ export default function EditKPISeluruhDivisi() {
         { id: 4, label: "Tahunan" },
     ];
 
+    console.log(data)
+
     // Current code
     useEffect(() => {
         // Add check for location.state
@@ -129,25 +131,30 @@ export default function EditKPISeluruhDivisi() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const kpiPromises = data.data.map(async (item) => {
-                const payload = {
-                    kpi_id: item.kpi_id,
-                    divisi_karyawan_id: dataDivisi.find(div => div.label === data.divisi)?.id,
-                    nama_kpi: item.NamaKPI,
-                    persentase: parseInt(item.Persentase),
-                    waktu: item.Waktu
-                };
-                console.log(payload)
-                return api.put(`/kpi/${id}`, payload);
-            });
-
-            await Promise.all(kpiPromises);
-            navigate('/daftarPenilaianKPI/seluruh-divisi');
+            setLoading(true);
+            
+            const kpiPayload = data.data.map(item => ({
+                divisi_karyawan_id: dataDivisi.find(div => div.label === data.divisi)?.id,
+                nama_kpi: item.NamaKPI,
+                persentase: parseInt(item.Persentase),
+                waktu: item.Waktu,
+                ...(item.kpi_id && { kpi_id: item.kpi_id }) // Include kpi_id only if exists
+            }));
+     
+            await api.put(`/kpi/${id}`, kpiPayload);
+            
+            setAlertSucc(true);
+            setTimeout(() => {
+                navigate('/daftarPenilaianKPI/seluruh-divisi');
+            }, 2000);
         } catch (error) {
             console.error('Error updating KPI:', error);
-            alert('Gagal mengupdate KPI. Silakan coba lagi.');
+            setErrorMessage(error.response?.data?.message || 'Gagal mengupdate KPI');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
         }
-    };
+     };
 
     return (
         <>
@@ -266,7 +273,7 @@ export default function EditKPISeluruhDivisi() {
                 {isAlertSuccess && (
                     <AlertSuccess
                         title="Berhasil!!"
-                        description="Data Berhasil Ditambahkan"
+                        description="Data Berhasil Ditambahkan/Diperbaharui"
                         confirmLabel="Ok"
                         onConfirm={() => setAlertSucc(false)}
                     />
