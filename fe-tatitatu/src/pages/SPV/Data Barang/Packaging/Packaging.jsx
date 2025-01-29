@@ -45,7 +45,10 @@ export default function Packaging() {
                   title: item.nama_packaging,
                   ukuran: item.ukuran,
                   price: `Rp${item.harga.toLocaleString('id-ID')}`,
-                  image: item.image ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : "https://via.placeholder.com/50",
+                  // image: item.image ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : "https://via.placeholder.com/50",
+                  image: item.image 
+                  ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'packaging-gudang' : 'packaging'}/${item.image}` 
+                  : "https://via.placeholder.com/50",
                   type: item.packaging_id,
                   jumlah_minimum_stok: item.jumlah_minimum_stok,
                   isi: item.isi,
@@ -223,20 +226,29 @@ const handleEdit = (itemId) => {
       } else if (modalMode === "edit" && data2.info_barang.Foto instanceof File) {
         formData.append('image', data2.info_barang.Foto);
       }
-      
-      formData.append('kategori_barang_id', data2.info_barang.Kategori);
+  
+      // Data yang sama untuk kedua role
       formData.append('nama_packaging', data2.info_barang["Nama Barang"]);
       formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
-      formData.append('ukuran', data2.info_barang.Ukuran);
+      formData.append('ukuran', data2.info_barang["Ukuran"]);
       formData.append('harga', data2.rincian_biaya[0].Harga);
       formData.append('isi', data2.rincian_biaya[0].Isi);
       formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+
+      if (!isAdminGudang) {
+        formData.append('kategori_barang_id', data2.info_barang.Kategori);
+      }
+
+      const baseEndpoint = isAdminGudang ? '/packaging-gudang' : '/packaging';
+      const endpoint = modalMode === "add" 
+        ? baseEndpoint
+        : `${baseEndpoint}/${id}`;
   
-      const response = modalMode === "add" 
-        ? await api.post('/packaging', formData, {
+      const response = modalMode === "add"
+        ? await api.post(endpoint, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           })
-        : await api.put(`/packaging/${id}`, formData, {
+        : await api.put(endpoint, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
   
@@ -397,7 +409,7 @@ const handleEdit = (itemId) => {
                     <div className="">
                       <Input
                         label={"Nomor"}
-                        required={true}
+                        disabled={true}
                         value={data2.info_barang.Nomor}
                         onChange={(value) => handleInfoBarangChange("Nomor", value)}
                       />

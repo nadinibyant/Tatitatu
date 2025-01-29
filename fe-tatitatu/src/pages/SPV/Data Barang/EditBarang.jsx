@@ -35,31 +35,188 @@ export default function EditBarang() {
   const { id } = useParams();
 
 
+  // const fetchDetailBarang = async () => {
+  //   try {
+  //     setLoading(true)
+  //     const [detailResponse, biayaTokoResponse] = await Promise.all([
+  //       api.get(`/barang-handmade/${id}`),
+  //       api.get('/biaya-toko')
+  //     ]);
+  
+  //     if (detailResponse.data.success) {
+  //       const detailData = detailResponse.data.data;
+  //       const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
+        
+  //       setData(prevData => ({
+  //         ...prevData,
+  //         info_barang: {
+  //           ...prevData.info_barang,
+  //           Nomor: detailData.barang_handmade_id,
+  //           "Nama Barang": detailData.nama_barang,
+  //           "Kategori": detailData.kategori_barang_id,
+  //           "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
+  //           Foto: detailData.image
+  //         },
+  //       }));
+  
+  //       if (!isAdminGudang) {
+  //         const initialHargaPerCabang = {};
+  //         const initialRincianBiaya = {};
+  
+  //         detailData.rincian_biaya.forEach(rincian => {
+  //           const cabangData = dataCabang.find(c => c.cabang_id === rincian.cabang_id);
+  //           if (cabangData) {
+  //             const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
+              
+  //             initialHargaPerCabang[cabangData.nama_cabang] = {
+  //               totalHPP: rincian.total_hpp,
+  //               keuntungan: rincian.keuntungan,
+  //               hargaJual: rincian.harga_jual
+  //             };
+  
+  //             const biayaList = [];
+              
+  //             // Add biaya operasional
+  //             if (biayaToko?.biaya_operasional) {
+  //               biayaToko.biaya_operasional.forEach(biaya => {
+  //                 biayaList.push({
+  //                   id: biaya.biaya_toko_id,
+  //                   "Nama Biaya": biaya.nama_biaya,
+  //                   "Jumlah Biaya": biaya.jumlah_biaya,
+  //                   isEditable: false
+  //                 });
+  //               });
+  //             }
+  
+  //             // Add biaya staff
+  //             if (biayaToko?.biaya_staff) {
+  //               biayaToko.biaya_staff.forEach(biaya => {
+  //                 biayaList.push({
+  //                   id: biaya.biaya_toko_id,
+  //                   "Nama Biaya": `Biaya Staff ${biaya.nama_biaya}`,
+  //                   "Jumlah Biaya": biaya.jumlah_biaya,
+  //                   isEditable: false
+  //                 });
+  //               });
+  //             }
+  
+  //             // Add custom biaya from detail
+  //             rincian.detail_rincian_biaya.forEach(detail => {
+  //               if (!detail.biaya_toko_id) {
+  //                 biayaList.push({
+  //                   id: null,
+  //                   "Nama Biaya": detail.nama_biaya,
+  //                   "Jumlah Biaya": detail.jumlah_biaya,
+  //                   isEditable: true
+  //                 });
+  //               }
+  //             });
+  
+  //             initialRincianBiaya[cabangData.nama_cabang] = biayaList;
+  //           }
+  //         });
+  
+  //         setRincianBiayaPerCabang(initialRincianBiaya);
+  //         setData(prevData => ({
+  //           ...prevData,
+  //           hargaPerCabang: initialHargaPerCabang
+  //         }));
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching detail:', error);
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // };
+  const [biayaGudangData, setBiayaGudangData] = useState(null);
+  
+  const fetchBiayaGudang = async () => {
+    try {
+      const response = await api.get('/biaya-gudang');
+      if (response.data.success) {
+        setBiayaGudangData(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching biaya gudang:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminGudang) {
+      fetchBiayaGudang();
+    }
+  }, [isAdminGudang]);
+
   const fetchDetailBarang = async () => {
     try {
-      setLoading(true)
-      const [detailResponse, biayaTokoResponse] = await Promise.all([
-        api.get(`/barang-handmade/${id}`),
-        api.get('/biaya-toko')
-      ]);
+      setLoading(true);
+      
+      const detailResponse = isAdminGudang 
+        ? await api.get(`/barang-handmade-gudang/${id}`)
+        : await Promise.all([
+            api.get(`/barang-handmade/${id}`),
+            api.get('/biaya-toko')
+          ]);
   
-      if (detailResponse.data.success) {
-        const detailData = detailResponse.data.data;
-        const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
-        
-        setData(prevData => ({
-          ...prevData,
-          info_barang: {
-            ...prevData.info_barang,
-            Nomor: detailData.barang_handmade_id,
-            "Nama Barang": detailData.nama_barang,
-            "Kategori": detailData.kategori_barang_id,
-            "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
-            Foto: detailData.image
-          },
-        }));
+      if (isAdminGudang) {
+        if (detailResponse.data.success) {
+          const detailData = detailResponse.data.data;
+          setData(prevData => ({
+            ...prevData,
+            info_barang: {
+              ...prevData.info_barang,
+              Nomor: detailData.barang_handmade_id,
+              "Nama Barang": detailData.nama_barang,
+              "Kategori": detailData.kategori_barang_id,
+              "Waktu Pengerjaan": detailData.waktu_pengerjaan,
+              "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
+              "Foto": detailData.image
+            },
+            totalHPP: detailData.total_hpp,
+            keuntungan: detailData.keuntungan,
+            hargaJual: detailData.harga_jual,
+            rincianBiaya: detailData.rincian_biaya.map((biaya, index) => ({
+              id: index + 1,
+              "Nama Biaya": biaya.nama_biaya,
+              "Jumlah Biaya": biaya.jumlah_biaya,
+              isEditable: false
+            }))
+          }));
   
-        if (!isAdminGudang) {
+          if (detailData.rincian_bahan) {
+            setMaterials(detailData.rincian_bahan.map((bahan, index) => ({
+              id: bahan.barang_mentah_id,
+              No: index + 1,
+              Foto: bahan.barang_mentah.image,
+              "Nama Bahan": bahan.barang_mentah.nama_barang,
+              "Harga Satuan": bahan.harga_satuan,
+              "Kuantitas": bahan.kuantitas,
+              "Total Biaya": bahan.total_biaya,
+              selectedId: bahan.barang_mentah_id,
+              value: bahan.barang_mentah_id,
+              label: bahan.barang_mentah.nama_barang
+            })));
+          }
+        }
+      } else {
+        // untuk non-admin gudang
+        const [detailDataResponse, biayaTokoResponse] = detailResponse;
+        if (detailDataResponse.data.success) {
+          const detailData = detailDataResponse.data.data;
+          const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
+          
+          setData(prevData => ({
+            ...prevData,
+            info_barang: {
+              ...prevData.info_barang,
+              Nomor: detailData.barang_handmade_id,
+              "Nama Barang": detailData.nama_barang,
+              "Kategori": detailData.kategori_barang_id,
+              "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
+              Foto: detailData.image
+            },
+          }));
           const initialHargaPerCabang = {};
           const initialRincianBiaya = {};
   
@@ -76,31 +233,15 @@ export default function EditBarang() {
   
               const biayaList = [];
               
-              // Add biaya operasional
-              if (biayaToko?.biaya_operasional) {
-                biayaToko.biaya_operasional.forEach(biaya => {
-                  biayaList.push({
-                    id: biaya.biaya_toko_id,
-                    "Nama Biaya": biaya.nama_biaya,
-                    "Jumlah Biaya": biaya.jumlah_biaya,
-                    isEditable: false
-                  });
+              if (biayaToko) {
+                biayaList.push({
+                  id: biayaToko.biaya_toko_id,
+                  "Nama Biaya": `Biaya Operasional dan Staff ${cabangData.nama_cabang}`,
+                  "Jumlah Biaya": biayaToko.total_biaya,
+                  isEditable: false
                 });
               }
   
-              // Add biaya staff
-              if (biayaToko?.biaya_staff) {
-                biayaToko.biaya_staff.forEach(biaya => {
-                  biayaList.push({
-                    id: biaya.biaya_toko_id,
-                    "Nama Biaya": `Biaya Staff ${biaya.nama_biaya}`,
-                    "Jumlah Biaya": biaya.jumlah_biaya,
-                    isEditable: false
-                  });
-                });
-              }
-  
-              // Add custom biaya from detail
               rincian.detail_rincian_biaya.forEach(detail => {
                 if (!detail.biaya_toko_id) {
                   biayaList.push({
@@ -125,8 +266,10 @@ export default function EditBarang() {
       }
     } catch (error) {
       console.error('Error fetching detail:', error);
+      setErrorMessage('Gagal mengambil data barang');
+      setErrorAlert(true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -495,12 +638,20 @@ export default function EditBarang() {
 
   const handleInputChange = (type, rowIndex, key, value) => {
     if (type === 'gudang') {
-      setData(prevData => ({
-        ...prevData,
-        rincianBiaya: prevData.rincianBiaya.map((row, index) =>
+      setData(prevData => {
+        const updatedRincianBiaya = prevData.rincianBiaya.map((row, index) =>
           index === rowIndex ? { ...row, [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value } : row
-        )
-      }));
+        );
+  
+        const newTotalHPP = calculateMaterialCosts() + updatedRincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0);
+  
+        return {
+          ...prevData,
+          rincianBiaya: updatedRincianBiaya,
+          totalHPP: newTotalHPP,
+          keuntungan: prevData.hargaJual - newTotalHPP
+        };
+      });
     } else {
       setRincianBiayaPerCabang(prevData => {
         const cabangData = [...prevData[type]];
@@ -633,31 +784,18 @@ export default function EditBarang() {
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
     { label: "Kuantitas", key: "Kuantitas", align: "text-left", width:'110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
+    { label: "Aksi", key: "Aksi", align: "text-left" },
   ];
 
-  // const handleMaterialChange = (index, key, value) => {
-  //   setMaterials(prev => prev.map((item, i) => {
-  //     if (i === index) {
-  //       const newItem = { ...item, [key]: value };
-  //       if (key === "Harga Satuan" || key === "Kuantitas") {
-  //         newItem["Total Biaya"] = newItem["Harga Satuan"] * newItem["Kuantitas"];
-  //       }
-  //       return newItem;
-  //     }
-  //     return item;
-  //   }));
-  // };
-  
-  // const handleAddMaterial = () => {
-  //   setMaterials(prev => [...prev, {
-  //     id: Date.now(),
-  //     value: "",
-  //     "Nama Bahan": "",
-  //     "Harga Satuan": 0,
-  //     "Kuantitas": 1,
-  //     "Total Biaya": 0
-  //   }]);
-  //  };
+  const handleDeleteMaterial = (materialId) => {
+    setMaterials(prevMaterials => {
+      const updatedMaterials = prevMaterials.filter(material => material.id !== materialId);
+      return updatedMaterials.map((material, index) => ({
+        ...material,
+        No: index + 1
+      }));
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -666,25 +804,82 @@ export default function EditBarang() {
       setLoading(true);
       const formData = new FormData();
   
-      formData.append('kategori_barang_id', data.info_barang.Kategori);
-      formData.append('nama_barang', data.info_barang["Nama Barang"]);
-      formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-  
-      // Validasi jika foto belum dipilih
-      if (!data.info_barang.Foto) {
-        setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
+      // Validasi data wajib untuk semua role
+      if (!data.info_barang["Nama Barang"]) {
+        setErrorMessage("Nama barang harus diisi");
         setErrorAlert(true);
-        setLoading(false);
-        return; 
+        return;
       }
   
-      if (data.info_barang.Foto instanceof File) {
-        formData.append('image', data.info_barang.Foto);
+      if (!data.info_barang.Kategori) {
+        setErrorMessage("Kategori harus dipilih");
+        setErrorAlert(true);
+        return;
+      }
+  
+      if (!data.info_barang["Jumlah Minimum Stok"]) {
+        setErrorMessage("Jumlah minimum stok harus diisi");
+        setErrorAlert(true);
+        return;
+      }
+  
+      if (isAdminGudang) {
+        // Data untuk admin gudang sesuai format API
+        formData.append('nama_barang', data.info_barang["Nama Barang"]);
+        formData.append('kategori_barang_id', data.info_barang.Kategori);
+        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        formData.append('keuntungan', data.keuntungan);
+        formData.append('harga_jual', data.hargaJual);
+        formData.append('total_hpp', data.totalHPP);
+  
+        // Handle materials/rincian bahan sesuai format API
+        materials.forEach((material, index) => {
+          formData.append(`rincian_bahan[${index}][barang_mentah_id]`, material.id);
+          formData.append(`rincian_bahan[${index}][harga_satuan]`, material["Harga Satuan"]);
+          formData.append(`rincian_bahan[${index}][kuantitas]`, material["Kuantitas"]);
+          formData.append(`rincian_bahan[${index}][total_biaya]`, material["Total Biaya"]);
+        });
+  
+        // Handle image jika ada perubahan
+        if (data.info_barang.Foto instanceof File) {
+          formData.append('image', data.info_barang.Foto);
+        }
+  
+        // Submit ke API admin gudang
+        const response = await api.put(`/barang-handmade-gudang/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/handmade');
+          }, 2000);
+        }
       } else {
-        formData.append('image', data.info_barang.Foto);
-      }
+        const formData = new FormData();
   
-      if (!isAdminGudang) {
+        formData.append('kategori_barang_id', data.info_barang.Kategori);
+        formData.append('nama_barang', data.info_barang["Nama Barang"]);
+        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+    
+        // Validasi jika foto belum dipilih
+        if (!data.info_barang.Foto) {
+          setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
+          setErrorAlert(true);
+          setLoading(false);
+          return; 
+        }
+    
+        if (data.info_barang.Foto instanceof File) {
+          formData.append('image', data.info_barang.Foto);
+        } else {
+          formData.append('image', data.info_barang.Foto);
+        }
+  
         const rincianBiayaData = [];
         let hasError = false;
         let cabangError = "";
@@ -732,7 +927,7 @@ export default function EditBarang() {
             rincianBiayaData.push(rincianData);
           }
         });
-      
+  
         if (hasError) {
           setLoading(false);
           return;
@@ -762,32 +957,24 @@ export default function EditBarang() {
             }
           });
         });
-      }
   
-      // Log the data
-      console.log('Form Data:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
+        const response = await api.put(`/barang-handmade/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
   
-      // Submit to API
-      const response = await api.put(`/barang-handmade/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      if (response.data.success) {
-        setAlertSucc(true);
-        setTimeout(() => {
-          navigate('/dataBarang/handmade');
-        }, 2000);
-      } else {
-        setErrorMessage(response.data.message);
-        setErrorAlert(true);
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/handmade');
+          }, 2000);
+        }
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data');
+      setErrorAlert(true);
     } finally {
       setLoading(false);
     }
@@ -798,6 +985,38 @@ export default function EditBarang() {
   const handleBtnCancel = () => {
     navigate('/dataBarang/handmade')
   }
+
+  
+  const calculateMaterialCosts = () => {
+    return materials.reduce((sum, material) => sum + (material["Total Biaya"] || 0), 0);
+  };
+
+  const calculateOperationalCosts = () => {
+    return data.rincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0);
+  };
+
+  
+const updateTotalHPP = () => {
+  if (isAdminGudang) {
+    const materialCosts = calculateMaterialCosts();
+    const operationalCosts = calculateOperationalCosts();
+    const totalHPP = materialCosts + operationalCosts;
+    
+    setData(prev => ({
+      ...prev,
+      totalHPP,
+      keuntungan: prev.hargaJual - totalHPP
+    }));
+  }
+};
+
+useEffect(() => {
+  if (isAdminGudang) {
+    updateTotalHPP();
+  }
+}, [materials, data.rincianBiaya]);
+
+
   return (
     <LayoutWithNav
       menuItems={menuItems}
@@ -815,7 +1034,7 @@ export default function EditBarang() {
                 {data.info_barang.Foto ? (
                   <div className="mb-4">
                     <img 
-                      src={`${import.meta.env.VITE_API_URL}/images-barang-handmade/${data.info_barang.Foto}`}
+                      src={`${import.meta.env.VITE_API_URL}/${isAdminGudang ? 'images-barang-handmade-gudang' : 'images-barang-handmade'}/${data.info_barang.Foto}`}
                       alt="Preview" 
                       className="h-32 w-32 object-cover rounded-md"
                     />
@@ -1027,10 +1246,29 @@ export default function EditBarang() {
                             updatedMaterials[index]["Total Biaya"] = 
                               updatedMaterials[index]["Harga Satuan"] * Number(value);
                             setMaterials(updatedMaterials);
+                            
+                            const materialCosts = updatedMaterials.reduce((sum, material) => sum + (material["Total Biaya"] || 0), 0);
+                            const operationalCosts = calculateOperationalCosts();
+                            const newTotalHPP = materialCosts + operationalCosts;
+                            
+                            setData(prev => ({
+                              ...prev,
+                              totalHPP: newTotalHPP,
+                              keuntungan: prev.hargaJual - newTotalHPP
+                            }));
                           }}
                         />
                       ),
-                      "Total Biaya": `Rp${row["Total Biaya"].toLocaleString()}`
+                      "Total Biaya": `Rp${row["Total Biaya"].toLocaleString()}`,
+                      "Aksi": (
+                          <Button
+                            label="Hapus"
+                            bgColor=""
+                            textColor="text-red-600"
+                            hoverColor="hover:text-red-800"
+                            onClick={() => handleDeleteMaterial(row.id)}
+                          />
+                        )
                      }))}
                   />
                   <Button

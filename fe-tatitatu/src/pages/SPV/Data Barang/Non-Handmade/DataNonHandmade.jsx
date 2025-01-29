@@ -15,13 +15,18 @@ export default function DataBarangNonHandmade() {
     const [isLoading, setIsLoading] = useState(false);
     const [data, setData] = useState([]);
     const [subMenus, setSubMenus] = useState([]);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
     
     const navigate = useNavigate();
+
 
     const fetchSubMenus = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/kategori-barang');
+            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+            const response = await api.get(endpoint);
+            
             if (response.data.success) {
                 const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
                 setSubMenus(['Semua', ...subMenuOptions]);
@@ -36,17 +41,35 @@ export default function DataBarangNonHandmade() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/barang-non-handmade');
+            const endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : '/barang-non-handmade';
+            const response = await api.get(endpoint);
             
             if (response.data.success) {
-                const transformedData = response.data.data.map(item => ({
-                    id: item.barang_non_handmade_id,
-                    title: item.nama_barang,
-                    price: `Rp${item.rincian_biaya[0]?.harga_jual.toLocaleString('id-ID')}`,
-                    image: `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}` || "https://via.placeholder.com/50",
-                    type: item.barang_non_handmade_id,
-                    category: item.kategori.nama_kategori_barang
-                }));
+                const transformedData = response.data.data.map(item => {
+                    if (isAdminGudang) {
+                        return {
+                            id: item.barang_nonhandmade_id,
+                            title: item.nama_barang,
+                            price: `Rp${item.harga_jual.toLocaleString('id-ID')}`,
+                            image: item.image ? 
+                                `${import.meta.env.VITE_API_URL}/images-barang-non-handmade-gudang/${item.image}` : 
+                                "https://via.placeholder.com/50",
+                            type: item.barang_nonhandmade_id,
+                            category: item.kategori.nama_kategori_barang
+                        };
+                    } else {
+                        return {
+                            id: item.barang_non_handmade_id,
+                            title: item.nama_barang,
+                            price: `Rp${item.rincian_biaya[0]?.harga_jual.toLocaleString('id-ID')}`,
+                            image: item.image ? 
+                                `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}` : 
+                                "https://via.placeholder.com/50",
+                            type: item.barang_non_handmade_id,
+                            category: item.kategori.nama_kategori_barang
+                        };
+                    }
+                });
                 setData(transformedData);
             }
         } catch (error) {
@@ -77,7 +100,11 @@ export default function DataBarangNonHandmade() {
     const handleDelete = async () => {
         try {
             setIsLoading(true);
-            const response = await api.delete(`/barang-non-handmade/${selectedId}`);
+            const endpoint = isAdminGudang 
+                ? `/barang-nonhandmade-gudang/${selectedId}`
+                : `/barang-non-handmade/${selectedId}`;
+            
+            const response = await api.delete(endpoint);
             
             if (response.data.success) {
                 setModalSucc(true);
@@ -90,6 +117,7 @@ export default function DataBarangNonHandmade() {
             setIsLoading(false);
         }
     };
+
     const handleBtnDelCancel = () => {
         setSelectedId(null);
         setModalDelete(false);

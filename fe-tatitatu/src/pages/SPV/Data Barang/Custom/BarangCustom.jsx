@@ -205,14 +205,11 @@ const handleAddBtn = () => {
         if (modalMode === "add" && data2.info_barang.Foto) {
           formData.append('image', data2.info_barang.Foto);
         }
-        if (modalMode === "add" && data2.info_barang.Foto) {
-          formData.append('image', data2.info_barang.Foto);
-        }
         formData.append('nama_barang', data2.info_barang["Nama Barang"]);
         formData.append('jumlah_minimum_stok', data2.info_barang["Jumlah Minimum Stok"]);
-        formData.append('harga', data2.rincian_biaya[0].Harga);
-        formData.append('isi', data2.rincian_biaya[0].Isi);
-        formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+        formData.append('harga', data2.rincian_biaya[0].Harga); 
+        formData.append('isi', data2.rincian_biaya[0].Isi);    
+        formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan); 
       } else {
         // barang-custom
         if (modalMode === "add") {

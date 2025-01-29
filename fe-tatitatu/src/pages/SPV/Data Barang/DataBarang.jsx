@@ -18,11 +18,15 @@ export default function DataBarang() {
     const [subMenus, setSubMenus] = useState([]);
     
     const navigate = useNavigate();
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
     const fetchSubMenus = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/kategori-barang');
+            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+            const response = await api.get(endpoint);
+            
             if (response.data.success) {
                 const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
                 setSubMenus(['Semua', ...subMenuOptions]);
@@ -37,17 +41,30 @@ export default function DataBarang() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/barang-handmade');
+            const endpoint = isAdminGudang ? '/barang-handmade-gudang' : '/barang-handmade';
+            const response = await api.get(endpoint);
             
             if (response.data.success) {
-                const transformedData = response.data.data.map(item => ({
-                    id: item.barang_handmade_id,
-                    title: item.nama_barang,
-                    price: `Rp${item.rincian_biaya[0]?.harga_jual.toLocaleString('id-ID')}`,
-                    image: `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.image}` || "https://via.placeholder.com/50",
-                    type: item.barang_handmade_id,
-                    category: item.kategori_barang.nama_kategori_barang
-                }));
+                const transformedData = response.data.data.map(item => {
+                    const hargaJual = isAdminGudang 
+                        ? item.harga_jual 
+                        : item.rincian_biaya?.[0]?.harga_jual;
+                    
+                    const kategoriNama = isAdminGudang
+                        ? item.kategori?.nama_kategori_barang
+                        : item.kategori_barang?.nama_kategori_barang;
+
+                    return {
+                        id: item.barang_handmade_id,
+                        title: item.nama_barang,
+                        price: hargaJual ? `Rp${hargaJual.toLocaleString('id-ID')}` : '-',
+                        image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-handmade-gudang' : 'barang-handmade'}/${item.image}` 
+                        : "https://via.placeholder.com/50",
+                        type: item.barang_handmade_id,
+                        category: kategoriNama
+                    };
+                });
                 setData(transformedData);
             }
         } catch (error) {
@@ -56,7 +73,7 @@ export default function DataBarang() {
             setIsLoading(false);
         }
     };
-
+    
     useEffect(() => {
         fetchSubMenus();
         fetchDataBarang();
@@ -78,7 +95,11 @@ export default function DataBarang() {
     const handleDelete = async () => {
         try {
             setIsLoading(true);
-            const response = await api.delete(`/barang-handmade/${selectedId}`);
+            const endpoint = isAdminGudang 
+                ? `/barang-handmade-gudang/${selectedId}`
+                : `/barang-handmade/${selectedId}`;
+            
+            const response = await api.delete(endpoint);
             
             if (response.data.success) {
                 setModalSucc(true);
@@ -91,6 +112,7 @@ export default function DataBarang() {
             setIsLoading(false);
         }
     };
+    
     const handleBtnDelCancel = () => {
         setSelectedId(null);
         setModalDelete(false);

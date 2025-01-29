@@ -1,35 +1,119 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import Spinner from "../../../components/Spinner";
+import api from "../../../utils/api";
+import AlertSuccess from "../../../components/AlertSuccess";
+import AlertError from "../../../components/AlertError";
 
 export default function BiayaRumahProduksi() {
   const [isEditing, setIsEditing] = useState(false);
-  
+  const [isLoading, setLoading] = useState(false)
+  const [alertSucc, setAlertSucc] = useState(false);
+  const [errorAlert, setErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+
   const [data, setData] = useState({
     operasionalStaff: {
-      data: [
-        {
-          id: 1,
-          "Nama Biaya": "Head",
-          "Total Biaya": 500000,
-        }
-      ],
-      total: 500000,
-      rataTercetak: 157960
+      data: [],
+      total: 0,
+      rataTercetak: 0
     },
     operasionalProduksi: {
-      data: [
-        {
-          id: 1,
-          "Nama Divisi": "Produksi",
-          "Total Biaya": 500000,
-        }
-      ],
-      waktuKerja: 10080,
-      totalModal: 109
+      data: [],
+      waktuKerja: 0,
+      totalModal: 0
     }
   });
+
+  const fetchBiayaGudang = async () => {
+    try {
+      setLoading(true)
+      const response = await api.get('/biaya-gudang');
+      
+      if (response.data.success) {
+        const apiData = response.data.data;
+        
+        // Transform API data to match our structure
+        const transformedData = {
+          operasionalStaff: {
+            data: apiData.biaya_staff.map((item, index) => ({
+              id: index + 1,
+              "Nama Biaya": item.nama_biaya,
+              "Total Biaya": parseInt(item.total_biaya)
+            })),
+            total: parseFloat(apiData.total),
+            rataTercetak: parseInt(apiData.rata_rata)
+          },
+          operasionalProduksi: {
+            data: apiData.biaya_operasional.map((item, index) => ({
+              id: index + 1,
+              "Nama Divisi": item.nama_biaya,
+              "Total Biaya": parseInt(item.total_biaya)
+            })),
+            waktuKerja: parseInt(apiData.waktu_kerja),
+            totalModal: parseFloat(apiData.total_modal)
+          }
+        };
+        
+        setData(transformedData);
+      } else {
+        setErrorMessage(response.data.message);
+        setErrorAlert(true);
+      }
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || "Error fetching data");
+      setErrorAlert(true);
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  useEffect(() => {
+    fetchBiayaGudang();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true)
+      const formDataToSend = {
+        biaya_operasional: data.operasionalProduksi.data.map(item => ({
+          nama_biaya: item["Nama Divisi"],
+          jumlah_biaya: item["Total Biaya"]
+        })),
+        biaya_staff: data.operasionalStaff.data.map(item => ({
+          nama_biaya: item["Nama Biaya"],
+          jumlah_biaya: item["Total Biaya"]
+        })),
+        total: data.operasionalStaff.total,
+        rata_rata: data.operasionalStaff.rataTercetak,
+        total_biaya: calculateTotalBiaya(),
+        waktu_kerja: data.operasionalProduksi.waktuKerja,
+        total_modal: calculateTotalModal()
+      };
+
+      const response = await api.put('/biaya-gudang/1', formDataToSend, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.data.success) {
+        setAlertSucc(true);
+        setIsEditing(false);
+      } else {
+        setErrorMessage(response.data.message);
+        setErrorAlert(true);
+      }
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || "Error saving data");
+      setErrorAlert(true);
+    } finally {
+      setLoading(false)
+    }
+  };
 
   const handleAddOperasionalStaffRow = () => {
     setData(prev => ({
@@ -140,10 +224,7 @@ export default function BiayaRumahProduksi() {
                 label="Simpan"
                 bgColor="bg-primary"
                 textColor="text-white"
-                onClick={() => {
-                  // Add save logic here
-                  setIsEditing(false);
-                }}
+                onClick={handleSave}
               />
             </div>
           )}
@@ -169,7 +250,7 @@ export default function BiayaRumahProduksi() {
                     <td className="py-2 px-4">
                       {isEditing ? (
                         <Input
-                            showRequired={false}
+                          showRequired={false}
                           value={item["Nama Biaya"]}
                           onChange={(value) => handleInputChange("operasionalStaff", index, "Nama Biaya", value)}
                         />
@@ -223,12 +304,12 @@ export default function BiayaRumahProduksi() {
                       value={data.operasionalStaff.rataTercetak}
                       onChange={(value) => handleMetricChange("operasionalStaff", "rataTercetak", value)}
                     />
-                  ) : data.operasionalStaff.rataTercetak}
+                  ) : data.operasionalStaff.rataTercetak.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-primary font-bold">Total Biaya</span>
-                <span className="text-primary font-bold">Rp{calculateTotalBiaya().toFixed(0)}</span>
+                <span className="text-primary font-bold">Rp{Math.round(calculateTotalBiaya()).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -307,12 +388,30 @@ export default function BiayaRumahProduksi() {
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-primary font-bold">Total Modal Operasional Produksi</span>
-                <span className="text-primary font-bold">Rp{calculateTotalModal().toFixed(0)}</span>
+                <span className="text-primary font-bold">Rp{Math.round(calculateTotalModal()).toLocaleString()}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {isLoading && <Spinner/>}
+
+              {alertSucc && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data berhasil diperbaharui"
+                        confirmLabel="Ok"
+                    />
+                )}
+
+        {errorAlert && (
+              <AlertError
+                title="Gagal!!"
+                description={errorMessage}
+                confirmLabel="Ok"
+                onConfirm={() => setErrorAlert(false)}
+              />
+            )}
     </LayoutWithNav>
   );
 }

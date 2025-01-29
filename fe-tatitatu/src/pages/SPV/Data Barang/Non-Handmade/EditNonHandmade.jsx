@@ -35,29 +35,80 @@ export default function EditBarang() {
 
   const fetchDetailBarang = async () => {
     try {
-      setLoading(true)
-      const [detailResponse, biayaTokoResponse] = await Promise.all([
-        api.get(`/barang-non-handmade/${id}`),
-        api.get('/biaya-toko')
-      ]);
+      setLoading(true);
+      
+      if (isAdminGudang) {
+        // Khusus untuk admin gudang
+        const [detailResponse, biayaGudangResponse, kategoriResponse] = await Promise.all([
+          api.get(`/barang-nonhandmade-gudang/${id}`),
+          api.get('/biaya-gudang'),
+          api.get('/kategori-barang-gudang')
+        ]);
   
-      if (detailResponse.data.success) {
-        const detailData = detailResponse.data.data;
-        const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
-        
-        setData(prevData => ({
-          ...prevData,
-          info_barang: {
-            ...prevData.info_barang,
-            Nomor: detailData.barang_non_handmade_id,
-            "Nama Barang": detailData.nama_barang,
-            "Kategori": detailData.kategori_barang_id,
-            "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
-            "Foto": detailData.image
-          }
-        }));
+        if (detailResponse.data.success) {
+          
+
+          const itemData = detailResponse.data.data;
+          const biayaGudangData = biayaGudangResponse.data.success ? biayaGudangResponse.data.data : null;
   
-        if (!isAdminGudang) {
+          // Set rincian biaya dari data biaya gudang sebagai data tidak bisa diedit
+          const rincianBiayaList = [
+            {
+              id: 1,
+              "Nama Biaya": "Biaya Operasional dan Staff",
+              "Jumlah Biaya": biayaGudangData?.total_biaya || 0,
+              isEditable: false
+            },
+            {
+              id: 2,
+              "Nama Biaya": "Biaya Operasional Produksi",
+              "Jumlah Biaya": biayaGudangData?.total_modal || 0,
+              isEditable: false
+            }
+          ];
+
+          const kategoriList = kategoriResponse.data.success ? kategoriResponse.data.data : [];
+          const kategoriId = kategoriList.find(k => 
+            k.nama_kategori_barang === itemData.kategori.nama_kategori_barang
+          )?.kategori_barang_id;
+
+          itemData.rincian_biaya.forEach((biaya, index) => {
+            if (biaya.nama_biaya !== "Biaya Operasional dan Staff" && 
+                biaya.nama_biaya !== "Biaya Operasional Produksi") {
+              rincianBiayaList.push({
+                id: rincianBiayaList.length + 1,
+                "Nama Biaya": biaya.nama_biaya,
+                "Jumlah Biaya": biaya.jumlah_biaya,
+                isEditable: true
+              });
+            }
+          });
+  
+          setData({
+            info_barang: {
+              Nomor: itemData.barang_nonhandmade_id,
+              "Nama Barang": itemData.nama_barang,
+              "Kategori": kategoriId,
+              "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
+              "Foto": itemData.image
+            },
+            totalHPP: itemData.total_hpp,
+            keuntungan: itemData.keuntungan,
+            hargaJual: itemData.harga_jual,
+            rincianBiaya: rincianBiayaList
+          });
+        }
+      } else {
+        // Untuk non-admin gudang
+        const [detailResponse, biayaTokoResponse] = await Promise.all([
+          api.get(`/barang-non-handmade/${id}`),
+          api.get('/biaya-toko')
+        ]);
+  
+        if (detailResponse.data.success) {
+          const detailData = detailResponse.data.data;
+          const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
+  
           const initialHargaPerCabang = {};
           const initialRincianBiaya = {};
   
@@ -73,32 +124,16 @@ export default function EditBarang() {
               };
   
               const biayaList = [];
-              
-              // Add biaya operasional
-              if (biayaToko?.biaya_operasional) {
-                biayaToko.biaya_operasional.forEach(biaya => {
-                  biayaList.push({
-                    id: biaya.biaya_toko_id,
-                    "Nama Biaya": biaya.nama_biaya,
-                    "Jumlah Biaya": biaya.jumlah_biaya,
-                    isEditable: false
-                  });
+  
+              if (biayaToko) {
+                biayaList.push({
+                  id: biayaToko.biaya_toko_id,
+                  "Nama Biaya": `Biaya Operasional dan Staff ${cabangData.nama_cabang}`,
+                  "Jumlah Biaya": biayaToko.total_biaya,
+                  isEditable: false
                 });
               }
   
-              // Add biaya staff
-              if (biayaToko?.biaya_staff) {
-                biayaToko.biaya_staff.forEach(biaya => {
-                  biayaList.push({
-                    id: biaya.biaya_toko_id,
-                    "Nama Biaya": `Biaya Staff ${biaya.nama_biaya}`,
-                    "Jumlah Biaya": biaya.jumlah_biaya,
-                    isEditable: false
-                  });
-                });
-              }
-  
-              // Add custom biaya from detail
               rincian.detail_rincian_biaya.forEach(detail => {
                 if (!detail.biaya_toko_id) {
                   biayaList.push({
@@ -117,14 +152,24 @@ export default function EditBarang() {
           setRincianBiayaPerCabang(initialRincianBiaya);
           setData(prevData => ({
             ...prevData,
+            info_barang: {
+              ...prevData.info_barang,
+              Nomor: detailData.barang_non_handmade_id,
+              "Nama Barang": detailData.nama_barang,
+              "Kategori": detailData.kategori_barang_id,
+              "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
+              "Foto": detailData.image
+            },
             hargaPerCabang: initialHargaPerCabang
           }));
         }
       }
     } catch (error) {
       console.error('Error fetching detail:', error);
+      setErrorMessage('Gagal mengambil detail barang');
+      setErrorAlert(true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -299,95 +344,6 @@ export default function EditBarang() {
 
   const [rincianBiayaPerCabang, setRincianBiayaPerCabang] = useState({});
 
-  // const fetchCabangAndBiayaData = async () => {
-  //   try {
-  //     const [cabangResponse, biayaResponse] = await Promise.all([
-  //       api.get('/cabang'),
-  //       api.get('/biaya-toko'),
-  //     ]);
-  
-  //     if (cabangResponse.data.success && biayaResponse.data.success) {
-  //       const cabangData = cabangResponse.data.data;
-  //       const biayaData = biayaResponse.data.data;
-  
-  //       setDataCabang(cabangData);
-  
-  //       if (cabangData.length > 0) {
-  //         setSelectedCabang(cabangData[0].nama_cabang);
-  //       }
-  
-  //       const options = cabangData.map((item) => ({
-  //         label: item.nama_cabang,
-  //         value: item.nama_cabang,
-  //       }));
-  //       setDataCabangOptions(options);
-  
-  //       const initialRincian = {};
-  //       const initialHargaPerCabang = {};
-  
-  //       cabangData.forEach((cabang) => {
-  //         const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
-  
-  //         if (biayaToko) {
-  //           const biayaList = [];
-  
-  //           // Proses biaya operasional
-  //           biayaToko.biaya_operasional.forEach((biaya, index) => {
-  //             biayaList.push({
-  //               id: biaya.biaya_toko_id,
-  //               "Nama Biaya": biaya.nama_biaya,
-  //               "Jumlah Biaya": biaya.jumlah_biaya,
-  //               isEditable: false,
-  //             });
-  //           });
-  
-  //           // Proses biaya staff
-  //           biayaToko.biaya_staff.forEach((biaya, index) => {
-  //             biayaList.push({
-  //               id: biaya.biaya_toko_id,
-  //               "Nama Biaya": `Biaya Staff ${biaya.nama_biaya}`,
-  //               "Jumlah Biaya": biaya.jumlah_biaya,
-  //               isEditable: false,
-  //             });
-  //           });
-  
-  //           // Jika ada data biaya, tambahkan ke rincian
-  //           initialRincian[cabang.nama_cabang] = biayaList;
-  
-  //           // Set data harga per cabang
-  //           initialHargaPerCabang[cabang.nama_cabang] = {
-  //             totalHPP: biayaToko.total_biaya,
-  //             hargaJual: 0,
-  //             keuntungan: 0,
-  //           };
-  //         } else {
-  //           // Jika tidak ada data biaya
-  //           initialRincian[cabang.nama_cabang] = null;
-  //           initialHargaPerCabang[cabang.nama_cabang] = {
-  //             totalHPP: 0, // Default 0
-  //             hargaJual: 0,
-  //             keuntungan: 0,
-  //           };
-  //         }
-  //       });
-  
-  //       // Set rincian dan harga per cabang
-  //       setRincianBiayaPerCabang(initialRincian);
-  
-  //       if (cabangData.length > 0) {
-  //         const firstCabang = cabangData[0].nama_cabang;
-  //         setSelectedCabang(firstCabang);
-  //         setData((prevData) => ({
-  //           ...prevData,
-  //           hargaPerCabang: initialHargaPerCabang,
-  //         }));
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching data:', error);
-  //   }
-  // };
-
   const fetchCabangAndBiayaData = async () => {
     try {
       const [cabangResponse, biayaResponse] = await Promise.all([
@@ -491,12 +447,25 @@ export default function EditBarang() {
 
   const handleInputChange = (type, rowIndex, key, value) => {
     if (type === 'gudang') {
-      setData(prevData => ({
-        ...prevData,
-        rincianBiaya: prevData.rincianBiaya.map((row, index) =>
-          index === rowIndex ? { ...row, [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value } : row
-        )
-      }));
+      setData(prevData => {
+        const updatedRincianBiaya = prevData.rincianBiaya.map((row, index) =>
+          index === rowIndex ? { 
+            ...row, 
+            [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value 
+          } : row
+        );
+
+        const newTotalHPP = updatedRincianBiaya.reduce((sum, item) => 
+          sum + (Number(item["Jumlah Biaya"]) || 0), 0
+        );
+  
+        return {
+          ...prevData,
+          rincianBiaya: updatedRincianBiaya,
+          totalHPP: newTotalHPP,
+          keuntungan: prevData.hargaJual - newTotalHPP
+        };
+      });
     } else {
       setRincianBiayaPerCabang(prevData => {
         const cabangData = [...prevData[type]];
@@ -662,25 +631,95 @@ export default function EditBarang() {
       setLoading(true);
       const formData = new FormData();
   
-      formData.append('kategori_barang_id', data.info_barang.Kategori);
-      formData.append('nama_barang', data.info_barang["Nama Barang"]);
-      formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-  
-      // Validasi jika foto belum dipilih
-      if (!data.info_barang.Foto) {
-        setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
+      // Validasi data wajib untuk semua role
+      if (!data.info_barang.Kategori) {
+        setErrorMessage("Kategori harus dipilih");
         setErrorAlert(true);
         setLoading(false);
-        return; 
+        return;
       }
   
-      if (data.info_barang.Foto instanceof File) {
-        formData.append('image', data.info_barang.Foto);
+      if (!data.info_barang["Nama Barang"]) {
+        setErrorMessage("Nama barang harus diisi");
+        setErrorAlert(true);
+        setLoading(false);
+        return;
+      }
+  
+      if (!data.info_barang["Jumlah Minimum Stok"]) {
+        setErrorMessage("Jumlah minimum stok harus diisi");
+        setErrorAlert(true);
+        setLoading(false);
+        return;
+      }
+  
+      if (isAdminGudang) {
+        // Data untuk admin gudang
+        formData.append('nama_barang', data.info_barang["Nama Barang"]);
+        formData.append('kategori_barang_id', data.info_barang.Kategori);
+        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        formData.append('keuntungan', data.keuntungan);
+        formData.append('harga_jual', data.hargaJual);
+        formData.append('total_hpp', data.totalHPP);
+  
+        // Validasi jika foto belum dipilih
+        if (!data.info_barang.Foto) {
+          setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
+          setErrorAlert(true);
+          setLoading(false);
+          return; 
+        }
+  
+        // Handle image upload
+        if (data.info_barang.Foto instanceof File) {
+          formData.append('image', data.info_barang.Foto);
+        } else {
+          formData.append('image', data.info_barang.Foto);
+        }
+  
+        // Filter rincian biaya yang editable saja
+        const editableRincianBiaya = data.rincianBiaya.filter(item => item.isEditable);
+        
+        // Append rincian biaya yang sudah difilter
+        editableRincianBiaya.forEach((biaya, index) => {
+          formData.append(`rincian_biaya[${index}][nama_biaya]`, biaya["Nama Biaya"]);
+          formData.append(`rincian_biaya[${index}][jumlah_biaya]`, biaya["Jumlah Biaya"]);
+        });
+  
+        // Submit to API admin gudang
+        const response = await api.put(`/barang-nonhandmade-gudang/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/non-handmade');
+          }, 2000);
+        }
       } else {
-        formData.append('image', data.info_barang.Foto);
-      }
+        // Data untuk non-admin gudang 
+        formData.append('kategori_barang_id', data.info_barang.Kategori);
+        formData.append('nama_barang', data.info_barang["Nama Barang"]);
+        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
   
-      if (!isAdminGudang) {
+        // Validasi jika foto belum dipilih
+        if (!data.info_barang.Foto) {
+          setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
+          setErrorAlert(true);
+          setLoading(false);
+          return; 
+        }
+  
+        if (data.info_barang.Foto instanceof File) {
+          formData.append('image', data.info_barang.Foto);
+        } else {
+          formData.append('image', data.info_barang.Foto);
+        }
+  
         const rincianBiayaData = [];
         let hasError = false;
         let cabangError = "";
@@ -741,7 +780,7 @@ export default function EditBarang() {
           formData.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
         
           biaya.detail_rincian_biaya.forEach((detail, detailIndex) => {
-            if (detail.biaya_toko_id) {  // Cek biaya_toko_id, bukan id
+            if (detail.biaya_toko_id) {
               formData.append(
                 `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][biaya_toko_id]`,
                 detail.biaya_toko_id
@@ -758,32 +797,25 @@ export default function EditBarang() {
             }
           });
         });
-      }
   
-      // Log the data
-      // console.log('Form Data:');
-      // for (let [key, value] of formData.entries()) {
-      //   console.log(`${key}:`, value);
-      // }
+        // Submit to API non-admin gudang
+        const response = await api.put(`/barang-non-handmade/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
   
-      // Submit to API
-      const response = await api.put(`/barang-non-handmade/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      if (response.data.success) {
-        setAlertSucc(true);
-        setTimeout(() => {
-          navigate('/dataBarang/non-handmade');
-        }, 2000);
-      } else {
-        setErrorMessage(response.data.message);
-        setErrorAlert(true);
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/non-handmade');
+          }, 2000);
+        }
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat mengubah data');
+      setErrorAlert(true);
     } finally {
       setLoading(false);
     }
@@ -795,6 +827,21 @@ export default function EditBarang() {
   const handleBtnCancel = () => {
     navigate('/dataBarang/handmade')
   }
+
+  useEffect(() => {
+    if (isAdminGudang && data.rincianBiaya) {
+      const totalHPP = data.rincianBiaya.reduce((sum, item) => 
+        sum + (Number(item["Jumlah Biaya"]) || 0), 0
+      );
+
+      setData(prev => ({
+        ...prev,
+        totalHPP: totalHPP,
+        keuntungan: prev.hargaJual - totalHPP
+      }));
+    }
+  }, [isAdminGudang, data.rincianBiaya]);
+
   return (
     <LayoutWithNav
       label={"Edit Data Barang Handmade"}
@@ -810,7 +857,7 @@ export default function EditBarang() {
                 {data.info_barang.Foto ? (
                   <div className="mb-4">
                     <img 
-                      src={`${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${data.info_barang.Foto}`}
+                      src={`${import.meta.env.VITE_API_URL}/${isAdminGudang ? 'images-barang-non-handmade-gudang' : 'images-barang-non-handmade'}/${data.info_barang.Foto}`}
                       alt="Preview" 
                       className="h-32 w-32 object-cover rounded-md"
                     />
@@ -848,14 +895,17 @@ export default function EditBarang() {
                     value={data.info_barang.Kategori}
                   />
                 </div>
-                <Input
-                  label={"Waktu Pengerjaan"}
-                  type={"number"}
-                  required={true}
-                  value={data.info_barang["Waktu Pengerjaan"]}
-                  placeholder="Masukan Durasi Pengerjaan (Dalam Hitungan Menit)"
-                  onChange={(value) => handleInfoBarangChange("Waktu Pengerjaan", value)}
-                />
+                {isAdminGudang && (
+                  <Input
+                    label={"Waktu Pengerjaan"}
+                    type={"number"}
+                    required={true}
+                    value={data.info_barang["Waktu Pengerjaan"]}
+                    placeholder="Masukan Durasi Pengerjaan (Dalam Hitungan Menit)"
+                    onChange={(value) => handleInfoBarangChange("Waktu Pengerjaan", value)}
+                  />
+                )}
+                
                 <Input
                   label={"Jumlah Minimum Stok"}
                   type={"number"}
@@ -868,19 +918,73 @@ export default function EditBarang() {
 
               {isAdminGudang ? (
                 <section className="pt-5">
-                  <p className="font-bold">Rincian Biaya</p>
-                  <div className="pt-3">
-                    <Table
-                      headers={headers}
-                      data={data.rincianBiaya.map((row, index) => ({
-                        No: index + 1,
-                        "Nama Biaya": row["Nama Biaya"],
-                        "Jumlah Biaya": `Rp${formatCurrency(row["Jumlah Biaya"])}`,
-                        Aksi: null,
-                      }))}
-                    />
-                  </div>
-                </section>
+                <p className="font-bold">Rincian Biaya</p>
+                <div className="pt-3">
+                  <Table
+                    headers={headers}
+                    data={data.rincianBiaya.map((row, index) => ({
+                      No: index + 1,
+                      "Nama Biaya": row.isEditable ? (
+                        <Input
+                          showRequired={false}
+                          className="w-full max-w-xs sm:max-w-sm"
+                          value={row["Nama Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange('gudang', index, "Nama Biaya", value)
+                          }
+                        />
+                      ) : (
+                        row["Nama Biaya"]
+                      ),
+                      "Jumlah Biaya": row.isEditable ? (
+                        <Input
+                          showRequired={false}
+                          type="number"
+                          width="w-full"
+                          value={row["Jumlah Biaya"]}
+                          onChange={(value) =>
+                            handleInputChange('gudang', index, "Jumlah Biaya", value)
+                          }
+                        />
+                      ) : (
+                        `Rp${formatCurrency(row["Jumlah Biaya"])}`
+                      ),
+                      Aksi: row.isEditable && (
+                        <Button
+                          label="Hapus"
+                          bgColor=""
+                          textColor="text-red-600"
+                          hoverColor="hover:text-red-800"
+                          onClick={() => handleDeleteRow('gudang', row.id)}
+                        />
+                      ),
+                    }))}
+                  />
+                  <Button
+                    label="Tambah Baris"
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    }
+                    bgColor="focus:ring-primary"
+                    hoverColor="hover:border-primary hover:border"
+                    textColor="text-primary"
+                    onClick={() => handleAddRow('gudang')}
+                  />
+                </div>
+              </section>
               ) : (
                 <>
                   <section className="mt-8">
@@ -976,81 +1080,6 @@ export default function EditBarang() {
                   )}
                   
                 </>
-              )}
-
-              {isAdminGudang && (
-                <section className="pt-5">
-                <p className="font-bold">Rincian Jumlah dan Bahan</p>
-                <div className="pt-3">
-                  <Table
-                    headers={materialHeaders}
-                    data={materials.map((row, index) => ({
-                      No: index + 1,
-                      "Foto Produk": row.Foto ? (
-                        <img src={row.Foto} alt={row["Nama Bahan"]} className="w-12 h-12" />
-                      ) : null,
-                      "Nama Bahan": (
-                        <InputDropdown
-                          showRequired={false}
-                          options={materialOptions}
-                          value={row.selectedId}
-                          onSelect={(selectedOption) => {
-                            const updatedMaterials = [...materials];
-                            updatedMaterials[index] = {
-                              ...updatedMaterials[index],
-                              selectedId: selectedOption.value,
-                              "Nama Bahan": selectedOption.label,
-                              "Harga Satuan": selectedOption.price,
-                              "Total Biaya": selectedOption.price * updatedMaterials[index]["Kuantitas"],
-                              "Foto": selectedOption.image
-                            };
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Harga Satuan": `Rp${row["Harga Satuan"].toLocaleString()}`,
-                      "Kuantitas": (
-                        <Input
-                          showRequired={false}
-                          type="number" 
-                          value={row["Kuantitas"]}
-                          onChange={(value) => {
-                            const updatedMaterials = [...materials];
-                            updatedMaterials[index]["Kuantitas"] = Number(value);
-                            updatedMaterials[index]["Total Biaya"] = 
-                              updatedMaterials[index]["Harga Satuan"] * Number(value);
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Total Biaya": `Rp${row["Total Biaya"].toLocaleString()}`
-                     }))}
-                  />
-                  <Button
-                    label="Tambah Baris"
-                    icon={
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        className="w-5 h-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    }
-                    bgColor="focus:ring-primary"
-                    hoverColor="hover:border-primary hover:border"
-                    textColor="text-primary"
-                    onClick={handleMaterialModal}
-                  />
-                </div>
-              </section>
               )}
 
               {/* Totals Section */}

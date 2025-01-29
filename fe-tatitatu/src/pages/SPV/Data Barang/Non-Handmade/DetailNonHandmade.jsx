@@ -24,78 +24,94 @@ export default function DetailBarang() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const itemResponse = await api.get(`/barang-non-handmade/${id}`);
-
-                if (itemResponse.data.success) {
-                    const itemData = itemResponse.data.data;
-                    const currentBranch = itemData.rincian_biaya[0];
-
-                    // Get biaya toko data if it exists
-                    const biayaTokoId = currentBranch.detail_rincian_biaya.find(detail => detail.biaya_toko_id)?.biaya_toko_id;
-                    let biayaTokoData;
+                if (isAdminGudang) {
+                    // Fetch data for admin gudang
+                    const response = await api.get(`/barang-nonhandmade-gudang/${id}`);
                     
-                    if (biayaTokoId) {
-                        const biayaTokoResponse = await api.get(`/biaya-toko/${biayaTokoId}`);
-                        if (biayaTokoResponse.data.success) {
-                            biayaTokoData = biayaTokoResponse.data.data;
+                    if (response.data.success) {
+                        const itemData = response.data.data;
+                        
+                        setData({
+                            "Nama Barang": itemData.nama_barang,
+                            "Nomor Barang": itemData.barang_nonhandmade_id,
+                            "Kategori": itemData.kategori.nama_kategori_barang,
+                            "Total HPP": itemData.total_hpp,
+                            "Total Keuntungan": itemData.keuntungan,
+                            "Harga Jual": itemData.harga_jual,
+                            "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
+                            "image": itemData.image,
+                            "rincian_biaya": itemData.rincian_biaya.map(rb => ({
+                                "Nama Biaya": rb.nama_biaya,
+                                "Jumlah Biaya": rb.jumlah_biaya,
+                                isEditable: true
+                            }))
+                        });
+                    }
+                } else {
+                    // Existing fetch logic for non-admin gudang
+                    const [itemResponse, biayaTokoResponse] = await Promise.all([
+                        api.get(`/barang-non-handmade/${id}`),
+                        api.get('/biaya-toko')
+                    ]);
+
+                    if (itemResponse.data.success) {
+                        const itemData = itemResponse.data.data;
+                        const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
+
+                        const initialHargaPerCabang = {};
+                        const allRincianBiaya = [];
+
+                        itemData.rincian_biaya.forEach(rincian => {
+                            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
+                            
+                            initialHargaPerCabang[rincian.cabang.nama_cabang] = {
+                                totalHPP: rincian.total_hpp,
+                                keuntungan: rincian.keuntungan,
+                                hargaJual: rincian.harga_jual
+                            };
+
+                            if (biayaToko) {
+                                allRincianBiaya.push({
+                                    id: biayaToko.biaya_toko_id,
+                                    "Nama Biaya": `Biaya Operasional dan Staff ${rincian.cabang.nama_cabang}`,
+                                    "Jumlah Biaya": biayaToko.total_biaya,
+                                    isEditable: false
+                                });
+                            }
+
+                            rincian.detail_rincian_biaya.forEach(detail => {
+                                if (!detail.biaya_toko_id && !detail.is_deleted) {
+                                    allRincianBiaya.push({
+                                        id: detail.detail_rincian_biaya_id,
+                                        "Nama Biaya": detail.nama_biaya,
+                                        "Jumlah Biaya": detail.jumlah_biaya,
+                                        isEditable: true
+                                    });
+                                }
+                            });
+                        });
+
+                        setData({
+                            "Nama Barang": itemData.nama_barang,
+                            "Nomor Barang": itemData.barang_non_handmade_id,
+                            "Kategori": itemData.kategori.nama_kategori_barang,
+                            "Total HPP": itemData.rincian_biaya[0]?.total_hpp || 0,
+                            "Total Keuntungan": itemData.rincian_biaya[0]?.keuntungan || 0,
+                            "Harga Jual": itemData.rincian_biaya[0]?.harga_jual || 0,
+                            "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
+                            "image": itemData.image,
+                            "rincian_biaya": allRincianBiaya,
+                            "dataCabang": itemData.rincian_biaya.map(rb => ({
+                                nama: rb.cabang.nama_cabang,
+                                totalHPP: rb.total_hpp,
+                                hargaJual: rb.harga_jual
+                            }))
+                        });
+
+                        if (itemData.rincian_biaya.length > 0) {
+                            setSelectedCabang(itemData.rincian_biaya[0].cabang.nama_cabang);
                         }
                     }
-
-                    const biayaFromToko = [];
-                    if (biayaTokoData) {
-                        // Add operasional biaya
-                        biayaTokoData.biaya_operasional?.forEach(biaya => {
-                            if (!biaya.is_deleted) {
-                                biayaFromToko.push({
-                                    id: `op-${biaya.biaya_operasional_id}`,
-                                    "Nama Biaya": biaya.nama_biaya,
-                                    "Jumlah Biaya": biaya.jumlah_biaya
-                                });
-                            }
-                        });
-
-                        // Add staff biaya
-                        biayaTokoData.biaya_staff?.forEach(biaya => {
-                            if (!biaya.is_deleted) {
-                                biayaFromToko.push({
-                                    id: `staff-${biaya.biaya_staff_id}`,
-                                    "Nama Biaya": biaya.nama_biaya,
-                                    "Jumlah Biaya": biaya.jumlah_biaya
-                                });
-                            }
-                        });
-                    }
-
-                    // Get additional rincian biaya (non-biaya toko)
-                    const additionalBiaya = currentBranch.detail_rincian_biaya
-                        .filter(detail => !detail.is_deleted && !detail.biaya_toko_id && detail.nama_biaya)
-                        .map(detail => ({
-                            id: detail.detail_rincian_biaya_id,
-                            "Nama Biaya": detail.nama_biaya,
-                            "Jumlah Biaya": detail.jumlah_biaya
-                        }));
-
-                    // Combine all biaya
-                    const allBiaya = [...biayaFromToko, ...additionalBiaya];
-
-                    setData({
-                        "Nama Barang": itemData.nama_barang,
-                        "Nomor Barang": itemData.barang_non_handmade_id,
-                        "Kategori": itemData.kategori.nama_kategori_barang,
-                        "Total HPP": currentBranch.total_hpp,
-                        "Total Keuntungan": currentBranch.keuntungan,
-                        "Harga Jual": currentBranch.harga_jual,
-                        "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
-                        "image": itemData.image,
-                        "rincian_biaya": allBiaya,
-                        "dataCabang": itemData.rincian_biaya.map(rb => ({
-                            nama: rb.cabang.nama_cabang,
-                            totalHPP: rb.total_hpp,
-                            hargaJual: rb.harga_jual
-                        }))
-                    });
-
-                    setSelectedCabang(itemData.rincian_biaya[0]?.cabang.nama_cabang || '');
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -105,20 +121,11 @@ export default function DetailBarang() {
         };
 
         fetchData();
-    }, [id]);
+    }, [id, isAdminGudang]);
 
     const breadcrumbItems = [
         { label: "List Data Barang Non Handmade", href: "/dataBarang/non-handmade" },
         { label: "Detail Barang", href: "" },
-    ];
-
-    const materialHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Foto Produk", key: "Foto", align: "text-left" },
-        { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
-        { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
-        { label: "Total Biaya", key: "Total Biaya", align: "text-left" }
     ];
 
     const headers = [
@@ -126,12 +133,6 @@ export default function DetailBarang() {
         { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
         { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
     ];
-
-    const dataCabang = data?.rincian_biaya?.map(rb => ({
-        nama: `Cabang ${rb.cabang_id}`,
-        totalHPP: rb.total_hpp,
-        hargaJual: rb.harga_jual
-    })) || [];
 
     function formatNumberWithDots(number) {
         return number?.toLocaleString('id-ID') || '0';
@@ -142,7 +143,9 @@ export default function DetailBarang() {
     const handleConfirmDel = async () => {
         try {
             setLoading(true)
-            const endpoint = `/barang-handmade/${id}`;
+            const endpoint = isAdminGudang 
+            ? `/barang-nonhandmade-gudang/${id}`
+            : `/barang-non-handmade/${id}`
             const response = await api.delete(endpoint);
             
             if (response.data.success) {
@@ -155,7 +158,7 @@ export default function DetailBarang() {
             setLoading(false)
         }
     };
-
+    
     const handleCancelDel = () => setModalDel(false);
     const handleConfirmSucc = () => {
         setModalSucc(false);
@@ -249,7 +252,7 @@ export default function DetailBarang() {
                         <div className="flex gap-8 my-6">
                             <div className="w-48 h-48">
                                 <img
-                                    src={`/uploads/${data.image}`}
+                                    src={`${import.meta.env.VITE_API_URL}/${isAdminGudang ? 'images-barang-non-handmade-gudang' : 'images-barang-non-handmade'}/${data.image}`}
                                     alt={data["Nama Barang"]}
                                     className="w-full h-full object-cover rounded-lg"
                                 />
@@ -300,30 +303,6 @@ export default function DetailBarang() {
                             />
                         </div>
 
-                        {isAdminGudang && (
-                            <div>
-                                <h3 className="font-bold mb-4">Rincian Jumlah dan Bahan</h3>
-                                <Table
-                                    headers={materialHeaders}
-                                    data={data.rincian_bahan?.map((item, index) => ({
-                                        No: index + 1,
-                                        Foto: (
-                                            <div className="w-12 h-12">
-                                                <img
-                                                    src={item.Foto}
-                                                    alt={item["Nama Bahan"]}
-                                                    className="w-full h-full object-cover rounded"
-                                                />
-                                            </div>
-                                        ),
-                                        "Nama Bahan": item["Nama Bahan"],
-                                        "Harga Satuan": `Rp${formatNumberWithDots(item["Harga Satuan"])}`,
-                                        "Kuantitas": item["Kuantitas"],
-                                        "Total Biaya": `Rp${formatNumberWithDots(item["Total Biaya"])}`
-                                    })) || []}
-                                />
-                            </div>
-                        )}
                     </div>
                 </section>
 
