@@ -8,6 +8,7 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
 import { X } from "lucide-react";
 import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function StokBarang() {
     const headers = [
@@ -27,12 +28,180 @@ export default function StokBarang() {
     const [selectedItem, setSelectedItem] = useState(null);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [stokData, setStokData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [cabangData, setCabangData] = useState([]);
+    const [cabangMapping, setCabangMapping] = useState({});
+    const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+
+    const getDetailEndpoint = (item) => {
+        if (item.barang_handmade_id) return `/barang-handmade/${item.barang_handmade_id}`;
+        if (item.barang_non_handmade_id) return `/barang-non-handmade/${item.barang_non_handmade_id}`;
+        if (item.barang_custom_id) return `/barang-custom/${item.barang_custom_id}`;
+        if (item.packaging_id) return `/packaging/${item.packaging_id}`;
+        return null;
+    };
+
+    const fetchItemDetail = async (item) => {
+        const endpoint = getDetailEndpoint(item);
+        if (!endpoint) return;
+    
+        try {
+            const response = await api.get(endpoint);
+            if (response.data.success) {
+                setSelectedItemDetail(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching item detail:', error);
+        }
+    };    
+    
+    const [cabangOptions, setCabangOptions] = useState([
+        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' }
+    ]);
+
     const [kategoriOptions, setKategoriOptions] = useState([
         { label: "Semua", value: "Semua" }
     ]);
     const [jenisOptions, setJenisOptions] = useState([
         { label: "Semua", value: "Semua" }
     ]);
+
+    const fetchCabangData = async () => {
+        if (!isAdminGudang) {
+            try {
+                const response = await api.get('/cabang');
+                if (response.data.success) {
+                    const cabangMap = response.data.data.reduce((acc, cabang) => {
+                        acc[cabang.nama_cabang] = cabang.cabang_id;
+                        return acc;
+                    }, {});
+ 
+                    setCabangMapping(cabangMap);
+    
+                    const cabangOpts = response.data.data.map(cabang => ({
+                        label: cabang.nama_cabang,  
+                        value: cabang.nama_cabang, 
+                        icon: '/icon/toko.svg'
+                    }));
+                    
+                    setCabangOptions([
+                        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+                        ...cabangOpts
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error fetching cabang data:', error);
+            }
+        }
+    };
+
+    const getCabangName = (cabangId) => {
+        const cabang = cabangData.find(c => c.cabang_id === cabangId);
+        return cabang ? cabang.nama_cabang : `Cabang ${cabangId}`;
+    };
+
+    const fetchKategoriOptions = async () => {
+        if (!isAdminGudang) {
+            try {
+                const response = await api.get('/kategori-barang');
+                if (response.data.success) {
+                    const kategoriOpts = response.data.data
+                        .filter(item => !item.is_deleted)
+                        .map(item => ({
+                            label: item.nama_kategori_barang,
+                            value: item.nama_kategori_barang
+                        }));
+                    setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
+                }
+            } catch (error) {
+                console.error('Error fetching kategori options:', error);
+            }
+        }
+    };
+
+    const getJenisBarang = (item) => {
+        if (item.barang_handmade_id) return "Handmade";
+        if (item.barang_non_handmade_id) return "Non-Handmade";
+        if (item.barang_custom_id) return "Custom";
+        if (item.packaging_id) return "Packaging";
+        return "-";
+    };
+
+    const getBarangId = (item) => {
+        return item.barang_handmade_id || 
+               item.barang_non_handmade_id || 
+               item.barang_custom_id || 
+               item.packaging_id || 
+               "-";
+    };
+    
+    const fetchStokData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/stok-barang');
+            
+            if (response.data.success) {
+                const transformedData = response.data.data
+                    .filter(item => !item.is_deleted)
+                    .map((item) => ({
+                        Nomor: getBarangId(item),
+                        "Nama Barang": getBarangId(item), 
+                        Jenis: getJenisBarang(item),
+                        Kategori: "-", 
+                        "Jumlah Stok": item.jumlah_stok,
+                        stok_barang_id: item.stok_barang_id,
+                        cabang_id: item.cabang_id,
+                        barang_handmade_id: item.barang_handmade_id,
+                        barang_non_handmade_id: item.barang_non_handmade_id,
+                        barang_custom_id: item.barang_custom_id,
+                        packaging_id: item.packaging_id
+                    }));
+                
+                const groupedData = transformedData.reduce((acc, curr) => {
+                    const existingItem = acc.find(item => item.Nomor === curr.Nomor);
+                    if (existingItem) {
+                        existingItem["Jumlah Stok"] += curr["Jumlah Stok"];
+                        existingItem.cabang.push({
+                            nama: getCabangName(curr.cabang_id), 
+                            stok: curr["Jumlah Stok"],
+                            cabang_id: curr.cabang_id
+                        });
+                    } else {
+                        acc.push({
+                            ...curr,
+                            cabang: [{
+                                nama: getCabangName(curr.cabang_id), 
+                                stok: curr["Jumlah Stok"],
+                                cabang_id: curr.cabang_id
+                            }]
+                        });
+                    }
+                    return acc;
+                }, []);
+    
+                setStokData(groupedData);
+            }
+        } catch (error) {
+            console.error('Error fetching stok data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        const initializeData = async () => {
+            if (isAdminGudang) {
+                await fetchFilterOptions();
+            } else {
+                await fetchCabangData(); 
+                await fetchKategoriOptions();
+            }
+            await fetchStokData();
+        };
+
+        initializeData();
+    }, [isAdminGudang]);
 
     const fetchFilterOptions = async () => {
         if (isAdminGudang) {
@@ -63,18 +232,6 @@ export default function StokBarang() {
         }
        };
        
-       useEffect(() => {
-        if (isAdminGudang) {
-          fetchFilterOptions();
-        }
-       }, [isAdminGudang]);
-
-
-    const dataCabang = [
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    ];
 
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -89,36 +246,51 @@ export default function StokBarang() {
       setIsFilterModalOpen(false);
     };
 
-    const [data] = useState([
-        {
-            Nomor: "SIO202",
-            "Nama Barang": "Gelang Besi",
-            Jenis: "Sedang",
-            Kategori: "Gelang",
-            "Jumlah Stok": 1000,
-            image: "/path/to/gelang-image.jpg",
-            cabang: [
-                { nama: "GOR HAS", stok: 500 },
-                { nama: "Lubeg", stok: 500 }
-            ]
-        },
-        {
-            Nomor: "PC125",
-            "Nama Barang": "Cincin Perak",
-            Jenis: "Handmade",
-            Kategori: "Cincin",
-            "Jumlah Stok": 300,
-            image: "/path/to/cincin-image.jpg",
-            cabang: [
-                { nama: "GOR HAS", stok: 150 },
-                { nama: "Lubeg", stok: 150 }
-            ]
-        },
-    ]);
+    // const [data] = useState([
+    //     {
+    //         Nomor: "SIO202",
+    //         "Nama Barang": "Gelang Besi",
+    //         Jenis: "Sedang",
+    //         Kategori: "Gelang",
+    //         "Jumlah Stok": 1000,
+    //         image: "/path/to/gelang-image.jpg",
+    //         cabang: [
+    //             { nama: "GOR HAS", stok: 500 },
+    //             { nama: "Lubeg", stok: 500 }
+    //         ]
+    //     },
+    //     {
+    //         Nomor: "PC125",
+    //         "Nama Barang": "Cincin Perak",
+    //         Jenis: "Handmade",
+    //         Kategori: "Cincin",
+    //         "Jumlah Stok": 300,
+    //         image: "/path/to/cincin-image.jpg",
+    //         cabang: [
+    //             { nama: "GOR HAS", stok: 150 },
+    //             { nama: "Lubeg", stok: 150 }
+    //         ]
+    //     },
+    // ]);
 
-    const handleRowClick = (row) => {
+    const handleRowClick = async (row) => {
         setSelectedItem(row);
+        await fetchItemDetail(row);
         setIsDetailModalOpen(true);
+    };
+
+    const getImagePath = (item) => {
+        if (item.barang_handmade_id) return '/images-barang-handmade/';
+        if (item.barang_non_handmade_id) return '/images-barang-non-handmade/';
+        if (item.barang_custom_id) return '/images-barang-custom/';
+        if (item.packaging_id) return '/images-packaging/';
+        return '';
+    };
+
+    const getImageUrl = (imagePath, item) => {
+        if (!imagePath) return "/placeholder-image.jpg";
+        const basePath = getImagePath(item);
+        return `${import.meta.env.VITE_API_URL}${basePath}${imagePath}`;
     };
 
     const rincianStokHeaders = [
@@ -129,43 +301,56 @@ export default function StokBarang() {
 
     const filterFields = [
         {
-          label: "Jenis",
-          key: "Jenis", 
-          options: isAdminGudang ? jenisOptions : [
-            { label: "Semua", value: "Semua" },
-            { label: "Handmade", value: "Handmade" },
-            { label: "Non-Handmade", value: "Non-Handmade" },
-            { label: "Custom", value: "Custom" },
-            { label: "Packaging", value: "Packaging" },
-          ]
+            label: "Jenis",
+            key: "Jenis", 
+            options: isAdminGudang ? jenisOptions : [
+                { label: "Semua", value: "Semua" },
+                { label: "Handmade", value: "Handmade" },
+                { label: "Non-Handmade", value: "Non-Handmade" },
+                { label: "Custom", value: "Custom" },
+                { label: "Packaging", value: "Packaging" },
+            ]
         },
         {
-          label: "Kategori",
-          key: "Kategori",
-          options: isAdminGudang ? kategoriOptions : [
-            { label: "Semua", value: "Semua" },
-            { label: "Gelang", value: "Gelang" },
-            { label: "Cincin", value: "Cincin" },
-            { label: "Anting-Anting", value: "Anting-Anting" },
-            { label: "Packaging", value: "Packaging" }
-          ]
+            label: "Kategori",
+            key: "Kategori",
+            options: kategoriOptions 
         }
-       ];
+    ];
 
-    // Fungsi untuk memfilter data
     const filteredData = () => {
-        let filteredItems = [...data];
-
+        let filteredItems = [...stokData];
+    
+        // Filter berdasarkan jenis
         if (selectedJenis !== "Semua") {
             filteredItems = filteredItems.filter(item => item.Jenis === selectedJenis);
         }
-
+    
+        // Filter berdasarkan kategori
         if (selectedKategori !== "Semua") {
             filteredItems = filteredItems.filter(item => item.Kategori === selectedKategori);
         }
+    
+        // Filter berdasarkan cabang
+        if (selectedStore !== "Semua") {
+            const selectedCabangId = cabangMapping[selectedStore];
+            
+            console.log('Selected Store (nama):', selectedStore);
+            console.log('Selected Cabang ID:', selectedCabangId);
+            console.log('Before filtering:', filteredItems);
 
+            filteredItems = filteredItems.filter(item => {
+                console.log('Item cabang_id:', item.cabang_id);
+                return item.cabang_id === selectedCabangId;
+            });
+            
+            console.log('After filtering:', filteredItems);
+        }
+    
         return filteredItems;
     };
+
+    console.log(stokData)
 
     return (
         <>
@@ -198,7 +383,7 @@ export default function StokBarang() {
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={'/icon/toko.svg'} 
-                                        options={dataCabang} 
+                                        options={cabangOptions} 
                                         onSelect={(value) => setSelectedStore(value)} 
                                     />
                                 </div>
@@ -208,7 +393,10 @@ export default function StokBarang() {
                     </section>
 
                     <section className="mt-5 bg-white rounded-xl">
-                        <div className="p-5">
+                    <div className="p-5">
+                        {loading ? (
+                            <Spinner/>
+                        ) : (
                             <Table
                                 headers={headers}
                                 data={filteredData().map(item => ({
@@ -219,7 +407,8 @@ export default function StokBarang() {
                                 onFilterClick={handleFilterClick}
                                 onRowClick={isAdminGudang ? undefined : handleRowClick}
                             />
-                        </div>
+                        )}
+                    </div>
                     </section>
 
                     {/* Filter Modal */}
@@ -269,7 +458,10 @@ export default function StokBarang() {
                             <div className="flex justify-between items-center p-6">
                                 <h2 className="text-xl font-semibold">{selectedItem["Nama Barang"]}</h2>
                                 <button
-                                    onClick={() => setIsDetailModalOpen(false)}
+                                    onClick={() => {
+                                        setIsDetailModalOpen(false);
+                                        setSelectedItemDetail(null); 
+                                    }}
                                     className="text-gray-500 hover:text-gray-700"
                                 >
                                     <X size={24} />
@@ -282,9 +474,9 @@ export default function StokBarang() {
                                     {/* Image Column */}
                                     <div>
                                         <img
-                                            src={selectedItem.image || "/placeholder-image.jpg"}
+                                            src={selectedItemDetail ? getImageUrl(selectedItemDetail.image, selectedItem) : "/placeholder-image.jpg"}
                                             alt={selectedItem["Nama Barang"]}
-                                            className="w-full h-auto rounded-lg"
+                                            className="w-full h-auto rounded-lg object-cover"
                                         />
                                     </div>
 

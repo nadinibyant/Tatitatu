@@ -1,987 +1,670 @@
-import { useEffect, useMemo, useState } from "react";
-import InputDropdown from "../../../components/InputDropdown";
-import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
-import { menuItems, userOptions } from "../../../data/menu";
-import Breadcrumbs from "../../../components/Breadcrumbs";
-import Table from "../../../components/Table";
-import Button from "../../../components/Button";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import Breadcrumbs from '../../../components/Breadcrumbs';
+import Input from '../../../components/Input';
+import InputDropdown from '../../../components/InputDropdown';
+import Table from '../../../components/Table';
+import Button from '../../../components/Button';
+import TextArea from '../../../components/Textarea';
+import Gallery2 from '../../../components/Gallery2';
+import AlertSuccess from '../../../components/AlertSuccess';
+import Spinner from '../../../components/Spinner';
+import LayoutWithNav from '../../../components/LayoutWithNav';
+import api from '../../../utils/api';
 
-// Constants
-const PAYMENT_METHODS = {
-  CASH: 1,
-  NON_CASH: 2
-};
+const EditPenjualanCustom = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
 
-const BANK_OPTIONS = {
-  NONE: 1,
-  MANDIRI: 2,
-  BANK_NAGARI: 3
-};
+    // Form state
+    const [formData, setFormData] = useState({
+        nomor: '',
+        tanggal: null,
+        namaPembeli: '',
+        note: '',
+        selectBayar: '',
+        selectMetode: '',
+        diskon: 0,
+        pajak: 0
+    });
 
-export default function EditPenjualanCustom() {
+    // Raw detail data
+    const [detailData, setDetailData] = useState({
+        customProducts: [],
+        biayaProducts: [],
+        packagingProducts: []
+    });
 
-    const [customTableData, setCustomTableData] = useState([]);
-    const [biayaTableData, setBiayaTableData] = useState([]);
-    const [packagingTableData, setPackagingTableData] = useState([]);
+    // Reference data
+    const [dataBarang, setDataBarang] = useState([]);
+    const [dataPackaging, setDataPackaging] = useState([]);
+    const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
 
-    // Data constants
-    const dataMetode = [
-        { id: BANK_OPTIONS.NONE, label: "-" },
-        { id: BANK_OPTIONS.MANDIRI, label: "Mandiri" },
-        { id: BANK_OPTIONS.BANK_NAGARI, label: "Bank Nagari" }
-    ];
+    // UI state
+    const [isLoading, setLoading] = useState(false);
+    const [isModalSucc, setModalSucc] = useState(false);
+    const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const [modalState, setModalState] = useState({
+        isOpen: false,
+        content: 'produk',
+        activeTable: null,
+        selectedItems: [],
+        searchTerm: ''
+    });
 
-    const dataBayar = [
-        { id: PAYMENT_METHODS.CASH, label: "Cash" },
-        { id: PAYMENT_METHODS.NON_CASH, label: "Non-Cash" }
-    ];
+    useEffect(() => {
+        fetchAllData();
+    }, [id]);
 
-    const dataBarang = [
+    const mapCustomProducts = (data) => data.map(item => ({
+        id: item.barang_custom_id,
+        image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+        code: item.barang_custom_id,
+        name: item.nama_barang,
+        price: item.harga
+    }));
+    
+    const mapPackagingProducts = (data) => data.map(item => ({
+        id: item.packaging_id,
+        name: item.nama_packaging,
+        price: item.harga,
+        image: item.image ? 
+            `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
+            "https://via.placeholder.com/50"
+    }));
+
+    const fetchAllData = async () => {
+        try {
+            setLoading(true);
+            const [penjualanRes, customRes, packagingRes, metodeRes] = await Promise.all([
+                api.get(`/penjualan/${id}`),
+                api.get('/barang-custom'),
+                api.get('/packaging'),
+                api.get('/metode-pembayaran')
+            ]);
+
+            // Process reference data
+            setDataBarang(mapCustomProducts(customRes.data.data));
+            setDataPackaging(mapPackagingProducts(packagingRes.data.data));
+            setDataMetode([
+                { value: 1, label: '-' },
+                ...metodeRes.data.data.map(m => ({
+                    value: m.metode_id,
+                    label: m.nama_metode
+                }))
+            ]);
+
+            // Process penjualan detail
+            const detail = penjualanRes.data.data;
+            setFormData({
+                nomor: detail.penjualan_id,
+                tanggal: detail.tanggal,
+                namaPembeli: detail.nama_pembeli,
+                note: detail.catatan,
+                selectBayar: detail.cash_or_non ? 1 : 2,
+                selectMetode: detail.metode_id,
+                diskon: detail.diskon,
+                pajak: detail.pajak
+            });
+
+            // Set detail data
+            setDetailData({
+                customProducts: detail.produk_penjualan.filter(p => p.barang_custom_id),
+                biayaProducts: detail.biaya_toko ? [{
+                    id: 'biaya-1',
+                    nama_biaya: 'Biaya Operasional dan Staff',
+                    jumlah_biaya: detail.biaya_toko.total_biaya
+                }] : [],
+                packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const transformToTableData = () => [
         {
-            jenis: "Barang Custom",
-            kategori: ["Semua", "Gelang", "Anting-Anting", "Cincin"],
-            items: [
-                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: 10000, kategori: "Gelang" },
-                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: 15000, kategori: "Anting-Anting" },
-                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: 20000, kategori: "Cincin" },
-                { id: 4, image: "https://via.placeholder.com/150", code: "MMM456", name: "Gelang Modern", price: 12000, kategori: "Gelang" },
-            ],
+            nama: 'Rincian Jumlah dan Bahan',
+            data: detailData.customProducts.map((item, idx) => createTableRow(item, idx, 'custom'))
         },
         {
-            jenis: "Packaging",
-            items: [
-                {
-                    id: 1,
-                    title: "Gelang Barbie 123",
-                    price: 10000,
-                    image: "https://via.placeholder.com/50",
-                    type: "Zipper",
-                },
-            ]
+            nama: 'Rincian Biaya',
+            data: detailData.biayaProducts.map((item, idx) => createBiayaRow(item, idx))
+        },
+        {
+            nama: 'Packaging',
+            data: detailData.packagingProducts.map((item, idx) => createTableRow(item, idx, 'packaging'))
         }
     ];
 
-    const initialData = {
-        nomor: "SO123",
-        tanggal: "2024-01-05", 
-        namaPembeli: "John Doe",
-        cashNonCash: PAYMENT_METHODS.NON_CASH,
-        metodePembayaran: BANK_OPTIONS.MANDIRI,
-        // Data untuk custom products
-        customItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Gelang Barbie 123
-            { id: 2, productId: 2, quantity: 5 },  // Anting Keren 123
-            { id: 3, productId: 3, quantity: 3 }   // Cincin Cantik 123
-        ],
-        // Data untuk biaya
-        biayaItems: [
-            { id: 1, name: "Jasa Design", amount: 24000 },
-            { id: 2, name: "Jasa Pemasangan", amount: 15000 },
-            { id: 3, name: "Ongkos Kirim", amount: 10000 }
-        ],
-        // Data untuk packaging
-        packagingItems: [
-            { id: 1, productId: 1, quantity: 10 }, // Zipper
-            { id: 2, productId: 1, quantity: 5 }   // Zipper lagi
-        ],
-        catatan: "Catatan pesanan default",
-        diskonPersen: 30,
-        pajak: 1000 
-    };
-    
-        // Initialize tables
-    useEffect(() => {
-        // Initialize Custom Items
-        if (initialData.customItems?.length > 0) {
-            const customItems = initialData.customItems.map((item, index) => {
-                const product = dataBarang[0].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createCustomRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setCustomTableData(customItems);
-        }
-
-        // Initialize Biaya Items
-        if (initialData.biayaItems?.length > 0) {
-            const biayaItems = initialData.biayaItems.map((item, index) => 
-                createBiayaRow(index, item.name, item.amount)
-            );
-            setBiayaTableData(biayaItems);
-        }
-
-        // Initialize Packaging Items
-        if (initialData.packagingItems?.length > 0) {
-            const packagingItems = initialData.packagingItems.map((item, index) => {
-                const product = dataBarang[1].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createPackagingRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setPackagingTableData(packagingItems);
-        }
-    }, []);
-
-    const [catatan, setCatatan] = useState(initialData.catatan);
-    const [diskonPersen, setDiskonPersen] = useState(initialData.diskonPersen);
-    const [pajak, setPajak] = useState(initialData.pajak);
-
-    // State management
-    const [formData, setFormData] = useState({
-        nomor: initialData.nomor,
-        tanggal: initialData.tanggal,
-        namaPembeli: initialData.namaPembeli,
-    });
-    const [selectBayar, setSelectBayar] = useState(initialData.cashNonCash);
-    const [selectMetode, setSelectMetode] = useState(initialData.metodePembayaran);
-    const [tableData, setTableData] = useState([]);
-    const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalHarga, setTotalHarga] = useState(0);
-
-    // Effect for calculating totals
-    useEffect(() => {
-        const newTotalItems = tableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0);
-        const newTotalHarga = tableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
-        
-        setTotalItems(newTotalItems);
-        setTotalHarga(newTotalHarga);
-    }, [tableData]);
-
-    // Memoized values
-    const allProducts = useMemo(() => {
-        return dataBarang.reduce((acc, category) => {
-            const products = category.items.map(item => ({
-                ...item,
-                jenis: category.jenis
-            }));
-            return [...acc, ...products];
-        }, []);
-    }, []);
-
-    const selectedBayarLabel = useMemo(() => {
-        const option = dataBayar.find(opt => opt.id === selectBayar);
-        return option?.label || "";
-    }, [selectBayar]);
-    
-    const selectedMetodeLabel = useMemo(() => {
-        const option = dataMetode.find(opt => opt.id === selectMetode);
-        return option?.label || "";
-    }, [selectMetode]);
-
-    // Table headers configuration
-    const customHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
-        { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
-        { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
-        { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-left" }
-    ];
-    
-    const biayaHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
-        { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-left" }
-    ];
-    
-    const packagingHeaders = [
-        { label: "No", key: "No", align: "text-left" },
-        { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
-        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
-        { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "Kuantitas", align: "text-left" },
-        { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
-        { label: "Aksi", key: "Aksi", align: "text-left" }
-    ];
-
-    // Helper functions untuk masing-masing tabel
-    const createCustomRow = (index, product, quantity = 0) => {
-        quantity = Math.max(0, Number(quantity) || 0);
-        const totalBiaya = product.price * quantity;
-    
-        return {
-            No: index + 1,
-            "Foto Produk": (
-                <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-md"
-                />
-            ),
-            "Nama Bahan": (
-                <InputDropdown
-                    showRequired={false}
-                    value={product.name}
-                    options={dataBarang[0].items.map(p => ({
-                        id: p.id,
-                        label: p.name,
-                        value: p.name  // Changed from p.price to p.name to match the value type
-                    }))}
-                    onSelect={(selected) => handleCustomProductSelect(index, selected)}
-                />
-            ),
-            "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-            "Kuantitas": (
-                <Input
-                    type="number"
-                    value={quantity}
-                    onChange={(value) => handleCustomQuantityChange(index, value)}
-                    showRequired={false}
-                    min={0}
-                />
-            ),
-            "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-            "Aksi": (
-                <button 
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleCustomDeleteRow(index)}
-                >
-                    Hapus
-                </button>
-            ),
-            productName: product.name,
-            productPrice: product.price,
-            quantity: quantity,
-            numericTotalBiaya: totalBiaya,
-            productId: product.id
-        };
-    };
-
-const createBiayaRow = (index, name = "", amount = 0) => {
-    return {
+    const createTableRow = (item, index, type) => ({
+        id: item.produk_penjualan_id || item.id,
         No: index + 1,
-        "Nama Biaya": (
-            <Input
-                type="text"
-                value={name}
-                onChange={(value) => handleBiayaNameChange(index, value)}
-                showRequired={false}
-            />
-        ),
-        "Jumlah Biaya": (
-            <Input
-                type="number"
-                value={amount}
-                onChange={(value) => handleBiayaAmountChange(index, value)}
-                showRequired={false}
-                min={0}
-            />
-        ),
-        "Aksi": (
-            <button 
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleBiayaDeleteRow(index)}
-            >
-                Hapus
-            </button>
-        ),
-        name,
-        amount,
-        numericTotalBiaya: amount
-    };
-};
-
-const createPackagingRow = (index, product, quantity = 0) => {
-    quantity = Math.max(0, Number(quantity) || 0);
-    const totalBiaya = product.price * quantity;
-
-    return {
-        No: index + 1,
-        "Foto Produk": (
-            <img
-                src={product.image}
-                alt={product.type}
-                className="w-16 h-16 object-cover rounded-md"
-            />
-        ),
-        "Nama Packaging": (
-            <InputDropdown
-                showRequired={false}
-                value={product.type}
-                options={dataBarang[1].items.map(p => ({
-                    id: p.id,
-                    label: p.type,
-                    value: p.type  // Changed from p.price to p.type
+        "Foto Produk": <img 
+            src={`${import.meta.env.VITE_API_URL}/${type === 'custom' ? 'images-barang-custom' : 'images-packaging'}/${type === 'custom' ? item.barang_custom?.image : item.packaging?.image}`}
+            alt="product" 
+            className="w-12 h-12" 
+        />,
+        "Nama Barang": <InputDropdown 
+            showRequired={false}
+            options={type === 'custom' ? 
+                dataBarang.map(item => ({
+                    value: item.id,
+                    label: item.name
+                })) : 
+                dataPackaging.map(item => ({
+                    value: item.id,
+                    label: item.name
                 }))}
-                onSelect={(selected) => handlePackagingProductSelect(index, selected)}
-            />
-        ),
-        "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-        "Kuantitas": (
-            <Input
-                type="number"
-                value={quantity}
-                onChange={(value) => handlePackagingQuantityChange(index, value)}
-                showRequired={false}
-                min={0}
-            />
-        ),
-        "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-        "Aksi": (
-            <button 
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handlePackagingDeleteRow(index)}
-            >
-                Hapus
-            </button>
-        ),
-        productType: product.type,
-        productPrice: product.price,
-        quantity: quantity,
-        numericTotalBiaya: totalBiaya,
-        productId: product.id
-    };
-};
-
-
-    // Handle functions untuk custom products
-const handleCustomAddRow = () => {
-    const defaultProduct = dataBarang[0].items[0];
-    const newRow = createCustomRow(customTableData.length, defaultProduct, 1);
-    setCustomTableData([...customTableData, newRow]);
-};
-
-const handleCustomProductSelect = (rowIndex, selectedProduct) => {
-    const product = dataBarang[0].items.find(p => p.name === selectedProduct.value);
-    if (!product) return;
-
-    setCustomTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-        updatedData[rowIndex] = createCustomRow(rowIndex, product, currentQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
+            value={type === 'custom' ? item.barang_custom_id : item.packaging_id}
+            onSelect={(selected) => handleProductSelect(type, item.produk_penjualan_id || item.id, selected)}
+        />,
+        "Harga Satuan": `Rp${item.harga_satuan?.toLocaleString('id-ID')}`,
+        "Kuantitas": <Input
+            showRequired={false}
+            type="number"
+            value={item.kuantitas}
+            onChange={(value) => handleQuantityChange(type, item.produk_penjualan_id || item.id, value)}
+        />,
+        "Total Biaya": `Rp${item.total_biaya?.toLocaleString('id-ID')}`,
+        Aksi: <button 
+            className="text-red-500 hover:text-red-700"
+            onClick={() => handleDeleteRow(type, item.produk_penjualan_id || item.id)}
+        >
+            Hapus
+        </button>
     });
-};
 
-const handleCustomQuantityChange = (rowIndex, newQuantity) => {
-    setCustomTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        const product = dataBarang[0].items.find(p => p.name === currentRow.productName);
-        updatedData[rowIndex] = createCustomRow(rowIndex, product, newQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
+    const createBiayaRow = (item, index) => ({
+        id: item.id,
+        No: index + 1,
+        "Nama Biaya": <Input
+            showRequired={false}
+            type="text"
+            value={item.nama_biaya}
+            onChange={(value) => handleBiayaChange(item.id, 'nama_biaya', value)}
+            disabled={item.id === 'biaya-1'}
+        />,
+        "Jumlah Biaya": <Input
+            showRequired={false}
+            type="number"
+            value={item.jumlah_biaya}
+            onChange={(value) => handleBiayaChange(item.id, 'jumlah_biaya', value)}
+            disabled={item.id === 'biaya-1'}
+        />,
+        Aksi: item.id === 'biaya-1' ? null : <button 
+            className="text-red-500 hover:text-red-700"
+            onClick={() => handleDeleteRow('biaya', item.id)}
+        >
+            Hapus
+        </button>
     });
-};
 
-const handleCustomDeleteRow = (rowIndex) => {
-    setCustomTableData(prevData => 
-        prevData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({...row, No: index + 1}))
-    );
-};
-
-// Handle functions untuk biaya
-const handleBiayaAddRow = () => {
-    const newRow = createBiayaRow(biayaTableData.length);
-    setBiayaTableData([...biayaTableData, newRow]);
-};
-
-const handleBiayaNameChange = (rowIndex, newName) => {
-    setBiayaTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        updatedData[rowIndex] = createBiayaRow(rowIndex, newName, currentRow.amount);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
-
-const handleBiayaAmountChange = (rowIndex, newAmount) => {
-    setBiayaTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        updatedData[rowIndex] = createBiayaRow(rowIndex, currentRow.name, newAmount);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
-
-const handleBiayaDeleteRow = (rowIndex) => {
-    setBiayaTableData(prevData => 
-        prevData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({...row, No: index + 1}))
-    );
-};
-
-// Handle functions untuk packaging
-const handlePackagingAddRow = () => {
-    const defaultProduct = dataBarang[1].items[0];
-    const newRow = createPackagingRow(packagingTableData.length, defaultProduct, 1);
-    setPackagingTableData([...packagingTableData, newRow]);
-};
-
-const handlePackagingProductSelect = (rowIndex, selectedProduct) => {
-    const product = dataBarang[1].items.find(p => p.type === selectedProduct.value);
-    if (!product) return;
-
-    setPackagingTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-        updatedData[rowIndex] = createPackagingRow(rowIndex, product, currentQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
-
-const handlePackagingQuantityChange = (rowIndex, newQuantity) => {
-    setPackagingTableData(prevData => {
-        const updatedData = [...prevData];
-        const currentRow = {...updatedData[rowIndex]};
-        const product = dataBarang[1].items.find(p => p.type === currentRow.productType);
-        updatedData[rowIndex] = createPackagingRow(rowIndex, product, newQuantity);
-        return updatedData.map((row, index) => ({...row, No: index + 1}));
-    });
-};
-
-const handlePackagingDeleteRow = (rowIndex) => {
-    setPackagingTableData(prevData => 
-        prevData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({...row, No: index + 1}))
-    );
-};
-
-// Update useEffect for calculating totals
-useEffect(() => {
-    const customTotal = customTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
-    const biayaTotal = biayaTableData.reduce((sum, row) => sum + (row.amount || 0), 0);
-    const packagingTotal = packagingTableData.reduce((sum, row) => sum + (row.numericTotalBiaya || 0), 0);
-    
-    setTotalHarga(customTotal + biayaTotal + packagingTotal);
-    setTotalItems(
-        customTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0) +
-        packagingTableData.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0)
-    );
-}, [customTableData, biayaTableData, packagingTableData]);
-
-    // Navigation configuration
-    const breadcrumbItems = [
-        { label: "Daftar Penjualan", href: "/penjualanToko" },
-        { label: "Detail Penjualan", href: "" },
-        { label: "Edit Penjualan", href: "" },
-    ];
-
-    useEffect(() => {
-        setIsMetodeDisabled(selectBayar === PAYMENT_METHODS.CASH);
-    }, [selectBayar]);
-
-
-    const createTableRow = (index, product, quantity = 0, jenisBarang) => {
-        quantity = Math.max(0, Number(quantity) || 0);
-        const totalBiaya = product.price * quantity;
-
-        return {
-            No: index + 1,
-            "Foto Produk": (
-                <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-md"
-                />
-            ),
-            "Nama Produk": (
-                <InputDropdown
-                    showRequired={false}
-                    value={product.name}
-                    options={allProducts.map(p => ({
-                        id: p.id,
-                        label: p.name,
-                        value: p.price
-                    }))}
-                    onSelect={(selected) => handleProductSelect(index, selected)}
-                />
-            ),
-            "Jenis Barang": jenisBarang,
-            "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-            "Kuantitas": (
-                <Input
-                    type="number"
-                    value={quantity}
-                    onChange={(value) => handleQuantityChange(index, value)}
-                    showRequired={false}
-                    min={0}
-                />
-            ),
-            "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-            "Aksi": (
-                <button 
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteRow(index)}
-                >
-                    Hapus
-                </button>
-            ),
-            productName: product.name,
-            productPrice: product.price,
-            quantity: quantity,
-            numericTotalBiaya: totalBiaya,
-            productId: product.id
-        };
+    const handleAddRow = (tableIndex) => {
+        if (tableIndex === 1) {
+            // Add new biaya row
+            const newBiaya = {
+                id: `biaya-${Date.now()}`,
+                nama_biaya: '',
+                jumlah_biaya: 0
+            };
+            setDetailData(prev => ({
+                ...prev,
+                biayaProducts: [...prev.biayaProducts, newBiaya]
+            }));
+        } else {
+            // Open modal for product/packaging selection
+            setModalState(prev => ({
+                ...prev,
+                isOpen: true,
+                content: tableIndex === 0 ? 'produk' : 'packaging',
+                activeTable: tableIndex
+            }));
+        }
     };
 
-    // Event handlers
-    const handleInputChange = (field) => (value) => {
-        setFormData(prev => ({
+    const handleDeleteRow = (type, id) => {
+        setDetailData(prev => {
+            const key = type === 'custom' ? 'customProducts' : 
+                       type === 'biaya' ? 'biayaProducts' : 'packagingProducts';
+            return {
+                ...prev,
+                [key]: prev[key].filter(item => (item.produk_penjualan_id || item.id) !== id)
+            };
+        });
+    };
+
+    const handleProductSelect = (type, itemId, selected) => {
+        const key = type === 'custom' ? 'customProducts' : 'packagingProducts';
+        const products = type === 'custom' ? dataBarang : dataPackaging;
+        
+        setDetailData(prev => {
+            const items = [...prev[key]];
+            const itemIndex = items.findIndex(item => (item.produk_penjualan_id || item.id) === itemId);
+            
+            if (itemIndex !== -1) {
+                const selectedProduct = products.find(p => p.id === selected.value);
+                const currentQuantity = items[itemIndex].kuantitas || 1;
+                
+                items[itemIndex] = {
+                    ...items[itemIndex],
+                    [`${type === 'custom' ? 'barang_custom' : 'packaging'}_id`]: selected.value,
+                    harga_satuan: selectedProduct.price,
+                    kuantitas: currentQuantity,
+                    total_biaya: selectedProduct.price * currentQuantity,
+                    [`${type === 'custom' ? 'barang_custom' : 'packaging'}`]: {
+                        id: selectedProduct.id,
+                        image: selectedProduct.image
+                    }
+                };
+            }
+            
+            return { ...prev, [key]: items };
+        });
+    };
+
+    const handleQuantityChange = (type, itemId, newQuantity) => {
+        const key = type === 'custom' ? 'customProducts' : 'packagingProducts';
+        
+        setDetailData(prev => {
+            const items = [...prev[key]];
+            const itemIndex = items.findIndex(item => (item.produk_penjualan_id || item.id) === itemId);
+            
+            if (itemIndex !== -1) {
+                items[itemIndex] = {
+                    ...items[itemIndex],
+                    kuantitas: Number(newQuantity),
+                    total_biaya: items[itemIndex].harga_satuan * Number(newQuantity)
+                };
+            }
+            
+            return { ...prev, [key]: items };
+        });
+    };
+
+    const handleBiayaChange = (id, field, value) => {
+        setDetailData(prev => ({
             ...prev,
-            [field]: value
+            biayaProducts: prev.biayaProducts.map(item => 
+                item.id === id ? { ...item, [field]: value } : item
+            )
         }));
     };
 
-    const handleSelectMetode = (selected) => {
-        const selectedOption = dataMetode.find(opt => opt.label === selected.value);
-        if (selectedOption) {
-            setSelectMetode(selectedOption.id);
-        }
-    };
-
-    const handleSelectBayar = (selected) => {
-        const selectedOption = dataBayar.find(opt => opt.label === selected.value);
-        if (selectedOption) {
-            setSelectBayar(selectedOption.id);
-            if (selectedOption.id === PAYMENT_METHODS.CASH) {
-                setSelectMetode(BANK_OPTIONS.NONE);
-                setIsMetodeDisabled(true);
-            } else {
-                setSelectMetode(BANK_OPTIONS.MANDIRI);
-                setIsMetodeDisabled(false);
+    const handleModalSubmit = () => {
+        const { activeTable, selectedItems } = modalState;
+        const key = activeTable === 0 ? 'customProducts' : 'packagingProducts';
+        
+        const newItems = selectedItems.map(item => ({
+            id: `${key}-${Date.now()}-${item.id}`,
+            [`${activeTable === 0 ? 'barang_custom' : 'packaging'}_id`]: item.id,
+            harga_satuan: item.price,
+            kuantitas: item.count,
+            total_biaya: item.price * item.count,
+            [activeTable === 0 ? 'barang_custom' : 'packaging']: {
+                id: item.id,
+                image: item.image
             }
-        }
+        }));
+
+        setDetailData(prev => ({
+            ...prev,
+            [key]: [...prev[key], ...newItems]
+        }));
+
+        setModalState(prev => ({
+            ...prev,
+            isOpen: false,
+            selectedItems: []
+        }));
     };
 
-    const handleProductSelect = (rowIndex, selectedProduct) => {
-        const product = allProducts.find(p => p.name === selectedProduct.label);
-        if (!product) return;
-
-        const categoryData = dataBarang.find(category => 
-            category.items.some(item => item.id === product.id)
-        );
-        
-        setTableData(prevTableData => {
-            const updatedData = [...prevTableData];
-            const currentQuantity = updatedData[rowIndex]?.quantity || 1;
-            const totalBiaya = product.price * currentQuantity;
-
-            updatedData[rowIndex] = {
-                ...updatedData[rowIndex],
-                productId: product.id,
-                productName: product.name,
-                productPrice: product.price,
-                "Jenis Barang": categoryData.jenis,
-                "Nama Produk": (
-                    <InputDropdown
-                        showRequired={false}
-                        value={product.name}
-                        options={allProducts.map(p => ({
-                            id: p.id,
-                            label: p.name,
-                            value: p.price
-                        }))}
-                        onSelect={(selected) => handleProductSelect(rowIndex, selected)}
-                    />
-                ),
-                "Foto Produk": (
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded-md"
-                    />
-                ),
-                "Harga Satuan": `Rp${product.price.toLocaleString()}`,
-                quantity: currentQuantity,
-                numericTotalBiaya: totalBiaya,
-                "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-                "Kuantitas": (
-                    <Input
-                        type="number"
-                        value={currentQuantity}
-                        onChange={(value) => handleQuantityChange(rowIndex, value)}
-                        showRequired={false}
-                        min={0}
-                    />
-                )
-            };
-            
-            return updatedData.map((row, index) => ({
-                ...row,
-                No: index + 1
-            }));
-        });
+    const calculateSubtotal = () => {
+        const customTotal = detailData.customProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
+        const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (item.jumlah_biaya || 0), 0);
+        const packagingTotal = detailData.packagingProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
+        return customTotal + biayaTotal + packagingTotal;
     };
 
-    const handleQuantityChange = (rowIndex, newQuantity) => {
-        const quantity = Math.max(0, Number(newQuantity) || 0);
-        
-        setTableData(prevTableData => {
-            const updatedData = [...prevTableData];
-            const currentRow = { ...updatedData[rowIndex] };
-            
-            if (currentRow) {
-                const price = currentRow.productPrice;
-                const totalBiaya = price * quantity;
-                
-                updatedData[rowIndex] = {
-                    ...currentRow,
-                    quantity: quantity,
-                    numericTotalBiaya: totalBiaya,
-                    "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-                    "Kuantitas": (
-                        <Input
-                            type="number"
-                            value={quantity}
-                            onChange={(value) => handleQuantityChange(rowIndex, value)}
-                            showRequired={false}
-                            min={0}
-                        />
-                    )
-                };
-                
-                return updatedData.map((row, index) => ({
-                    ...row,
-                    No: index + 1
-                }));
-            }
-            
-            return prevTableData;
-        });
+    const calculateTotalPenjualan = (subtotal) => {
+        const diskonNominal = (formData.diskon / 100) * subtotal;
+        return subtotal - diskonNominal - formData.pajak;
     };
 
-    const handleDeleteRow = (rowIndex) => {
-        const updatedData = tableData
-            .filter((_, index) => index !== rowIndex)
-            .map((row, index) => ({
-                ...row,
-                No: index + 1
-            }));
-        setTableData(updatedData);
-    };
-
-    const handleAddRow = () => {
-        const defaultProduct = allProducts[0];
-        const categoryData = dataBarang.find(category => 
-            category.items.some(item => item.id === defaultProduct.id)
-        );
-        
-        const newRow = createTableRow(
-            tableData.length,
-            defaultProduct,
-            1,
-            categoryData.jenis
-        );
-        
-        setTableData([...tableData, newRow]);
-    };
-    
-
-    // Initialize tables
-    useEffect(() => {
-        // Initialize Custom Items
-        if (initialData.customItems?.length > 0) {
-            const customItems = initialData.customItems.map((item, index) => {
-                const product = dataBarang[0].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createCustomRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setCustomTableData(customItems);
-        }
-    
-        // Initialize Biaya Items
-        if (initialData.biayaItems?.length > 0) {
-            const biayaItems = initialData.biayaItems.map((item, index) => 
-                createBiayaRow(index, item.name, item.amount)
-            );
-            setBiayaTableData(biayaItems);
-        }
-    
-        // Initialize Packaging Items
-        if (initialData.packagingItems?.length > 0) {
-            const packagingItems = initialData.packagingItems.map((item, index) => {
-                const product = dataBarang[1].items.find(p => p.id === item.productId);
-                if (!product) return null;
-                return createPackagingRow(index, product, item.quantity);
-            }).filter(Boolean);
-            setPackagingTableData(packagingItems);
-        }
-    }, []);
-    
-    // Handle submit untuk data terpisah
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-            const { subtotal, finalTotal } = calculateFinalTotals();
+            setLoading(true);
             
-            const formattedData = {
-                ...formData,
-                cashNonCash: selectBayar,
-                metodePembayaran: selectMetode,
-                // Data terpisah untuk setiap kategori
-                customItems: customTableData.map(row => ({
-                    productId: row.productId,
-                    quantity: row.quantity
-                })),
-                biayaItems: biayaTableData.map(row => ({
-                    name: row.name,
-                    amount: row.amount
-                })),
-                packagingItems: packagingTableData.map(row => ({
-                    productId: row.productId,
-                    quantity: row.quantity
-                })),
-                catatan: catatan,
-                subtotal: subtotal,
-                diskonPersen: diskonPersen,
-                pajak: pajak,
-                totalPenjualan: finalTotal
+            const payload = {
+                cash_or_non: formData.selectBayar === 1,
+                metode_id: formData.selectMetode,
+                sub_total: calculateSubtotal(),
+                diskon: Number(formData.diskon),
+                pajak: Number(formData.pajak),
+                total_pembelian: calculateTotalPenjualan(calculateSubtotal()),
+                produk: [
+                    ...detailData.customProducts.map(item => ({
+                        barang_custom_id: item.barang_custom_id,
+                        harga_satuan: item.harga_satuan,
+                        kuantitas: item.kuantitas,
+                        total_biaya: item.total_biaya
+                    })),
+                    ...detailData.packagingProducts.map(item => ({
+                        packaging_id: item.packaging_id,
+                        harga_satuan: item.harga_satuan,
+                        kuantitas: item.kuantitas,
+                        total_biaya: item.total_biaya
+                    }))
+                ]
             };
-            
-            console.log('Submitting data:', formattedData);
-            
+
+            await api.put(`/penjualan/${id}`, payload);
+            setModalSucc(true);
         } catch (error) {
-            console.error('Error submitting form:', error);
+            console.error('Error submitting:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const calculateFinalTotals = () => {
-        const subtotal = totalHarga;
-        const diskonAmount = (subtotal * diskonPersen) / 100;
-        const afterDiskon = subtotal - diskonAmount;
-        const totalWithTax = afterDiskon + Number(pajak);
-        return {
-            subtotal: subtotal,
-            finalTotal: totalWithTax
-        };
-    };
+    const breadcrumbItems = isAdminGudang 
+    ? [
+        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Edit Penjualan Custom", href: "" },
+    ]
+    : [
+        { label: "Daftar Penjualan Toko", href: "/penjualanToko" },
+        { label: "Edit Penjualan Custom", href: "" },
+    ];
 
-    // Log semua data saat ada perubahan apa pun
-    // useEffect(() => {
-    //     const allData = {
-    //         ...formData,
-    //         cashNonCash: selectBayar,
-    //         metodePembayaran: selectMetode,
-    //         items: tableData,
-    //         catatan,
-    //         diskonPersen,
-    //         pajak,
-    //         totalHarga,
-    //         totalSetelahDiskonPajak: calculateFinalTotals().finalTotal
-    //     };
-        
-    //     console.log('Complete Data State:', allData);
-    // }, [formData, selectBayar, selectMetode, tableData, catatan, diskonPersen, pajak, totalHarga]);
+    const headers = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
+        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
+        { label: 'Harga Satuan', key: 'Harga Satuan', align: 'text-left' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'200px' },
+        { label: 'Total Biaya', key: 'Total Biaya', align: 'text-left' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
+    const biayaHeaders = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
+        { label: 'Jumlah Biaya', key: 'Jumlah Biaya', align: 'text-left', width: '200px' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
+    const dataBayar = [
+        { value: 1, label: 'Cash' },
+        { value: 2, label: 'Non-Cash' }
+    ];
 
     return (
-        <Navbar menuItems={menuItems} userOptions={userOptions}>
+        <LayoutWithNav>
             <div className="p-5">
                 <Breadcrumbs items={breadcrumbItems} />
-                <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
+                <section className="bg-white p-5 mt-5 rounded-xl">
+                    <form onSubmit={handleSubmit}>
+                        {/* Basic form inputs */}
+                        {/* Basic form inputs */}
+                    <section>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Input 
-                                label="Nomor"
-                                value={formData.nomor}
-                                onChange={handleInputChange("nomor")}
-                                required={true}
+                                label="Nomor" 
+                                type="text" 
+                                value={formData.nomor} 
+                                onChange={(e) => setFormData(prev => ({...prev, nomor: e}))} 
                             />
-                            
                             <Input 
-                                label="Tanggal"
-                                type="date"
-                                value={formData.tanggal}
-                                onChange={handleInputChange("tanggal")}
-                                required={true}
+                                label="Tanggal dan Waktu" 
+                                type1="datetime-local" 
+                                value={formData.tanggal} 
+                                onChange={(e) => setFormData(prev => ({...prev, tanggal: e}))} 
                             />
-
                             <Input 
-                                label="Nama Pembeli"
-                                value={formData.namaPembeli}
-                                onChange={handleInputChange("namaPembeli")}
-                                required={true}
+                                label="Nama Pembeli" 
+                                value={formData.namaPembeli} 
+                                onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
                             />
-
                             <InputDropdown 
                                 label="Cash/Non-Cash" 
-                                options={dataBayar.map(option => ({
-                                    id: option.id,
-                                    label: option.label,
-                                    value: option.label
-                                }))} 
-                                value={selectedBayarLabel} 
-                                onSelect={handleSelectBayar}
-                                required={true}
+                                options={[
+                                    { value: 1, label: 'Cash' },
+                                    { value: 2, label: 'Non-Cash' }
+                                ]}
+                                value={formData.selectBayar}
+                                onSelect={(selected) => {
+                                    setFormData(prev => ({
+                                        ...prev, 
+                                        selectBayar: selected.value,
+                                        selectMetode: selected.value === 1 ? 1 : dataMetode[1].value
+                                    }));
+                                    setIsMetodeDisabled(selected.value === 1);
+                                }}
                             />
-
                             <InputDropdown 
                                 label="Metode Pembayaran" 
-                                disabled={isMetodeDisabled} 
-                                options={dataMetode.map(option => ({
-                                    id: option.id,
-                                    label: option.label,
-                                    value: option.label
-                                }))}
-                                value={selectedMetodeLabel} 
-                                onSelect={handleSelectMetode}
-                                required={!isMetodeDisabled}
+                                disabled={isMetodeDisabled}
+                                options={dataMetode}
+                                value={formData.selectMetode}
+                                onSelect={(selected) => setFormData(prev => ({...prev, selectMetode: selected.value}))}
                             />
                         </div>
+                    </section>
 
-                        <div className="mt-10 space-y-8">
-                        {/* Custom Products Table */}
-                            <div>
-                                <h2 className="text-lg font-semibold mb-4">Rincian Jumlah dan Bahan*</h2>
-                                <Table
-                                    headers={customHeaders}
-                                    data={customTableData}
-                                    text_header="text-primary"
-                                    hasSearch={false}
-                                    hasPagination={false}
+                        {/* Tables section */}
+                        <section className="pt-10">
+                            {transformToTableData().map((table, index) => (
+                                <div key={index} className="pt-5">
+                                    <p className="font-bold">{table.nama}</p>
+                                    <div className="pt-5">
+                                        <Table 
+                                            headers={index === 1 ? biayaHeaders : headers} 
+                                            data={table.data} 
+                                        />
+                                        <Button
+                                            label="Tambah Baris"
+                                            icon={
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                            }
+                                            onClick={() => handleAddRow(index)}
+                                            bgColor=""
+                                            hoverColor="hover:border-primary hover:border"
+                                            textColor="text-primary"
+                                            />
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+
+                        {/* Note and Summary section */}
+                        <section className="flex flex-col md:flex-row gap-8 p-4">
+                            <div className="w-full md:w-2/4">
+                                <TextArea
+                                    label="Catatan"
+                                    placeholder="Masukkan Catatan Di Sini"
+                                    required={true}
+                                    value={formData.note}
+                                    onChange={(e) => setFormData(prev => ({...prev, note: e.target.value}))}
                                 />
-                                <button 
-                                    onClick={handleCustomAddRow}
-                                    className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                    </svg>
-                                    Tambah Baris
-                                </button>
                             </div>
 
-                            <div>
-                                <h2 className="text-lg font-semibold mb-4">Rincian Biaya</h2>
-                                <Table
-                                    headers={biayaHeaders}
-                                    data={biayaTableData}
-                                    text_header="text-primary"
-                                    hasSearch={false}
-                                    hasPagination={false}
-                                />
-                                <button 
-                                    onClick={handleBiayaAddRow}
-                                    className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                    </svg>
-                                Tambah Baris
-                                </button>
+                            <div className="w-full md:w-2/4">
+                                <div className="space-y-4 text-sm p-4">
+                                    <div className="flex justify-between border-b pb-2">
+                                        <p className="font-bold">Subtotal</p>
+                                        <p>Rp{calculateSubtotal().toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b pb-2">
+                                        <p className="font-bold">Diskon Keseluruhan (%)</p>
+                                        <div className="w-30">
+                                            <Input
+                                                type="number"
+                                                showRequired={false}
+                                                value={formData.diskon}
+                                                required={false}
+                                                onChange={(value) => setFormData(prev => ({...prev, diskon: value}))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b pb-2">
+                                        <p className="font-bold">Pajak</p>
+                                        <div className="w-30">
+                                            <Input
+                                                type="number"
+                                                showRequired={false}
+                                                required={false}
+                                                value={formData.pajak}
+                                                onChange={(value) => setFormData(prev => ({...prev, pajak: value}))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between border-b pb-2">
+                                        <p className="font-bold">Total Penjualan</p>
+                                        <p className="font-bold">
+                                            Rp{calculateTotalPenjualan(calculateSubtotal()).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <Button
+                                            label="Simpan"
+                                            bgColor="bg-primary w-full"
+                                            hoverColor="hover:bg-white hover:border-primary hover:text-black hover:border"
+                                            textColor="text-white"
+                                            type="submit"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                        </section>
+                    </form>
+                </section>
 
-                            {/* Packaging Table */}
-                            <div>
-                                <h2 className="text-lg font-semibold mb-4">Packaging</h2>
-                                <Table
-                                    headers={packagingHeaders}
-                                    data={packagingTableData}
-                                    text_header="text-primary"
-                                    hasSearch={false}
-                                    hasPagination={false}
-                                />
-                                <button 
-                                    onClick={handlePackagingAddRow}
-                                    className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                    </svg>
-                                    Tambah Baris
-                                </button>
-                            </div>
-
-                            
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-                                {/* Left Column - Notes */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Catatan<span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary min-h-[150px]"
-                                        placeholder="Masukan Catatan Disini"
-                                        value={catatan}
-                                        onChange={(e) => setCatatan(e.target.value)}
+                {/* Product/Packaging Selection Modal */}
+                {modalState.isOpen && (
+                    <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                        <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                            <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
+                                <div className="relative w-full max-w-md flex-shrink-0">
+                                    <span className="absolute inset-y-0 left-3 flex items-center">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="w-5 h-5 text-gray-400"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                        </svg>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="Cari Barang yang mau dibeli"
+                                        value={modalState.searchTerm}
+                                        onChange={(e) => setModalState(prev => ({...prev, searchTerm: e.target.value}))}
+                                        className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                     />
                                 </div>
 
-                                {/* Right Column - Calculations */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Subtotal</span>
-                                        <span className="font-semibold">
-                                            Rp{totalHarga.toLocaleString()}
-                                        </span>
-                                    </div>
+                                <div className="flex items-center space-x-4 flex-shrink-0">
+                                    <button
+                                        onClick={() => setModalState(prev => ({...prev, searchTerm: '', selectedItems: []}))}
+                                        className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-6 w-6"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    <p className="text-primary font-semibold">
+                                        Terpilih {modalState.selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                    </p>
+                                </div>
 
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Diskon Keseluruhan</span>
-                                        <div className="w-32">
-                                            <Input
-                                                type="number"
-                                                value={diskonPersen}
-                                                onChange={(value) => setDiskonPersen(Number(value))}
-                                                min={0}
-                                                max={100}
-                                                showRequired={false}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Pajak</span>
-                                        <div className="w-32">
-                                            <Input
-                                                type="number"
-                                                value={pajak}
-                                                onChange={(value) => setPajak(Number(value))}
-                                                showRequired={false}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between items-center pt-4 border-t">
-                                        <span className="text-gray-600 font-medium">Total Penjualan</span>
-                                        <span className="font-bold text-lg">
-                                            Rp{calculateFinalTotals().finalTotal.toLocaleString()}
-                                        </span>
-                                    </div>
+                                <div className="flex flex-wrap md:flex-nowrap gap-4 flex-shrink-0">
+                                    <Button
+                                        label="Batal"
+                                        bgColor="border border-secondary"
+                                        hoverColor="hover:bg-gray-100"
+                                        textColor="text-black"
+                                        onClick={() => setModalState(prev => ({...prev, isOpen: false, selectedItems: []}))}
+                                    />
+                                    <Button
+                                        label="Pilih"
+                                        bgColor="bg-primary"
+                                        hoverColor="hover:bg-opacity-90"
+                                        textColor="text-white"
+                                        onClick={handleModalSubmit}
+                                    />
                                 </div>
                             </div>
 
-                            {/* Section dengan tombol di bagian paling bawah */}
-                            <div className="flex justify-end gap-4 mt-8">
-                                <Button 
-                                    label="Kembali"
-                                    bgColor="bg-white border-secondary border"
-                                    textColor="text-gray-700"
-                                    hoverColor="hover:bg-gray-50"
-                                    onClick={() => {/* handle kembali */}}
-                                />
-                                <Button 
-                                    label="Simpan"
-                                    bgColor="bg-primary"
-                                    hoverColor="hover:bg-primary-dark"
-                                    onClick={handleSubmit}
+                            <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                <Gallery2
+                                    items={modalState.content === 'packaging' 
+                                        ? dataPackaging.filter(item => 
+                                            item.name.toLowerCase().includes(modalState.searchTerm.toLowerCase())
+                                        ).map(item => ({
+                                            ...item,
+                                            formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
+                                        }))
+                                        : dataBarang.filter(item =>
+                                            item.name.toLowerCase().includes(modalState.searchTerm.toLowerCase())
+                                        ).map(item => ({
+                                            ...item,
+                                            formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
+                                        }))
+                                    }
+                                    onSelect={(item, count) => 
+                                        setModalState(prev => {
+                                            const updatedItems = [...prev.selectedItems];
+                                            const existingIndex = updatedItems.findIndex(i => i.id === item.id);
+                                            if (existingIndex !== -1) {
+                                                if (count === 0) {
+                                                    updatedItems.splice(existingIndex, 1);
+                                                } else {
+                                                    updatedItems[existingIndex].count = count;
+                                                }
+                                            } else if (count > 0) {
+                                                updatedItems.push({ ...item, count });
+                                            }
+                                            return { ...prev, selectedItems: updatedItems };
+                                        })
+                                    }
+                                    selectedItems={modalState.selectedItems}
                                 />
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
-                {/* Error Alert - Optional */}
-                {/* {error && (
-                    <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        <span className="font-bold">Error!</span>
-                        <span className="block">{error}</span>
-                    </div>
-                )} */}
+                {isModalSucc && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data berhasil disimpan"
+                        confirmLabel="OK"
+                        onConfirm={() => {
+                            setModalSucc(false);
+                            navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualanToko');
+                        }}
+                    />
+                )}
 
-                {/* Success Alert - Optional */}
-                {/* {success && (
-                    <div className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        <span className="font-bold">Success!</span>
-                        <span className="block">{success}</span>
-                    </div>
-                )} */}
+                {isLoading && <Spinner />}
             </div>
-        </Navbar>
+        </LayoutWithNav>
     );
-}
+};
+
+export default EditPenjualanCustom;

@@ -10,12 +10,10 @@ import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import ActionMenu from "../../../components/ActionMenu";
+import api from "../../../utils/api";
 
 export default function PembelianStok() {
-    // const [isModalOpen, setIsModalOpen] = useState(false);
     const [isModalMore, setModalMore] = useState(false)
-    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const navigate = useNavigate()
@@ -25,6 +23,11 @@ export default function PembelianStok() {
     const isAdminGudang = userData?.role === 'admingudang';
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [data, setData] = useState([]);
+    const [isLoading, setLoading] = useState(false);
+    const [errorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
 
@@ -35,88 +38,55 @@ export default function PembelianStok() {
         setSelectedYear(year);
     };
 
-    const handleMoreClick = (item, event) => {
-        event.stopPropagation();
-        setSelectedItem(item);
-        setModalMore(true);
-    
-        const rect = event.target.getBoundingClientRect();
-    
-        const isMobile = window.innerWidth <= 768; 
-        const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
-        const isDesktop = window.innerWidth > 1024;
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/pembelian');
+            
+            const formattedData = response.data.data.map((item, index) => {
+                const namaBarang = item.produk_pembelian
+                    .map(produk => {
+                        if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
+                        if (produk.barang_non_handmade) return produk.barang_non_handmade.nama_barang;
+                        if (produk.packaging) return produk.packaging.nama_packaging;
+                        return '';
+                    })
+                    .filter(nama => nama); 
 
-        let modalTop, modalLeft;
-    
-    
-        if (isMobile) {
-            const availableSpaceBelow = window.innerHeight - rect.bottom;
-            const availableSpaceAbove = rect.top;
-    
-            if (availableSpaceBelow < 300) {
-                modalTop = rect.top + window.scrollY - 300; 
-            } else {
-                modalTop = rect.top + window.scrollY - 600;
-            }
-    
-            modalLeft = rect.left + window.scrollX - 650;
-        } else if (isTablet) {
-            const availableSpaceBelow = window.innerHeight - rect.bottom;
-            const availableSpaceAbove = rect.top; 
-    
-            if (availableSpaceBelow < 400) {
-                modalTop = rect.top + window.scrollY - 400; 
-            } else {
-                modalTop = rect.top + window.scrollY - 550;
-            }
-    
-            modalLeft = rect.left + window.scrollX - 300; 
-        } else if (isDesktop) {
-            modalTop = rect.top + window.scrollY - 200;
-            modalLeft = rect.left + window.scrollX - 300;
+                const totalKuantitas = item.produk_pembelian.reduce((sum, produk) => sum + produk.kuantitas, 0);
+                
+                return {
+                    id: item.pembelian_id,
+                    Nomor: item.pembelian_id,
+                    Tanggal: moment(item.tanggal).format('DD/MM/YYYY'),
+                    namaBarang,
+                    "Jumlah Barang": totalKuantitas.toLocaleString('id-ID'),
+                    "Diskon": `${item.diskon}%`,
+                    "Pajak": `Rp${item.pajak.toLocaleString()}`,
+                    "Total Transaksi": `Rp${item.total_pembelian.toLocaleString()}`,
+                    type: item.cash_or_non ? 'cash' : 'non-cash'
+                };
+            });
+
+            setData(formattedData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setErrorMessage('Gagal mengambil data pembelian');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
         }
-    
-        setModalPosition({
-            top: modalTop,
-            left: modalLeft,
-        });
     };
 
-//   const handleToday = () => {
-//     const today = moment().startOf("day");
-//     setStartDate(today.format("YYYY-MM-DD"));
-//     setEndDate(today.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
+    useEffect(() => {
+        fetchData();
+    }, []);
 
-//   const handleLast7Days = () => {
-//     const today = moment().startOf("day");
-//     const sevenDaysAgo = today.clone().subtract(7, "days");
-//     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-//     setEndDate(today.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
-
-//   const handleThisMonth = () => {
-//     const startMonth = moment().startOf("month");
-//     const endMonth = moment().endOf("month");
-//     setStartDate(startMonth.format("YYYY-MM-DD"));
-//     setEndDate(endMonth.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
 
     const handleRowClick = (row) => {
         navigate(`/pembelianStok/detail`, { state: { id: row.id } });
     };
 
-    // const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-    // const formatDate = (date) =>
-    //     new Date(date).toLocaleDateString("en-US", {
-    //     month: "short",
-    //     day: "2-digit",
-    //     year: "numeric",
-    // });
 
     const headers = [
         { label: "Nomor", key: "Nomor", align: "text-left" },
@@ -128,77 +98,6 @@ export default function PembelianStok() {
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
         { label: "Aksi", key: "action", align: "text-left" },
       ];
-    
-      const data = [
-        {
-            id: 1,
-            Nomor: "STK1323",
-            Tanggal: "31/05/2024",
-            namaBarang: [
-                "Gelang Barbie",
-                "Gelang Bulan",
-                "Gelang Perak",
-                "Gelang Emas",
-                "Gelang Berlian"
-            ],
-            "Jumlah Barang": "30%",
-            Diskon: "11%",
-            Pajak: "11%",
-            type: 'cash',
-            "Total Transaksi": "Rp.200.000",
-        },
-        {
-            id: 2,
-            Nomor: "STK1324",
-            Tanggal: "31/05/2024",
-            namaBarang: [
-                "Kalung Silver",
-                "Cincin Emas",
-                "Gelang Perak"
-            ],
-            "Jumlah Barang": "30%",
-            Diskon: "11%",
-            Pajak: "11%",
-            type: "cash",
-            "Total Transaksi": "Rp.200.000",
-        },
-        {
-            id: 3,
-            Nomor: "STK1325",
-            Tanggal: "31/05/2024",
-            namaBarang: [
-                "Cincin Berlian",
-                "Liontin Gold"
-            ],
-            "Jumlah Barang": "30%",
-            Diskon: "11%",
-            Pajak: "11%",
-            type: "non-cash",
-            "Total Transaksi": "Rp.200.000",
-        },
-    ];
-
-
-    // const [filteredData, setFilteredData] = useState(data);
-
-    // const filterDataByDate = () => {
-    //     if (!startDate || !endDate) {
-    //     setFilteredData(data);
-    //     } else {
-    //     const filtered = data.filter((item) => {
-    //         const itemDate = moment(item.Tanggal, "DD/MM/YYYY"); 
-    //         const start = moment(startDate);
-    //         const end = moment(endDate);
-
-    //         return itemDate.isBetween(start, end, null, "[]"); 
-    //     });
-    //     setFilteredData(filtered);
-    //     }
-    // };
-
-    // useEffect(() => {
-    //     filterDataByDate();
-    // }, [startDate, endDate]);
 
     const handleAddBtn = () => {
         if (isAdminGudang) {
@@ -228,11 +127,18 @@ export default function PembelianStok() {
         setModalDel(false)
     }
 
-    const handleConfirmDel = () => {
-        const id = selectedItem.id
-        setSuccess(true)
-
-        // logika hapus
+    const handleConfirmDel = async () => {
+        try {
+            await api.delete(`/pembelian/${selectedItem.id}`);
+            setSuccess(true);
+            fetchData(); 
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            setErrorMessage('Gagal menghapus data pembelian');
+            setErrorAlert(true);
+        } finally {
+            setModalDel(false);
+        }
     }
 
     const handleSucc = () => {
@@ -282,64 +188,6 @@ return (
                                 />
                     </div>
 
-                    {/* Modal */}
-                    {/* {isModalOpen && (
-                        <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                            <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                            
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                            <div className="flex space-x-4 w-full">
-                                <div className="flex flex-col w-full">
-                                <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                />
-                                </div>
-                                <div className="flex flex-col w-full">
-                                <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col space-y-3 w-full">
-                                <button
-                                onClick={handleToday}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                Hari Ini
-                                </button>
-                                <button
-                                onClick={handleLast7Days}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                7 Hari Terakhir
-                                </button>
-                                <button
-                                onClick={handleThisMonth}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                Bulan Ini
-                                </button>
-                            </div>
-                            </div>
-                        </div>
-                        )} */}
-
                     <div className="w-full md:w-auto">
                         <Button label="Tambah" icon={ <svg width="16" height="16" viewBox="0 0 13 13" fill="none"
                             xmlns="http://www.w3.org/2000/svg">
@@ -358,14 +206,14 @@ return (
             </section>
 
             <section className="bg-white p-5 mt-5 rounded-xl">
-                {/* <Table data={filteredData} headers={headers} onRowClick={handleRowClick} hasSubmenu={true} submenuItems={submenuItems} defaultSubmenu="semua" /> */}
                     <Table
                         headers={headers}
-                        data={data.map((item, index) => ({
+                        data={data.map((item) => ({
                             ...item,
                             "Nama Barang": item.namaBarang.length > 2 
                                 ? `${item.namaBarang[0]}, ${item.namaBarang[1]}, +${item.namaBarang.length - 2} Lainnya`
                                 : item.namaBarang.join(", "),
+                                
                             action: <ActionMenu 
                                 onEdit={() => handleEdit(item)} 
                                 onDelete={() => {
@@ -378,7 +226,7 @@ return (
                         hasSubmenu={true}
                         submenuItems={submenuItems}
                         defaultSubmenu="semua"
-                    />    
+                    />
                 {/* Modal for More Options */}
                 {isModalMore && selectedItem && (
                 <div
@@ -472,6 +320,8 @@ return (
             cancelLabel="Kembali"
             onConfirm={handleConfirmDel}
             onCancel={handleCancelDel}
+            open={isModalDel}
+            onClose={() => setModalDel(false)}
             />
         )}
 

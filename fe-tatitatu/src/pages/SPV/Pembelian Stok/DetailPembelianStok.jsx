@@ -4,10 +4,12 @@ import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function DetailPembelianStok(){
 const location = useLocation()
@@ -18,6 +20,90 @@ const [isModelSucc, setModalSucc] = useState(false)
 
 const userData = JSON.parse(localStorage.getItem('userData'));
 const isAdminGudang = userData?.role === 'admingudang';
+const [pembelianData, setPembelianData] = useState(null);
+const [cabangData, setCabangData] = useState([]);
+const [isLoading, setIsLoading] = useState(true);
+
+useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const [pembelianRes, cabangRes] = await Promise.all([
+                api.get(`/pembelian/${id}`),
+                api.get('/cabang')
+            ]);
+
+            setPembelianData(pembelianRes.data.data);
+            setCabangData(cabangRes.data.data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchData();
+}, [id]);
+
+const processedData = useMemo(() => {
+    if (!pembelianData || !cabangData) return [];
+
+    const groupedByCabang = {};
+    
+    pembelianData.produk_pembelian.forEach(produk => {
+        const cabang = cabangData.find(c => c.cabang_id === produk.cabang_id);
+        if (!groupedByCabang[produk.cabang_id]) {
+            groupedByCabang[produk.cabang_id] = {
+                nama: cabang?.nama_cabang,
+                data: []
+            };
+        }
+
+        const baseUrl = import.meta.env.VITE_API_URL;
+        let productDetails;
+        let imageUrl;
+
+        if (produk.barang_handmade) {
+            productDetails = produk.barang_handmade;
+            imageUrl = `${baseUrl}/images-barang-handmade/${productDetails.image}`;
+        } else if (produk.barang_non_handmade) {
+            productDetails = produk.barang_non_handmade;
+            imageUrl = `${baseUrl}/images-barang-non-handmade/${productDetails.image}`;
+        } else if (produk.barang_custom) {
+            productDetails = produk.barang_custom;
+            imageUrl = `${baseUrl}/images-barang-custom/${productDetails.image}`;
+        } else if (produk.packaging) {
+            productDetails = produk.packaging;
+            imageUrl = productDetails.image ? `${baseUrl}/images-packaging/${productDetails.image}` : '/placeholder-image.jpg';
+        }
+
+        groupedByCabang[produk.cabang_id].data.push({
+            id: produk.produk_pembelian_id,
+            No: groupedByCabang[produk.cabang_id].data.length + 1,
+            "Foto Produk": (
+                <div className="w-12 h-12 flex items-center justify-center">
+                    <img 
+                        src={imageUrl}
+                        alt={productDetails?.nama_barang || productDetails?.nama_packaging} 
+                        className="w-full h-full object-cover rounded"
+                        onError={(e) => {
+                            e.target.src = '/placeholder-image.jpg';
+                        }}
+                    />
+                </div>
+            ),
+            "Nama Produk": productDetails?.nama_barang || productDetails?.nama_packaging,
+            "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang,
+            "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
+            "Kuantitas": produk.kuantitas,
+            "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
+        });
+    });
+
+    return Object.values(groupedByCabang);
+}, [pembelianData, cabangData]);
+
+if (isLoading) return <Spinner />;
+
 
 const handleEdit = () => {
     if (isAdminGudang) {
@@ -31,19 +117,24 @@ const handleBtnDel = () => {
     setModalDel(true)
 }
 
-const handleConfirmDel = () => {
-    // logika delete
-    setModalDel(false)
-    setModalSucc(true)
-}
+const handleConfirmDel = async () => {
+    try {
+        await api.delete(`/pembelian/${id}`);
+        setModalDel(false);
+        setModalSucc(true);
+    } catch (error) {
+        console.error('Error deleting data:', error);
+    }
+};
 
 const handleCancelDel = () => {
     setModalDel(false)
 }
 
 const handleConfirmSucc = () => {
-    setModalSucc(false)
-}
+    setModalSucc(false);
+    navigate('/pembelianStok');
+};
 
 const breadcrumbItems = [
 { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
@@ -60,102 +151,102 @@ const headers = [
 { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
 ]
 
-const data = {
-    id: 1,
-    nomor: 'STK1133',
-    invoice: 'INV123',
-    tanggal: '21/12/2024',
-    pembayaran: 'Cash',
-    metode: '-',
-    dataCabang: [
-        {
-            nama: "Cabang GOR.Haji Agus Salim",
-            data: [
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-            ]
-        },
-        {
-            nama: "Cabang GOR.Lubuk Begalung",
-            data: [
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-                {
-                    id: 1,
-                    No: "1",
-                    "Foto Produk" : (
-                    <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-                    ),
-                    "Nama Produk": "Barbie",
-                    "Jenis Barang": "Barang Handmade",
-                    "Harga Satuan": "Rp15.000",
-                    Kuantitas: 10,
-                    "Total Biaya": "Rp150.000"
-                },
-            ]
-        }
-    ],
-    subtotal: 8000,
-    diskon: 30,
-    pajak: 1000,
-    totalpenjualan: 18000
-}
+// const data = {
+//     id: 1,
+//     nomor: 'STK1133',
+//     invoice: 'INV123',
+//     tanggal: '21/12/2024',
+//     pembayaran: 'Cash',
+//     metode: '-',
+//     dataCabang: [
+//         {
+//             nama: "Cabang GOR.Haji Agus Salim",
+//             data: [
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//             ]
+//         },
+//         {
+//             nama: "Cabang GOR.Lubuk Begalung",
+//             data: [
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//                 {
+//                     id: 1,
+//                     No: "1",
+//                     "Foto Produk" : (
+//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
+//                     ),
+//                     "Nama Produk": "Barbie",
+//                     "Jenis Barang": "Barang Handmade",
+//                     "Harga Satuan": "Rp15.000",
+//                     Kuantitas: 10,
+//                     "Total Biaya": "Rp150.000"
+//                 },
+//             ]
+//         }
+//     ],
+//     subtotal: 8000,
+//     diskon: 30,
+//     pajak: 1000,
+//     totalpenjualan: 18000
+// }
 
 const dataAdminGudang = {
     id: 1,
@@ -203,7 +294,7 @@ return (
                     className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0 border-b pb-5">
                     {/* Left Section */}
                     <div className="left w-full md:w-auto">
-                        <p className="font-bold">{data.nomor}</p>
+                        <p className="font-bold">{pembelianData?.pembelian_id}</p>
                     </div>
 
                     {/* Right Section */}
@@ -250,19 +341,19 @@ return (
                     <div className="flex justify-between w-full">
                         <div className="">
                             <p className="text-gray-500 text-sm">Nomor</p>
-                            <p className="font-bold text-lg">{data.invoice}</p>
+                            <p className="font-bold text-lg">{pembelianData?.pembelian_id}</p>
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Tanggal</p>
-                            <p className="font-bold text-lg">{data.tanggal}</p>
+                            <p className="font-bold text-lg">{pembelianData?.tanggal && new Date(pembelianData.tanggal).toLocaleDateString()}</p>
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Cash/Non-Cash</p>
-                            <p className="font-bold text-lg">{data.pembayaran}</p>
+                            <p className="font-bold text-lg">{pembelianData?.cash_or_non ? 'Cash' : 'Non-Cash'}</p>
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Metode Pembayaran</p>
-                            <p className="font-bold text-lg">{data.metode}</p>
+                            <p className="font-bold text-lg">{pembelianData?.metode_pembayaran?.nama_metode || '-'}</p>
                         </div>
                     </div>
                 </section>
@@ -275,7 +366,7 @@ return (
                             <Table headers={headers} data={dataAdminGudang.data} />
                         </div>
                     ) : (
-                        data.dataCabang.map((cabang, index) => (
+                        processedData.map((cabang, index) => (
                             <div key={index} className="pt-5">
                                 <p className="font-bold">{cabang.nama}</p>
                                 <div className="pt-5">
@@ -292,22 +383,22 @@ return (
                         {/* Sub Total */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Sub Total</p>
-                            <p>{formatCurrency(data.subtotal) || 0}</p>
+                            <p>{formatCurrency(pembelianData?.sub_total || 0)}</p>
                         </div>
                         {/* Diskon Keseluruhan */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Diskon Keseluruhan</p>
-                            <p>{data.diskon}%</p>
+                            <p>{pembelianData?.diskon || 0}%</p>
                         </div>
                         {/* Pajak */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Pajak</p>
-                            <p>-{data.pajak}</p>
+                            <p>-{formatCurrency(pembelianData?.pajak || 0)}</p>
                         </div>
                         {/* Total Penjualan */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Total Penjualan</p>
-                            <p className="font-bold">{formatCurrency(data.totalpenjualan) || 0}</p>
+                            <p className="font-bold">{formatCurrency(pembelianData?.total_pembelian || 0)}</p>
                         </div>
                     </div>
                 </section>

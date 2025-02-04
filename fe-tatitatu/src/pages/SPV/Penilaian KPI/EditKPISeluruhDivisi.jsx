@@ -21,6 +21,7 @@ export default function EditKPISeluruhDivisi() {
     const [isAlertSuccess, setAlertSucc] = useState(false)
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [percentageError, setPercentageError] = useState(false);
 
     const breadcrumbItems = [
         { label: "Daftar KPI Seluruh Divisi", href: "/daftarPenilaianKPI/seluruh-divisi" },
@@ -45,6 +46,10 @@ export default function EditKPISeluruhDivisi() {
         } catch (error) {
             console.error('Error fetching divisi:', error);
         }
+    };
+
+    const calculateTotalPercentage = (dataRows) => {
+        return dataRows.reduce((sum, row) => sum + (parseFloat(row.Persentase) || 0), 0);
     };
 
     useEffect(() => {
@@ -102,6 +107,14 @@ export default function EditKPISeluruhDivisi() {
     };
 
     const handleAddRow = () => {
+        const currentTotal = calculateTotalPercentage(data.data);
+        if (currentTotal >= 100) {
+            setPercentageError(true);
+            setErrorMessage("Tidak dapat menambah KPI baru karena total persentase sudah 100%");
+            setErrorAlert(true);
+            return;
+        }
+
         const newRow = {
             Nomor: data.data.length + 1,
             NamaKPI: "",
@@ -116,6 +129,24 @@ export default function EditKPISeluruhDivisi() {
         const updatedData = data.data.map((row, index) =>
             index === rowIndex ? { ...row, [key]: value } : row
         );
+
+        if (key === "Persentase") {
+            // Validate the input is a number and not negative
+            if (isNaN(value) || parseFloat(value) < 0) {
+                return;
+            }
+
+            const totalPercentage = calculateTotalPercentage(updatedData);
+            if (totalPercentage > 100) {
+                setPercentageError(true);
+                setErrorMessage("Total persentase tidak boleh melebihi 100%");
+                setErrorAlert(true);
+            } else {
+                setPercentageError(false);
+                setErrorAlert(false);
+            }
+        }
+
         setData((prevState) => ({ ...prevState, data: updatedData }));
     };
 
@@ -130,6 +161,20 @@ export default function EditKPISeluruhDivisi() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        const totalPercentage = calculateTotalPercentage(data.data);
+        if (totalPercentage > 100) {
+            setErrorMessage("Total persentase tidak boleh melebihi 100%");
+            setErrorAlert(true);
+            return;
+        }
+
+        if (totalPercentage < 100) {
+            setErrorMessage("Total persentase harus mencapai 100%");
+            setErrorAlert(true);
+            return;
+        }
+
         try {
             setLoading(true);
             
@@ -138,7 +183,7 @@ export default function EditKPISeluruhDivisi() {
                 nama_kpi: item.NamaKPI,
                 persentase: parseInt(item.Persentase),
                 waktu: item.Waktu,
-                ...(item.kpi_id && { kpi_id: item.kpi_id }) // Include kpi_id only if exists
+                ...(item.kpi_id && { kpi_id: item.kpi_id })
             }));
      
             await api.put(`/kpi/${id}`, kpiPayload);
@@ -154,7 +199,8 @@ export default function EditKPISeluruhDivisi() {
         } finally {
             setLoading(false);
         }
-     };
+    };
+    const currentTotal = calculateTotalPercentage(data.data);
 
     return (
         <>

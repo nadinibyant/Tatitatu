@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
@@ -7,6 +7,8 @@ import Button from "../../../components/Button";
 import Table from "../../../components/Table";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function DetailPemasukanJual() {
     const location = useLocation()
@@ -18,52 +20,148 @@ export default function DetailPemasukanJual() {
     ];
     const [isModalDel, setModalDel] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
+    const [data,setData] = useState([])
+    const [isLoading, setLoading] = useState(false)
+    
+    useEffect(() => {
+    const fetchDetailPenjualan = async () => {
+        try {
+            setLoading(true)
+            const [penjualanRes, biayaTokoRes] = await Promise.all([
+                api.get(`/penjualan/${nomor}`),
+                api.get('/biaya-toko')
+            ]);
+            const detailData = penjualanRes.data.data;
+            const biayaToko = biayaTokoRes.data.data.find(bt => bt.cabang_id === detailData.cabang_id);
 
-    const data = {
-        nomor: 'INV123',
-        tanggal: '2024-12-12T14:30:00',
-        nama_pembeli: 'Suryani',
-        bayar: 'Cash',
-        metode: '-',
-        catatan: 'Catatan penting mengenai transaksi ini',  
-        data_produk: [
-            {
-                "Foto Produk": "https://via.placeholder.com/150",
-                "Nama Produk": "Gelang Cantik",
-                "Jenis Barang": "Barang Handmade",
-                "Harga Satuan": 15000,
-                kuantitas: 10,
-                "Total Biaya": 150000
-            },
-            {
-                "Foto Produk": "https://via.placeholder.com/150",
-                "Nama Produk": "Gelang Cantik",
-                "Jenis Barang": "Barang Handmade",
-                "Harga Satuan": 15000,
-                kuantitas: 10,
-                "Total Biaya": 150000
-            },
-        ],
-        rincian_biaya: [
-            {
-                "Nama Biaya": "Jasa",
-                "Jumlah Biaya": 1000
+            const rincianBiaya = [];
+            if (biayaToko) {
+                if (biayaToko.biaya_operasional) {
+                    rincianBiaya.push(...biayaToko.biaya_operasional.map(bo => ({
+                        "Nama Biaya": bo.nama_biaya,
+                        "Jumlah Biaya": bo.jumlah_biaya
+                    })));
+                }
+                if (biayaToko.biaya_staff) {
+                    rincianBiaya.push(...biayaToko.biaya_staff.map(bs => ({
+                        "Nama Biaya": bs.nama_biaya,
+                        "Jumlah Biaya": bs.jumlah_biaya
+                    })));
+                }
             }
-        ],
-        data_packaging: [
-            {
-                "Foto Produk": "https://via.placeholder.com/50",
-                "Nama Packaging": "zipper",
-                "Harga Satuan": 1000,
-                kuantitas: 1000,
-                "Total Biaya": 10000
-            }
-        ],
-        sub_total: 8000,
-        diskon: 30,
-        pajak: 1000,
-        total_penjualan: 18000
+
+            const transformedData = {
+                nomor: detailData.penjualan_id,
+                tanggal: detailData.tanggal,
+                nama_pembeli: detailData.nama_pembeli,
+                bayar: detailData.cash_or_non ? 'Cash' : 'Non-Cash',
+                metode: detailData.metode_pembayaran?.nama_metode || '-',
+                catatan: detailData.catatan,
+                sub_total: detailData.sub_total,
+                diskon: detailData.diskon,
+                pajak: detailData.pajak,
+                total_penjualan: Number(detailData.total_penjualan) || 0,
+                data_produk: detailData.produk_penjualan?.filter(produk => 
+                    produk.barang_handmade_id || produk.barang_non_handmade_id || produk.barang_custom_id
+                ).map(produk => {
+                    const barang = produk.barang_handmade || 
+                                  produk.barang_non_handmade || 
+                                  produk.barang_custom;
+                    
+                    let imagePath;
+                    if (produk.barang_handmade) {
+                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-handmade/${barang.image}`;
+                    } else if (produk.barang_non_handmade) {
+                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${barang.image}`;
+                    } else if (produk.barang_custom) {
+                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-custom/${barang.image}`;
+                    }
+                    
+                    return {
+                        "Foto Produk": imagePath || "https://via.placeholder.com/150",
+                        "Nama Produk": barang?.nama_barang,
+                        "Jenis Barang": barang?.jenis_barang?.nama_jenis_barang || barang?.jenis?.nama_jenis_barang,
+                        "Harga Satuan": Number(produk.harga_satuan),
+                        kuantitas: produk.kuantitas,
+                        "Total Biaya": Number(produk.total_biaya)
+                    };
+                }) || [],
+                data_packaging: detailData.produk_penjualan?.filter(produk => produk.packaging_id)
+                    .map(produk => ({
+                        "Foto Produk": produk.packaging?.image ? 
+                            `${import.meta.env.VITE_API_URL}/images-packaging/${produk.packaging.image}` : 
+                            "https://via.placeholder.com/50",
+                        "Nama Packaging": produk.packaging?.nama_packaging,
+                        "Harga Satuan": Number(produk.harga_satuan),
+                        kuantitas: produk.kuantitas,
+                        "Total Biaya": Number(produk.total_biaya)
+                    })) || [],
+                rincian_biaya: biayaToko ? [{
+                    "Nama Biaya": "Biaya Operasional dan Staff",
+                    "Jumlah Biaya": Number(biayaToko.total_biaya || 0)
+                }] : [],
+            };
+
+            console.log('Transformed Data:', transformedData);
+            setData(transformedData);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching detail:', error);
+        } finally {
+            setLoading(false)
+        }
+    };
+
+    if (nomor) {
+        fetchDetailPenjualan();
     }
+}, [nomor]);
+
+    // const data = {
+    //     nomor: 'INV123',
+    //     tanggal: '2024-12-12T14:30:00',
+    //     nama_pembeli: 'Suryani',
+    //     bayar: 'Cash',
+    //     metode: '-',
+    //     catatan: 'Catatan penting mengenai transaksi ini',  
+    //     data_produk: [
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/150",
+    //             "Nama Produk": "Gelang Cantik",
+    //             "Jenis Barang": "Barang Handmade",
+    //             "Harga Satuan": 15000,
+    //             kuantitas: 10,
+    //             "Total Biaya": 150000
+    //         },
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/150",
+    //             "Nama Produk": "Gelang Cantik",
+    //             "Jenis Barang": "Barang Handmade",
+    //             "Harga Satuan": 15000,
+    //             kuantitas: 10,
+    //             "Total Biaya": 150000
+    //         },
+    //     ],
+    //     rincian_biaya: [
+    //         {
+    //             "Nama Biaya": "Jasa",
+    //             "Jumlah Biaya": 1000
+    //         }
+    //     ],
+    //     data_packaging: [
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/50",
+    //             "Nama Packaging": "zipper",
+    //             "Harga Satuan": 1000,
+    //             kuantitas: 1000,
+    //             "Total Biaya": 10000
+    //         }
+    //     ],
+    //     sub_total: 8000,
+    //     diskon: 30,
+    //     pajak: 1000,
+    //     total_penjualan: 18000
+    // }
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -121,10 +219,24 @@ export default function DetailPemasukanJual() {
         setModalDel(true)
     };
 
-    const handleConfirmDel = () => {
-        //logika delete
-        setModalSucc(true)
-    }
+    const handleConfirmDel = async () => {
+        try {
+            setLoading(true);
+            const response = await api.delete(`/penjualan/${data.nomor}`);
+            if (response.data.success) {
+                setModalSucc(true);
+                setModalDel(false);
+                setTimeout(() => {
+                    navigate('/penjualanToko');
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Error deleting:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return (
         <>
@@ -174,7 +286,7 @@ export default function DetailPemasukanJual() {
                                 <p className="font-bold text-lg">
                                     {new Date(data.tanggal).toLocaleString('id-ID', {
                                         year: 'numeric',
-                                        month: 'long',
+                                        month: 'short',
                                         day: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit'
@@ -201,17 +313,19 @@ export default function DetailPemasukanJual() {
                             {isCustom ? "Rincian Jumlah dan Bahan" : "List Produk"}
                         </p>
                         <div className="pt-5">
-                            <Table
-                                headers={headers}
-                                data={data.data_produk.map((item, index) => ({
-                                    ...item,
-                                    "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
-                                    "kuantitas": item.kuantitas.toLocaleString(),
-                                    "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
-                                    "Total Biaya": formatRupiah(item["Total Biaya"]),  
-                                    No: index + 1  
-                                }))}
-                            />
+                            {data?.data_produk && (
+                                <Table
+                                    headers={headers}
+                                    data={data.data_produk.map((item, index) => ({
+                                        ...item,
+                                        "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
+                                        "kuantitas": item.kuantitas.toLocaleString(),
+                                        "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
+                                        "Total Biaya": formatRupiah(item["Total Biaya"]),  
+                                        No: index + 1  
+                                    }))}
+                                />
+                            )}
                         </div>
                     </section>
 
@@ -221,7 +335,7 @@ export default function DetailPemasukanJual() {
                             <div className="pt-5">
                                 <Table
                                     headers={headersRincianBiaya}
-                                    data={data.rincian_biaya.map((item, index) => ({
+                                    data={(data.rincian_biaya || []).map((item, index) => ({
                                         ...item,
                                         "No": index + 1,
                                         "Jumlah Biaya": formatRupiah(item["Jumlah Biaya"])
@@ -234,15 +348,17 @@ export default function DetailPemasukanJual() {
                     <section className="pt-10">
                         <p className="font-bold">Packging</p>
                         <div className="pt-5">
-                        <Table
-                            headers={headers2}
-                            data={data.data_packaging.map((item, index) => ({
-                                ...item,
-                                "No": index + 1,
-                                "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />,
-                                "kuantitas": item.kuantitas.toLocaleString(),
-                            }))}
-                        />
+                            {data?.data_packaging && (
+                                <Table
+                                    headers={headers2}
+                                    data={data.data_packaging.map((item, index) => ({
+                                        ...item,
+                                        "No": index + 1,
+                                        "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />,
+                                        "kuantitas": item.kuantitas.toLocaleString(),
+                                    }))}
+                                />
+                            )}
                         </div>
                     </section>
 
@@ -265,7 +381,7 @@ export default function DetailPemasukanJual() {
                             {/* Sub Total */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Sub Total</p>
-                                <p>{formatCurrency(data.sub_total) || 0}</p>
+                                <p>Rp{Number(data.sub_total).toLocaleString('id-ID') || 0}</p>
                             </div>
                             {/* Diskon Keseluruhan */}
                             <div className="flex justify-between border-b pb-2">
@@ -275,12 +391,12 @@ export default function DetailPemasukanJual() {
                             {/* pajak */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Pajak</p>
-                                <p>{formatCurrency(data.pajak) || 0}</p>
+                                <p>Rp{Number(data.pajak).toLocaleString('id-ID') || 0}</p>
                             </div>
                             {/* Total Penjualan */}
                             <div className="flex justify-between border-b pb-2">
                                 <p className="font-bold">Total Penjualan</p>
-                                <p className="font-bold">{formatCurrency(data.total_penjualan) || 0}</p>
+                                <p className="font-bold">Rp{Number(data.total_penjualan).toLocaleString('id-ID') || 0}</p>
                             </div>
                         </div>
                     </section>
@@ -296,6 +412,8 @@ export default function DetailPemasukanJual() {
                 cancelLabel="Kembali"
                 onConfirm={handleConfirmDel}
                 onCancel={() => setModalDel(false)}
+                open={isModalDel}
+                onClose={() => setModalDel(false)}
                 />
             )}
 
@@ -308,6 +426,8 @@ export default function DetailPemasukanJual() {
                 onConfirm={() => setModalSucc(false)}
                 />
             )}
+
+            {isLoading && <Spinner/>}
         </Navbar>
         </>
     )

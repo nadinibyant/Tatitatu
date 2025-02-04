@@ -7,12 +7,13 @@ import moment from "moment";
 import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";
 import ActionMenu from "../../../components/ActionMenu";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
+import LayoutWithNav from "../../../components/LayoutWithNav";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
 
 export default function Penjualan() {
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [selectedJenis, setSelectedJenis] = useState("Pemasukan");
     const [selectedStore, setSelectedStore] = useState("Semua");
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
@@ -26,72 +27,131 @@ export default function Penjualan() {
       setSelectedYear(year);
     };
 
-    const data = [
-        {
-            Nomor: 'STK123',
-            Tanggal: '2024-12-12',
-            Cabang: 'Gor Agus',
-            "Nama Barang": "Gelang Barbie, Gelang Bulan, Gelang Baru, Gelang Bagus, Gelang Aja",
-            "Jumlah Barang": 2,
-            Diskon: 11,
-            Pajak: 11,
-            "Total Transaksi": 200000,
-            tipe: 'custom'
-        },
-        {
-            Nomor: 'STK124',
-            Tanggal: '2024-12-13',
-            Cabang: 'Lubeg',
-            "Nama Barang": "Gelang Barbie, Gelang Bulan, Gelang Baru",
-            "Jumlah Barang": 3,
-            Diskon: 5,
-            Pajak: 5,
-            "Total Transaksi": 150000,
-            tipe: 'non-custom'
+    const [data,setData] = useState([])
+    const [dataCabang, setDataCabang] = useState([]);
+    const [isLoading, setLoading] = useState(false)
+    const [isModalDel, setModalDel] = useState(false);
+    const [isModalSucc, setModalSucc] = useState(false);
+    const [selectedRow, setSelectedRow] = useState(null);
+
+    useEffect(() => {
+    const fetchCabang = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get('/cabang');
+            if (response.data.success) {
+                const cabangList = response.data.data.map(cabang => ({
+                    label: cabang.nama_cabang,
+                    value: cabang.cabang_id,
+                    icon: '/icon/toko.svg'
+                }));
+                
+                setDataCabang([
+                    { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+                    ...cabangList
+                ]);
+            }
+        } catch (error) {
+            console.error('Error fetching cabang:', error);
+        } finally {
+            setLoading(false)
         }
-    ];
+    };
+
+    fetchCabang();
+}, []);
+
+useEffect(() => {
+    const fetchPenjualan = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get('/penjualan');
+            const penjualanList = response.data.data;
+
+            const detailedData = await Promise.all(
+                penjualanList.map(async (penjualan) => {
+                    const detailResponse = await api.get(`/penjualan/${penjualan.penjualan_id}`);
+                    const detail = detailResponse.data.data;
+
+                    const cabangResponse = await api.get(`/cabang/${detail.cabang_id}`);
+                    const cabangData = cabangResponse.data.data;
+
+                    const namaBarang = detail.produk_penjualan
+                        .map(produk => {
+                            const barang = 
+                                produk.barang_handmade || 
+                                produk.barang_non_handmade || 
+                                produk.barang_custom || 
+                                produk.packaging;
+                            return barang?.nama_barang || barang?.nama_packaging;
+                        })
+                        .filter(Boolean)
+                        .join(', ');
+
+                    const jumlahBarang = detail.produk_penjualan.reduce(
+                        (sum, produk) => sum + produk.kuantitas, 
+                        0
+                    );
+                    const hasCustom = detail.produk_penjualan.some(
+                        produk => produk.barang_custom_id
+                    );
+
+                    return {
+                        Nomor: detail.penjualan_id,
+                        Tanggal: detail.tanggal.split('T')[0],
+                        Cabang: cabangData.nama_cabang, 
+                        "Nama Barang": namaBarang,
+                        "Jumlah Barang": jumlahBarang.toLocaleString('id-ID'),
+                        Diskon: detail.diskon,
+                        Pajak: detail.pajak,
+                        "Total Transaksi": detail.total_penjualan,
+                        tipe: hasCustom ? 'custom' : 'non-custom'
+                    };
+                })
+            );
+
+            setData(detailedData);
+        } catch (error) {
+            console.error('Error fetching penjualan:', error);
+        } finally {
+            setLoading(false)
+        }
+    };
+
+    fetchPenjualan();
+}, [selectedMonth, selectedYear]);
+
+// console.log(data)
+
+
+    // const data = [
+    //     {
+    //         Nomor: 'STK123',
+    //         Tanggal: '2024-12-12',
+    //         Cabang: 'Gor Agus',
+    //         "Nama Barang": "Gelang Barbie, Gelang Bulan, Gelang Baru, Gelang Bagus, Gelang Aja",
+    //         "Jumlah Barang": 2,
+    //         Diskon: 11,
+    //         Pajak: 11,
+    //         "Total Transaksi": 200000,
+    //         tipe: 'custom'
+    //     },
+    //     {
+    //         Nomor: 'STK124',
+    //         Tanggal: '2024-12-13',
+    //         Cabang: 'Lubeg',
+    //         "Nama Barang": "Gelang Barbie, Gelang Bulan, Gelang Baru",
+    //         "Jumlah Barang": 3,
+    //         Diskon: 5,
+    //         Pajak: 5,
+    //         "Total Transaksi": 150000,
+    //         tipe: 'non-custom'
+    //     }
+    // ];
 
     useEffect(() => {
         setSelectedStore("Semua");
     }, []);
-
-    // const handleToday = () => {
-    //     const today = moment().startOf("day");
-    //     setStartDate(today.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
-
-    // const handleLast7Days = () => {
-    //     const today = moment().startOf("day");
-    //     const sevenDaysAgo = today.clone().subtract(7, "days");
-    //     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
-
-    // const handleThisMonth = () => {
-    //     const startMonth = moment().startOf("month");
-    //     const endMonth = moment().endOf("month");
-    //     setStartDate(startMonth.format("YYYY-MM-DD"));
-    //     setEndDate(endMonth.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
-
-    // const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-    // const formatDate = (date) =>
-    //     new Date(date).toLocaleDateString("en-US", {
-    //         month: "short",
-    //         day: "2-digit",
-    //         year: "numeric",
-    //     });
-
-    const dataCabang = [
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    ];
 
     const headers = [
         { label: "Nomor", key: "Nomor", align: "text-left" },
@@ -122,11 +182,9 @@ export default function Penjualan() {
     };
 
     const selectedData = data.filter((item) => {
-
         const isStoreMatch = selectedStore === 'Semua' || item.Cabang === selectedStore;
-        return isStoreMatch
+        return isStoreMatch;
     });
-
     const navigate = useNavigate()
     const handleRowClick = (row) => {
         navigate('/penjualanToko/detail', {state: {nomor: row.Nomor, tipe: row.tipe}})
@@ -139,15 +197,32 @@ export default function Penjualan() {
             navigate(`/penjualanToko/edit/non-custom/${row.Nomor}`);
         }
     };
-    
-    const handleDelete = (nomor) => {
-        // Add your delete logic here
-        console.log('Deleting item:', nomor);
+
+    const handleDelete = async (row) => {
+        try {
+            setLoading(true);
+            const response = await api.delete(`/penjualan/${row.Nomor}`);
+            if (response.data.success) {
+                setModalSucc(true);
+                // Refresh data after deletion
+                const updatedData = data.filter(item => item.Nomor !== row.Nomor);
+                setData(updatedData);
+            }
+        } catch (error) {
+            console.error('Error deleting:', error);
+        } finally {
+            setLoading(false);
+            setModalDel(false);
+        }
+    };
+
+    const handleConfirmDel = () => {
+        handleDelete(selectedRow);
     };
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
@@ -175,62 +250,6 @@ export default function Penjualan() {
                                 />
                             </div>
                         </div>
-
-                                                    {/* Modal */}
-                                                    {/* {isModalOpen && (
-                                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                    <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                                        <button
-                                            onClick={() => setIsModalOpen(false)}
-                                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                        <div className="flex space-x-4 w-full">
-                                            <div className="flex flex-col w-full">
-                                                <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                                                <input
-                                                    type="date"
-                                                    value={startDate}
-                                                    onChange={(e) => setStartDate(e.target.value)}
-                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                />
-                                            </div>
-                                            <div className="flex flex-col w-full">
-                                                <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                                                <input
-                                                    type="date"
-                                                    value={endDate}
-                                                    onChange={(e) => setEndDate(e.target.value)}
-                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col space-y-3 w-full">
-                                            <button
-                                                onClick={handleToday}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                Hari Ini
-                                            </button>
-                                            <button
-                                                onClick={handleLast7Days}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                7 Hari Terakhir
-                                            </button>
-                                            <button
-                                                onClick={handleThisMonth}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                Bulan Ini
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )} */}
                     </section>
 
                     <section className="mt-5 bg-white rounded-xl">
@@ -242,18 +261,46 @@ export default function Penjualan() {
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
                                 "Total Transaksi": formatRupiah(item["Total Transaksi"]),
                                 "Diskon": `${item["Diskon"]}%`,
-                                Pajak: `${item.Pajak}%`,
+                                Pajak: `${item.Pajak}`,
                                 action: <ActionMenu 
                                     onEdit={() => handleEdit(item)} 
-                                    onDelete={() => handleDelete(item)} 
+                                    onDelete={() => {
+                                        setSelectedRow(item);
+                                        setModalDel(true);
+                                    }} 
                                 />
                             }))}
                             onRowClick={handleRowClick}
                         />
                         </div>
                     </section>
+                {isLoading && (<Spinner/>)}
+
+
+                {isModalDel && (
+                    <Alert
+                        title="Hapus Data"
+                        description="Apakah kamu yakin ingin menghapus data ini?"
+                        confirmLabel="Hapus"
+                        cancelLabel="Kembali"
+                        onConfirm={handleConfirmDel}
+                        onCancel={() => setModalDel(false)}
+                        open={isModalDel}
+                        onClose={() => setModalDel(false)}
+                    />
+                )}
+
+                {isModalSucc && (
+                    <AlertSuccess
+                        title="Berhasil!!"
+                        description="Data berhasil dihapus"
+                        confirmLabel="Ok"
+                        onConfirm={() => setModalSucc(false)}
+                    />
+                )}
                 </div>
-            </Navbar>
+
+            </LayoutWithNav>
         </>
     );
 }
