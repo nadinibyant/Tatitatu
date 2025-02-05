@@ -27,13 +27,17 @@ const [isLoading, setIsLoading] = useState(true);
 useEffect(() => {
     const fetchData = async () => {
         try {
-            const [pembelianRes, cabangRes] = await Promise.all([
-                api.get(`/pembelian/${id}`),
-                api.get('/cabang')
-            ]);
-
-            setPembelianData(pembelianRes.data.data);
-            setCabangData(cabangRes.data.data);
+            if (isAdminGudang) {
+                const pembelianRes = await api.get(`/pembelian-gudang/${id}`);
+                setPembelianData(pembelianRes.data.data);
+            } else {
+                const [pembelianRes, cabangRes] = await Promise.all([
+                    api.get(`/pembelian/${id}`),
+                    api.get('/cabang')
+                ]);
+                setPembelianData(pembelianRes.data.data);
+                setCabangData(cabangRes.data.data);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -42,65 +46,123 @@ useEffect(() => {
     };
 
     fetchData();
-}, [id]);
+}, [id, isAdminGudang]);
+
+console.log(pembelianData)
 
 const processedData = useMemo(() => {
     if (!pembelianData || !cabangData) return [];
 
-    const groupedByCabang = {};
-    
-    pembelianData.produk_pembelian.forEach(produk => {
-        const cabang = cabangData.find(c => c.cabang_id === produk.cabang_id);
-        if (!groupedByCabang[produk.cabang_id]) {
-            groupedByCabang[produk.cabang_id] = {
-                nama: cabang?.nama_cabang,
-                data: []
-            };
-        }
-
+    if (isAdminGudang) {
+        // Process data for admin gudang view
         const baseUrl = import.meta.env.VITE_API_URL;
-        let productDetails;
-        let imageUrl;
+        return pembelianData.produk.map((produk, index) => {
+            let productDetails;
+            let imageUrl = '/placeholder-image.jpg';
+            let jenisBarang = '';
+            let namaBarang = '';
 
-        if (produk.barang_handmade) {
-            productDetails = produk.barang_handmade;
-            imageUrl = `${baseUrl}/images-barang-handmade/${productDetails.image}`;
-        } else if (produk.barang_non_handmade) {
-            productDetails = produk.barang_non_handmade;
-            imageUrl = `${baseUrl}/images-barang-non-handmade/${productDetails.image}`;
-        } else if (produk.barang_custom) {
-            productDetails = produk.barang_custom;
-            imageUrl = `${baseUrl}/images-barang-custom/${productDetails.image}`;
-        } else if (produk.packaging) {
-            productDetails = produk.packaging;
-            imageUrl = productDetails.image ? `${baseUrl}/images-packaging/${productDetails.image}` : '/placeholder-image.jpg';
-        }
+            if (produk.barang_handmade_id) {
+                // Handle handmade product
+                imageUrl = `${baseUrl}/images-barang-handmade-gudang/${produk.barang_handmade?.image || ''}`;
+                jenisBarang = 'Barang Handmade';
+                namaBarang = produk.barang_handmade?.nama_barang;
+            } else if (produk.barang_nonhandmade_id) {
+                // Handle non-handmade product
+                imageUrl = `${baseUrl}/images-barang-non-handmade-gudang/${produk.barang_nonhandmade?.image || ''}`;
+                jenisBarang = 'Barang Non-Handmade';
+                namaBarang = produk.barang_nonhandmade?.nama_barang;
+            } else if (produk.barang_mentah_id) {
+                // Handle raw material
+                imageUrl = `${baseUrl}/images-barang-mentah-gudang/${produk.barang_mentah?.image || ''}`;
+                jenisBarang = 'Barang Mentah';
+                namaBarang = produk.barang_mentah?.nama_barang;
+            } else if (produk.packaging_id) {
+                // Handle packaging
+                imageUrl = `${baseUrl}/images-packaging-gudang/${produk.packaging?.image || ''}`;
+                jenisBarang = 'Packaging';
+                namaBarang = produk.packaging?.nama_packaging;
+            }
 
-        groupedByCabang[produk.cabang_id].data.push({
-            id: produk.produk_pembelian_id,
-            No: groupedByCabang[produk.cabang_id].data.length + 1,
-            "Foto Produk": (
-                <div className="w-12 h-12 flex items-center justify-center">
-                    <img 
-                        src={imageUrl}
-                        alt={productDetails?.nama_barang || productDetails?.nama_packaging} 
-                        className="w-full h-full object-cover rounded"
-                        onError={(e) => {
-                            e.target.src = '/placeholder-image.jpg';
-                        }}
-                    />
-                </div>
-            ),
-            "Nama Produk": productDetails?.nama_barang || productDetails?.nama_packaging,
-            "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang,
-            "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
-            "Kuantitas": produk.kuantitas,
-            "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
+            return {
+                id: produk.produk_pembelian_id,
+                No: index + 1,
+                "Foto Produk": (
+                    <div className="w-12 h-12 flex items-center justify-center">
+                        <img 
+                            src={imageUrl}
+                            alt={namaBarang}
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = '/placeholder-image.jpg';
+                            }}
+                        />
+                    </div>
+                ),
+                "Nama Produk": namaBarang,
+                "Jenis Barang": jenisBarang,
+                "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
+                "Kuantitas": produk.kuantitas,
+                "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
+            };
         });
-    });
+    } else {
+        const groupedByCabang = {};
+        
+        pembelianData.produk_pembelian.forEach(produk => {
+            const cabang = cabangData.find(c => c.cabang_id === produk.cabang_id);
+            if (!groupedByCabang[produk.cabang_id]) {
+                groupedByCabang[produk.cabang_id] = {
+                    nama: cabang?.nama_cabang,
+                    data: []
+                };
+            }
 
-    return Object.values(groupedByCabang);
-}, [pembelianData, cabangData]);
+            const baseUrl = import.meta.env.VITE_API_URL;
+            let productDetails;
+            let imageUrl;
+
+            if (produk.barang_handmade) {
+                productDetails = produk.barang_handmade;
+                imageUrl = `${baseUrl}/images-barang-handmade/${productDetails.image}`;
+            } else if (produk.barang_non_handmade) {
+                productDetails = produk.barang_non_handmade;
+                imageUrl = `${baseUrl}/images-barang-non-handmade/${productDetails.image}`;
+            } else if (produk.barang_custom) {
+                productDetails = produk.barang_custom;
+                imageUrl = `${baseUrl}/images-barang-custom/${productDetails.image}`;
+            } else if (produk.packaging) {
+                productDetails = produk.packaging;
+                imageUrl = productDetails.image ? `${baseUrl}/images-packaging/${productDetails.image}` : '/placeholder-image.jpg';
+            }
+
+            groupedByCabang[produk.cabang_id].data.push({
+                id: produk.produk_pembelian_id,
+                No: groupedByCabang[produk.cabang_id].data.length + 1,
+                "Foto Produk": (
+                    <div className="w-12 h-12 flex items-center justify-center">
+                        <img 
+                            src={imageUrl}
+                            alt={productDetails?.nama_barang || productDetails?.nama_packaging} 
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = '/placeholder-image.jpg';
+                            }}
+                        />
+                    </div>
+                ),
+                "Nama Produk": productDetails?.nama_barang || productDetails?.nama_packaging,
+                "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang,
+                "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
+                "Kuantitas": produk.kuantitas,
+                "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
+            });
+        });
+
+        return Object.values(groupedByCabang);
+    }
+
+}, [pembelianData, cabangData, isAdminGudang]);
 
 if (isLoading) return <Spinner />;
 
@@ -119,7 +181,11 @@ const handleBtnDel = () => {
 
 const handleConfirmDel = async () => {
     try {
-        await api.delete(`/pembelian/${id}`);
+        if (isAdminGudang) {
+            await api.delete(`/pembelian-gudang/${id}`);
+        } else {
+            await api.delete(`/pembelian/${id}`);
+        }
         setModalDel(false);
         setModalSucc(true);
     } catch (error) {
@@ -345,7 +411,9 @@ return (
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Tanggal</p>
-                            <p className="font-bold text-lg">{pembelianData?.tanggal && new Date(pembelianData.tanggal).toLocaleDateString()}</p>
+                            <p className="font-bold text-lg">
+                                {pembelianData?.tanggal && new Date(pembelianData.tanggal).toLocaleDateString()}
+                            </p>
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Cash/Non-Cash</p>
@@ -353,7 +421,12 @@ return (
                         </div>
                         <div className="">
                             <p className="text-gray-500 text-sm">Metode Pembayaran</p>
-                            <p className="font-bold text-lg">{pembelianData?.metode_pembayaran?.nama_metode || '-'}</p>
+                            <p className="font-bold text-lg">
+                                {isAdminGudang 
+                                    ? pembelianData?.metode_pembelian?.nama_metode || '-'
+                                    : pembelianData?.metode_pembayaran?.nama_metode || '-'
+                                }
+                            </p>
                         </div>
                     </div>
                 </section>
@@ -363,7 +436,7 @@ return (
                 <section className="pt-10">
                     {isAdminGudang ? (
                         <div className="pt-5">
-                            <Table headers={headers} data={dataAdminGudang.data} />
+                            <Table headers={headers} data={processedData} />
                         </div>
                     ) : (
                         processedData.map((cabang, index) => (

@@ -41,20 +41,39 @@ export default function PembelianStok() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/pembelian');
+            const endpoint = isAdminGudang ? '/pembelian-gudang' : '/pembelian';
+            const response = await api.get(endpoint);
             
-            const formattedData = response.data.data.map((item, index) => {
-                const namaBarang = item.produk_pembelian
-                    .map(produk => {
-                        if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
-                        if (produk.barang_non_handmade) return produk.barang_non_handmade.nama_barang;
-                        if (produk.packaging) return produk.packaging.nama_packaging;
-                        return '';
-                    })
-                    .filter(nama => nama); 
-
-                const totalKuantitas = item.produk_pembelian.reduce((sum, produk) => sum + produk.kuantitas, 0);
+            const formattedData = response.data.data.map((item) => {
+                let namaBarang;
+                let totalKuantitas;
                 
+                if (isAdminGudang) {
+                    namaBarang = item.produk
+                        .map(produk => {
+                            if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
+                            if (produk.barang_nonhandmade) return produk.barang_nonhandmade.nama_barang;
+                            if (produk.barang_mentah) return produk.barang_mentah.nama_barang;
+                            if (produk.packaging) return produk.packaging.nama_packaging;
+                            return '';
+                        })
+                        .filter(nama => nama);
+                        
+                    totalKuantitas = item.produk.reduce((sum, produk) => sum + produk.kuantitas, 0);
+                } else {
+                    namaBarang = item.produk_pembelian
+                        .map(produk => {
+                            if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
+                            if (produk.barang_non_handmade) return produk.barang_non_handmade.nama_barang;
+                            if (produk.barang_custom) return produk.barang_custom.nama_barang;
+                            if (produk.packaging) return produk.packaging.nama_packaging;
+                            return '';
+                        })
+                        .filter(nama => nama);
+    
+                    totalKuantitas = item.produk_pembelian.reduce((sum, produk) => sum + produk.kuantitas, 0);
+                }
+                    
                 return {
                     id: item.pembelian_id,
                     Nomor: item.pembelian_id,
@@ -63,11 +82,12 @@ export default function PembelianStok() {
                     "Jumlah Barang": totalKuantitas.toLocaleString('id-ID'),
                     "Diskon": `${item.diskon}%`,
                     "Pajak": `Rp${item.pajak.toLocaleString()}`,
-                    "Total Transaksi": `Rp${item.total_pembelian.toLocaleString()}`,
-                    type: item.cash_or_non ? 'cash' : 'non-cash'
+                    "Total Transaksi": `Rp${(isAdminGudang ? item.total_penjualan : item.total_pembelian)?.toLocaleString()}`,
+                    type: item.cash_or_non ? 'cash' : 'non-cash',
+                    ...(isAdminGudang && { metodePembayaran: item.metode_pembelian?.nama_metode })
                 };
             });
-
+    
             setData(formattedData);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -129,7 +149,11 @@ export default function PembelianStok() {
 
     const handleConfirmDel = async () => {
         try {
-            await api.delete(`/pembelian/${selectedItem.id}`);
+            if (isAdminGudang) {
+                await api.delete(`/pembelian-gudang/${selectedItem.id}`);
+            } else {
+                await api.delete(`/pembelian/${selectedItem.id}`);
+            }
             setSuccess(true);
             fetchData(); 
         } catch (error) {

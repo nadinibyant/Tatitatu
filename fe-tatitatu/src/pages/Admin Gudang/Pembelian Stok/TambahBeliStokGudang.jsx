@@ -13,6 +13,7 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
 
 export default function TambahBeliStokGudang() {
+    const navigate = useNavigate();
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("");
@@ -21,58 +22,60 @@ export default function TambahBeliStokGudang() {
     const [diskon, setDiskon] = useState(0);
     const [pajak, setPajak] = useState(0);
     const [itemData, setItemData] = useState([]);
-    
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const isAdminGudang = userData?.role === 'admingudang';
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("Semua");
-    const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     const [selectedItems, setSelectedItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
+    const [formattedProducts, setFormattedProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [paymentMethods, setPaymentMethods] = useState([]);
+    
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
+
+    // Constants
+    const productTypes = [
+        "Barang Handmade",
+        "Barang Non-Handmade",
+        "Barang Mentah",
+        "Packaging"
+    ];
+
+    const dataBayar = [
+        { value: 1, label: "Cash" },
+        { value: 2, label: "Non-Cash" }
+    ];
 
     useEffect(() => {
-        if (isModalOpen) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "";
-        }
-        return () => {
-            document.body.style.overflow = "";
+        const fetchPaymentMethods = async () => {
+            try {
+                const response = await api.get('/metode-pembayaran-gudang');
+                if (response.data.success) {
+                    const formattedMethods = response.data.data
+                        .filter(method => !method.is_deleted)
+                        .map(method => ({
+                            value: method.metode_id,
+                            label: method.nama_metode
+                        }));
+                    
+                    const methodsWithDash = [
+                        { value: 0, label: "-" },
+                        ...formattedMethods
+                    ];
+                    
+                    setPaymentMethods(methodsWithDash);
+                }
+            } catch (error) {
+                console.error('Error fetching payment methods:', error);
+            }
         };
-    }, [isModalOpen]);
 
-    const calculateSubtotal = () => {
-        return itemData.reduce((acc, item) => acc + (item.rawTotalBiaya || 0), 0);
-    };
-
-    const calculateTotalPenjualan = (subtotal) => {
-        const diskonNominal = (diskon / 100) * subtotal;
-        return subtotal - diskonNominal - pajak;
-    };
-
-    const handleSelectBayar = (selectedOption) => {
-        setSelectedBayar(selectedOption.id);
-        if (selectedOption.id === 2) {
-            setSelectMetode(dataMetode[1].id);
-            setIsMetodeDisabled(false);
-        } else {
-            setSelectMetode(dataMetode[0].id);
-            setIsMetodeDisabled(true);
-        }
-    };
-
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
-    };
-
-    const breadcrumbItems = [
-        { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
-        { label: "Tambah Pembelian", href: "" },
-    ];
+        fetchPaymentMethods();
+    }, []); 
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -85,26 +88,130 @@ export default function TambahBeliStokGudang() {
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
-    const dataBarang = [
-        {
-            jenis: "Barang Handmade",
-            kategori: ["Semua", "Gelang", "Anting-Anting", "Cincin"],
-            items: [
-                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: 10000, kategori: "Gelang" },
-                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: 15000, kategori: "Anting-Anting" },
-                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: 20000, kategori: "Cincin" },
-            ],
-        },
-        {
-            jenis: "Barang Non-Handmade",
-            kategori: ["Semua", "Kalung", "Topi", "Tas"],
-            items: [
-                { id: 5, image: "https://via.placeholder.com/150", code: "MMM457", name: "Kalung Emas", price: 50000, kategori: "Kalung" },
-                { id: 6, image: "https://via.placeholder.com/150", code: "MMM458", name: "Topi Keren", price: 30000, kategori: "Topi" },
-                { id: 7, image: "https://via.placeholder.com/150", code: "MMM459", name: "Tas Ransel", price: 100000, kategori: "Tas" },
-            ],
-        },
-    ];
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const [handmadeRes, nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
+                    api.get('/barang-handmade-gudang'),
+                    api.get('/barang-nonhandmade-gudang'),
+                    api.get('/barang-mentah'),
+                    api.get('/packaging-gudang'),
+                    api.get('/kategori-barang-gudang')
+                ]);
+
+                const baseUrl = import.meta.env.VITE_API_URL;
+
+                const allFormattedProducts = [
+                    ...handmadeRes.data.data.map(item => ({
+                        id: item.barang_handmade_id,
+                        image: item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang,
+                        price: item.harga_jual,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        jenis: "Barang Handmade",
+                        imagePrefix: 'images-barang-handmade-gudang'
+                    })),
+                    ...nonhandmadeRes.data.data.map(item => ({
+                        id: item.barang_nonhandmade_id,
+                        image: item.image ? `${baseUrl}/images-barang-non-handmade-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang,
+                        price: item.harga_jual,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        jenis: "Barang Non-Handmade",
+                        imagePrefix: 'images-barang-non-handmade-gudang'
+                    })),
+                    ...mentahRes.data.data.map(item => ({
+                        id: item.barang_mentah_id,
+                        image: item.image ? `${baseUrl}/images-barang-mentah-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang,
+                        price: item.harga_satuan,
+                        jenis: "Barang Mentah",
+                        imagePrefix: 'images-barang-mentah-gudang'
+                    })),
+                    ...packagingRes.data.data.map(item => ({
+                        id: item.packaging_id,
+                        image: item.image ? `${baseUrl}/images-packaging-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_packaging,
+                        price: item.harga_satuan,
+                        jenis: "Packaging",
+                        imagePrefix: 'images-packaging-gudang'
+                    }))
+                ];
+
+                setFormattedProducts(allFormattedProducts);
+
+                if (isAdminGudang) {
+                    const apiCategories = categoriesRes.data.data
+                        .filter(cat => !cat.is_deleted)
+                        .map(cat => ({
+                            id: cat.kategori_barang_id,
+                            name: cat.nama_kategori_barang
+                        }));
+                    setCategories(apiCategories);
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        };
+
+        fetchProducts();
+    }, [isAdminGudang]);
+
+    // Helper functions
+    const getCategories = () => {
+        if (isAdminGudang && (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade")) {
+            return ["Semua", ...categories.map(cat => cat.name)];
+        }
+        return ["Semua"];
+    };
+
+    const getFilteredItems = () => {
+        return formattedProducts.filter(item => {
+            const nameMatch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const jenisMatch = item.jenis === selectedJenis;
+            const categoryMatch = selectedCategory === "Semua" || item.kategori === selectedCategory;
+            
+            if (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") {
+                return nameMatch && jenisMatch && categoryMatch;
+            }
+            
+            return nameMatch && jenisMatch;
+        });
+    };
+
+    const calculateSubtotal = () => {
+        return itemData.reduce((acc, item) => acc + (item.rawTotalBiaya || 0), 0);
+    };
+
+    const calculateTotalPenjualan = (subtotal) => {
+        const diskonNominal = (diskon / 100) * subtotal;
+        return subtotal - diskonNominal - pajak;
+    };
+
+    // Event handlers
+    const handleSelectBayar = (selectedOption) => {
+        console.log('Selected payment option:', selectedOption); 
+        setSelectedBayar(selectedOption.value);
+        
+        if (selectedOption.value === 1) {  // Cash
+            const dashOption = paymentMethods.find(method => method.value === 0);
+            if (dashOption) {
+                setSelectMetode(dashOption.value);
+            }
+            setIsMetodeDisabled(true);
+        } else if (selectedOption.value === 2) {  // Non-Cash
+            const firstPaymentMethod = paymentMethods.find(method => method.value !== 0);
+            if (firstPaymentMethod) {
+                setSelectMetode(firstPaymentMethod.value);
+            }
+            setIsMetodeDisabled(false);
+        }
+    };
+
+
+    const handleSelectMetode = (selectedMethod) => {
+        setSelectMetode(selectedMethod.value);
+    };
 
     const handleSelectItem = (item, count) => {
         setSelectedItems((prev) => {
@@ -123,207 +230,194 @@ export default function TambahBeliStokGudang() {
         });
     };
 
-    const filteredItems = dataBarang
-        .find((data) => data.jenis === selectedJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
-                item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    const handleModalSubmit = () => {
+        if (selectedItems.length === 0) return;
 
-    const resetSelection = () => {
-        setSelectedItems([]);
+        const newItems = selectedItems.map((item) => {
+            const product = formattedProducts.find(p => p.id === item.id);
+            if (!product) return null;
+            return createTableRow(product, item.count);
+        }).filter(Boolean);
+
+        setItemData(prevData => {
+            const updatedData = [...prevData, ...newItems];
+            // Renumber all items
+            return updatedData.map((item, index) => ({
+                ...item,
+                No: index + 1
+            }));
+        });
+
         setIsModalOpen(false);
+        setSelectedItems([]);
     };
 
-    const handleModalSubmit = () => {
-        const newItems = selectedItems.map((item) => {
-            const totalBiaya = parseInt(item.price) * item.count;
-            return {
-                id: item.id,
-                No: itemData.length + 1,
-                "Foto Produk": (
-                    <img src={item.image} alt={item.name} className="w-12 h-12" />
-                ),
-                "Nama Produk": (
-                    <InputDropdown
-                        showRequired={false}
-                        options={dataBarang.reduce((allItems, data) => {
-                            const items = data.items.map(item => ({
-                                label: item.name,
-                                value: item.price,
-                                jenis: data.jenis,
-                                kategori: item.kategori,
-                                image: item.image,
-                                code: item.code,
-                                id: item.id
-                            }));
-                            return [...allItems, ...items];
-                        }, [])}
-                        value={item.name}
-                        onSelect={(newSelection) => handleDropdownChange(item.id, newSelection)}
-                    />
-                ),
-                "Jenis Barang": item.jenis || dataBarang.find(d => 
-                    d.items.some(i => i.name === item.name)
-                )?.jenis,
-                "Harga Satuan": `Rp${item.price.toLocaleString()}`,
-                "Kuantitas": (
-                    <Input
-                        showRequired={false}
-                        type="number"
-                        value={item.count}
-                        onChange={(newCount) => handleQuantityChange(item.id, newCount)}
-                    />
-                ),
-                quantity: item.count,
-                "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-                rawTotalBiaya: totalBiaya,
-                currentPrice: item.price,
-                Aksi: (
-                    <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteItem(item.id)}
-                    >
-                        Hapus
-                    </button>
-                ),
-            };
-        });
-        setItemData([...itemData, ...newItems]);
-        setIsModalOpen(false);
-        setSelectedItems([]);
+    const createTableRow = (product, quantity) => {
+        const totalBiaya = product.price * quantity;
+        const dropdownOptions = formattedProducts.map(item => ({
+            label: item.name,
+            value: item.id,
+            jenis: item.jenis,
+            image: item.image,
+            price: item.price
+        }));
+
+        return {
+            id: product.id,  
+            No: itemData.length + 1,
+            "Foto Produk": (
+                <img 
+                    src={product.image}
+                    alt={product.name}
+                    className="w-12 h-12 object-cover rounded"
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/placeholder.jpg';
+                    }}
+                />
+            ),
+            "Nama Produk": (
+                <InputDropdown
+                    showRequired={false}
+                    options={dropdownOptions}
+                    value={product.id} 
+                    onSelect={(newSelection) => handleDropdownChange(product.id, newSelection)}
+                />
+            ),
+            "Jenis Barang": product.jenis,
+            "Harga Satuan": `Rp${product.price.toLocaleString()}`,
+            "Kuantitas": (
+                <Input
+                    showRequired={false}
+                    type="number"
+                    value={quantity}
+                    onChange={(newValue) => handleQuantityChange(product.id, newValue)}
+                />
+            ),
+            quantity: quantity,
+            rawTotalBiaya: totalBiaya,
+            currentPrice: product.price,
+            name: product.name,
+            "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
+            "Aksi": (
+                <button
+                    onClick={() => handleDeleteItem(product.id)}
+                    className="py-1 text-merah font-semibold"
+                >
+                    Hapus
+                </button>
+            )
+        };
     };
 
     const handleDropdownChange = (itemId, nextSelection) => {
-        const updatedData = [...itemData];
-        const rowIndex = updatedData.findIndex((row) => row.id === itemId);
-
-        if (rowIndex !== -1) {
-            let selectedItem = null;
-            let jenisBarang = '';
+        setItemData(prevData => {
+            const updatedData = [...prevData];
+            const rowIndex = updatedData.findIndex((row) => row.id === itemId);
             
-            for (const category of dataBarang) {
-                const found = category.items.find(i => i.name === nextSelection.label);
-                if (found) {
-                    selectedItem = found;
-                    jenisBarang = category.jenis;
-                    break;
+            if (rowIndex !== -1) {
+                const selectedProduct = formattedProducts.find(
+                    product => product.id === nextSelection.value
+                );
+
+                if (selectedProduct) {
+                    const currentQuantity = updatedData[rowIndex].quantity;
+                    const newRow = createTableRow(selectedProduct, currentQuantity);
+                    newRow.No = updatedData[rowIndex].No; 
+                    updatedData[rowIndex] = newRow;
                 }
             }
-
-            if (selectedItem) {
-                const currentQuantity = updatedData[rowIndex].quantity || 0;
-                const newTotalBiaya = selectedItem.price * currentQuantity;
-                
-                updatedData[rowIndex] = {
-                    ...updatedData[rowIndex],
-                    id: selectedItem.id,
-                    "Nama Produk": (
-                        <InputDropdown
-                            showRequired={false}
-                            options={dataBarang.reduce((allItems, data) => {
-                                const items = data.items.map(item => ({
-                                    label: item.name,
-                                    value: item.price,
-                                    jenis: data.jenis,
-                                    kategori: item.kategori,
-                                    image: item.image,
-                                    code: item.code,
-                                    id: item.id
-                                }));
-                                return [...allItems, ...items];
-                            }, [])}
-                            value={nextSelection.label}
-                            onSelect={(nextSelection) => handleDropdownChange(itemId, nextSelection)}
-                        />
-                    ),
-                    "Jenis Barang": jenisBarang,
-                    "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
-                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                    rawTotalBiaya: newTotalBiaya,
-                    name: nextSelection.label,
-                    currentPrice: selectedItem.price,
-                    quantity: currentQuantity
-                };
-                setItemData(updatedData);
-            }
-        }
+            
+            return updatedData;
+        });
     };
 
-    const handleQuantityChange = (itemId, newCount) => {
-        const updatedData = [...itemData];
-        const rowIndex = updatedData.findIndex((row) => row.id === itemId);
-
-        if (rowIndex !== -1) {
-            const currentItem = updatedData[rowIndex];
-            const numericCount = Number(newCount);
-            const newTotal = currentItem.currentPrice * numericCount;
+    const handleQuantityChange = (itemId, newQuantity) => {
+        setItemData(prevData => {
+            const updatedData = [...prevData];
+            const rowIndex = updatedData.findIndex((row) => row.id === itemId);
             
-            updatedData[rowIndex] = {
-                ...currentItem,
-                quantity: numericCount,
-                rawTotalBiaya: newTotal,
-                "Total Biaya": `Rp${newTotal.toLocaleString()}`,
-                "Kuantitas": (
-                    <Input
-                        showRequired={false}
-                        type="number"
-                        value={numericCount}
-                        onChange={(newValue) => handleQuantityChange(itemId, newValue)}
-                    />
-                )
-            };
-            setItemData(updatedData);
-        }
+            if (rowIndex !== -1) {
+                const currentItem = updatedData[rowIndex];
+                const product = formattedProducts.find(p => p.id === currentItem.id);
+                
+                if (product) {
+                    const newRow = createTableRow(product, Number(newQuantity));
+                    newRow.No = currentItem.No; 
+                    updatedData[rowIndex] = newRow;
+                }
+            }
+            
+            return updatedData;
+        });
     };
 
     const handleDeleteItem = (itemId) => {
-        setItemData(prev => prev.filter(item => item.id !== itemId));
+        setItemData(prevData => {
+            const filteredData = prevData.filter(item => item.id !== itemId);
+
+            return filteredData.map((item, index) => ({
+                ...item,
+                No: index + 1
+            }));
+        });
     };
-
-    const dataBayar = [
-        { id: 1, label: "Cash" },
-        { id: 2, label: "Non-Cash" }
-    ];
-
-    const dataMetode = [
-        { id: 1, label: "-" },
-        { id: 2, label: "Mandiri" },
-        { id: 3, label: "Bank Nagari" }
-    ];
-
-    const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
-    const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
-
-    const subtotal = calculateSubtotal();
-    const totalPenjualan = calculateTotalPenjualan(subtotal);
-    const navigate = useNavigate();
 
     const handleTambahSubmit = async (e) => {
         e.preventDefault();
         try {
             setLoading(true);
-
-            const formData = {
-                nomor,
-                tanggal,
-                jenis_pembayaran: selectBayar,
-                metode_pembayaran_id: selectMetode,
-                catatan: note,
-                diskon,
-                pajak,
-                items: itemData.map(item => ({
-                    barang_id: item.id,
+            const formattedProducts = itemData.map(item => {
+                const baseProduct = {
+                    harga_satuan: item.currentPrice,
                     kuantitas: item.quantity,
-                    harga_satuan: item.currentPrice
-                }))
-            };
+                    total_biaya: item.rawTotalBiaya
+                };
 
-            await api.post('/pembelian-stok', formData);
+                switch (item["Jenis Barang"]) {
+                    case "Barang Handmade":
+                        return {
+                            ...baseProduct,
+                            barang_handmade_id: item.id
+                        };
+                    case "Barang Mentah":
+                        return {
+                            ...baseProduct,
+                            barang_mentah_id: item.id
+                        };
+                    case "Barang Non-Handmade":
+                        return {
+                            ...baseProduct,
+                            barang_nonhandmade_id: item.id
+                        };
+                    case "Packaging":
+                        return {
+                            ...baseProduct,
+                            packaging_id: item.id
+                        };
+                    default:
+                        return null;
+                }
+            }).filter(Boolean); 
+    
+            // Calculate totals
+            const subTotal = calculateSubtotal();
+            const totalPenjualan = calculateTotalPenjualan(subTotal);
+    
+            const formData = {
+                cash_or_non: selectBayar === 1, 
+                metode_id: selectMetode,
+                sub_total: subTotal,
+                diskon: diskon,
+                pajak: pajak,
+                total_penjualan: totalPenjualan,
+                produk: formattedProducts
+            };
+    
+            await api.post('/pembelian-gudang', formData);
             setModalSucc(true);
         } catch (error) {
-            console.error(error);
+            console.error('Error submitting data:', error);
         } finally {
             setLoading(false);
         }
@@ -334,6 +428,29 @@ export default function TambahBeliStokGudang() {
         navigate('/pembelianStok');
     };
 
+    const resetSelection = () => {
+        setSelectedItems([]);
+        setIsModalOpen(false);
+    };
+
+    const subtotal = calculateSubtotal();
+    const totalPenjualan = calculateTotalPenjualan(subtotal);
+    const breadcrumbItems = [
+        { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
+        { label: "Tambah Pembelian", href: "" },
+    ];
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [isModalOpen]);
+
     return (
         <LayoutWithNav>
             <div className="p-5">
@@ -343,17 +460,34 @@ export default function TambahBeliStokGudang() {
                     <form onSubmit={handleTambahSubmit}>
                         <section>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <Input label={"Nomor"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
-                                <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={selectedBayarLabel} onSelect={handleSelectBayar} />
+                                <Input 
+                                    label="Nomor" 
+                                    type1="text" 
+                                    disabled={true} 
+                                    value={nomor} 
+                                    onChange={(e) => setNomor(e)} 
+                                />
+                                <Input 
+                                    label="Tanggal" 
+                                    type1="date" 
+                                    value={tanggal} 
+                                    onChange={(e) => setTanggal(e)} 
+                                />
+                                <InputDropdown 
+                                    label="Cash/Non-Cash" 
+                                    options={dataBayar} 
+                                    value={selectBayar}
+                                    onSelect={handleSelectBayar}
+                                />
+
                                 <div>
                                     <InputDropdown 
-                                        label={"Metode Pembayaran"} 
+                                        label="Metode Pembayaran" 
                                         disabled={isMetodeDisabled} 
-                                        options={dataMetode} 
-                                        value={selectedMetodeLabel} 
+                                        options={paymentMethods} 
+                                        value={selectMetode}
                                         onSelect={handleSelectMetode}
-                                        />
+                                    />
                                 </div>
                             </div>
                         </section>
@@ -401,6 +535,7 @@ export default function TambahBeliStokGudang() {
                                                 type="number"
                                                 showRequired={false}
                                                 value={diskon}
+                                                required={false}
                                                 onChange={(e) => setDiskon(e)}
                                             />
                                         </div>
@@ -412,6 +547,7 @@ export default function TambahBeliStokGudang() {
                                                 type="number"
                                                 showRequired={false}
                                                 value={pajak}
+                                                required={false}
                                                 onChange={(e) => setPajak(e)}
                                             />
                                         </div>
@@ -434,6 +570,7 @@ export default function TambahBeliStokGudang() {
                         </section>
                     </form>
 
+                    {/* Product Selection Modal */}
                     {isModalOpen && (
                         <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                             <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
@@ -501,12 +638,17 @@ export default function TambahBeliStokGudang() {
                                 </div>
 
                                 <div className="flex border-b border-gray-300 mb-4">
-                                    {["Barang Handmade", "Barang Non-Handmade"].map((jenis) => (
+                                    {productTypes.map((jenis) => (
                                         <button
                                             key={jenis}
-                                            onClick={() => setSelectedJenis(jenis)}
+                                            onClick={() => {
+                                                setSelectedJenis(jenis);
+                                                setSelectedCategory("Semua");
+                                            }}
                                             className={`px-4 py-2 text-sm font-semibold ${
-                                                selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
+                                                selectedJenis === jenis 
+                                                    ? "text-primary border-b-2 border-primary" 
+                                                    : "text-gray-400"
                                             }`}
                                         >
                                             {jenis}
@@ -515,9 +657,8 @@ export default function TambahBeliStokGudang() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 mt-4">
-                                    {dataBarang
-                                        .find((data) => data.jenis === selectedJenis)
-                                        ?.kategori.map((kategori) => (
+                                    {(selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") && 
+                                        getCategories().map((kategori) => (
                                             <button
                                                 key={kategori}
                                                 onClick={() => setSelectedCategory(kategori)}
@@ -529,12 +670,13 @@ export default function TambahBeliStokGudang() {
                                             >
                                                 {kategori}
                                             </button>
-                                        ))}
+                                        ))
+                                    }
                                 </div>
 
                                 <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
                                     <Gallery2
-                                        items={filteredItems || []}
+                                        items={getFilteredItems()}
                                         onSelect={handleSelectItem}
                                         selectedItems={selectedItems}
                                     />
@@ -554,7 +696,7 @@ export default function TambahBeliStokGudang() {
                 />
             )}
 
-            {isLoading && <Spinner/>}
+            {isLoading && <Spinner />}
         </LayoutWithNav>
     );
 }

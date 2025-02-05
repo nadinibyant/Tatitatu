@@ -139,48 +139,95 @@ export default function StokBarang() {
     const fetchStokData = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/stok-barang');
             
-            if (response.data.success) {
-                const transformedData = response.data.data
-                    .filter(item => !item.is_deleted)
-                    .map((item) => ({
-                        Nomor: getBarangId(item),
-                        "Nama Barang": getBarangId(item), 
-                        Jenis: getJenisBarang(item),
-                        Kategori: "-", 
-                        "Jumlah Stok": item.jumlah_stok,
-                        stok_barang_id: item.stok_barang_id,
-                        cabang_id: item.cabang_id,
-                        barang_handmade_id: item.barang_handmade_id,
-                        barang_non_handmade_id: item.barang_non_handmade_id,
-                        barang_custom_id: item.barang_custom_id,
-                        packaging_id: item.packaging_id
-                    }));
+            if (isAdminGudang) {
+                const response = await api.get('/stok-barang-gudang');
                 
-                const groupedData = transformedData.reduce((acc, curr) => {
-                    const existingItem = acc.find(item => item.Nomor === curr.Nomor);
-                    if (existingItem) {
-                        existingItem["Jumlah Stok"] += curr["Jumlah Stok"];
-                        existingItem.cabang.push({
-                            nama: getCabangName(curr.cabang_id), 
-                            stok: curr["Jumlah Stok"],
-                            cabang_id: curr.cabang_id
+                if (response.data.success) {
+                    const transformedData = response.data.data
+                        .filter(item => !item.is_deleted)
+                        .map((item) => {
+                            let barangData = item.barang;
+                            let jenisBarang = "";
+                            let kategoriBarang = "-";
+                            let barangId = "";
+
+                            if (barangData.barang_handmade_id) {
+                                jenisBarang = barangData.jenis?.nama_jenis_barang || "Handmade";
+                                barangId = barangData.barang_handmade_id;
+                                kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
+                            } else if (barangData.barang_nonhandmade_id) {
+                                jenisBarang = barangData.jenis?.nama_jenis_barang || "Non Handmade";
+                                barangId = barangData.barang_nonhandmade_id;
+                                kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
+                            } else if (barangData.barang_mentah_id) {
+                                jenisBarang = "Barang Mentah";
+                                barangId = barangData.barang_mentah_id;
+                            } else if (barangData.packaging_id) {
+                                jenisBarang = "Packaging";
+                                barangId = barangData.packaging_id;
+                            }
+
+                            return {
+                                Nomor: barangId,
+                                "Nama Barang": barangData.nama_barang || barangData.nama_packaging,
+                                Jenis: jenisBarang,
+                                Kategori: kategoriBarang,
+                                "Jumlah Stok": item.jumlah_stok,
+                                image: barangData.image,
+                                barang_handmade_id: barangData.barang_handmade_id,
+                                barang_nonhandmade_id: barangData.barang_nonhandmade_id,
+                                barang_mentah_id: barangData.barang_mentah_id,
+                                packaging_id: barangData.packaging_id
+                            };
                         });
-                    } else {
-                        acc.push({
-                            ...curr,
-                            cabang: [{
-                                nama: getCabangName(curr.cabang_id), 
+
+                    setStokData(transformedData);
+                }
+            } else {
+                const response = await api.get('/stok-barang');
+                
+                if (response.data.success) {
+                    const transformedData = response.data.data
+                        .filter(item => !item.is_deleted)
+                        .map((item) => ({
+                            Nomor: getBarangId(item),
+                            "Nama Barang": getBarangId(item),
+                            Jenis: getJenisBarang(item),
+                            Kategori: "-",
+                            "Jumlah Stok": item.jumlah_stok,
+                            stok_barang_id: item.stok_barang_id,
+                            cabang_id: item.cabang_id,
+                            barang_handmade_id: item.barang_handmade_id,
+                            barang_non_handmade_id: item.barang_non_handmade_id,
+                            barang_custom_id: item.barang_custom_id,
+                            packaging_id: item.packaging_id
+                        }));
+
+                    const groupedData = transformedData.reduce((acc, curr) => {
+                        const existingItem = acc.find(item => item.Nomor === curr.Nomor);
+                        if (existingItem) {
+                            existingItem["Jumlah Stok"] += curr["Jumlah Stok"];
+                            existingItem.cabang.push({
+                                nama: getCabangName(curr.cabang_id),
                                 stok: curr["Jumlah Stok"],
                                 cabang_id: curr.cabang_id
-                            }]
-                        });
-                    }
-                    return acc;
-                }, []);
-    
-                setStokData(groupedData);
+                            });
+                        } else {
+                            acc.push({
+                                ...curr,
+                                cabang: [{
+                                    nama: getCabangName(curr.cabang_id),
+                                    stok: curr["Jumlah Stok"],
+                                    cabang_id: curr.cabang_id
+                                }]
+                            });
+                        }
+                        return acc;
+                    }, []);
+
+                    setStokData(groupedData);
+                }
             }
         } catch (error) {
             console.error('Error fetching stok data:', error);
