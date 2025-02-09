@@ -23,6 +23,7 @@ const InputDropdown = ({
   );
   const [showError, setShowError] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     const matchedOption = options.find(option => 
@@ -64,6 +65,7 @@ const InputDropdown = ({
         }
       });
     }
+    setShowTooltip(false);
   };
 
   const handleInputClick = () => {
@@ -90,6 +92,9 @@ const InputDropdown = ({
         }
       });
     }
+    setTimeout(() => {
+      setShowTooltip(false);
+    }, 3000);
   };
 
   const shouldShowError = (touched || showError || error) && required && !selectedValue;
@@ -137,10 +142,17 @@ const InputDropdown = ({
           </svg>
         </span>
       </div>
-      {shouldShowError && (
-        <p className="mt-1 text-sm text-red-500">
-          {errorMessage}
-        </p>
+      {showTooltip && shouldShowError && (
+        <div className="absolute left-0 mt-2 w-full z-50">
+          <div className="bg-white border border-gray-200 rounded-md shadow-lg p-3 flex items-start space-x-2">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+              {/* <svg className="w-4 h-4 text-orange-500" ... /> */}
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Please fill out this field.</p>
+            </div>
+          </div>
+        </div>
       )}
       {isOpen && !disabled && (
         <div className="absolute z-10 bg-white border border-gray-300 rounded-md mt-1 w-full max-h-60 overflow-y-auto shadow-lg">

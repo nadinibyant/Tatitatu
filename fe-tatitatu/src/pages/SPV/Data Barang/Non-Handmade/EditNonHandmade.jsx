@@ -304,18 +304,13 @@ export default function EditBarang() {
     { label: "", key: "Aksi", align: "text-left" },
   ];
 
-  // const dataCabangOptions = [
-  //   { label: "GOR HAS", value: "GOR HAS" },
-  //   { label: "Lubeg", value: "Lubeg" },
-  //   { label: "Bypass", value: "Bypass" }
-  // ];
 
   const [data, setData] = useState({
     info_barang: {
       Nomor: "",
       "Nama Barang": "",
       Kategori: "",
-      "Waktu Pengerjaan": "",
+      // "Waktu Pengerjaan": "",
       "Jumlah Minimum Stok": "",
       Foto: null,
     },
@@ -355,7 +350,6 @@ export default function EditBarang() {
         const cabangData = cabangResponse.data.data;
         const biayaData = biayaResponse.data.data;
   
-        // Filter cabang yang memiliki data rincian biaya
         const cabangDenganBiaya = cabangData.filter((cabang) => {
           const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
           return biayaToko;
@@ -658,7 +652,7 @@ export default function EditBarang() {
         formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('kategori_barang_id', data.info_barang.Kategori);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        // formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
         formData.append('keuntungan', data.keuntungan);
         formData.append('harga_jual', data.hargaJual);
         formData.append('total_hpp', data.totalHPP);
@@ -895,7 +889,7 @@ export default function EditBarang() {
                     value={data.info_barang.Kategori}
                   />
                 </div>
-                {isAdminGudang && (
+                {/* {isAdminGudang && (
                   <Input
                     label={"Waktu Pengerjaan"}
                     type={"number"}
@@ -904,7 +898,7 @@ export default function EditBarang() {
                     placeholder="Masukan Durasi Pengerjaan (Dalam Hitungan Menit)"
                     onChange={(value) => handleInfoBarangChange("Waktu Pengerjaan", value)}
                   />
-                )}
+                )} */}
                 
                 <Input
                   label={"Jumlah Minimum Stok"}

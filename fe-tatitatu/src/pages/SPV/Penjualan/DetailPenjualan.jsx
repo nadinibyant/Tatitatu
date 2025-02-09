@@ -24,144 +24,78 @@ export default function DetailPemasukanJual() {
     const [isLoading, setLoading] = useState(false)
     
     useEffect(() => {
-    const fetchDetailPenjualan = async () => {
-        try {
-            setLoading(true)
-            const [penjualanRes, biayaTokoRes] = await Promise.all([
-                api.get(`/penjualan/${nomor}`),
-                api.get('/biaya-toko')
-            ]);
-            const detailData = penjualanRes.data.data;
-            const biayaToko = biayaTokoRes.data.data.find(bt => bt.cabang_id === detailData.cabang_id);
-
-            const rincianBiaya = [];
-            if (biayaToko) {
-                if (biayaToko.biaya_operasional) {
-                    rincianBiaya.push(...biayaToko.biaya_operasional.map(bo => ({
-                        "Nama Biaya": bo.nama_biaya,
-                        "Jumlah Biaya": bo.jumlah_biaya
-                    })));
-                }
-                if (biayaToko.biaya_staff) {
-                    rincianBiaya.push(...biayaToko.biaya_staff.map(bs => ({
-                        "Nama Biaya": bs.nama_biaya,
-                        "Jumlah Biaya": bs.jumlah_biaya
-                    })));
-                }
+        const fetchDetailPenjualan = async () => {
+            try {
+                setLoading(true);
+                const penjualanRes = await api.get(`/penjualan/${nomor}`);
+                const detailData = penjualanRes.data.data;
+    
+                const transformedData = {
+                    nomor: detailData.penjualan_id,
+                    tanggal: detailData.tanggal,
+                    nama_pembeli: detailData.nama_pembeli,
+                    bayar: detailData.cash_or_non ? 'Cash' : 'Non-Cash',
+                    metode: detailData.metode_pembayaran?.nama_metode || '-',
+                    catatan: detailData.catatan,
+                    sub_total: detailData.sub_total,
+                    diskon: detailData.diskon,
+                    pajak: detailData.pajak,
+                    total_penjualan: Number(detailData.total_penjualan) || 0,
+                    data_produk: detailData.produk_penjualan?.filter(produk => 
+                        produk.barang_handmade_id || produk.barang_non_handmade_id || produk.barang_custom_id
+                    ).map(produk => {
+                        const barang = produk.barang_handmade || 
+                                     produk.barang_non_handmade || 
+                                     produk.barang_custom;
+                        
+                        let imagePath;
+                        if (produk.barang_handmade) {
+                            imagePath = `${import.meta.env.VITE_API_URL}/images-barang-handmade/${barang.image}`;
+                        } else if (produk.barang_non_handmade) {
+                            imagePath = `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${barang.image}`;
+                        } else if (produk.barang_custom) {
+                            imagePath = `${import.meta.env.VITE_API_URL}/images-barang-custom/${barang.image}`;
+                        }
+                        
+                        return {
+                            "Foto Produk": imagePath || "https://via.placeholder.com/150",
+                            "Nama Produk": barang?.nama_barang,
+                            "Jenis Barang": barang?.jenis_barang?.nama_jenis_barang || barang?.jenis?.nama_jenis_barang,
+                            "Harga Satuan": Number(produk.harga_satuan),
+                            kuantitas: produk.kuantitas,
+                            "Total Biaya": Number(produk.total_biaya)
+                        };
+                    }) || [],
+                    data_packaging: detailData.produk_penjualan?.filter(produk => produk.packaging_id)
+                        .map(produk => ({
+                            "Foto Produk": produk.packaging?.image ? 
+                                `${import.meta.env.VITE_API_URL}/images-packaging/${produk.packaging.image}` : 
+                                "https://via.placeholder.com/50",
+                            "Nama Packaging": produk.packaging?.nama_packaging,
+                            "Harga Satuan": Number(produk.harga_satuan),
+                            kuantitas: produk.kuantitas,
+                            "Total Biaya": Number(produk.total_biaya)
+                        })) || [],
+                    rincian_biaya: detailData.rincian_biaya_custom?.map(biaya => ({
+                        "Nama Biaya": biaya.nama_biaya,
+                        "Jumlah Biaya": Number(biaya.jumlah_biaya)
+                    })) || []
+                };
+    
+                console.log('Transformed Data:', transformedData);
+                setData(transformedData);
+            } catch (error) {
+                console.error('Error fetching detail:', error);
+            } finally {
+                setLoading(false);
             }
-
-            const transformedData = {
-                nomor: detailData.penjualan_id,
-                tanggal: detailData.tanggal,
-                nama_pembeli: detailData.nama_pembeli,
-                bayar: detailData.cash_or_non ? 'Cash' : 'Non-Cash',
-                metode: detailData.metode_pembayaran?.nama_metode || '-',
-                catatan: detailData.catatan,
-                sub_total: detailData.sub_total,
-                diskon: detailData.diskon,
-                pajak: detailData.pajak,
-                total_penjualan: Number(detailData.total_penjualan) || 0,
-                data_produk: detailData.produk_penjualan?.filter(produk => 
-                    produk.barang_handmade_id || produk.barang_non_handmade_id || produk.barang_custom_id
-                ).map(produk => {
-                    const barang = produk.barang_handmade || 
-                                  produk.barang_non_handmade || 
-                                  produk.barang_custom;
-                    
-                    let imagePath;
-                    if (produk.barang_handmade) {
-                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-handmade/${barang.image}`;
-                    } else if (produk.barang_non_handmade) {
-                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${barang.image}`;
-                    } else if (produk.barang_custom) {
-                        imagePath = `${import.meta.env.VITE_API_URL}/images-barang-custom/${barang.image}`;
-                    }
-                    
-                    return {
-                        "Foto Produk": imagePath || "https://via.placeholder.com/150",
-                        "Nama Produk": barang?.nama_barang,
-                        "Jenis Barang": barang?.jenis_barang?.nama_jenis_barang || barang?.jenis?.nama_jenis_barang,
-                        "Harga Satuan": Number(produk.harga_satuan),
-                        kuantitas: produk.kuantitas,
-                        "Total Biaya": Number(produk.total_biaya)
-                    };
-                }) || [],
-                data_packaging: detailData.produk_penjualan?.filter(produk => produk.packaging_id)
-                    .map(produk => ({
-                        "Foto Produk": produk.packaging?.image ? 
-                            `${import.meta.env.VITE_API_URL}/images-packaging/${produk.packaging.image}` : 
-                            "https://via.placeholder.com/50",
-                        "Nama Packaging": produk.packaging?.nama_packaging,
-                        "Harga Satuan": Number(produk.harga_satuan),
-                        kuantitas: produk.kuantitas,
-                        "Total Biaya": Number(produk.total_biaya)
-                    })) || [],
-                rincian_biaya: biayaToko ? [{
-                    "Nama Biaya": "Biaya Operasional dan Staff",
-                    "Jumlah Biaya": Number(biayaToko.total_biaya || 0)
-                }] : [],
-            };
-
-            console.log('Transformed Data:', transformedData);
-            setData(transformedData);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching detail:', error);
-        } finally {
-            setLoading(false)
+        };
+    
+        if (nomor) {
+            fetchDetailPenjualan();
         }
-    };
+    }, [nomor]);
 
-    if (nomor) {
-        fetchDetailPenjualan();
-    }
-}, [nomor]);
-
-    // const data = {
-    //     nomor: 'INV123',
-    //     tanggal: '2024-12-12T14:30:00',
-    //     nama_pembeli: 'Suryani',
-    //     bayar: 'Cash',
-    //     metode: '-',
-    //     catatan: 'Catatan penting mengenai transaksi ini',  
-    //     data_produk: [
-    //         {
-    //             "Foto Produk": "https://via.placeholder.com/150",
-    //             "Nama Produk": "Gelang Cantik",
-    //             "Jenis Barang": "Barang Handmade",
-    //             "Harga Satuan": 15000,
-    //             kuantitas: 10,
-    //             "Total Biaya": 150000
-    //         },
-    //         {
-    //             "Foto Produk": "https://via.placeholder.com/150",
-    //             "Nama Produk": "Gelang Cantik",
-    //             "Jenis Barang": "Barang Handmade",
-    //             "Harga Satuan": 15000,
-    //             kuantitas: 10,
-    //             "Total Biaya": 150000
-    //         },
-    //     ],
-    //     rincian_biaya: [
-    //         {
-    //             "Nama Biaya": "Jasa",
-    //             "Jumlah Biaya": 1000
-    //         }
-    //     ],
-    //     data_packaging: [
-    //         {
-    //             "Foto Produk": "https://via.placeholder.com/50",
-    //             "Nama Packaging": "zipper",
-    //             "Harga Satuan": 1000,
-    //             kuantitas: 1000,
-    //             "Total Biaya": 10000
-    //         }
-    //     ],
-    //     sub_total: 8000,
-    //     diskon: 30,
-    //     pajak: 1000,
-    //     total_penjualan: 18000
-    // }
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -284,13 +218,17 @@ export default function DetailPemasukanJual() {
                             <div className="">
                                 <p className="text-gray-500 text-sm">Tanggal dan Waktu</p>
                                 <p className="font-bold text-lg">
-                                    {new Date(data.tanggal).toLocaleString('id-ID', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
+                                    {(() => {
+                                        const date = new Date(data.tanggal);
+                                        const adjustedDate = new Date(date.getTime() - (7 * 60 * 60 * 1000));
+                                        return adjustedDate.toLocaleString('id-ID', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        });
+                                    })()}
                                 </p>
                             </div>
                             <div className="">

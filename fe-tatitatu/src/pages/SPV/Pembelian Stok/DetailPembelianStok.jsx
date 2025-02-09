@@ -74,7 +74,7 @@ const processedData = useMemo(() => {
                 namaBarang = produk.barang_nonhandmade?.nama_barang;
             } else if (produk.barang_mentah_id) {
                 // Handle raw material
-                imageUrl = `${baseUrl}/images-barang-mentah-gudang/${produk.barang_mentah?.image || ''}`;
+                imageUrl = `${baseUrl}/images-barang-mentah/${produk.barang_mentah?.image || ''}`;
                 jenisBarang = 'Barang Mentah';
                 namaBarang = produk.barang_mentah?.nama_barang;
             } else if (produk.packaging_id) {
@@ -451,7 +451,18 @@ return (
                 </section>
 
                 {/* Section Total */}
-                <section className="flex justify-end text-base py-10">
+                <section className="flex justify-between py-10">
+                        <div className="w-1/2 pr-8">
+                            <p className="font-bold mb-2">Catatan</p>
+                            <textarea 
+                                className="w-full p-3 border rounded-lg"
+                                value={pembelianData?.catatan}
+                                readOnly
+                                rows={4}
+                                placeholder="Masukan Catatan Disini"
+                            />
+                        </div>
+
                     <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
                         {/* Sub Total */}
                         <div className="flex justify-between border-b pb-2">
@@ -471,7 +482,9 @@ return (
                         {/* Total Penjualan */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Total Penjualan</p>
-                            <p className="font-bold">{formatCurrency(pembelianData?.total_pembelian || 0)}</p>
+                            <p className="font-bold">
+                                {formatCurrency(pembelianData?.total_pembelian || pembelianData?.total_penjualan || 0)}
+                            </p>
                         </div>
                     </div>
                 </section>

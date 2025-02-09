@@ -92,7 +92,7 @@ export default function EditBeliStokGudang() {
                     })),
                     ...mentahRes.data.data.map(item => ({
                         id: item.barang_mentah_id,
-                        image: item.image ? `${baseUrl}/images-barang-mentah-gudang/${item.image}` : '/placeholder.jpg',
+                        image: item.image ? `${baseUrl}/images-barang-mentah/${item.image}` : '/placeholder.jpg',
                         name: item.nama_barang,
                         price: item.harga_satuan,
                         kategori: item.kategori?.nama_kategori_barang,
@@ -408,7 +408,7 @@ export default function EditBeliStokGudang() {
                     kuantitas: item.quantity,
                     total_biaya: item.rawTotalBiaya
                 };
-
+    
                 switch (item["Jenis Barang"]) {
                     case "Barang Handmade":
                         return {
@@ -437,10 +437,9 @@ export default function EditBeliStokGudang() {
     
             const subtotal = calculateSubtotal();
             const totalPenjualan = calculateTotalPenjualan(subtotal);
-    
-            const formData = {
+
+            const baseFormData = {
                 cash_or_non: selectBayar === 1,
-                metode_id: selectMetode,
                 sub_total: subtotal,
                 diskon: diskon,
                 pajak: pajak,
@@ -448,6 +447,10 @@ export default function EditBeliStokGudang() {
                 produk: formattedProducts,
                 catatan: note
             };
+
+            const formData = selectBayar === 2 
+                ? { ...baseFormData, metode_id: selectMetode }
+                : baseFormData;
     
             await api.put(`/pembelian-gudang/${id}`, formData);
             setModalSucc(true);

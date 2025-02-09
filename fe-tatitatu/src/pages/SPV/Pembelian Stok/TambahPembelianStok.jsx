@@ -16,10 +16,15 @@ import api from "../../../utils/api";
 import AlertError from "../../../components/AlertError";
 
 export default function TambahPembelianStok() {
+    const dataBayar = [
+        { id: 1, label: "Cash", value:1},
+        { id: 2, label: "Non-Cash", value: 2}
+    ]
+    
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("")
-    const [selectBayar, setSelectedBayar] = useState("");
+    const [selectBayar, setSelectedBayar] = useState(dataBayar[0].value);
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0)
     const [pajak, setPajak] = useState(0)
@@ -448,20 +453,6 @@ const handleModalSubmit = () => {
         setDataCabang(updatedCabang);
     };
 
-    const dataBayar = [
-        { id: 1, label: "Cash", value:1},
-        { id: 2, label: "Non-Cash", value: 2}
-    ]
-
-    const dataMetode = [
-        { id: 1, label: "-", value:1 },
-        { id: 2, label: "Mandiri", value:2 },
-        { id: 3, label: "Bank Nagari", value:3 }
-    ]
-
-    // const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
-    // const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
-
     const subtotal = calculateSubtotal();
     const totalPenjualan = calculateTotalPenjualan(subtotal);
     const navigate = useNavigate()
@@ -479,7 +470,6 @@ const handleModalSubmit = () => {
                 return;
             }
 
-            // Format produk array
             const produk = dataCabang.flatMap(cabang => 
                 cabang.data.map(item => {
                     const baseProduct = {
@@ -489,7 +479,6 @@ const handleModalSubmit = () => {
                         total_biaya: parseInt(item.rawTotalBiaya)
                     };
     
-                    // Add specific product ID based on type
                     if (item.barang_handmade_id) {
                         return { ...baseProduct, barang_handmade_id: item.barang_handmade_id };
                     } else if (item.barang_non_handmade_id) {
@@ -502,16 +491,20 @@ const handleModalSubmit = () => {
                 })
             );
     
-            const payload = {
+            const basePayload = {
                 tanggal: tanggal,
                 cash_or_non: selectBayar === 1,
-                metode_id: parseInt(selectMetode),
                 sub_total: parseInt(calculateSubtotal()),
+                catatan: note,
                 diskon: parseInt(diskon),
                 pajak: parseInt(pajak),
                 total_pembelian: parseInt(calculateTotalPenjualan(calculateSubtotal())),
                 produk
             };
+    
+            const payload = selectBayar === 2 
+                ? { ...basePayload, metode_id: parseInt(selectMetode) }
+                : basePayload;
     
             await api.post('/pembelian', payload);
             setModalSucc(true);
@@ -626,7 +619,7 @@ const handleModalSubmit = () => {
                                             type="number"
                                             showRequired={false}
                                             value={pajak}
-                                            required={true}
+                                            required={false}
                                             onChange={(e) => setPajak(e)}
                                         />
                                         </div>

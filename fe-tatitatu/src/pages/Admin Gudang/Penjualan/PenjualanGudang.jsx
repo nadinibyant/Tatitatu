@@ -195,7 +195,7 @@ export default function PenjualanGudang() {
                                 nama_barang: formatNamaBarang(item.produk),
                                 jumlah_barang: getTotalBarang(item.produk).toLocaleString('id-ID'),
                                 diskon: `${item.diskon}%`,
-                                pajak: `${item.pajak}`,
+                                pajak: `${item.pajak.toLocaleString('id-ID')}`,
                                 total_penjualan: formatRupiah(item.total_penjualan),
                                 action: (
                                     <ActionMenu 

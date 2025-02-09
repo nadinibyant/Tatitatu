@@ -135,6 +135,51 @@ export default function StokBarang() {
                item.packaging_id || 
                "-";
     };
+
+    const transformStokGudang = (data) => {
+        return data
+            .filter(item => !item.is_deleted)
+            .map((item) => {
+                const barangData = item.barang;
+                let jenisBarang = "-";
+                let kategoriBarang = "-";
+                let barangId = "-";
+                let namaBarang = "-";
+
+                if (barangData.barang_handmade_id) {
+                    jenisBarang = barangData.jenis?.nama_jenis_barang || "Handmade";
+                    barangId = barangData.barang_handmade_id;
+                    kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
+                    namaBarang = barangData.nama_barang;
+                } else if (barangData.barang_nonhandmade_id) {
+                    jenisBarang = barangData.jenis?.nama_jenis_barang || "Non Handmade";
+                    barangId = barangData.barang_nonhandmade_id;
+                    kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
+                    namaBarang = barangData.nama_barang;
+                } else if (barangData.barang_mentah_id) {
+                    jenisBarang = "Barang Mentah";
+                    barangId = barangData.barang_mentah_id;
+                    namaBarang = barangData.nama_barang;
+                } else if (barangData.packaging_id) {
+                    jenisBarang = "Packaging";
+                    barangId = barangData.packaging_id;
+                    namaBarang = barangData.nama_packaging;
+                }
+
+                return {
+                    Nomor: barangId,
+                    "Nama Barang": namaBarang,
+                    Jenis: jenisBarang,
+                    Kategori: kategoriBarang,
+                    "Jumlah Stok": item.jumlah_stok,
+                    image: barangData.image,
+                    barang_handmade_id: barangData.barang_handmade_id,
+                    barang_nonhandmade_id: barangData.barang_nonhandmade_id,
+                    barang_mentah_id: barangData.barang_mentah_id,
+                    packaging_id: barangData.packaging_id
+                };
+            });
+    };
     
     const fetchStokData = async () => {
         try {
@@ -142,97 +187,114 @@ export default function StokBarang() {
             
             if (isAdminGudang) {
                 const response = await api.get('/stok-barang-gudang');
-                
+            
                 if (response.data.success) {
-                    const transformedData = response.data.data
-                        .filter(item => !item.is_deleted)
-                        .map((item) => {
-                            let barangData = item.barang;
-                            let jenisBarang = "";
-                            let kategoriBarang = "-";
-                            let barangId = "";
-
-                            if (barangData.barang_handmade_id) {
-                                jenisBarang = barangData.jenis?.nama_jenis_barang || "Handmade";
-                                barangId = barangData.barang_handmade_id;
-                                kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
-                            } else if (barangData.barang_nonhandmade_id) {
-                                jenisBarang = barangData.jenis?.nama_jenis_barang || "Non Handmade";
-                                barangId = barangData.barang_nonhandmade_id;
-                                kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
-                            } else if (barangData.barang_mentah_id) {
-                                jenisBarang = "Barang Mentah";
-                                barangId = barangData.barang_mentah_id;
-                            } else if (barangData.packaging_id) {
-                                jenisBarang = "Packaging";
-                                barangId = barangData.packaging_id;
-                            }
-
-                            return {
-                                Nomor: barangId,
-                                "Nama Barang": barangData.nama_barang || barangData.nama_packaging,
-                                Jenis: jenisBarang,
-                                Kategori: kategoriBarang,
-                                "Jumlah Stok": item.jumlah_stok,
-                                image: barangData.image,
-                                barang_handmade_id: barangData.barang_handmade_id,
-                                barang_nonhandmade_id: barangData.barang_nonhandmade_id,
-                                barang_mentah_id: barangData.barang_mentah_id,
-                                packaging_id: barangData.packaging_id
-                            };
-                        });
-
+                    const transformedData = transformStokGudang(response.data.data);
                     setStokData(transformedData);
                 }
             } else {
                 const response = await api.get('/stok-barang');
-                
                 if (response.data.success) {
-                    const transformedData = response.data.data
-                        .filter(item => !item.is_deleted)
-                        .map((item) => ({
-                            Nomor: getBarangId(item),
-                            "Nama Barang": getBarangId(item),
-                            Jenis: getJenisBarang(item),
-                            Kategori: "-",
-                            "Jumlah Stok": item.jumlah_stok,
-                            stok_barang_id: item.stok_barang_id,
-                            cabang_id: item.cabang_id,
-                            barang_handmade_id: item.barang_handmade_id,
-                            barang_non_handmade_id: item.barang_non_handmade_id,
-                            barang_custom_id: item.barang_custom_id,
-                            packaging_id: item.packaging_id
-                        }));
-
-                    const groupedData = transformedData.reduce((acc, curr) => {
-                        const existingItem = acc.find(item => item.Nomor === curr.Nomor);
-                        if (existingItem) {
-                            existingItem["Jumlah Stok"] += curr["Jumlah Stok"];
-                            existingItem.cabang.push({
-                                nama: getCabangName(curr.cabang_id),
-                                stok: curr["Jumlah Stok"],
-                                cabang_id: curr.cabang_id
-                            });
-                        } else {
-                            acc.push({
-                                ...curr,
-                                cabang: [{
-                                    nama: getCabangName(curr.cabang_id),
-                                    stok: curr["Jumlah Stok"],
-                                    cabang_id: curr.cabang_id
-                                }]
-                            });
-                        }
-                        return acc;
-                    }, []);
-
-                    setStokData(groupedData);
+                    setStokData(response.data.data.filter(item => !item.is_deleted));
                 }
             }
         } catch (error) {
             console.error('Error fetching stok data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const getBarangName = (item) => {
+        if (item.barang_handmade) return item.barang_handmade.nama_barang;
+        if (item.barang_non_handmade) return item.barang_non_handmade.nama_barang;
+        if (item.barang_custom) return item.barang_custom.nama_barang;
+        if (item.packaging) return item.packaging.nama_packaging;
+        return "-";
+    };
+    
+    const getBarangKategori = (item) => {
+        if (item.barang_handmade) return item.barang_handmade.kategori_barang.nama_kategori_barang;
+        if (item.barang_non_handmade) return item.barang_non_handmade.kategori.nama_kategori_barang;
+        if (item.barang_custom) return item.barang_custom.kategori.nama_kategori_barang;
+        if (item.packaging) return item.packaging.kategori_barang.nama_kategori_barang;
+        return "-";
+    };
+    
+    const getBarangJenis = (item) => {
+        if (item.barang_handmade) return item.barang_handmade.jenis_barang.nama_jenis_barang;
+        if (item.barang_non_handmade) return item.barang_non_handmade.jenis.nama_jenis_barang;
+        if (item.barang_custom) return item.barang_custom.jenis_barang.nama_jenis_barang;
+        if (item.packaging) return item.packaging.jenis_barang.nama_jenis_barang;
+        return "-";
+    };
+
+
+    const filteredData = () => {
+        if (isAdminGudang) {
+            return stokData.filter(item => {
+                if (selectedJenis !== "Semua") {
+                    const itemJenis = item.Jenis === "Non Handmade" ? "Non Handmade" :
+                                    item.Jenis === "Barang Mentah" ? "Mentah" :
+                                    item.Jenis;
+                    if (itemJenis !== selectedJenis) return false;
+                }
+                if (selectedKategori !== "Semua" && item.Kategori !== selectedKategori) return false;
+                return true;
+            });
+        } else {
+            let filteredData = [...stokData];
+            if (selectedStore !== "Semua") {
+                filteredData = filteredData.filter(item => 
+                    item.cabang?.nama_cabang === selectedStore
+                );
+            }
+            const groupedData = filteredData.reduce((acc, item) => {
+                const barangId = getBarangId(item);
+                const existingItem = acc.find(i => getBarangId(i) === barangId);
+        
+                const formattedItem = {
+                    Nomor: barangId,
+                    "Nama Barang": getBarangName(item),
+                    Jenis: getBarangJenis(item),
+                    Kategori: getBarangKategori(item),
+                    "Jumlah Stok": item.jumlah_stok,
+                    stok_barang_id: item.stok_barang_id,
+                    cabang_id: item.cabang_id,
+                    barang_handmade_id: item.barang_handmade_id,
+                    barang_non_handmade_id: item.barang_non_handmade_id,
+                    barang_custom_id: item.barang_custom_id,
+                    packaging_id: item.packaging_id,
+                    image: item.barang_handmade?.image || 
+                        item.barang_non_handmade?.image || 
+                        item.barang_custom?.image || 
+                        item.packaging?.image,
+                    cabang: [{
+                        nama: item.cabang?.nama_cabang,
+                        stok: item.jumlah_stok,
+                        cabang_id: item.cabang_id
+                    }]
+                };
+        
+                if (existingItem) {
+                    existingItem["Jumlah Stok"] += item.jumlah_stok;
+                    existingItem.cabang.push({
+                        nama: item.cabang?.nama_cabang,
+                        stok: item.jumlah_stok,
+                        cabang_id: item.cabang_id
+                    });
+                } else {
+                    acc.push(formattedItem);
+                }
+        
+                return acc;
+            }, []);
+        
+            return groupedData.filter(item => {
+                if (selectedJenis !== "Semua" && item.Jenis !== selectedJenis) return false;
+                if (selectedKategori !== "Semua" && item.Kategori !== selectedKategori) return false;
+                return true;
+            });
         }
     };
     
@@ -293,32 +355,6 @@ export default function StokBarang() {
       setIsFilterModalOpen(false);
     };
 
-    // const [data] = useState([
-    //     {
-    //         Nomor: "SIO202",
-    //         "Nama Barang": "Gelang Besi",
-    //         Jenis: "Sedang",
-    //         Kategori: "Gelang",
-    //         "Jumlah Stok": 1000,
-    //         image: "/path/to/gelang-image.jpg",
-    //         cabang: [
-    //             { nama: "GOR HAS", stok: 500 },
-    //             { nama: "Lubeg", stok: 500 }
-    //         ]
-    //     },
-    //     {
-    //         Nomor: "PC125",
-    //         "Nama Barang": "Cincin Perak",
-    //         Jenis: "Handmade",
-    //         Kategori: "Cincin",
-    //         "Jumlah Stok": 300,
-    //         image: "/path/to/cincin-image.jpg",
-    //         cabang: [
-    //             { nama: "GOR HAS", stok: 150 },
-    //             { nama: "Lubeg", stok: 150 }
-    //         ]
-    //     },
-    // ]);
 
     const handleRowClick = async (row) => {
         setSelectedItem(row);
@@ -364,40 +400,6 @@ export default function StokBarang() {
             options: kategoriOptions 
         }
     ];
-
-    const filteredData = () => {
-        let filteredItems = [...stokData];
-    
-        // Filter berdasarkan jenis
-        if (selectedJenis !== "Semua") {
-            filteredItems = filteredItems.filter(item => item.Jenis === selectedJenis);
-        }
-    
-        // Filter berdasarkan kategori
-        if (selectedKategori !== "Semua") {
-            filteredItems = filteredItems.filter(item => item.Kategori === selectedKategori);
-        }
-    
-        // Filter berdasarkan cabang
-        if (selectedStore !== "Semua") {
-            const selectedCabangId = cabangMapping[selectedStore];
-            
-            console.log('Selected Store (nama):', selectedStore);
-            console.log('Selected Cabang ID:', selectedCabangId);
-            console.log('Before filtering:', filteredItems);
-
-            filteredItems = filteredItems.filter(item => {
-                console.log('Item cabang_id:', item.cabang_id);
-                return item.cabang_id === selectedCabangId;
-            });
-            
-            console.log('After filtering:', filteredItems);
-        }
-    
-        return filteredItems;
-    };
-
-    console.log(stokData)
 
     return (
         <>

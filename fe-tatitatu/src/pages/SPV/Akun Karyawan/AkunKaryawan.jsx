@@ -32,6 +32,7 @@ export default function AkunKaryawan() {
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [filterFields, setFilterFields] = useState([]);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -60,6 +61,11 @@ export default function AkunKaryawan() {
   
     const handleApplyFilter = () => {
       setIsFilterModalOpen(false);
+    };
+
+    const getMaskedPassword = (password) => {
+        if (!password) return '';
+        return showPassword ? password : `${password.substring(0, 3)}${'*'.repeat(password.length - 3)}`;
     };
 
     const navigate = useNavigate();
@@ -334,90 +340,113 @@ export default function AkunKaryawan() {
                 </div>
             )}
 
-            {/* Detail Modal */}
+                {/* Detail Modal */}
                 {showDetailModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" ref={detailModalRef}>
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" ref={detailModalRef}>
                         <div className="modal-content bg-white rounded-lg w-full max-w-2xl mx-4 overflow-hidden">
-                        {/* Header dengan nama karyawan */}
-                        <div className="p-4 flex justify-between items-center border-b">
-                            <h2 className="text-lg font-semibold">{selectedEmployee?.Nama}</h2>
-                            <div className="flex gap-2">
-                            <Button
-                                label={'Edit'}  
-                                icon={
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M2.5 14.375V17.5H5.625L14.8417 8.28334L11.7167 5.15834L2.5 14.375ZM17.2583 5.86667C17.5833 5.54167 17.5833 5.01667 17.2583 4.69167L15.3083 2.74167C14.9833 2.41667 14.4583 2.41667 14.1333 2.74167L12.6083 4.26667L15.7333 7.39167L17.2583 5.86667Z" fill="#F97316"/>
-                                </svg>
-                                } 
-                                onClick={() => handleEdit(selectedEmployee?.id)}      
-                                bgColor="border-oren border"   
-                                textColor="text-oren"                    
-                            />
-                            <Button
-                                label={'Hapus'}
-                                icon={
-                                <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M15.75 1.875H2.25C1.62868 1.875 1.125 2.37868 1.125 3V3.75C1.125 4.37132 1.62868 4.875 2.25 4.875H15.75C16.3713 4.875 16.875 4.37132 16.875 3.75V3C16.875 2.37868 16.3713 1.875 15.75 1.875Z" fill="white"/>
-                                    <path d="M2.61724 6H15.3828L14.7265 16.9453C14.6503 18.0844 13.7099 18.975 12.5671 18.975H5.43296C4.29022 18.975 3.34979 18.0844 3.27357 16.9453L2.61724 6Z" fill="white"/>
-                                    <path d="M6.375 9.375C6.375 9.16789 6.54289 9 6.75 9H7.125C7.33211 9 7.5 9.16789 7.5 9.375V15.375C7.5 15.5821 7.33211 15.75 7.125 15.75H6.75C6.54289 15.75 6.375 15.5821 6.375 15.375V9.375Z" fill="red"/>
-                                    <path d="M10.5 9.375C10.5 9.16789 10.6679 9 10.875 9H11.25C11.4571 9 11.625 9.16789 11.625 9.375V15.375C11.625 15.5821 11.4571 15.75 11.25 15.75H10.875C10.6679 15.75 10.5 15.5821 10.5 15.375V9.375Z" fill="red"/>
-                                </svg>
-                                }
-                                bgColor="bg-merah"
-                                onClick={() => handleDelete(selectedEmployee?.id)}
-                                textColor="text-white"
-                            /> 
+                            {/* Header */}
+                            <div className="p-4 flex justify-between items-center border-b">
+                                <h2 className="text-lg font-semibold">{selectedEmployee?.Nama}</h2>
+                                <div className="flex gap-2">
+                                    <Button
+                                        label={'Edit'}  
+                                        icon={
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M2.5 14.375V17.5H5.625L14.8417 8.28334L11.7167 5.15834L2.5 14.375ZM17.2583 5.86667C17.5833 5.54167 17.5833 5.01667 17.2583 4.69167L15.3083 2.74167C14.9833 2.41667 14.4583 2.41667 14.1333 2.74167L12.6083 4.26667L15.7333 7.39167L17.2583 5.86667Z" fill="#F97316"/>
+                                            </svg>
+                                        } 
+                                        onClick={() => handleEdit(selectedEmployee?.id)}      
+                                        bgColor="border-oren border"   
+                                        textColor="text-oren"                    
+                                    />
+                                    <Button
+                                        label={'Hapus'}
+                                        icon={
+                                            <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M15.75 1.875H2.25C1.62868 1.875 1.125 2.37868 1.125 3V3.75C1.125 4.37132 1.62868 4.875 2.25 4.875H15.75C16.3713 4.875 16.875 4.37132 16.875 3.75V3C16.875 2.37868 16.3713 1.875 15.75 1.875Z" fill="white"/>
+                                                <path d="M2.61724 6H15.3828L14.7265 16.9453C14.6503 18.0844 13.7099 18.975 12.5671 18.975H5.43296C4.29022 18.975 3.34979 18.0844 3.27357 16.9453L2.61724 6Z" fill="white"/>
+                                                <path d="M6.375 9.375C6.375 9.16789 6.54289 9 6.75 9H7.125C7.33211 9 7.5 9.16789 7.5 9.375V15.375C7.5 15.5821 7.33211 15.75 7.125 15.75H6.75C6.54289 15.75 6.375 15.5821 6.375 15.375V9.375Z" fill="red"/>
+                                                <path d="M10.5 9.375C10.5 9.16789 10.6679 9 10.875 9H11.25C11.4571 9 11.625 9.16789 11.625 9.375V15.375C11.625 15.5821 11.4571 15.75 11.25 15.75H10.875C10.6679 15.75 10.5 15.5821 10.5 15.375V9.375Z" fill="red"/>
+                                            </svg>
+                                        }
+                                        bgColor="bg-merah"
+                                        onClick={() => handleDelete(selectedEmployee?.id)}
+                                        textColor="text-white"
+                                    /> 
+                                </div>
                             </div>
-                        </div>
+                            <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+                                <div className="p-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {/* Profile Image */}
+                                        <div className="flex justify-center items-start">
+                                            <img
+                                                src={`${import.meta.env.VITE_API_URL}/images-karyawan/${selectedEmployee.foto}` || "https://via.placeholder.com/150"}
+                                                alt={selectedEmployee?.Nama}
+                                                className="w-32 h-32 object-cover rounded-lg"
+                                            />
+                                        </div>
 
-                        {/* Content */}
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Profile Image Column */}
-                            <div className="flex justify-center items-start">
-                                <img
-                                    src={`${import.meta.env.VITE_API_URL}/images-karyawan/${selectedEmployee.foto}` || "https://via.placeholder.com/150"}
-                                    alt={selectedEmployee?.Nama}
-                                    className="w-32 h-32 object-cover rounded-lg"
-                                />
+                                        {/* Info Columns */}
+                                        <div className="md:col-span-2 space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                                <div>
+                                                    <p className="text-gray-500">Email</p>
+                                                    <p className="font-medium break-words">{selectedEmployee?.Email}</p>
+                                                </div>
+                                                <div>
+                                                        <p className="text-gray-500">Password</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-medium text-sm truncate max-w-[200px]">
+                                                                {showPassword ? selectedEmployee?.password : 
+                                                                `${selectedEmployee?.password?.substring(0, 3)}${'*'.repeat(6)}`}
+                                                            </p>
+                                                            <button 
+                                                                onClick={() => setShowPassword(!showPassword)}
+                                                                className="p-1 hover:bg-gray-100 rounded-full flex-shrink-0"
+                                                            >
+                                                                {showPassword ? (
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                                    </svg>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                <div>
+                                                    <p className="text-gray-500">Divisi</p>
+                                                    <p className="font-medium">{selectedEmployee?.Divisi}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-500">Jumlah Gaji Pokok</p>
+                                                    <p className="font-medium">{selectedEmployee?.["Jumlah Gaji Pokok"]}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-500">Bonus</p>
+                                                    <p className="font-medium">{selectedEmployee?.Bonus}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-500">Waktu Kerja Sebulan</p>
+                                                    <p className="font-medium">{selectedEmployee?.["Waktu Kerja"]}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-500">Nomor Handphone</p>
+                                                    <p className="font-medium">{selectedEmployee?.["No.Handphone"]}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-
-                            {/* Details Columns */}
-                            <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                <p className="text-gray-500">Email</p>
-                                <p className="font-medium">{selectedEmployee?.Email}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Password</p>
-                                <p className="font-medium break-all max-w-[200px]">{selectedEmployee?.password}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Divisi</p>
-                                <p className="font-medium">{selectedEmployee?.Divisi}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Jumlah Gaji Pokok</p>
-                                <p className="font-medium">{selectedEmployee?.["Jumlah Gaji Pokok"]}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Bonus</p>
-                                <p className="font-medium">{selectedEmployee?.Bonus}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Waktu Kerja Sebulan</p>
-                                <p className="font-medium">{selectedEmployee?.["Waktu Kerja"]}</p>
-                                </div>
-                                <div>
-                                <p className="text-gray-500">Nomor Handphone</p>
-                                <p className="font-medium">{selectedEmployee?.["No.Handphone"]}</p>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
                         </div>
                     </div>
-                    )}
+                )}
 
                     {isFilterModalOpen && (
                         <>

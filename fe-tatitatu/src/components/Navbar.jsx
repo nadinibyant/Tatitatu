@@ -6,6 +6,7 @@ import Modal from "../pages/Manajer/Catatan/Modal";
 const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = false}) => {
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isManajer = userData?.role === 'manajer';
+  const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleModal = () => {
@@ -52,7 +53,10 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
        {/* Logo */}
        <div className="flex items-center justify-center h-20">
          <a href="">
-           <img src="/logo.png" alt="Logo" />
+            <img 
+              src={isAdminOrKasirToko ? "/logo.png" : "/dbi.png"} 
+              alt="Logo" 
+            />
          </a>
        </div>
 
@@ -72,8 +76,8 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                    src={
                     location.pathname === menu.link || 
                     menu.submenu?.some(sub => location.pathname === sub.link)
-                      ? menu.iconWarna  // Menggunakan icon warna ketika aktif
-                      : menu.icon       // Menggunakan icon default ketika tidak aktif
+                      ? menu.iconWarna 
+                      : menu.icon    
                     } 
                    alt={`${menu.label} icon`}
                    className="w-5 h-8 mr-4"

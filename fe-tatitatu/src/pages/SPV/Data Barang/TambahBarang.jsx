@@ -61,7 +61,9 @@ export default function TambahBarang() {
         const galleryItems = response.data.data.map(item => ({
           id: item.barang_mentah_id,
           code: item.barang_mentah_id,
-          image: item.image,
+          image: item.image.startsWith('http') 
+            ? item.image 
+            : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${item.image}`,
           name: item.nama_barang,
           price: item.harga_satuan
         }));
@@ -120,18 +122,30 @@ export default function TambahBarang() {
   };
 
   const handleMaterialModalSubmit = () => {
-    const newMaterials = selectedMaterial.map((item) => ({
-      id: item.id,
-      No: materials.length + 1,
-      Foto: item.image,
-      "Nama Bahan": item.name,
-      "Harga Satuan": item.price,
-      "Kuantitas": item.count,
-      "Total Biaya": item.price * item.count,
-      selectedId: item.id,
-      value: item.id,
-      label: item.name
-    }));
+    const newMaterials = selectedMaterial.map((item) => {
+      const materialOption = materialOptions.find(opt => opt.value === item.id);
+      if (!materialOption) return null;
+  
+      let imageUrl = materialOption.image;
+      if (imageUrl && !imageUrl.startsWith('http')) {
+        imageUrl = `${import.meta.env.VITE_API_URL}/images-barang-mentah/${imageUrl}`;
+      }
+      
+      console.log("Adding new material with image:", imageUrl); // Debug log
+      
+      return {
+        id: item.id,
+        No: materials.length + 1,
+        Foto: imageUrl,
+        "Nama Bahan": materialOption.label,
+        "Harga Satuan": materialOption.price,
+        "Kuantitas": item.count,
+        "Total Biaya": materialOption.price * item.count,
+        selectedId: item.id,
+        value: item.id,
+        label: materialOption.label
+      };
+    }).filter(Boolean);
       
     setMaterials(prev => [...prev, ...newMaterials]);
     setIsMaterialModalOpen(false);
@@ -492,12 +506,18 @@ export default function TambahBarang() {
 
   const materialHeaders = [
     { label: "No", key: "No", align: "text-left" },
-    { label: "Foto Produk", key: "Foto", align: "text-left" },
+    { label: "Foto Produk", key: "Foto", align: "text-center" },
     { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width:'110px' },
+    { label: "Kuantitas", key: "Kuantitas", align: "text-left", width: '110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
+    { label: "Aksi", key: "Aksi", align: "text-center" }
   ];
+
+  const handleDeleteMaterial = (index) => {
+    const updatedMaterials = materials.filter((_, idx) => idx !== index);
+    setMaterials(updatedMaterials);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -682,7 +702,7 @@ export default function TambahBarang() {
     }
   };
   
-  
+  console.log(materials)
 
   const navigate = useNavigate()
   const handleBtnCancel = () => {
@@ -869,50 +889,93 @@ export default function TambahBarang() {
                 <section className="pt-5">
                 <p className="font-bold">Rincian Jumlah dan Bahan</p>
                 <div className="pt-3">
-                  <Table
-                    headers={materialHeaders}
-                    data={materials.map((row, index) => ({
-                      No: index + 1,
-                      "Foto Produk": row.Foto ? (
-                        <img src={`${import.meta.env.VITE_API_URL}/images-barang-mentah/${row.Foto}`}  alt={row["Nama Bahan"]} className="w-12 h-12" />
-                      ) : null,
-                      "Nama Bahan": (
-                        <InputDropdown
-                          showRequired={false}
-                          options={materialOptions}
-                          value={row.selectedId}
-                          onSelect={(selectedOption) => {
-                            const updatedMaterials = [...materials];
-                            updatedMaterials[index] = {
-                              ...updatedMaterials[index],
-                              selectedId: selectedOption.value,
-                              "Nama Bahan": selectedOption.label,
-                              "Harga Satuan": selectedOption.price,
-                              "Total Biaya": selectedOption.price * updatedMaterials[index]["Kuantitas"],
-                              "Foto": selectedOption.image
-                            };
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Harga Satuan": `Rp${row["Harga Satuan"].toLocaleString()}`,
-                      "Kuantitas": (
-                        <Input
-                          showRequired={false}
-                          type="number" 
-                          value={row["Kuantitas"]}
-                          onChange={(value) => {
-                            const updatedMaterials = [...materials];
-                            updatedMaterials[index]["Kuantitas"] = Number(value);
-                            updatedMaterials[index]["Total Biaya"] = 
-                              updatedMaterials[index]["Harga Satuan"] * Number(value);
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Total Biaya": `Rp${row["Total Biaya"].toLocaleString()}`
-                     }))}
-                  />
+                <Table
+                  headers={materialHeaders}
+                  data={materials.map((row, index) => ({
+                    No: index + 1,
+                    "Foto": (
+                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded">
+                        {row.Foto ? (
+                          <img 
+                            src={row.Foto}
+                            alt={row["Nama Bahan"] || 'Product'} 
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              console.error("Image load error for:", row.Foto);
+                              e.target.parentElement.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400">No Image</div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center w-full h-full text-gray-400">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                    ),
+                    "Nama Bahan": (
+                      <InputDropdown
+                        showRequired={false}
+                        options={materialOptions}
+                        value={row.selectedId}
+                        onSelect={(selectedOption) => {
+                          const updatedMaterials = [...materials];
+                          let imageUrl = selectedOption.image;
+                          
+                          // Ensure proper URL construction
+                          if (imageUrl && !imageUrl.startsWith('http')) {
+                            imageUrl = `${import.meta.env.VITE_API_URL}/images-barang-mentah/${imageUrl}`;
+                          }
+                          
+                          console.log("Setting image URL:", imageUrl); // Debug log
+                          
+                          updatedMaterials[index] = {
+                            ...updatedMaterials[index],
+                            id: selectedOption.value,
+                            selectedId: selectedOption.value,
+                            "Nama Bahan": selectedOption.label,
+                            "Harga Satuan": selectedOption.price,
+                            "Total Biaya": selectedOption.price * (updatedMaterials[index]["Kuantitas"] || 0),
+                            Foto: imageUrl,
+                            value: selectedOption.value,
+                            label: selectedOption.label
+                          };
+                          setMaterials(updatedMaterials);
+                        }}
+                      />
+                    ),
+                    "Harga Satuan": `Rp${formatCurrency(row["Harga Satuan"] || 0)}`,
+                    "Kuantitas": (
+                      <Input
+                        showRequired={false}
+                        type="number" 
+                        value={row["Kuantitas"]}
+                        onChange={(value) => {
+                          const updatedMaterials = [...materials];
+                          const numValue = Number(value) || 0;
+                          updatedMaterials[index] = {
+                            ...updatedMaterials[index],
+                            "Kuantitas": numValue,
+                            "Total Biaya": (updatedMaterials[index]["Harga Satuan"] || 0) * numValue
+                          };
+                          setMaterials(updatedMaterials);
+                        }}
+                      />
+                    ),
+                    "Total Biaya": `Rp${formatCurrency(row["Total Biaya"] || 0)}`,
+                    "Aksi": (
+                      <Button
+                        label="Hapus"
+                        bgColor=""
+                        textColor="text-red-600"
+                        hoverColor="hover:text-red-800"
+                        onClick={() => {
+                          const updatedMaterials = materials.filter((_, idx) => idx !== index);
+                          setMaterials(updatedMaterials);
+                        }}
+                      />
+                    )
+                  }))}
+                />
                   <Button
                     label="Tambah Baris"
                     icon={

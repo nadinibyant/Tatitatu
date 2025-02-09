@@ -33,7 +33,7 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
           className="px-2 border-r-2 object-contain"
         />
         <div>
-          <div className="text-gray-500 text-sm">Nama Toko</div>
+          <div className="text-gray-500 text-sm">Nama Cabang</div>
           <div className="font-medium">{branch.nama}</div>
         </div>
       </div>

@@ -123,23 +123,31 @@ const handlePackagingDropdownChange = (itemId, nextSelection) => {
     const rowIndex = updatedData.findIndex((row) => row.id === itemId);
     
     if (rowIndex !== -1) {
-        const selectedItem = packagingData.find(item => item.id === nextSelection.value);
+        const selectedItem = dataPackaging.find(item => item.id === nextSelection.value);
         
         if (selectedItem) {
             const currentQuantity = updatedData[rowIndex].quantity || 0;
-            const newTotalBiaya = selectedItem.price * currentQuantity;
+            const newPrice = selectedItem.price;
+            const newTotalBiaya = newPrice * currentQuantity;
             
             updatedData[rowIndex] = {
                 ...updatedData[rowIndex],
                 id: selectedItem.id,
                 quantity: currentQuantity,
                 "Foto Packaging": (
-                    <img src={selectedItem.image} alt={selectedItem.name} className="w-12 h-12" />
+                    <img 
+                        src={getImageUrl({
+                            id: selectedItem.id, 
+                            image: selectedItem.image
+                        })} 
+                        alt={selectedItem.name} 
+                        className="w-12 h-12" 
+                    />
                 ),
                 "Nama Packaging": (
                     <InputDropdown
                         showRequired={false}
-                        options={packagingData.map(pack => ({
+                        options={dataPackaging.map(pack => ({
                             label: pack.name,
                             value: pack.id,
                             price: pack.price
@@ -148,7 +156,7 @@ const handlePackagingDropdownChange = (itemId, nextSelection) => {
                         onSelect={(newSelection) => handlePackagingDropdownChange(itemId, newSelection)}
                     />
                 ),
-                "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
+                "Harga Satuan": `Rp${newPrice.toLocaleString()}`,
                 "Kuantitas": (
                     <Input
                         showRequired={false}
@@ -159,7 +167,7 @@ const handlePackagingDropdownChange = (itemId, nextSelection) => {
                 ),
                 "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
                 rawTotalBiaya: newTotalBiaya,
-                currentPrice: selectedItem.price
+                currentPrice: newPrice
             };
             
             setPackagingData(updatedData);
@@ -174,7 +182,8 @@ const handlePackagingQuantityChange = (itemId, newCount) => {
     if (rowIndex !== -1) {
         const currentItem = updatedData[rowIndex];
         const numericCount = Number(newCount);
-        const newTotal = currentItem.currentPrice * numericCount;
+        const currentPrice = currentItem.currentPrice;
+        const newTotal = currentPrice * numericCount;
             
         updatedData[rowIndex] = {
             ...currentItem,
@@ -250,8 +259,10 @@ const handleDeletePackaging = (itemId) => {
    }, [isModalOpen]);
 
    const calculateSubtotal = () => {
-       return itemData.reduce((acc, row) => acc + (row.rawTotalBiaya || 0), 0);
-   };
+        const itemSubtotal = itemData.reduce((acc, row) => acc + (row.rawTotalBiaya || 0), 0);
+        const packagingSubtotal = packagingData.reduce((acc, row) => acc + (row.rawTotalBiaya || 0), 0);
+        return itemSubtotal + packagingSubtotal;
+    };
 
    const calculateTotalPenjualan = (subtotal) => {
        const diskonNominal = (diskon / 100) * subtotal;
@@ -293,23 +304,44 @@ const handleDeletePackaging = (itemId) => {
        setIsModalOpen(true);
    };
 
+   const getImageUrl = (item) => {
+        let basePath = '';
+        
+        // Menentukan base path berdasarkan tipe item
+        if (item.id.startsWith('BHM')) {
+            basePath = '/images-barang-handmade-gudang/';
+        } else if (item.id.startsWith('BNH')) {
+            basePath = '/images-barang-non-handmade-gudang/';
+        } else if (item.id.startsWith('MTH')) {
+            basePath = '/images-barang-mentah/';
+        } else if (item.id.startsWith('PCK')) {
+            basePath = '/images-packaging-gudang/';
+        }
+
+        if (!item.image) return "https://via.placeholder.com/150";
+        return `${import.meta.env.VITE_API_URL}${basePath}${item.image}`;
+    };
+
    useEffect(() => {
     const fetchAllData = async () => {
         try {
             setLoading(true);
             
-            const [nonHandmadeRes, mentahRes, jenisRes, packagingRes] = await Promise.all([
+            const [handmadeRes, nonHandmadeRes, mentahRes, jenisRes, packagingRes] = await Promise.all([
+                api.get('/barang-handmade-gudang'),
                 api.get('/barang-nonhandmade-gudang'),
                 api.get('/barang-mentah'),
                 api.get('/jenis-barang-gudang'),
                 api.get('/packaging-gudang')
             ]);
 
-            // pcakaging data
             if (packagingRes.data.success) {
                 const packagingItems = packagingRes.data.data.map(item => ({
                     id: item.packaging_id.toString(),
-                    image: item.image || "https://via.placeholder.com/150",
+                    image: getImageUrl({
+                        id: item.packaging_id.toString(),
+                        image: item.image
+                    }),
                     name: item.nama_packaging,
                     ukuran: item.ukuran,
                     price: item.harga_satuan,
@@ -317,6 +349,7 @@ const handleDeletePackaging = (itemId) => {
                 }));
                 setDataPackaging(packagingItems);
             }
+
             const jenisBarangData = jenisRes.data.data.filter(j => j.nama_jenis_barang !== "Packaging");
             setJenisBarang(jenisBarangData.map(j => `Barang ${j.nama_jenis_barang}`));
 
@@ -324,47 +357,67 @@ const handleDeletePackaging = (itemId) => {
             jenisBarangData.forEach(jenis => {
                 dataByJenis[jenis.jenis_barang_id] = {
                     jenis: `Barang ${jenis.nama_jenis_barang}`,
-                    items: []
+                    items: [],
+                    kategori: ["Semua"]
                 };
             });
 
-            // Populate items for regular barang
-            nonHandmadeRes.data.data.forEach(item => {
-                const jenisId = item.jenis_barang_id;
-                if (dataByJenis[jenisId]) {
-                    dataByJenis[jenisId].items.push({
-                        id: item.barang_id.toString(),
-                        image: item.image || "https://via.placeholder.com/150",
+            if (handmadeRes.data.success) {
+                handmadeRes.data.data.forEach(item => {
+                    const handmadeItem = {
+                        id: item.barang_handmade_id.toString(),
+                        image: item.image ,
                         name: item.nama_barang,
                         price: item.harga_jual,
                         kategori: item.kategori?.nama_kategori_barang,
-                        code: item.barang_id.toString()
-                    });
-                }
-            });
+                        code: item.barang_handmade_id.toString()
+                    };
 
-            // Add categories for non-mentah items
-            Object.values(dataByJenis).forEach(jenis => {
-                if (jenis.jenis !== "Barang Mentah") {
-                    const categories = [...new Set(jenis.items.map(item => item.kategori))];
-                    jenis.kategori = ["Semua", ...categories];
-                }
-            });
+                    const jenisId = item.jenis_barang_id;
+                    if (dataByJenis[jenisId]) {
+                        dataByJenis[jenisId].items.push(handmadeItem);
+                        if (item.kategori?.nama_kategori_barang && !dataByJenis[jenisId].kategori.includes(item.kategori.nama_kategori_barang)) {
+                            dataByJenis[jenisId].kategori.push(item.kategori.nama_kategori_barang);
+                        }
+                    }
+                });
+            }
 
-            // Add mentah items to appropriate jenis
-            const mentahJenis = jenisBarangData.find(j => j.nama_jenis_barang === "Mentah");
-            if (mentahJenis) {
-                dataByJenis[mentahJenis.jenis_barang_id].items = mentahRes.data.data.map(item => ({
-                    id: item.barang_mentah_id.toString(),
-                    image: item.image || "https://via.placeholder.com/150",
-                    name: item.nama_barang,
-                    price: item.harga,
-                    code: item.barang_mentah_id.toString()
-                }));
+            if (nonHandmadeRes.data.success) {
+                nonHandmadeRes.data.data.forEach(item => {
+                    const nonHandmadeItem = {
+                        id: item.barang_nonhandmade_id.toString(),
+                        image: item.image,
+                        name: item.nama_barang,
+                        price: item.harga_jual,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        code: item.barang_nonhandmade_id.toString()
+                    };
+
+                    const jenisId = jenisBarangData.find(j => j.nama_jenis_barang === "Non Handmade")?.jenis_barang_id;
+                    if (dataByJenis[jenisId]) {
+                        dataByJenis[jenisId].items.push(nonHandmadeItem);
+                        if (item.kategori?.nama_kategori_barang && !dataByJenis[jenisId].kategori.includes(item.kategori.nama_kategori_barang)) {
+                            dataByJenis[jenisId].kategori.push(item.kategori.nama_kategori_barang);
+                        }
+                    }
+                });
+            }
+
+            if (mentahRes.data.success) {
+                const mentahJenis = jenisBarangData.find(j => j.nama_jenis_barang === "Mentah");
+                if (mentahJenis) {
+                    dataByJenis[mentahJenis.jenis_barang_id].items = mentahRes.data.data.map(item => ({
+                        id: item.barang_mentah_id.toString(),
+                        image: item.image,
+                        name: item.nama_barang,
+                        price: item.harga,
+                        code: item.barang_mentah_id.toString()
+                    }));
+                }
             }
 
             setDataBarang(Object.values(dataByJenis));
-
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -423,13 +476,7 @@ const handleDeletePackaging = (itemId) => {
 
    const handleModalSubmit = () => {
     const newItems = selectedItems.map((item) => {
-        console.log(selectedItems)
         const totalBiaya = parseInt(item.price) * item.count;
-        const dropdownValue = {
-            label: item.name,
-            value: item.id, 
-            price: item.price
-        };
         
         return {
             id: item.id,
@@ -448,8 +495,8 @@ const handleDeletePackaging = (itemId) => {
                         }));
                         return [...allItems, ...items];
                     }, [])}
-                    value={dropdownValue.value}
-                    onSelect={(newSelection) => handleDropdownChange(item.id, newSelection)}
+                    value={item.id}
+                    onSelect={(selectedOption) => handleDropdownChange(item.id, selectedOption)}
                 />
             ),
             "Jenis Barang": dataBarang.find(cat => 
@@ -467,7 +514,15 @@ const handleDeletePackaging = (itemId) => {
             quantity: item.count,
             "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
             rawTotalBiaya: totalBiaya,
-            currentPrice: item.price
+            currentPrice: item.price,
+            "Aksi": (
+                <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="text-red-500 hover:text-red-700"
+                >
+                    Hapus
+                </button>
+            )
         };
     });
 
@@ -476,83 +531,96 @@ const handleDeletePackaging = (itemId) => {
     setSelectedItems([]);
 };
 
-const handleDropdownChange = (itemId, nextSelection) => {
-    const updatedData = [...itemData];
-    const rowIndex = updatedData.findIndex((row) => row.id === itemId);
- 
-    if (rowIndex !== -1) {
-        const selectedItem = dataBarang.reduce((found, category) => {
-            if (found) return found;
-            return category.items.find(item => item.id === nextSelection.value);
-        }, null);
- 
+    const handleDropdownChange = (itemId, selectedOption) => {
+        const allItems = dataBarang.reduce((acc, category) => {
+            return [...acc, ...category.items];
+        }, []);
+
+        const selectedItem = allItems.find(item => item.id === selectedOption.value);
+        
         if (selectedItem) {
-            const jenisBarang = dataBarang.find(cat => 
-                cat.items.some(i => i.id === selectedItem.id)
-            )?.jenis;
-            
-            const currentQuantity = updatedData[rowIndex].quantity || 0;
-            const newTotalBiaya = selectedItem.price * currentQuantity;
-            
-            updatedData[rowIndex] = {
-                ...updatedData[rowIndex],
-                id: selectedItem.id,
-                "Foto Produk": (
-                    <img src={selectedItem.image} alt={selectedItem.name} className="w-12 h-12" />
-                ),
-                "Nama Produk": (
-                    <InputDropdown
-                        showRequired={false}
-                        options={dataBarang.reduce((allItems, category) => {
-                            const items = category.items.map(item => ({
-                                label: item.name,
-                                value: item.id,
-                                price: item.price
-                            }));
-                            return [...allItems, ...items];
-                        }, [])}
-                        value={nextSelection.value}
-                        onSelect={(newSelection) => handleDropdownChange(itemId, newSelection)}
-                    />
-                ),
-                "Jenis Barang": jenisBarang,
-                "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
-                "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                rawTotalBiaya: newTotalBiaya,
-                currentPrice: selectedItem.price,
-                quantity: currentQuantity
-            };
-            
-            setItemData(updatedData);
+            setItemData(prevItems => {
+                return prevItems.map(item => {
+                    if (item.id === itemId) {
+                        const currentQuantity = item.quantity || 0;
+                        const newTotalBiaya = selectedItem.price * currentQuantity;
+                        const jenisBarang = dataBarang.find(cat => 
+                            cat.items.some(i => i.id === selectedItem.id)
+                        )?.jenis;
+
+                        return {
+                            id: selectedItem.id,
+                            No: item.No,
+                            "Foto Produk": (
+                                <img src={getImageUrl(selectedItem)} alt={selectedItem.name} className="w-12 h-12" />
+                            ),
+                            "Nama Produk": (
+                                <InputDropdown
+                                    showRequired={false}
+                                    options={allItems.map(item => ({
+                                        label: item.name,
+                                        value: item.id,
+                                        price: item.price
+                                    }))}
+                                    value={selectedItem.id}
+                                    onSelect={(newSelection) => handleDropdownChange(selectedItem.id, newSelection)}
+                                />
+                            ),
+                            "Jenis Barang": jenisBarang,
+                            "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
+                            "Kuantitas": (
+                                <Input
+                                    showRequired={false}
+                                    type="number"
+                                    value={currentQuantity}
+                                    onChange={(newCount) => handleQuantityChange(selectedItem.id, newCount)}
+                                />
+                            ),
+                            quantity: currentQuantity,
+                            "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                            rawTotalBiaya: newTotalBiaya,
+                            currentPrice: selectedItem.price,
+                            "Aksi": (
+                                <button
+                                    onClick={() => handleDeleteItem(selectedItem.id)}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    Hapus
+                                </button>
+                            )
+                        };
+                    }
+                    return item;
+                });
+            });
         }
-    }
-};
+    };
 
     const handleQuantityChange = (itemId, newCount) => {
-        const updatedData = [...itemData];
-        const rowIndex = updatedData.findIndex((row) => row.id === itemId);
-
-        if (rowIndex !== -1) {
-            const currentItem = updatedData[rowIndex];
-            const numericCount = Number(newCount); // Add explicit conversion
-            const newTotal = currentItem.currentPrice * numericCount;
-            
-            updatedData[rowIndex] = {
-                ...updatedData[rowIndex],
-                quantity: numericCount,
-                rawTotalBiaya: newTotal,
-                "Total Biaya": `Rp${newTotal.toLocaleString()}`,
-                "Kuantitas": ( // Update the Input component
-                    <Input
-                        showRequired={false}
-                        type="number"
-                        value={numericCount}
-                        onChange={(newValue) => handleQuantityChange(itemId, newValue)}
-                    />
-                )
-            };
-            setItemData(updatedData);
-        }
+        setItemData(prevItems => {
+            return prevItems.map(item => {
+                if (item.id === itemId) {
+                    const numericCount = Number(newCount);
+                    const newTotal = item.currentPrice * numericCount;
+                    
+                    return {
+                        ...item,
+                        quantity: numericCount,
+                        rawTotalBiaya: newTotal,
+                        "Total Biaya": `Rp${newTotal.toLocaleString()}`,
+                        "Kuantitas": (
+                            <Input
+                                showRequired={false}
+                                type="number"
+                                value={numericCount}
+                                onChange={(newValue) => handleQuantityChange(itemId, newValue)}
+                            />
+                        )
+                    };
+                }
+                return item;
+            });
+        });
     };
 
    const handleDeleteItem = (itemId) => {
@@ -568,17 +636,63 @@ const handleDropdownChange = (itemId, nextSelection) => {
    const totalPenjualan = calculateTotalPenjualan(subtotal);
    const navigate = useNavigate();
 
-   const handleTambahSubmit = (e) => {
-       e.preventDefault();
-       try {
-           setLoading(true);
-           setModalSucc(true);
-       } catch (error) {
-           console.error(error);
-       } finally {
-           setLoading(false);
-       }
-   };
+   const handleTambahSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        setLoading(true);
+
+        const produkData = [
+            ...itemData.map(item => {
+                const idKey = item.id.startsWith('MTH') ? 'barang_mentah_id' :
+                             item.id.startsWith('BHM') ? 'barang_handmade_id' :
+                             item.id.startsWith('BNH') ? 'barang_non_handmade_id' :
+                             item.id.startsWith('PCK') ? 'packaging_id' : null;
+
+                return {
+                    [idKey]: item.id,
+                    harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
+                    kuantitas: item.quantity,
+                    total_biaya: item.rawTotalBiaya
+                };
+            }),
+            ...packagingData.map(item => ({
+                packaging_id: item.id,
+                harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
+                kuantitas: item.quantity,
+                total_biaya: item.rawTotalBiaya
+            }))
+        ];
+
+        const payload = {
+            cash_or_non: selectBayar === 1, 
+            nama_pembeli: namaPembeli,
+            sub_total: subtotal,
+            diskon: diskon,
+            pajak: pajak,
+            total_penjualan: totalPenjualan,
+            produk: produkData,
+            tanggal: tanggal,
+            catatan: note
+        };
+        if (selectBayar === 2) {
+            payload.metode_id = selectMetode;
+        }
+        console.log('Payload:', JSON.stringify(payload, null, 2));
+
+        const response = await api.post('/penjualan-gudang', payload);
+
+        if (response.data.success) {
+            setModalSucc(true);
+        } else {
+            alert(response.data.message || "Gagal menyimpan data");
+        }
+    } catch (error) {
+        console.error("Error submitting data:", error);
+        alert("Terjadi kesalahan saat menyimpan data");
+    } finally {
+        setLoading(false);
+    }
+};
 
    const handleAcc = () => {
        setModalSucc(false);  
@@ -596,7 +710,7 @@ const handleDropdownChange = (itemId, nextSelection) => {
                        <form onSubmit={handleTambahSubmit}>
                            <section>
                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                   <Input label={"Nomor"} type1={"text"} value={nomor} onChange={(e) => setNomor(e)} />
+                                   <Input label={"Nomor"} type1={"text"} disabled={true} value={nomor} onChange={(e) => setNomor(e)} />
                                    <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
                                    <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
                                    <InputDropdown 
@@ -791,6 +905,7 @@ const handleDropdownChange = (itemId, nextSelection) => {
                                                     type="number"
                                                     showRequired={false}
                                                     value={diskon}
+                                                    required={false}
                                                     onChange={(e) => setDiskon(e)}
                                                 />
                                             </div>
@@ -802,6 +917,7 @@ const handleDropdownChange = (itemId, nextSelection) => {
                                                     type="number"
                                                     showRequired={false}
                                                     value={pajak}
+                                                    required={false}
                                                     onChange={(e) => setPajak(e)}
                                                 />
                                             </div>
@@ -927,7 +1043,10 @@ const handleDropdownChange = (itemId, nextSelection) => {
      
                                     <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
                                         <Gallery2
-                                            items={filteredItems || []}
+                                            items={filteredItems.map(item => ({
+                                                ...item,
+                                                image: getImageUrl(item)  
+                                            }))}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
                                         />

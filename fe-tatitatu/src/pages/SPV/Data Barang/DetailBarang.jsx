@@ -21,6 +21,7 @@ export default function DetailBarang() {
     const isAdminGudang = userData?.role === 'admingudang';
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState(null);
+    const [rincianBiayaPerCabang, setRincianBiayaPerCabang] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,22 +69,26 @@ export default function DetailBarang() {
                         const itemData = itemResponse.data.data;
                         const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
 
-                        const initialHargaPerCabang = {};
-                        const allRincianBiaya = [];
+                        const rincianBiayaMap = {};
+                        const dataCabang = [];
 
                         itemData.rincian_biaya.forEach(rincian => {
+                            const cabangName = rincian.cabang.nama_cabang;
                             const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
-
-                            initialHargaPerCabang[rincian.cabang.nama_cabang] = {
+                            
+                            dataCabang.push({
+                                nama: cabangName,
                                 totalHPP: rincian.total_hpp,
                                 keuntungan: rincian.keuntungan,
                                 hargaJual: rincian.harga_jual
-                            };
+                            });
+
+                            const branchRincianBiaya = [];
 
                             if (biayaToko) {
-                                allRincianBiaya.push({
+                                branchRincianBiaya.push({
                                     id: biayaToko.biaya_toko_id,
-                                    "Nama Biaya": `Biaya Operasional dan Staff ${rincian.cabang.nama_cabang}`,
+                                    "Nama Biaya": `Biaya Operasional dan Staff ${cabangName}`,
                                     "Jumlah Biaya": biayaToko.total_biaya,
                                     isEditable: false
                                 });
@@ -91,7 +96,7 @@ export default function DetailBarang() {
 
                             rincian.detail_rincian_biaya.forEach(detail => {
                                 if (!detail.biaya_toko_id && !detail.is_deleted) {
-                                    allRincianBiaya.push({
+                                    branchRincianBiaya.push({
                                         id: detail.detail_rincian_biaya_id,
                                         "Nama Biaya": detail.nama_biaya,
                                         "Jumlah Biaya": detail.jumlah_biaya,
@@ -99,27 +104,27 @@ export default function DetailBarang() {
                                     });
                                 }
                             });
+
+                            rincianBiayaMap[cabangName] = branchRincianBiaya;
                         });
-    
+
+                        setRincianBiayaPerCabang(rincianBiayaMap);
+
                         setData({
                             "Nama Barang": itemData.nama_barang,
-                            "Nomor Barang": itemData.barang_handmade_id,
+                            "Nomor Barang": itemData.barang_non_handmade_id,
                             "Kategori": itemData.kategori_barang.nama_kategori_barang,
                             "Total HPP": itemData.rincian_biaya[0]?.total_hpp || 0,
                             "Total Keuntungan": itemData.rincian_biaya[0]?.keuntungan || 0,
                             "Harga Jual": itemData.rincian_biaya[0]?.harga_jual || 0,
                             "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
                             "image": itemData.image,
-                            "rincian_biaya": allRincianBiaya,
-                            "dataCabang": itemData.rincian_biaya.map(rb => ({
-                                nama: rb.cabang.nama_cabang,
-                                totalHPP: rb.total_hpp,
-                                hargaJual: rb.harga_jual
-                            }))
+                            "dataCabang": dataCabang
                         });
-    
-                        if (itemData.rincian_biaya.length > 0) {
-                            setSelectedCabang(itemData.rincian_biaya[0].cabang.nama_cabang);
+
+  
+                        if (dataCabang.length > 0) {
+                            setSelectedCabang(dataCabang[0].nama);
                         }
                     }
                 }
@@ -133,7 +138,12 @@ export default function DetailBarang() {
         fetchData();
     }, [id, isAdminGudang]);
 
-    
+    const getCurrentBranchRincianBiaya = () => {
+        if (isAdminGudang) {
+            return data?.rincian_biaya || [];
+        }
+        return rincianBiayaPerCabang[selectedCabang] || [];
+    };
 
     const breadcrumbItems = [
         { label: "List Data Barang Handmade", href: "/dataBarang/handmade" },
@@ -199,13 +209,13 @@ export default function DetailBarang() {
 
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
-            <div className="p-5">
+            <div className="p-3 md:p-5">
                 <Breadcrumbs items={breadcrumbItems} />
 
                 <section className="mt-5 bg-white rounded-xl p-6">
-                    <div className="flex justify-between items-center pb-5 border-b">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-5 border-b gap-4">
                         <h1 className="text-base font-bold">{data["Nama Barang"]}</h1>
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 w-full md:w-auto">
                             <Button
                                 label="Edit"
                                 icon={
@@ -259,7 +269,7 @@ export default function DetailBarang() {
                         {!isAdminGudang && (
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="font-bold text-lg">Rincian Berdasarkan Cabang</h2>
-                                <div className="w-48">
+                                <div className="w-full md:w-48">
                                     <ButtonDropdown
                                         label={selectedCabang}
                                         options={data.dataCabang.map(c => ({
@@ -286,7 +296,7 @@ export default function DetailBarang() {
                                 />
                             </div>
 
-                            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-y-6">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-4 md:gap-y-6">
                                 <div>
                                     <p className="text-gray-500">Nomor Barang</p>
                                     <p className="font-medium">{data["Nomor Barang"]}</p>
@@ -323,7 +333,7 @@ export default function DetailBarang() {
                             <h3 className="font-bold mb-4">Rincian Biaya</h3>
                             <Table
                                 headers={headers}
-                                data={data.rincian_biaya.map((item, index) => ({
+                                data={getCurrentBranchRincianBiaya().map((item, index) => ({
                                     No: index + 1,
                                     "Nama Biaya": item["Nama Biaya"],
                                     "Jumlah Biaya": `Rp${formatNumberWithDots(item["Jumlah Biaya"])}`

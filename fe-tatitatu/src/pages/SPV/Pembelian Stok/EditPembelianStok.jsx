@@ -72,18 +72,18 @@ export default function EditPembelianStok() {
                 const isCash = pembelianData.cash_or_non;
                 setSelectedBayar(isCash ? 1 : 2);
 
-                if (pembelianData.metode_id && dataMetode.length > 0) {
-                    const selectedMetode = dataMetode.find(
-                        method => method.id === pembelianData.metode_id
-                    );
+                // if (pembelianData.metode_id && dataMetode.length > 0) {
+                //     const selectedMetode = dataMetode.find(
+                //         method => method.id === pembelianData.metode_id
+                //     );
                     
-                    if (selectedMetode) {
-                        setSelectMetode({
-                            value: selectedMetode.id,
-                            label: selectedMetode.label
-                        });
-                    }
-                }
+                //     if (selectedMetode) {
+                //         setSelectMetode({
+                //             value: selectedMetode.id,
+                //             label: selectedMetode.label
+                //         });
+                //     }
+                // }
 
                 setDiskon(pembelianData.diskon || 0);
                 setPajak(pembelianData.pajak || 0);
@@ -116,7 +116,7 @@ export default function EditPembelianStok() {
 
                                 let imagePath = '';
                                 if (product.barang_handmade_id) {
-                                    imagePath = 'images-handmade';
+                                    imagePath = 'images-barang-handmade';
                                 } else if (product.barang_non_handmade_id) {
                                     imagePath = 'images-barang-non-handmade';
                                 } else if (product.barang_custom_id) {
@@ -169,10 +169,26 @@ export default function EditPembelianStok() {
             }
         };
     
-        if (pembelianId && dataMetode.length > 0) {
+        if (pembelianId) {
             fetchPembelianData();
         }
     }, [pembelianId]);
+
+    useEffect(() => {
+        if (data.metode && dataMetode.length > 0) {
+            const selectedMetode = dataMetode.find(
+                method => method.id === data.metode
+            );
+            
+            if (selectedMetode) {
+                setSelectMetode({
+                    value: selectedMetode.id,
+                    label: selectedMetode.label
+                });
+            }
+        }
+    }, [data.metode, dataMetode]);
+
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -197,7 +213,7 @@ export default function EditPembelianStok() {
                 const handmadeRes = await api.get('/barang-handmade');
                 const handmadeItems = handmadeRes.data.data.map(item => ({
                     id: item.barang_handmade_id,
-                    image: `${import.meta.env.VITE_API_URL}/images-handmade/${item.image}`,
+                    image: `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.image}`,
                     code: item.barang_handmade_id,
                     name: item.nama_barang,
                     price: item.rincian_biaya[0]?.harga_jual || 0,
@@ -568,7 +584,7 @@ export default function EditPembelianStok() {
                     let imagePath = '';
                     switch (jenisBarang) {
                         case 'Barang Handmade':
-                            imagePath = 'images-handmade';
+                            imagePath = 'images-barang-handmade';
                             break;
                         case 'Barang Non-Handmade':
                             imagePath = 'images-barang-non-handmade';
@@ -677,28 +693,41 @@ export default function EditPembelianStok() {
     const handleModalSubmit = () => {
         if (activeCabang !== null) {
             const updatedCabang = [...dataCabang];
-            console.log(selectedItems)
-            const newItems = selectedItems.map((item) => ({
-                id: item.id,
-                No: updatedCabang[activeCabang].data.length + 1,
-                "Foto Produk": (
-                    <img src={item.image} alt={item.name} className="w-12 h-12" />
-                ),
-                "Nama Produk": item.id,
-                "Jenis Barang": selectedJenis,
-                "Harga Satuan": item.price,
-                Kuantitas: item.count,
-                "Total Biaya": parseInt(item.price) * item.count,
-                Aksi: (
-                    <button
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteItem(activeCabang, item.id, true)}
-                    >
-                        Hapus
-                    </button>
-                ),
-                isNew: true
-            }));
+            const newItems = selectedItems.map((item) => {
+                let jenisBarang;
+                if (dataBarang.find(category => category.jenis === "Barang Handmade")?.items.find(i => i.id === item.id)) {
+                    jenisBarang = "Handmade";
+                } else if (dataBarang.find(category => category.jenis === "Barang Non-Handmade")?.items.find(i => i.id === item.id)) {
+                    jenisBarang = "Barang Non-Handmade";
+                } else if (dataBarang.find(category => category.jenis === "Barang Custom")?.items.find(i => i.id === item.id)) {
+                    jenisBarang = "Barang Custom";
+                } else {
+                    jenisBarang = "Packaging";
+                }
+    
+                return {
+                    id: item.id,
+                    No: updatedCabang[activeCabang].data.length + 1,
+                    "Foto Produk": (
+                        <img src={item.image} alt={item.name} className="w-12 h-12" />
+                    ),
+                    "Nama Produk": item.id,
+                    "Jenis Barang": jenisBarang, 
+                    "Harga Satuan": item.price,
+                    Kuantitas: item.count,
+                    "Total Biaya": parseInt(item.price) * item.count,
+                    Aksi: (
+                        <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDeleteItem(activeCabang, item.id, true)}
+                        >
+                            Hapus
+                        </button>
+                    ),
+                    isNew: true
+                };
+            });
+    
             updatedCabang[activeCabang].data.push(...newItems);
             setDataCabang(updatedCabang);
         }
@@ -744,70 +773,69 @@ export default function EditPembelianStok() {
         event.preventDefault();
         try {
             setLoading(true);
-
+    
             const cabangResponse = await api.get('/cabang');
             const cabangList = cabangResponse.data.data;
     
-
             const produkData = dataCabang.flatMap(cabang => {
-                const cabangId = cabangList.find(c => c.nama_cabang === cabang.nama)?.cabang_id;
+                const cabangId = parseInt(cabangList.find(c => c.nama_cabang === cabang.nama)?.cabang_id);
     
                 return cabang.data.map(item => {
-
                     let productId;
                     let productType;
+
                     if (item["Jenis Barang"] === "Handmade") {
-                        productId = item["Nama Produk"];
                         productType = "barang_handmade_id";
                     } else if (item["Jenis Barang"] === "Barang Non-Handmade") {
-                        productId = item["Nama Produk"];
                         productType = "barang_non_handmade_id";
                     } else if (item["Jenis Barang"] === "Barang Custom") {
-                        productId = item["Nama Produk"];
                         productType = "barang_custom_id";
                     } else {
-                        productId = item["Nama Produk"];
                         productType = "packaging_id";
                     }
+    
                     const hargaSatuan = typeof item["Harga Satuan"] === 'string' 
-                        ? parseFloat(item["Harga Satuan"].replace(/[^0-9.-]+/g, ""))
-                        : item["Harga Satuan"];
+                        ? parseInt(item["Harga Satuan"].replace(/[^0-9.-]+/g, ""))
+                        : parseInt(item["Harga Satuan"]);
     
                     const totalBiaya = typeof item["Total Biaya"] === 'string'
-                        ? parseFloat(item["Total Biaya"].replace(/[^0-9.-]+/g, ""))
-                        : item["Total Biaya"];
+                        ? parseInt(item["Total Biaya"].replace(/[^0-9.-]+/g, ""))
+                        : parseInt(item["Total Biaya"]);
     
                     return {
                         cabang_id: cabangId,
-                        [productType]: productId,
+                        [productType]: item["Nama Produk"],
                         harga_satuan: hargaSatuan,
-                        kuantitas: item["Kuantitas"],
+                        kuantitas: parseInt(item["Kuantitas"]),
                         total_biaya: totalBiaya
                     };
                 });
             });
-
-            const payload = {
-                cash_or_non: selectBayar === 1, 
-                metode_id: selectMetode.value,
-                sub_total: subtotal,
-                diskon: parseFloat(diskon),
-                pajak: parseFloat(pajak),
-                total_pembelian: totalPenjualan,
+    
+            const basePayload = {
+                cash_or_non: selectBayar === 1,
+                sub_total: parseInt(subtotal),
+                diskon: parseInt(diskon),
+                pajak: parseInt(pajak),
+                catatan: note || '',
+                total_pembelian: parseInt(totalPenjualan),
                 produk: produkData
             };
 
-            console.log(payload)
-
-            const response = await api.put(`/pembelian/${pembelianId}`, payload);
+            const payload = selectBayar === 2 
+                ? { ...basePayload, metode_id: parseInt(selectMetode?.value) }
+                : basePayload;
     
+            const response = await api.put(`/pembelian/${pembelianId}`, payload);
+            
             if (response.data.success) {
                 setModalSucc(true);
             } else {
-                throw new Error('Failed to update data');
+                throw new Error(response.data.message || 'Failed to update data');
             }
         } catch (error) {
             console.error('Error updating pembelian:', error);
+            alert(error.response?.data?.message || 'Failed to update data');
         } finally {
             setLoading(false);
         }
@@ -816,6 +844,12 @@ export default function EditPembelianStok() {
     const handleModalSucc = () => {
         navigate('/pembelianStok')
     }
+
+    useEffect(() => {
+        if (data.catatan) {
+            setNote(data.catatan);
+        }
+    }, [data.catatan])
 
 
     return (
@@ -829,7 +863,7 @@ export default function EditPembelianStok() {
                         <form onSubmit={handleEditSubmit}>
                             <section>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Input label={"Nomor"} type1={"text"} value={data.nomor} onChange={(e) => setNomor(e)} />
+                                    <Input label={"Nomor"} type1={"text"} disabled={true} value={data.nomor} onChange={(e) => setNomor(e)} />
                                     <Input label={"Tanggal"} type1={"date"} value={data.tanggal} onChange={(e) => setTanggal(e)} />
                                     <InputDropdown label={"Cash/Non-Cash"} options={dataBayar} value={dataBayar.find(opt => opt.value === selectBayar)?.value} onSelect={handleSelectBayar} />
                                     <div className="md:col-span-3 md:w-1/3">
@@ -873,7 +907,7 @@ export default function EditPembelianStok() {
                                 {/* Bagian Catatan */}
                                 <div className="w-full md:w-2/4">
                                     <TextArea
-                                    label="Catatan*"
+                                    label="Catatan"
                                     placeholder="Masukkan Catatan Di Sini"
                                     required={true}
                                     value={note}
@@ -909,7 +943,7 @@ export default function EditPembelianStok() {
                                             type="number"
                                             value={pajak}
                                             showRequired={false}
-                                            required={true}
+                                            required={false}
                                             onChange={(e) => setPajak(e)}
                                         />
                                         </div>

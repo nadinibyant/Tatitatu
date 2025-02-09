@@ -113,23 +113,25 @@ const Gallery = ({
 
       {/* Sub Menus */}
       {enableSubMenus && (
-        <div className="flex gap-6 mb-6 border-b">
-          {subMenus.map(menu => (
-            <button
-              key={menu}
-              className={`pb-2 px-1 ${
-                activeSubMenu === menu 
-                  ? 'border-b-2 border-primary text-primary font-medium'
-                  : 'text-gray-500'
-              }`}
-              onClick={() => {
-                setActiveSubMenu(menu);
-                setCurrentPage(1);
-              }}
-            >
-              {menu}
-            </button>
-          ))}
+        <div className="relative mb-6 border-b">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:gap-6">
+            {subMenus.map(menu => (
+              <button
+                key={menu}
+                className={`pb-2 px-1 text-sm ${
+                  activeSubMenu === menu 
+                    ? 'border-b-2 border-primary text-primary font-medium'
+                    : 'text-gray-500'
+                }`}
+                onClick={() => {
+                  setActiveSubMenu(menu);
+                  setCurrentPage(1);
+                }}
+              >
+                {menu}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

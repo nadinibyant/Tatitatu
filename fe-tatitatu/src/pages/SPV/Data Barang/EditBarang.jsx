@@ -288,14 +288,18 @@ export default function EditBarang() {
           label: item.nama_barang,
           value: item.barang_mentah_id,
           price: item.harga_satuan,
-          image: item.image
+          image: item.image.startsWith('http') 
+            ? item.image 
+            : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${item.image}`
         }));
         setMaterialOptions(options);
         
         const galleryItems = response.data.data.map(item => ({
           id: item.barang_mentah_id,
           code: item.barang_mentah_id,
-          image: item.image,
+          image: item.image.startsWith('http') 
+            ? item.image 
+            : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${item.image}`,
           name: item.nama_barang,
           price: item.harga_satuan
         }));
@@ -305,6 +309,7 @@ export default function EditBarang() {
       console.error('Error fetching material data:', error);
     }
   };
+  
 
    const fetchMaterialData = async () => {
     try {
@@ -353,18 +358,27 @@ export default function EditBarang() {
   };
 
   const handleMaterialModalSubmit = () => {
-    const newMaterials = selectedMaterial.map((item) => ({
-      id: item.id,
-      No: materials.length + 1,
-      Foto: item.image,
-      "Nama Bahan": item.name,
-      "Harga Satuan": item.price,
-      "Kuantitas": item.count,
-      "Total Biaya": item.price * item.count,
-      selectedId: item.id,
-      value: item.id,
-      label: item.name
-    }));
+    const newMaterials = selectedMaterial.map((item) => {
+      const materialOption = materialOptions.find(opt => opt.value === item.id);
+      if (!materialOption) return null;
+  
+      const imageUrl = materialOption.image.startsWith('http') 
+        ? materialOption.image 
+        : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${materialOption.image}`;
+      
+      return {
+        id: item.id,
+        No: materials.length + 1,
+        Foto: imageUrl,
+        "Nama Bahan": item.name,
+        "Harga Satuan": item.price,
+        "Kuantitas": item.count,
+        "Total Biaya": item.price * item.count,
+        selectedId: item.id,
+        value: item.id,
+        label: item.name
+      };
+    }).filter(Boolean);
       
     setMaterials(prev => [...prev, ...newMaterials]);
     setIsMaterialModalOpen(false);
@@ -1212,9 +1226,24 @@ useEffect(() => {
                     headers={materialHeaders}
                     data={materials.map((row, index) => ({
                       No: index + 1,
-                      "Foto Produk": row.Foto ? (
-                        <img src={row.Foto} alt={row["Nama Bahan"]} className="w-12 h-12" />
-                      ) : null,
+                      "Foto": row.Foto ? (
+                        <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+                          <img 
+                            src={row.Foto.startsWith('http') ? row.Foto : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${row.Foto}`}
+                            alt={row["Nama Bahan"]} 
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              console.error("Image load error:", e);
+                              e.target.parentElement.innerHTML = 
+                                '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+                          <span className="text-gray-400 text-sm">No Image</span>
+                        </div>
+                      ),
                       "Nama Bahan": (
                         <InputDropdown
                           showRequired={false}
@@ -1222,19 +1251,26 @@ useEffect(() => {
                           value={row.selectedId}
                           onSelect={(selectedOption) => {
                             const updatedMaterials = [...materials];
+                            const imageUrl = selectedOption.image.startsWith('http') 
+                              ? selectedOption.image 
+                              : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${selectedOption.image}`;
+                            
                             updatedMaterials[index] = {
                               ...updatedMaterials[index],
+                              id: selectedOption.value,
                               selectedId: selectedOption.value,
                               "Nama Bahan": selectedOption.label,
                               "Harga Satuan": selectedOption.price,
-                              "Total Biaya": selectedOption.price * updatedMaterials[index]["Kuantitas"],
-                              "Foto": selectedOption.image
+                              "Total Biaya": selectedOption.price * (updatedMaterials[index]["Kuantitas"] || 0),
+                              Foto: imageUrl,
+                              value: selectedOption.value,
+                              label: selectedOption.label
                             };
                             setMaterials(updatedMaterials);
                           }}
                         />
                       ),
-                      "Harga Satuan": `Rp${row["Harga Satuan"].toLocaleString()}`,
+                      "Harga Satuan": `Rp${formatCurrency(row["Harga Satuan"] || 0)}`,
                       "Kuantitas": (
                         <Input
                           showRequired={false}
@@ -1242,34 +1278,27 @@ useEffect(() => {
                           value={row["Kuantitas"]}
                           onChange={(value) => {
                             const updatedMaterials = [...materials];
-                            updatedMaterials[index]["Kuantitas"] = Number(value);
-                            updatedMaterials[index]["Total Biaya"] = 
-                              updatedMaterials[index]["Harga Satuan"] * Number(value);
+                            const numValue = Number(value) || 0;
+                            updatedMaterials[index] = {
+                              ...updatedMaterials[index],
+                              "Kuantitas": numValue,
+                              "Total Biaya": (updatedMaterials[index]["Harga Satuan"] || 0) * numValue
+                            };
                             setMaterials(updatedMaterials);
-                            
-                            const materialCosts = updatedMaterials.reduce((sum, material) => sum + (material["Total Biaya"] || 0), 0);
-                            const operationalCosts = calculateOperationalCosts();
-                            const newTotalHPP = materialCosts + operationalCosts;
-                            
-                            setData(prev => ({
-                              ...prev,
-                              totalHPP: newTotalHPP,
-                              keuntungan: prev.hargaJual - newTotalHPP
-                            }));
                           }}
                         />
                       ),
-                      "Total Biaya": `Rp${row["Total Biaya"].toLocaleString()}`,
+                      "Total Biaya": `Rp${formatCurrency(row["Total Biaya"] || 0)}`,
                       "Aksi": (
-                          <Button
-                            label="Hapus"
-                            bgColor=""
-                            textColor="text-red-600"
-                            hoverColor="hover:text-red-800"
-                            onClick={() => handleDeleteMaterial(row.id)}
-                          />
-                        )
-                     }))}
+                        <Button
+                          label="Hapus"
+                          bgColor=""
+                          textColor="text-red-600"
+                          hoverColor="hover:text-red-800"
+                          onClick={() => handleDeleteMaterial(row.id)}
+                        />
+                      )
+                    }))}
                   />
                   <Button
                     label="Tambah Baris"

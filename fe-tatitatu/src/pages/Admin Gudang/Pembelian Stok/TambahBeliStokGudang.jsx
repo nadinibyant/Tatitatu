@@ -11,6 +11,7 @@ import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
 
 export default function TambahBeliStokGudang() {
     const navigate = useNavigate();
@@ -36,6 +37,8 @@ export default function TambahBeliStokGudang() {
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isErrorAlert, setErrorAlert] = useState(false);
 
     // Constants
     const productTypes = [
@@ -122,7 +125,7 @@ export default function TambahBeliStokGudang() {
                     })),
                     ...mentahRes.data.data.map(item => ({
                         id: item.barang_mentah_id,
-                        image: item.image ? `${baseUrl}/images-barang-mentah-gudang/${item.image}` : '/placeholder.jpg',
+                        image: item.image ? `${baseUrl}/images-barang-mentah/${item.image}` : '/placeholder.jpg',
                         name: item.nama_barang,
                         price: item.harga_satuan,
                         jenis: "Barang Mentah",
@@ -366,6 +369,24 @@ export default function TambahBeliStokGudang() {
     const handleTambahSubmit = async (e) => {
         e.preventDefault();
         try {
+            if (!selectBayar) {
+                setErrorMessage("Silakan pilih cara pembayaran (Cash/Non-Cash)");
+                setErrorAlert(true);
+                return;
+            }
+    
+            if (selectBayar === 2 && !selectMetode) {
+                setErrorMessage("Silakan pilih metode pembayaran");
+                setErrorAlert(true);
+                return;
+            }
+    
+            if (itemData.length === 0) {
+                setErrorMessage("Silakan pilih minimal 1 barang");
+                setErrorAlert(true);
+                return;
+            }
+    
             setLoading(true);
             const formattedProducts = itemData.map(item => {
                 const baseProduct = {
@@ -373,7 +394,7 @@ export default function TambahBeliStokGudang() {
                     kuantitas: item.quantity,
                     total_biaya: item.rawTotalBiaya
                 };
-
+    
                 switch (item["Jenis Barang"]) {
                     case "Barang Handmade":
                         return {
@@ -404,9 +425,9 @@ export default function TambahBeliStokGudang() {
             const subTotal = calculateSubtotal();
             const totalPenjualan = calculateTotalPenjualan(subTotal);
     
-            const formData = {
-                cash_or_non: selectBayar === 1, 
-                metode_id: selectMetode,
+            // Base form data
+            const baseFormData = {
+                cash_or_non: selectBayar === 1,
                 sub_total: subTotal,
                 diskon: diskon,
                 pajak: pajak,
@@ -414,10 +435,16 @@ export default function TambahBeliStokGudang() {
                 produk: formattedProducts
             };
     
+            const formData = selectBayar === 2 
+                ? { ...baseFormData, metode_id: selectMetode }
+                : baseFormData;
+    
             await api.post('/pembelian-gudang', formData);
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting data:', error);
+            setErrorMessage(error.response?.data?.message || "Terjadi kesalahan saat menyimpan data");
+            setErrorAlert(true);
         } finally {
             setLoading(false);
         }
@@ -697,6 +724,15 @@ export default function TambahBeliStokGudang() {
             )}
 
             {isLoading && <Spinner />}
+
+            {isErrorAlert && (
+              <AlertError
+                title="Gagal!!"
+                description={errorMessage}
+                confirmLabel="Ok"
+                onConfirm={() => setErrorAlert(false)}
+              />
+            )}
         </LayoutWithNav>
     );
 }

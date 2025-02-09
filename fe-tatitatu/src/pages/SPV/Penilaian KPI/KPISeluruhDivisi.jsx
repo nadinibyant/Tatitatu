@@ -32,21 +32,7 @@ export default function KPISeluruhDivisi() {
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 
-    // const data = [
-    //     {
-    //         id: 1,
-    //         Divisi: "Kasir",
-    //         JumlahKPI: 10,
-    //         // Aksi: (
-    //         //     <img
-    //         //     src="/icon/more.svg"
-    //         //     alt="More Options"
-    //         //     className="w-5 h-5 cursor-pointer"
-    //         //     onClick={(event) => handleMoreClick(1, event)}
-    //         //     />
-    //         // ),
-    //     },
-    // ];
+
     const fetchKPIDivisi = async () => {
         try {
             setLoading(true);
@@ -71,34 +57,6 @@ export default function KPISeluruhDivisi() {
     useEffect(() => {
         fetchKPIDivisi();
     }, []);
-
-    // const handleMoreClick = (item, event) => {
-    //     event.stopPropagation();
-    //     setSelectedItem(item);
-    //     setIsModalMore(true);
-
-    //     const rect = event.target.getBoundingClientRect();
-    //     const viewportWidth = window.innerWidth;
-        
-    //     let top = rect.bottom + window.scrollY + 5;
-    //     let left = rect.left + window.scrollX;
-
-    //     if (viewportWidth <= 768) {
-    //         left = viewportWidth / 2;
-    //     } else {
-    //         // Prevent modal from going off-screen right
-    //         if (left + 250 > viewportWidth) {
-    //             left = rect.right - 250;
-    //         }
-            
-    //         // If modal would go off bottom of screen, show it above the click
-    //         if (top + 150 > window.innerHeight) {
-    //             top = rect.top - 150;
-    //         }
-    //     }
-
-    //     setModalPosition({ top, left });
-    // };
 
     const navigate = useNavigate()
 

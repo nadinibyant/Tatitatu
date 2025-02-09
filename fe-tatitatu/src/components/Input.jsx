@@ -1,3 +1,5 @@
+// 
+
 import React, { useEffect, useState } from "react";
 
 const Input = ({ 
@@ -22,17 +24,45 @@ const Input = ({
 
   useEffect(() => {
     if (!value && (type1 === "date" || type1 === "datetime-local")) {
-      const today = new Date();
+      const now = new Date();
       
-      if (type1 === "date" || type1 === 'date') {
-        const formattedDate = today.toISOString().split('T')[0];
+      // Mendapatkan offset timezone lokal dalam menit
+      const localOffset = now.getTimezoneOffset();
+      
+      // Menambahkan offset lokal dan WIB (+7)
+      const wibOffset = 7 * 60; // WIB offset dalam menit
+      const totalOffset = localOffset + wibOffset;
+      
+      // Mengatur waktu sesuai WIB
+      const wibTime = new Date(now.getTime() + (totalOffset * 60000));
+      
+      if (type1 === "date") {
+        const formattedDate = wibTime.toISOString().split('T')[0];
         setRawValue(formattedDate);
         if (onChange) onChange(formattedDate);
-      } else if (type1 === "datetime-local" || type1 === 'datetime-local') {
-        const formattedDateTime = today.toISOString().slice(0, 16);
+      } else if (type1 === "datetime-local") {
+        // Format datetime untuk input datetime-local
+        const year = wibTime.getFullYear();
+        const month = String(wibTime.getMonth() + 1).padStart(2, '0');
+        const day = String(wibTime.getDate()).padStart(2, '0');
+        const hours = String(wibTime.getHours()).padStart(2, '0');
+        const minutes = String(wibTime.getMinutes()).padStart(2, '0');
+        
+        const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
         setRawValue(formattedDateTime);
         if (onChange) onChange(formattedDateTime);
       }
+    } else if (value && type1 === "datetime-local") {
+      // Jika ada value yang diberikan, konversi ke format yang benar
+      const date = new Date(value);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+      setRawValue(formattedDateTime);
     } else {
       setRawValue(value || "");
     }

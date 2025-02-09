@@ -116,11 +116,13 @@ const EditPenjualanNon = () => {
                 }))
             ]);
 
-            // Process penjualan detail
             const detail = penjualanRes.data.data;
             setFormData({
                 nomor: detail.penjualan_id,
-                tanggal: detail.tanggal,
+                tanggal: (() => {
+                    const date = new Date(detail.tanggal);
+                    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                })(),
                 namaPembeli: detail.nama_pembeli,
                 note: detail.catatan,
                 selectBayar: detail.cash_or_non ? 1 : 2,
@@ -129,7 +131,6 @@ const EditPenjualanNon = () => {
                 pajak: detail.pajak
             });
 
-            // Set detail data
             setDetailData({
                 products: detail.produk_penjualan.filter(p => p.barang_handmade_id || p.barang_non_handmade_id),
                 packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
@@ -408,7 +409,7 @@ const EditPenjualanNon = () => {
             
             const payload = {
                 cash_or_non: formData.selectBayar === 1,
-                metode_id: formData.selectMetode,
+                ...(formData.selectBayar === 2 && { metode_id: formData.selectMetode }),
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),

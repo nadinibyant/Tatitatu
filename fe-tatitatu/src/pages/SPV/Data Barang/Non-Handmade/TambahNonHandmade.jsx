@@ -204,7 +204,7 @@ export default function TambahBarangNonHandmade() {
       Nomor: "",
       "Nama Barang": "",
       Kategori: "",
-      "Waktu Pengerjaan": "",
+      // "Waktu Pengerjaan": "",
       "Jumlah Minimum Stok": "",
       Foto: null,
     },
@@ -523,7 +523,7 @@ export default function TambahBarangNonHandmade() {
         formData.append('kategori_barang_id', data.info_barang.Kategori);
         formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        // formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
         formData.append('keuntungan', data.keuntungan);
         formData.append('harga_jual', data.hargaJual);
         formData.append('total_hpp', data.totalHPP);
@@ -722,7 +722,7 @@ export default function TambahBarangNonHandmade() {
                     value={data.info_barang.Kategori}
                   />
                 </div>
-                {isAdminGudang && (
+                {/* {isAdminGudang && (
                   <Input
                     label={"Waktu Pengerjaan"}
                     type={"number"}
@@ -731,7 +731,7 @@ export default function TambahBarangNonHandmade() {
                     placeholder="Masukan Durasi Pengerjaan (Dalam Hitungan Menit)"
                     onChange={(value) => handleInfoBarangChange("Waktu Pengerjaan", value)}
                   />
-                )}
+                )} */}
                 <Input
                   label={"Jumlah Minimum Stok"}
                   type={"number"}

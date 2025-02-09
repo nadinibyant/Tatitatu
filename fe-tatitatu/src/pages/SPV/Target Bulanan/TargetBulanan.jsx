@@ -182,10 +182,11 @@ export default function TargetBulanan() {
                 options={branchList}
                 selectedStore={
                   branchList.find(b => b.value === selectedBranch)?.label || 
-                  (branchList.length > 0 ? branchList[0].label : 'Pilih Cabang')
+                  (branchList.length > 0 ? branchList[0].label : 'Cabang')
                 }
-                label="Pilih Cabang"
+                label="Cabang"
                 onSelect={handleBranchSelect}
+                selectedIcon={`/icon/toko.svg`}
               />
             </div>
           </div>

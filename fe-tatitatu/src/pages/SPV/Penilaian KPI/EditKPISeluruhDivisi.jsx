@@ -69,19 +69,12 @@ export default function EditKPISeluruhDivisi() {
         { id: 1, label: "Bulanan" },
         { id: 2, label: "Harian" },
         { id: 3, label: "Mingguan" },
-        { id: 4, label: "Tahunan" },
     ];
-
-    console.log(data)
 
     // Current code
     useEffect(() => {
-        // Add check for location.state
         if (location.state?.divisionData) {
             const divisionData = location.state.divisionData;
-            
-            // Log to verify data
-            console.log('Received division data:', divisionData);
             
             try {
                 setData({
@@ -169,11 +162,11 @@ export default function EditKPISeluruhDivisi() {
             return;
         }
 
-        if (totalPercentage < 100) {
-            setErrorMessage("Total persentase harus mencapai 100%");
-            setErrorAlert(true);
-            return;
-        }
+        // if (totalPercentage < 100) {
+        //     setErrorMessage("Total persentase harus mencapai 100%");
+        //     setErrorAlert(true);
+        //     return;
+        // }
 
         try {
             setLoading(true);

@@ -134,31 +134,33 @@ export default function TambahKPI(){
                 
                 setData(prev => {
                     const updatedKPIList = prev.kpiList.map(kpi => {
-                        const karyawanKPI = apiData.result.find(k => k.kpi_id === kpi.kpi_id);
+                        const karyawanKPI = apiData.result?.find(k => k.kpi_id === kpi.kpi_id);
                         
+                        let newChecks;
+                        let checkIds = {};
+     
+                        // Set default checks array based on waktu
+                        if (kpi.waktu === 'Harian') {
+                            newChecks = Array(daysInMonth).fill(false);
+                        } else if (kpi.waktu === 'Mingguan') {
+                            newChecks = Array(4).fill(false);
+                        } else {
+                            newChecks = [false];
+                        }
+     
+                        // If KPI data exists
                         if (karyawanKPI) {
-                            let newChecks;
-                            let checkIds = {}; // Object untuk menyimpan kpi_karyawan_id
-    
-                            if (kpi.waktu === 'Harian') {
-                                newChecks = Array(daysInMonth).fill(false);
-                            } else if (kpi.waktu === 'Mingguan') {
-                                newChecks = Array(4).fill(false);
-                            } else {
-                                newChecks = [false];
-                            }
-                            
                             if (karyawanKPI.kpiKaryawanList) {
                                 karyawanKPI.kpiKaryawanList.forEach(item => {
                                     newChecks[item.point_ke - 1] = true;
-                                    checkIds[item.point_ke - 1] = item.kpi_karyawan_id; // Simpan kpi_karyawan_id
+                                    checkIds[item.point_ke - 1] = item.kpi_karyawan_id;
                                 });
                             }
-    
+     
                             return {
                                 ...kpi,
                                 checks: newChecks,
-                                checkIds: checkIds, // Tambahkan checkIds ke objek KPI
+                                checkIds: checkIds,
                                 stats: {
                                     tercapai: karyawanKPI.tercapai,
                                     tidakTercapai: karyawanKPI.tidakTercapai,
@@ -166,22 +168,34 @@ export default function TambahKPI(){
                                     bonus: karyawanKPI.bonusDiterima
                                 }
                             };
+                        } else {
+                            // If no KPI data (unchecked)
+                            return {
+                                ...kpi,
+                                checks: newChecks,
+                                checkIds: {},
+                                stats: {
+                                    tercapai: 0,
+                                    tidakTercapai: 0,
+                                    percentage: 0,
+                                    bonus: 0
+                                }
+                            };
                         }
-                        return kpi;
                     });
-    
+     
                     return {
                         ...prev,
                         kpiList: updatedKPIList,
-                        totalPercentage: apiData.totalPersentaseTercapai,
-                        bonus: apiData.totalBonusDiterima
+                        totalPercentage: apiData.totalPersentaseTercapai || 0,
+                        bonus: apiData.totalBonusDiterima || 0
                     };
                 });
             }
         } catch (error) {
             console.error('Error fetching KPI data:', error);
         }
-    };
+     };
     
     useEffect(() => {
         if (data.profile.id_divisi) {
@@ -271,7 +285,6 @@ export default function TambahKPI(){
                 }
             }
     
-            // Setelah operasi API berhasil, refresh data KPI
             await fetchKPIData();
         } catch (error) {
             console.error('Error handling KPI check:', error);
@@ -460,7 +473,7 @@ export default function TambahKPI(){
                         {/* Profile Section */}
                         <div className="flex items-center space-x-4">
                             <img
-                                src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${data.profile}`}
+                                src={`${import.meta.env.VITE_API_URL}/images-karyawan/${data.profile.image}`}
                                 alt="profile"
                                 className="w-20 h-20 rounded-full"
                             />

@@ -465,7 +465,7 @@ export default function MasterKategori() {
                                 />
                             </div>
 
-                            <div className="mt-4 flex-1 overflow-y-auto">
+                            <div className="mt-4 flex-1 overflow-y-auto scrollbar-hide">
                             <Table
                                 headers={tableHeaders}
                                 data={tableData.map((item, index) => ({

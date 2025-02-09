@@ -30,46 +30,68 @@ export default function BiayaRumahProduksi() {
 
   const fetchBiayaGudang = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const response = await api.get('/biaya-gudang');
       
       if (response.data.success) {
         const apiData = response.data.data;
-        
-        // Transform API data to match our structure
+
         const transformedData = {
           operasionalStaff: {
-            data: apiData.biaya_staff.map((item, index) => ({
+            data: apiData?.biaya_staff ? apiData.biaya_staff.map((item, index) => ({
               id: index + 1,
               "Nama Biaya": item.nama_biaya,
               "Total Biaya": parseInt(item.total_biaya)
-            })),
-            total: parseFloat(apiData.total),
-            rataTercetak: parseInt(apiData.rata_rata)
+            })) : [],
+            total: parseFloat(apiData?.total || 0),
+            rataTercetak: parseInt(apiData?.rata_rata || 0)
           },
           operasionalProduksi: {
-            data: apiData.biaya_operasional.map((item, index) => ({
+            data: apiData?.biaya_operasional ? apiData.biaya_operasional.map((item, index) => ({
               id: index + 1,
               "Nama Divisi": item.nama_biaya,
               "Total Biaya": parseInt(item.total_biaya)
-            })),
-            waktuKerja: parseInt(apiData.waktu_kerja),
-            totalModal: parseFloat(apiData.total_modal)
+            })) : [], 
+            waktuKerja: parseInt(apiData?.waktu_kerja || 0),
+            totalModal: parseFloat(apiData?.total_modal || 0)
           }
         };
         
         setData(transformedData);
       } else {
-        setErrorMessage(response.data.message);
-        setErrorAlert(true);
+        setData({
+          operasionalStaff: {
+            data: [],
+            total: 0,
+            rataTercetak: 0
+          },
+          operasionalProduksi: {
+            data: [],
+            waktuKerja: 0,
+            totalModal: 0
+          }
+        });
       }
     } catch (error) {
+      console.error('Error fetching data:', error);
+      setData({
+        operasionalStaff: {
+          data: [],
+          total: 0,
+          rataTercetak: 0
+        },
+        operasionalProduksi: {
+          data: [],
+          waktuKerja: 0,
+          totalModal: 0
+        }
+      });
       setErrorMessage(error.response?.data?.message || "Error fetching data");
       setErrorAlert(true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  };
+};
 
   useEffect(() => {
     fetchBiayaGudang();
@@ -301,6 +323,7 @@ export default function BiayaRumahProduksi() {
                     <Input
                     showRequired={false}
                       type="number"
+                      required={true}
                       value={data.operasionalStaff.rataTercetak}
                       onChange={(value) => handleMetricChange("operasionalStaff", "rataTercetak", value)}
                     />
@@ -380,6 +403,7 @@ export default function BiayaRumahProduksi() {
                     <Input
                     showRequired={false}
                       type="number"
+                      required={true}
                       value={data.operasionalProduksi.waktuKerja}
                       onChange={(value) => handleMetricChange("operasionalProduksi", "waktuKerja", value)}
                     />

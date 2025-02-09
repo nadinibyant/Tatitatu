@@ -195,14 +195,24 @@ const handleAddBtn = () => {
       setErrorAlert(true);
       return;
     }
-    
+
+    if (!isAdminGudang) {
+      if (!data2.info_barang.Kategori) {
+        setErrorMessage("Kategori harus dipilih");
+        setErrorAlert(true);
+        return;
+      }
+    }
+
+
     setIsLoading(true);
     try {
       const formData = new FormData();
       
       if (isAdminGudang) {
         // barang-mentah
-        if (modalMode === "add" && data2.info_barang.Foto) {
+        if ((modalMode === "add" && data2.info_barang.Foto) || 
+            (modalMode === "edit" && data2.info_barang.Foto instanceof File)) {
           formData.append('image', data2.info_barang.Foto);
         }
         formData.append('nama_barang', data2.info_barang["Nama Barang"]);

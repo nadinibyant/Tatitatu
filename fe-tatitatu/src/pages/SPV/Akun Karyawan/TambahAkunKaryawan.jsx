@@ -40,16 +40,19 @@ export default function TambahAkunKaryawan(){
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.division) {
-      newErrors.division = 'divisi harus dipilih';
-    } else if(!formData.branch){
-        newErrors.branch = 'cabang harus dipilih';
-
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+        const newErrors = {};
+        if (!formData.photo) {
+            newErrors.photo = 'Foto karyawan harus diupload';
+        }
+        if (!formData.division) {
+            newErrors.division = 'divisi harus dipilih';
+        }
+        if (!formData.branch) {
+            newErrors.branch = 'cabang harus dipilih';
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
       const fetchBranches = async () => {
         try {
@@ -213,6 +216,11 @@ export default function TambahAkunKaryawan(){
                             {/* Photo Upload Section */}
                             <div className="mb-6">
                             <p className="text-gray-700 font-bold mb-2">Masukan Foto Karyawan</p>
+                            {errors.photo && (
+                                <p className="mt-1 text-sm text-red-500 pb-4">
+                                    {errors.photo}
+                                </p>
+                            )}
                             <div className="relative w-40 h-40 border-2 border-dashed border-primary rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
                                 <input
                                 type="file"

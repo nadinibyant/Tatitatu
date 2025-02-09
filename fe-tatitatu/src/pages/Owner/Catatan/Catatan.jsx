@@ -12,6 +12,8 @@ export default function Catatan(){
       const [selectedData, setSelectedData] = useState(null);
       const [showDetailModal, setShowDetailModal] = useState(false);
       const [data, setData] = useState([]);
+    const [selectedMonth, setSelectedMonth] = useState(moment().format("MMMM"));
+    const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
 
       useEffect(() => {
         fetchData();
@@ -143,7 +145,7 @@ export default function Catatan(){
                             textColor="text-black" 
                         />
                     </div>
-                    <div className="w-full md:w-auto">
+                    {/* <div className="w-full md:w-auto">
                         <Button 
                             label={`${formatDate(startDate)} - ${formatDate(endDate)}`} 
                             icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -156,7 +158,23 @@ export default function Catatan(){
                             textColor="text-black" 
                             onClick={toggleModal} 
                         />
-                    </div>
+                    </div> */}
+                        <div className="w-full md:w-auto relative">
+                            <div className="w-48 md:w-48">
+                                <div className="relative">
+                                    <input
+                                        type="month"
+                                        value={`${selectedYear}-${moment().month(selectedMonth).format('MM')}`}
+                                        onChange={(e) => {
+                                            const date = moment(e.target.value);
+                                            setSelectedMonth(date.format('MMMM'));
+                                            setSelectedYear(date.format('YYYY'));
+                                        }}
+                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                 </div>
 
                     {/* Modal */}

@@ -25,7 +25,7 @@ export default function TambahKPISeluruhDivisi() {
     const fetchDivisi = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/divisi-karyawan');
+            const response = await api.get('/get-divisi-kpi');
             
             const formattedDivisions = response.data.data.map(div => ({
                 id: div.divisi_karyawan_id,
@@ -105,6 +105,13 @@ export default function TambahKPISeluruhDivisi() {
         try {
             setLoading(true);
             const selectedDivision = divisions.find(div => div.label === data.divisi);
+
+            const totalPercentage = calculateTotalPercentage(data.data);
+            if (totalPercentage > 100) {
+                setErrorMessage("Total persentase tidak boleh melebihi 100%");
+                setErrorAlert(true);
+                return;
+            }
             
             const formattedData = data.data.map(row => ({
                 divisi_karyawan_id: selectedDivision.id, 
@@ -113,8 +120,12 @@ export default function TambahKPISeluruhDivisi() {
                 waktu: row.Waktu
             }));
             const response = await api.post('/kpi', formattedData);
+            console.log(response)
+            console.log(response.data.success)
+            console.log(response.data.message)
+
     
-            if (response.data.success) {
+            if (response.data.success == true) {
                 setAlertSucc(true);
                 setTimeout(() => {
                     navigate('/daftarPenilaianKPI/seluruh-divisi');
@@ -124,11 +135,16 @@ export default function TambahKPISeluruhDivisi() {
                 setErrorAlert(true);
             }
         } catch (error) {
-            console.error('Error saving KPI:', error);
-            alert("Terjadi kesalahan saat menyimpan data");
+            setErrorMessage(error.response.data.message)
+            setErrorAlert(true)
         } finally {
             setLoading(false)
         } 
+    };
+
+    const calculateTotalPercentage = (dataRows) => {
+        console.log(dataRows)
+        return dataRows.reduce((sum, row) => sum + (parseFloat(row.Persentase) || 0), 0);
     };
 
     return (
@@ -263,7 +279,7 @@ export default function TambahKPISeluruhDivisi() {
                 {isErrorAlert && (
                 <AlertError
                     title="Gagal!!"
-                    description={errorMessage}
+                    description={errorMessage || 'Persentase Tidak Boleh Lebih dari 100'}
                     confirmLabel="Ok"
                     onConfirm={() => setErrorAlert(false)}
                 />

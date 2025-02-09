@@ -216,7 +216,15 @@ const handleEdit = (itemId) => {
       setErrorAlert(true);
       return;
     }
-    
+
+    if (!isAdminGudang) {
+      if (!data2.info_barang.Kategori) {
+        setErrorMessage("Kategori harus dipilih");
+        setErrorAlert(true);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       const formData = new FormData();
@@ -435,6 +443,19 @@ const handleEdit = (itemId) => {
                       />
                     </div>
 
+                    <div className="">
+                      <Input
+                        label={"Jumlah Minimum Stok"}
+                        type={"number"}
+                        required={true}
+                        placeholder="Masukan Jumlah Minimum Stok"
+                        value={data2.info_barang["Jumlah Minimum Stok"]}
+                        onChange={(value) =>
+                          handleInfoBarangChange("Jumlah Minimum Stok", value)
+                        }
+                      />
+                    </div>
+
                     {!isAdminGudang && (
                       <div className="">
                         <InputDropdown
@@ -448,19 +469,6 @@ const handleEdit = (itemId) => {
                         />
                       </div>
                     )}
-
-                    <div className="">
-                      <Input
-                        label={"Jumlah Minimum Stok"}
-                        type={"number"}
-                        required={true}
-                        placeholder="Masukan Jumlah Minimum Stok"
-                        value={data2.info_barang["Jumlah Minimum Stok"]}
-                        onChange={(value) =>
-                          handleInfoBarangChange("Jumlah Minimum Stok", value)
-                        }
-                      />
-                    </div>
                   </div>
 
                   <section className="">

@@ -28,6 +28,7 @@ export default function Toko(){
     const [isAlertSuccDel, setAlertDelSucc] = useState(false);
     const [id, setId] = useState('');
     const [branchData, setBranchData] = useState([]);
+    const [passwordError, setPasswordError] = useState('');
     
     const [formData, setFormData] = useState({
         branchName: '',
@@ -56,6 +57,11 @@ export default function Toko(){
             jumlah: 1200
         },
     })
+
+    const partiallyRevealPassword = (password) => {
+        if (!password) return '';
+        return password.slice(0, 10) + '...';
+    };
 
     // Fetch data function
     const fetchTokoData = async () => {
@@ -121,6 +127,14 @@ export default function Toko(){
             ...prev,
             [name]: value
         }));
+
+        if (name === 'confirmPassword') {
+            if (formData.password !== value && value) {
+                setPasswordError('Konfirmasi password tidak sesuai');
+            } else {
+                setPasswordError('');
+            }
+        }
     };
 
     // Handle add new toko
@@ -391,21 +405,23 @@ export default function Toko(){
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="text-sm font-mono">
-                                            {branch.showPassword ? branch.password : '••••••••••••'}
+                                        {branch.showPassword 
+                                            ? partiallyRevealPassword(branch.password) 
+                                            : '***'}
                                         </div>
                                         <button 
                                             onClick={() => {
-                                                setBranchData(prevData => 
-                                                    prevData.map(item => 
-                                                        item.id === branch.id 
-                                                            ? { ...item, showPassword: !item.showPassword }
-                                                            : item
-                                                    )
-                                                );
+                                            setBranchData(prevData => 
+                                                prevData.map(item => 
+                                                item.id === branch.id 
+                                                    ? { ...item, showPassword: !item.showPassword }
+                                                    : item
+                                                )
+                                            );
                                             }}
-                                            className="text-gray-500 hover:text-gray-700"
+                                            className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                                         >
-                                            {branch.showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            {branch.showPassword ? <EyeOff size={16} /> : <Eye size={10} />}
                                         </button>
                                     </div>
                                 </div>
@@ -497,7 +513,12 @@ export default function Toko(){
                                         </button>
                                         <button
                                             type="submit"
-                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90"
+                                            disabled={modalMode === 'add' && !formData.logo}
+                                            className={`px-4 py-2 rounded-md ${
+                                                modalMode === 'add' && !formData.logo 
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                                : 'bg-primary text-white hover:bg-opacity-90'
+                                            }`}
                                         >
                                             Lanjut
                                         </button>
@@ -565,6 +586,11 @@ export default function Toko(){
                                             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                                             required={modalMode === 'add'}
                                         />
+                                        {passwordError && (
+                                            <p className="text-red-500 text-sm mt-1">
+                                                {passwordError}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="flex justify-end gap-2">
@@ -578,8 +604,15 @@ export default function Toko(){
                                         <button
                                             type="submit"
                                             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90"
+                                            disabled={
+                                                formData.password !== formData.confirmPassword || 
+                                                !formData.password || 
+                                                !formData.confirmPassword ||
+                                                !!passwordError
+                                            }
                                         >
                                             {modalMode === 'add' ? 'Daftar' : 'Simpan'}
+                                            
                                         </button>
                                     </div>
                                 </form>

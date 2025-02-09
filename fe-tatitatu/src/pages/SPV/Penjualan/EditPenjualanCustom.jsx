@@ -84,8 +84,7 @@ const EditPenjualanCustom = () => {
                 api.get('/packaging'),
                 api.get('/metode-pembayaran')
             ]);
-
-            // Process reference data
+    
             setDataBarang(mapCustomProducts(customRes.data.data));
             setDataPackaging(mapPackagingProducts(packagingRes.data.data));
             setDataMetode([
@@ -95,8 +94,7 @@ const EditPenjualanCustom = () => {
                     label: m.nama_metode
                 }))
             ]);
-
-            // Process penjualan detail
+    
             const detail = penjualanRes.data.data;
             setFormData({
                 nomor: detail.penjualan_id,
@@ -108,15 +106,15 @@ const EditPenjualanCustom = () => {
                 diskon: detail.diskon,
                 pajak: detail.pajak
             });
-
+    
             // Set detail data
             setDetailData({
                 customProducts: detail.produk_penjualan.filter(p => p.barang_custom_id),
-                biayaProducts: detail.biaya_toko ? [{
-                    id: 'biaya-1',
-                    nama_biaya: 'Biaya Operasional dan Staff',
-                    jumlah_biaya: detail.biaya_toko.total_biaya
-                }] : [],
+                biayaProducts: detail.rincian_biaya_custom ? detail.rincian_biaya_custom.map(biaya => ({
+                    id: biaya.rincian_biaya_custom_id,
+                    nama_biaya: biaya.nama_biaya,
+                    jumlah_biaya: biaya.jumlah_biaya
+                })) : [],
                 packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
             });
         } catch (error) {
@@ -206,18 +204,17 @@ const EditPenjualanCustom = () => {
 
     const handleAddRow = (tableIndex) => {
         if (tableIndex === 1) {
-            // Add new biaya row
             const newBiaya = {
-                id: `biaya-${Date.now()}`,
+                id: `biaya-${Date.now()}`, 
                 nama_biaya: '',
-                jumlah_biaya: 0
+                jumlah_biaya: 0,
+                is_new: true 
             };
             setDetailData(prev => ({
                 ...prev,
                 biayaProducts: [...prev.biayaProducts, newBiaya]
             }));
         } else {
-            // Open modal for product/packaging selection
             setModalState(prev => ({
                 ...prev,
                 isOpen: true,
@@ -343,6 +340,7 @@ const EditPenjualanCustom = () => {
             const payload = {
                 cash_or_non: formData.selectBayar === 1,
                 metode_id: formData.selectMetode,
+                catatan: formData.note, 
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
@@ -360,9 +358,13 @@ const EditPenjualanCustom = () => {
                         kuantitas: item.kuantitas,
                         total_biaya: item.total_biaya
                     }))
-                ]
+                ],
+                rincian_biaya: detailData.biayaProducts.map(item => ({
+                    nama_biaya: item.nama_biaya,
+                    jumlah_biaya: Number(item.jumlah_biaya)
+                }))
             };
-
+    
             await api.put(`/penjualan/${id}`, payload);
             setModalSucc(true);
         } catch (error) {
