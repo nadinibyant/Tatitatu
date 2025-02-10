@@ -193,16 +193,17 @@ export default function TambahPembelianStok() {
     
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal - pajak;
+        return subtotal - diskonNominal + parseInt(pajak);
     };
 
     const handleSelectBayar = (selectedOption) => {
         setSelectedBayar(selectedOption.value); 
-        if (selectedOption.value === 1) { 
+        if (selectedOption.value === 1) { // Cash
             setSelectMetode(0); 
             setIsMetodeDisabled(true);
-        } else {
-            setSelectMetode(paymentMethods[1]?.value || 0);
+        } else { 
+            const firstValidMethod = paymentMethods.find(method => method.value !== 0);
+            setSelectMetode(firstValidMethod?.value || 0);
             setIsMetodeDisabled(false);
         }
     };
@@ -234,9 +235,9 @@ export default function TambahPembelianStok() {
 
     
     useEffect(() => {
-        if (selectBayar === 1) { // Jika Cash
+        if (selectBayar === 1) { 
             setIsMetodeDisabled(true);
-        } else if (selectBayar === 2) { // Jika Non-Cash
+        } else if (selectBayar === 2) {
             setIsMetodeDisabled(false);
         }
     }, [selectBayar]);
@@ -491,7 +492,7 @@ const handleModalSubmit = () => {
                 })
             );
     
-            const basePayload = {
+            const payload = {
                 tanggal: tanggal,
                 cash_or_non: selectBayar === 1,
                 sub_total: parseInt(calculateSubtotal()),
@@ -499,12 +500,9 @@ const handleModalSubmit = () => {
                 diskon: parseInt(diskon),
                 pajak: parseInt(pajak),
                 total_pembelian: parseInt(calculateTotalPenjualan(calculateSubtotal())),
+                metode_id: selectBayar === 1 ? null : parseInt(selectMetode),
                 produk
             };
-    
-            const payload = selectBayar === 2 
-                ? { ...basePayload, metode_id: parseInt(selectMetode) }
-                : basePayload;
     
             await api.post('/pembelian', payload);
             setModalSucc(true);
@@ -626,7 +624,7 @@ const handleModalSubmit = () => {
                                     </div>
                                     {/* Total Penjualan */}
                                     <div className="flex justify-between border-b pb-2">
-                                            <p className="font-bold">Total Penjualan</p>
+                                            <p className="font-bold">Total Pembelian</p>
                                             <p className="font-bold">Rp{totalPenjualan.toLocaleString()}</p>
                                         </div>
                                     {/* Tombol Simpan */}

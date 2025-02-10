@@ -134,7 +134,6 @@ const Modal = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {isLoading && <Spinner />}
 
       {isAlertSuccess && (
         <AlertSuccess
@@ -153,6 +152,9 @@ const Modal = ({ isOpen, onClose }) => {
           onConfirm={() => setErrorAlert(false)}
         />
       )}
+
+{isLoading && <Spinner />}
+
     </>
   );
 };

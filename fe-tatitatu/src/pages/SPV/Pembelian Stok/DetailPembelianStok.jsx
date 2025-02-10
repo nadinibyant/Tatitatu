@@ -23,6 +23,21 @@ const isAdminGudang = userData?.role === 'admingudang';
 const [pembelianData, setPembelianData] = useState(null);
 const [cabangData, setCabangData] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
+const [paymentMethods, setPaymentMethods] = useState([]);
+const fetchPaymentMethods = async () => {
+    try {
+        const endpoint = isAdminGudang ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
+        const response = await api.get(endpoint);
+        setPaymentMethods(response.data.data);
+    } catch (error) {
+        console.error('Error fetching payment methods:', error);
+    }
+};
+
+// Panggil fetch saat component mount
+useEffect(() => {
+    fetchPaymentMethods();
+}, [isAdminGudang]);
 
 useEffect(() => {
     const fetchData = async () => {
@@ -54,44 +69,34 @@ const processedData = useMemo(() => {
     if (!pembelianData || !cabangData) return [];
 
     if (isAdminGudang) {
-        // Process data for admin gudang view
         const baseUrl = import.meta.env.VITE_API_URL;
         return pembelianData.produk.map((produk, index) => {
-            let productDetails;
-            let imageUrl = '/placeholder-image.jpg';
-            let jenisBarang = '';
-            let namaBarang = '';
-
-            if (produk.barang_handmade_id) {
-                // Handle handmade product
-                imageUrl = `${baseUrl}/images-barang-handmade-gudang/${produk.barang_handmade?.image || ''}`;
-                jenisBarang = 'Barang Handmade';
-                namaBarang = produk.barang_handmade?.nama_barang;
-            } else if (produk.barang_nonhandmade_id) {
-                // Handle non-handmade product
-                imageUrl = `${baseUrl}/images-barang-non-handmade-gudang/${produk.barang_nonhandmade?.image || ''}`;
-                jenisBarang = 'Barang Non-Handmade';
-                namaBarang = produk.barang_nonhandmade?.nama_barang;
-            } else if (produk.barang_mentah_id) {
-                // Handle raw material
-                imageUrl = `${baseUrl}/images-barang-mentah/${produk.barang_mentah?.image || ''}`;
-                jenisBarang = 'Barang Mentah';
-                namaBarang = produk.barang_mentah?.nama_barang;
-            } else if (produk.packaging_id) {
-                // Handle packaging
-                imageUrl = `${baseUrl}/images-packaging-gudang/${produk.packaging?.image || ''}`;
-                jenisBarang = 'Packaging';
-                namaBarang = produk.packaging?.nama_packaging;
+            let imageUrlPrefix;
+            switch(produk.jenis) {
+                case 'Barang Handmade':
+                    imageUrlPrefix = 'images-barang-handmade-gudang';
+                    break;
+                case 'Barang Non handmade':
+                    imageUrlPrefix = 'images-barang-non-handmade-gudang';
+                    break;
+                case 'Barang Mentah':
+                    imageUrlPrefix = 'images-barang-mentah';
+                    break;
+                case 'Packaging':
+                    imageUrlPrefix = 'images-packaging-gudang';
+                    break;
+                default:
+                    imageUrlPrefix = '';
             }
 
             return {
-                id: produk.produk_pembelian_id,
+                id: produk.barang_id,
                 No: index + 1,
                 "Foto Produk": (
                     <div className="w-12 h-12 flex items-center justify-center">
                         <img 
-                            src={imageUrl}
-                            alt={namaBarang}
+                            src={`${baseUrl}/${imageUrlPrefix}/${produk.image}`}
+                            alt={produk.nama_barang}
                             className="w-full h-full object-cover rounded"
                             onError={(e) => {
                                 e.target.src = '/placeholder-image.jpg';
@@ -99,8 +104,8 @@ const processedData = useMemo(() => {
                         />
                     </div>
                 ),
-                "Nama Produk": namaBarang,
-                "Jenis Barang": jenisBarang,
+                "Nama Produk": produk.nama_barang,
+                "Jenis Barang": produk.jenis,
                 "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
                 "Kuantitas": produk.kuantitas,
                 "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
@@ -166,6 +171,23 @@ const processedData = useMemo(() => {
 
 if (isLoading) return <Spinner />;
 
+const getPaymentMethodName = (metodeId) => {
+    const method = paymentMethods.find(method => method.metode_id === metodeId);
+    return method ? method.nama_metode : '-';
+};
+
+const getPaymentMethodDisplay = (data) => {
+    if (!data) return '-';
+    
+    if (isAdminGudang) {
+        return data.cash_or_non ? '-' : data.metode || '-';
+    } else {
+        if (data.cash_or_non) {
+            return '-';
+        }
+        return getPaymentMethodName(data.metode_id);
+    }
+};
 
 const handleEdit = () => {
     if (isAdminGudang) {
@@ -422,10 +444,7 @@ return (
                         <div className="">
                             <p className="text-gray-500 text-sm">Metode Pembayaran</p>
                             <p className="font-bold text-lg">
-                                {isAdminGudang 
-                                    ? pembelianData?.metode_pembelian?.nama_metode || '-'
-                                    : pembelianData?.metode_pembayaran?.nama_metode || '-'
-                                }
+                                {getPaymentMethodDisplay(pembelianData)}
                             </p>
                         </div>
                     </div>
@@ -477,7 +496,7 @@ return (
                         {/* Pajak */}
                         <div className="flex justify-between border-b pb-2">
                             <p className="font-bold">Pajak</p>
-                            <p>-{formatCurrency(pembelianData?.pajak || 0)}</p>
+                            <p>{formatCurrency(pembelianData?.pajak || 0)}</p>
                         </div>
                         {/* Total Penjualan */}
                         <div className="flex justify-between border-b pb-2">

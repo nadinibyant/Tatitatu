@@ -266,7 +266,7 @@ const handleDeletePackaging = (itemId) => {
 
    const calculateTotalPenjualan = (subtotal) => {
        const diskonNominal = (diskon / 100) * subtotal;
-       return subtotal - diskonNominal - pajak;
+       return subtotal - diskonNominal + pajak;
    };
 
    const handleSelectBayar = (selectedOption) => {

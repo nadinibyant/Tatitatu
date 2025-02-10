@@ -81,33 +81,6 @@ export default function Catatan(){
             setShowDetailModal(true);
         };
 
-    // const [data,setData] = useState([
-    //     {
-    //         Tanggal: '12/05/2024',
-    //         Nama: 'Nadini Annisa Byant',
-    //         Judul: 'Penjualan Meningkat',
-    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-    //     },
-    //     {
-    //         Tanggal: '12/05/2024',
-    //         Nama: 'Nadini Annisa Byant',
-    //         Judul: 'Penjualan Meningkat',
-    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-    //     },
-    //     {
-    //         Tanggal: '12/05/2024',
-    //         Nama: 'Nadini Annisa Byant',
-    //         Judul: 'Penjualan Meningkat',
-    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-    //     },
-    //     {
-    //         Tanggal: '12/05/2024',
-    //         Nama: 'Nadini Annisa Byant',
-    //         Judul: 'Penjualan Meningkat',
-    //         Isi: 'Izin melaporkan Kak, Alhamdulillah penjualan kita meningkat, coba saja dicari cara lebih meningkat lagi yaaaaa'
-    //     }
-    // ])
-
     const headers = [
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },

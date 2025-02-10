@@ -77,42 +77,6 @@ export default function DetailPenjualanGudang() {
         }
     };
 
-    const getProductDetails = (item) => {
-        let productDetails = {
-            image: null,
-            name: '',
-            type: ''
-        };
-
-        if (item.barang_mentah) {
-            productDetails = {
-                image: item.barang_mentah.image ? `${import.meta.env.VITE_API_URL}/images-barang-mentah/${item.barang_mentah.image}` : null,
-                name: item.barang_mentah.nama_barang,
-                type: 'Barang Mentah'
-            };
-        } else if (item.barang_handmade) {
-            productDetails = {
-                image: item.barang_handmade.image ? `${import.meta.env.VITE_API_URL}/images-barang-handmade-gudang/${item.barang_handmade.image}` : null,
-                name: item.barang_handmade.nama_barang,
-                type: 'Barang Handmade'
-            };
-        } else if (item.barang_nonhandmade) {
-            productDetails = {
-                image: item.barang_nonhandmade.image ? `${import.meta.env.VITE_API_URL}/images-barang-non-handmade-gudang/${item.barang_nonhandmade.image}` : null,
-                name: item.barang_nonhandmade.nama_barang,
-                type: 'Barang Non-Handmade'
-            };
-        } else if (item.packaging) {
-            productDetails = {
-                image: item.packaging.image ? `${import.meta.env.VITE_API_URL}/images-packaging-gudang/${item.packaging.image}` : null,
-                name: item.packaging.nama_packaging,
-                type: 'Packaging'
-            };
-        }
-
-        return productDetails;
-    };
-
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -175,7 +139,9 @@ export default function DetailPenjualanGudang() {
                             </div>
                             <div className="">
                                 <p className="text-gray-500 text-sm">Metode Pembayaran</p>
-                                <p className="font-bold text-lg">{data.metode_pembayaran?.nama_metode || '-'}</p>
+                                <p className="font-bold text-lg">
+                                    {data.metode === 'cash' || data.metode === 'Cash' ? '-' : data.metode}
+                                </p>
                             </div>
                         </div>
                     </section>
@@ -188,13 +154,31 @@ export default function DetailPenjualanGudang() {
                             <Table
                                 headers={headers}
                                 data={data.produk.map((item, index) => {
-                                    const productDetails = getProductDetails(item);
+                                    const getImagePath = (jenis) => {
+                                        switch(jenis) {
+                                            case 'Barang Handmade':
+                                                return 'images-barang-handmade-gudang';
+                                            case 'Barang Non-Handmade':
+                                                return 'images-barang-nonhandmade-gudang';
+                                            case 'Barang Mentah':
+                                                return 'images-barang-mentah';
+                                            case 'Packaging':
+                                                return 'images-packaging-gudang';
+                                            default:
+                                                return '';
+                                        }
+                                    };
+                                    
+                                    const imageUrl = item.image ? 
+                                        `${import.meta.env.VITE_API_URL}/${getImagePath(item.jenis)}/${item.image}` 
+                                        : null;
+                                    
                                     return {
                                         No: index + 1,
-                                        "Foto Produk": productDetails.image ? (
+                                        "Foto Produk": imageUrl ? (
                                             <img 
-                                                src={productDetails.image} 
-                                                alt={productDetails.name} 
+                                                src={imageUrl} 
+                                                alt={item.nama_barang} 
                                                 className="w-12 h-12 object-cover" 
                                             />
                                         ) : (
@@ -202,8 +186,8 @@ export default function DetailPenjualanGudang() {
                                                 No Image
                                             </div>
                                         ),
-                                        "Nama Produk": productDetails.name,
-                                        "Jenis Barang": productDetails.type,
+                                        "Nama Produk": item.nama_barang,
+                                        "Jenis Barang": item.jenis,
                                         "Harga Satuan": formatRupiah(item.harga_satuan),
                                         "kuantitas": item.kuantitas.toLocaleString(),
                                         "Total Biaya": formatRupiah(item.total_biaya)

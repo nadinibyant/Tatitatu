@@ -134,14 +134,14 @@ export default function EditBeliStokGudang() {
     useEffect(() => {
         const fetchPurchaseDetail = async () => {
             if (!id || !isProductsLoaded || formattedProducts.length === 0) return;
-
+        
             try {
                 setLoading(true);
                 const [detailRes, methodsRes] = await Promise.all([
                     api.get(`/pembelian-gudang/${id}`),
                     api.get('/metode-pembayaran-gudang')
                 ]);
-
+        
                 const { data } = detailRes.data;
                 
                 // Set form data
@@ -149,40 +149,43 @@ export default function EditBeliStokGudang() {
                 setTanggal(new Date(data.tanggal).toISOString().split('T')[0]);
                 setNote(data.catatan || "");
                 setSelectedBayar(data.cash_or_non ? 1 : 2);
-                setSelectMetode(data.metode_id);
+                setSelectMetode(data.cash_or_non ? 0 : data.metode_id);
                 setDiskon(data.diskon);
                 setPajak(data.pajak);
-
-                // Create table rows from purchase detail
-                const tableRows = data.produk
-                    .filter(item => !item.is_deleted)
-                    .map((item) => {
-                        let matchedProduct;
-                        
-                        if (item.barang_handmade_id) {
-                            matchedProduct = formattedProducts.find(p => p.id === item.barang_handmade_id && p.jenis === "Barang Handmade");
-                        } else if (item.barang_nonhandmade_id) {
-                            matchedProduct = formattedProducts.find(p => p.id === item.barang_nonhandmade_id && p.jenis === "Barang Non-Handmade");
-                        } else if (item.barang_mentah_id) {
-                            matchedProduct = formattedProducts.find(p => p.id === item.barang_mentah_id && p.jenis === "Barang Mentah");
-                        } else if (item.packaging_id) {
-                            matchedProduct = formattedProducts.find(p => p.id === item.packaging_id && p.jenis === "Packaging");
-                        }
-
-                        if (matchedProduct) {
-                            return createTableRow(matchedProduct, item.kuantitas);
-                        }
-                        return null;
-                    })
-                    .filter(Boolean)
-                    .map((item, index) => ({
-                        ...item,
-                        No: index + 1
-                    }));
-
+        
+                // Process products data
+                const tableRows = data.produk.map((item, index) => {
+                    const baseUrl = import.meta.env.VITE_API_URL;
+                    let imagePath;
+                    
+                    switch(item.jenis) {
+                        case 'Barang Handmade':
+                            imagePath = 'images-barang-handmade-gudang';
+                            break;
+                        case 'Barang Non handmade':
+                            imagePath = 'images-barang-non-handmade-gudang';
+                            break;
+                        case 'Barang Mentah':
+                            imagePath = 'images-barang-mentah';
+                            break;
+                        case 'Packaging':
+                            imagePath = 'images-packaging-gudang';
+                            break;
+                    }
+        
+                    const product = {
+                        id: item.barang_id,
+                        name: item.nama_barang,
+                        price: item.harga_satuan,
+                        jenis: item.jenis,
+                        image: `${baseUrl}/${imagePath}/${item.image}`
+                    };
+        
+                    return createTableRow(product, item.kuantitas);
+                });
+        
                 setItemData(tableRows);
-
-                // Set payment methods
+        
                 if (methodsRes.data.success) {
                     const formattedMethods = methodsRes.data.data
                         .filter(method => !method.is_deleted)
@@ -190,13 +193,21 @@ export default function EditBeliStokGudang() {
                             value: method.metode_id,
                             label: method.nama_metode
                         }));
-                    
+
+                    const matchingMethod = formattedMethods.find(
+                        method => method.label === data.metode
+                    );
+                
                     setPaymentMethods([
                         { value: 0, label: "-" },
                         ...formattedMethods
                     ]);
-                }
 
+                    if (matchingMethod && !data.cash_or_non) {
+                        setSelectMetode(matchingMethod.value);
+                    }
+                }
+        
             } catch (error) {
                 console.error('Error fetching purchase detail:', error);
             } finally {

@@ -142,9 +142,17 @@ export default function MasterKategori() {
     };
 
     useEffect(() => {
-        fetchDivisi();
-        fetchBarang();
-        fetchMetode();
+        if (userData) {  
+            if (userData.role === 'admingudang' || userData.role === 'admin') {
+                fetchBarang();
+            }
+            if (['admin', 'kasirtoko', 'finance', 'admingudang'].includes(userData.role)) {
+                fetchMetode();
+            }
+            if (userData.role === 'admin') {
+                fetchDivisi();
+            }
+        }
     }, [userData]);
 
     const [data, setData] = useState({

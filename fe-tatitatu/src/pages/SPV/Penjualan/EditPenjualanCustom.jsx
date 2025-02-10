@@ -11,12 +11,14 @@ import AlertSuccess from '../../../components/AlertSuccess';
 import Spinner from '../../../components/Spinner';
 import LayoutWithNav from '../../../components/LayoutWithNav';
 import api from '../../../utils/api';
+import AlertError from '../../../components/AlertError';
 
 const EditPenjualanCustom = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [errorMessage, setErrorMessage] = useState(null)
 
     // Form state
     const [formData, setFormData] = useState({
@@ -84,30 +86,33 @@ const EditPenjualanCustom = () => {
                 api.get('/packaging'),
                 api.get('/metode-pembayaran')
             ]);
-    
-            setDataBarang(mapCustomProducts(customRes.data.data));
-            setDataPackaging(mapPackagingProducts(packagingRes.data.data));
-            setDataMetode([
-                { value: 1, label: '-' },
+
+            const metodeList = [
+                { value: 0, label: '-' },
                 ...metodeRes.data.data.map(m => ({
                     value: m.metode_id,
                     label: m.nama_metode
                 }))
-            ]);
+            ];
     
+            setDataBarang(mapCustomProducts(customRes.data.data));
+            setDataPackaging(mapPackagingProducts(packagingRes.data.data));
+            setDataMetode(metodeList);
+
             const detail = penjualanRes.data.data;
+            const isCash = detail.cash_or_non;
             setFormData({
                 nomor: detail.penjualan_id,
                 tanggal: detail.tanggal,
                 namaPembeli: detail.nama_pembeli,
                 note: detail.catatan,
-                selectBayar: detail.cash_or_non ? 1 : 2,
-                selectMetode: detail.metode_id,
+                selectBayar: isCash ? 1 : 2,
+                selectMetode: isCash ? 0 : detail.metode_id, 
                 diskon: detail.diskon,
                 pajak: detail.pajak
             });
     
-            // Set detail data
+            setIsMetodeDisabled(isCash);
             setDetailData({
                 customProducts: detail.produk_penjualan.filter(p => p.barang_custom_id),
                 biayaProducts: detail.rincian_biaya_custom ? detail.rincian_biaya_custom.map(biaya => ({
@@ -138,14 +143,23 @@ const EditPenjualanCustom = () => {
             data: detailData.packagingProducts.map((item, idx) => createTableRow(item, idx, 'packaging'))
         }
     ];
+    
 
     const createTableRow = (item, index, type) => ({
         id: item.produk_penjualan_id || item.id,
         No: index + 1,
         "Foto Produk": <img 
-            src={`${import.meta.env.VITE_API_URL}/${type === 'custom' ? 'images-barang-custom' : 'images-packaging'}/${type === 'custom' ? item.barang_custom?.image : item.packaging?.image}`}
-            alt="product" 
-            className="w-12 h-12" 
+        src={type === 'custom' ? 
+            (item.barang_custom?.image?.includes('http') ? 
+                item.barang_custom.image : 
+                `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.barang_custom?.image}`
+            ) : 
+            (item.packaging?.image?.includes('http') ? 
+                item.packaging.image : 
+                `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
+            )}
+        alt="product" 
+        className="w-12 h-12" 
         />,
         "Nama Barang": <InputDropdown 
             showRequired={false}
@@ -329,7 +343,7 @@ const EditPenjualanCustom = () => {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (formData.diskon / 100) * subtotal;
-        return subtotal - diskonNominal - formData.pajak;
+        return subtotal - diskonNominal + formData.pajak;
     };
 
     const handleSubmit = async (e) => {
@@ -339,7 +353,7 @@ const EditPenjualanCustom = () => {
             
             const payload = {
                 cash_or_non: formData.selectBayar === 1,
-                metode_id: formData.selectMetode,
+                metode_id: formData.selectBayar === 1 ? null : formData.selectMetode, 
                 catatan: formData.note, 
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
@@ -359,7 +373,7 @@ const EditPenjualanCustom = () => {
                         total_biaya: item.total_biaya
                     }))
                 ],
-                rincian_biaya: detailData.biayaProducts.map(item => ({
+                rincian_biaya_custom: detailData.biayaProducts.map(item => ({
                     nama_biaya: item.nama_biaya,
                     jumlah_biaya: Number(item.jumlah_biaya)
                 }))
@@ -369,6 +383,7 @@ const EditPenjualanCustom = () => {
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
+            setErrorMessage(error.response.data.message)
         } finally {
             setLoading(false);
         }
@@ -444,7 +459,7 @@ const EditPenjualanCustom = () => {
                                     setFormData(prev => ({
                                         ...prev, 
                                         selectBayar: selected.value,
-                                        selectMetode: selected.value === 1 ? 1 : dataMetode[1].value
+                                        selectMetode: selected.value === 1 ? 0 : dataMetode[1].value 
                                     }));
                                     setIsMetodeDisabled(selected.value === 1);
                                 }}
@@ -664,6 +679,14 @@ const EditPenjualanCustom = () => {
                 )}
 
                 {isLoading && <Spinner />}
+
+                    {errorMessage && (
+                        <AlertError
+                            title={'Failed'}
+                            description={errorMessage}
+                            onConfirm={() => setErrorMessage(null)}
+                        />
+                    )}
             </div>
         </LayoutWithNav>
     );

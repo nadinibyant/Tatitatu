@@ -72,19 +72,6 @@ export default function EditPembelianStok() {
                 const isCash = pembelianData.cash_or_non;
                 setSelectedBayar(isCash ? 1 : 2);
 
-                // if (pembelianData.metode_id && dataMetode.length > 0) {
-                //     const selectedMetode = dataMetode.find(
-                //         method => method.id === pembelianData.metode_id
-                //     );
-                    
-                //     if (selectedMetode) {
-                //         setSelectMetode({
-                //             value: selectedMetode.id,
-                //             label: selectedMetode.label
-                //         });
-                //     }
-                // }
-
                 setDiskon(pembelianData.diskon || 0);
                 setPajak(pembelianData.pajak || 0);
     

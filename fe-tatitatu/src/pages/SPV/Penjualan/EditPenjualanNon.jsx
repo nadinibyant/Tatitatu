@@ -11,6 +11,7 @@ import AlertSuccess from '../../../components/AlertSuccess';
 import Spinner from '../../../components/Spinner';
 import LayoutWithNav from '../../../components/LayoutWithNav';
 import api from '../../../utils/api';
+import AlertError from '../../../components/AlertError';
 
 const EditPenjualanNon = () => {
     const { id } = useParams();
@@ -44,6 +45,8 @@ const EditPenjualanNon = () => {
     const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
     const [selectedKategori, setSelectedKategori] = useState('all');
     const [selectedType, setSelectedType] = useState('handmade');
+    const [errorMessage, setErrorMessage] = useState(null);
+    
 
     // UI state
     const [isLoading, setLoading] = useState(false);
@@ -91,56 +94,60 @@ const EditPenjualanNon = () => {
             "https://via.placeholder.com/50"
     }));
 
-    const fetchAllData = async () => {
-        try {
-            setLoading(true);
-            const [penjualanRes, handmadeRes, nonHandmadeRes, packagingRes, metodeRes, kategoriRes] = await Promise.all([
-                api.get(`/penjualan/${id}`),
-                api.get('/barang-handmade'),
-                api.get('/barang-non-handmade'),
-                api.get('/packaging'),
-                api.get('/metode-pembayaran'),
-                api.get('/kategori-barang')
-            ]);
+    // Di bagian useEffect fetchAllData
+const fetchAllData = async () => {
+    try {
+        setLoading(true);
+        const [penjualanRes, handmadeRes, nonHandmadeRes, packagingRes, metodeRes, kategoriRes] = await Promise.all([
+            api.get(`/penjualan/${id}`),
+            api.get('/barang-handmade'),
+            api.get('/barang-non-handmade'),
+            api.get('/packaging'),
+            api.get('/metode-pembayaran'),
+            api.get('/kategori-barang')
+        ]);
 
-            // Process reference data
-            setDataBarangHandmade(mapHandmadeProducts(handmadeRes.data.data));
-            setDataBarangNonHandmade(mapNonHandmadeProducts(nonHandmadeRes.data.data));
-            setDataPackaging(mapPackagingProducts(packagingRes.data.data));
-            setDataKategori(kategoriRes.data.data);
-            setDataMetode([
-                { value: 1, label: '-' },
-                ...metodeRes.data.data.map(m => ({
-                    value: m.metode_id,
-                    label: m.nama_metode
-                }))
-            ]);
+        // Process reference data
+        setDataBarangHandmade(mapHandmadeProducts(handmadeRes.data.data));
+        setDataBarangNonHandmade(mapNonHandmadeProducts(nonHandmadeRes.data.data));
+        setDataPackaging(mapPackagingProducts(packagingRes.data.data));
+        setDataKategori(kategoriRes.data.data);
+        setDataMetode([
+            { value: 1, label: '-' },
+            ...metodeRes.data.data.map(m => ({
+                value: m.metode_id,
+                label: m.nama_metode
+            }))
+        ]);
 
-            const detail = penjualanRes.data.data;
-            setFormData({
-                nomor: detail.penjualan_id,
-                tanggal: (() => {
-                    const date = new Date(detail.tanggal);
-                    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-                })(),
-                namaPembeli: detail.nama_pembeli,
-                note: detail.catatan,
-                selectBayar: detail.cash_or_non ? 1 : 2,
-                selectMetode: detail.metode_id,
-                diskon: detail.diskon,
-                pajak: detail.pajak
-            });
+        const detail = penjualanRes.data.data;
+        // Set form data
+        setFormData({
+            nomor: detail.penjualan_id,
+            tanggal: (() => {
+                const date = new Date(detail.tanggal);
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            })(),
+            namaPembeli: detail.nama_pembeli,
+            note: detail.catatan,
+            selectBayar: detail.cash_or_non ? 1 : 2,
+            selectMetode: detail.metode_id || 0,
+            diskon: detail.diskon,
+            pajak: detail.pajak
+        });
 
-            setDetailData({
-                products: detail.produk_penjualan.filter(p => p.barang_handmade_id || p.barang_non_handmade_id),
-                packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
-            });
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        setIsMetodeDisabled(detail.cash_or_non);
+
+        setDetailData({
+            products: detail.produk_penjualan.filter(p => p.barang_handmade_id || p.barang_non_handmade_id),
+            packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    } finally {
+        setLoading(false);
+    }
+};
 
     const transformToTableData = () => [
         {
@@ -399,7 +406,7 @@ const EditPenjualanNon = () => {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (formData.diskon / 100) * subtotal;
-        return subtotal - diskonNominal - formData.pajak;
+        return subtotal - diskonNominal + Number(formData.pajak);
     };
 
     const handleSubmit = async (e) => {
@@ -435,6 +442,7 @@ const EditPenjualanNon = () => {
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
+            setErrorMessage(error.response.data.message)
         } finally {
             setLoading(false);
         }
@@ -806,6 +814,14 @@ return (
                 )}
 
                 {isLoading && <Spinner />}
+
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
             </div>
         </LayoutWithNav>
     );

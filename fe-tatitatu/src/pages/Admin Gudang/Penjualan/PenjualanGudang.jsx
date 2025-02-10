@@ -76,14 +76,8 @@ export default function PenjualanGudang() {
     ];
 
     const formatNamaBarang = (produk) => {
-        const namaBarang = produk.map(item => {
-            if (item.barang_mentah) return item.barang_mentah.nama_barang;
-            if (item.barang_nonhandmade) return item.barang_nonhandmade.nama_barang;
-            if (item.barang_handmade) return item.barang_handmade.nama_barang;
-            if (item.packaging) return item.packaging.nama_packaging;
-            return '';
-        }).filter(Boolean);
-
+        const namaBarang = produk.map(item => item.nama_barang).filter(Boolean);
+    
         if (namaBarang.length > 2) {
             return (
                 <>
@@ -190,13 +184,14 @@ export default function PenjualanGudang() {
                         <Table
                             headers={headers}
                             data={penjualanData.map((item) => ({
-                                ...item,
+                                penjualan_id: item.penjualan_id,
                                 tanggal: moment(item.tanggal).format('YYYY-MM-DD'),
                                 nama_barang: formatNamaBarang(item.produk),
-                                jumlah_barang: getTotalBarang(item.produk).toLocaleString('id-ID'),
+                                jumlah_barang: item.produk.reduce((sum, prod) => sum + prod.kuantitas, 0).toLocaleString('id-ID'),
                                 diskon: `${item.diskon}%`,
-                                pajak: `${item.pajak.toLocaleString('id-ID')}`,
+                                pajak: formatRupiah(item.pajak),
                                 total_penjualan: formatRupiah(item.total_penjualan),
+                                type: item.cash_or_non ? 'cash' : 'non-cash',
                                 action: (
                                     <ActionMenu 
                                         onEdit={() => handleEdit(item)} 

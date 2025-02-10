@@ -49,17 +49,24 @@ export default function PembelianStok() {
                 let totalKuantitas;
                 
                 if (isAdminGudang) {
-                    namaBarang = item.produk
-                        .map(produk => {
-                            if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
-                            if (produk.barang_nonhandmade) return produk.barang_nonhandmade.nama_barang;
-                            if (produk.barang_mentah) return produk.barang_mentah.nama_barang;
-                            if (produk.packaging) return produk.packaging.nama_packaging;
-                            return '';
-                        })
-                        .filter(nama => nama);
+                    namaBarang = item.produk.map(produk => {
+                        return produk.nama_barang || ''; 
+                    }).filter(nama => nama);
                         
                     totalKuantitas = item.produk.reduce((sum, produk) => sum + produk.kuantitas, 0);
+    
+                    return {
+                        id: item.pembelian_id,
+                        Nomor: item.pembelian_id,
+                        Tanggal: moment(item.tanggal).format('DD/MM/YYYY'),
+                        namaBarang,
+                        "Jumlah Barang": totalKuantitas.toLocaleString('id-ID'),
+                        "Diskon": `${item.diskon}%`,
+                        "Pajak": `Rp${item.pajak.toLocaleString()}`,
+                        "Total Transaksi": `Rp${item.total_penjualan.toLocaleString()}`,
+                        type: item.cash_or_non ? 'cash' : 'non-cash',
+                        metodePembayaran: item.metode
+                    };
                 } else {
                     namaBarang = item.produk_pembelian
                         .map(produk => {
