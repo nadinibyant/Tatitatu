@@ -358,7 +358,7 @@ const EditPenjualanCustom = () => {
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
-                total_pembelian: calculateTotalPenjualan(calculateSubtotal()),
+                total_penjualan: calculateTotalPenjualan(calculateSubtotal()),
                 produk: [
                     ...detailData.customProducts.map(item => ({
                         barang_custom_id: item.barang_custom_id,

@@ -6,30 +6,24 @@ import LayoutWithNav from "../../../../components/LayoutWithNav";
 import Breadcrumbs from "../../../../components/Breadcrumbs";
 import Table from "../../../../components/Table";
 import Button from "../../../../components/Button";
-import TextArea from "../../../../components/Textarea";
 import Gallery2 from "../../../../components/Gallery2";
 import AlertSuccess from "../../../../components/AlertSuccess";
 import Spinner from "../../../../components/Spinner";
 import FileInput from "../../../../components/FileInput";
+import api from "../../../../utils/api";
+import AlertError from "../../../../components/AlertError";
 
 export default function TambahAbsensiProduksi() {
-    const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
-    const [namaPembeli, setNamaPembeli] = useState("");
-    const [note, setNote] = useState("");
-    const [selectBayar, setSelectedBayar] = useState("");
-    const [selectMetode, setSelectMetode] = useState("");
-    const [diskon, setDiskon] = useState(0);
-    const [pajak, setPajak] = useState(0);
     const [dataCabang, setDataCabang] = useState([
         { nama: "", data: [] }  
     ]);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [selectedImage, setSelectedImage] = useState(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(null);
-    const [resetSignal, setResetSignal] = useState(false);
 
     // Modal gallery state
     const [selectedCategory, setSelectedCategory] = useState("Semua");
@@ -38,7 +32,61 @@ export default function TambahAbsensiProduksi() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
-    const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
+    const [handmadeItems, setHandmadeItems] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoadingData(true);
+                const [handmadeRes, categoriesRes] = await Promise.all([
+                    api.get('/barang-handmade-gudang'),
+                    api.get('/kategori-barang-gudang')
+                ]);
+    
+                const processedHandmadeItems = handmadeRes.data.data.map(item => ({
+                    id: item.barang_handmade_id,
+                    image: item.image ? `${import.meta.env.VITE_API_URL}/images-barang-handmade-gudang/${item.image}` : `https://via.placeholder.com/150?text=${encodeURIComponent(item.nama_barang)}`,
+                    name: item.nama_barang,
+                    code: item.barang_handmade_id,
+                    price: item.harga_jual || 0,
+                    kategori: item.kategori.nama_kategori_barang
+                }));
+    
+                // Process categories
+                const processedCategories = ["Semua", ...categoriesRes.data.data.map(cat => 
+                    cat.nama_kategori_barang
+                )];
+    
+                setHandmadeItems(processedHandmadeItems);
+                setCategories(processedCategories);
+            } catch (err) {
+                setError(err.message);
+                console.error('Error fetching data:', err);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+    
+        fetchData();
+    }, []);
+
+    const dataBarang = {
+        kategori: categories,
+        items: handmadeItems,
+    };
+
+    const getAllItems = () => {
+        return handmadeItems.map(item => ({
+            label: item.name,
+            value: item.id,
+            kategori: item.kategori,
+            code: item.code,
+            price: item.price
+        }));
+    };
 
     useEffect(() => {
         if (isModalOpen) {
@@ -51,42 +99,15 @@ export default function TambahAbsensiProduksi() {
         };
     }, [isModalOpen]);
 
-    const calculateSubtotal = () => {
-        return dataCabang.reduce((acc, cabang) => {
-            // Jumlahkan rawTotalBiaya dari setiap cabang
-            const totalCabang = cabang.data.reduce((cabAcc, row) => {
-                return cabAcc + (row.rawTotalBiaya || 0);
-            }, 0);
-            return acc + totalCabang;
-        }, 0);
-    };
-
-    const calculateTotalPenjualan = (subtotal) => {
-        const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal - pajak;
-    };
-
-    const handleSelectBayar = (selectedOption) => {
-        setSelectedBayar(selectedOption.id); 
-        if (selectedOption.id === 2) { 
-            setSelectMetode(dataMetode[1].id); 
-        } else {
-            setSelectMetode(dataMetode[0].id); 
-        }
-    };
-
-    const handleSelectMetode = (value) => {
-        setSelectMetode(value);
-    };
-
     const breadcrumbItems = [
         { label: "Data Absensi", href: "/absensi-karyawan-produksi" },
         { label: "Tambah Absensi", href: "" },
     ]
     const headers = [
-        { label: "No", key: "No", align: "text-center" },
+        { label: "No", key: "No", align: "text-left", width: "110px" },
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
-        { label: "Jumlah", key: "Jumlah", align: "text-left" }
+        { label: "Jumlah", key: "Jumlah", align: "text-left", width:"120px" },
+        { label: "Aksi", key: "Aksi", align: "text-left", width: "110px" }
     ];
 
     const btnAddBaris = (cabangIndex) => {
@@ -94,61 +115,33 @@ export default function TambahAbsensiProduksi() {
         setIsModalOpen(true);
     };
 
-    const dataBarang = [
-        {
-            jenis: "Barang Handmade",
-            kategori: ["Semua", "Gelang", "Anting-Anting", "Cincin"],
-            items: [
-                { id: 1, image: "https://via.placeholder.com/150", code: "MMM453", name: "Gelang Barbie 123", price: 10000, kategori: "Gelang" },
-                { id: 2, image: "https://via.placeholder.com/150", code: "MMM454", name: "Anting Keren 123", price: 15000, kategori: "Anting-Anting" },
-                { id: 3, image: "https://via.placeholder.com/150", code: "MMM455", name: "Cincin Cantik 123", price: 20000, kategori: "Cincin" },
-                { id: 4, image: "https://via.placeholder.com/150", code: "MMM456", name: "Gelang Modern", price: 12000, kategori: "Gelang" },
-            ],
-        },
-        {
-            jenis: "Barang Non-Handmade",
-            kategori: ["Semua", "Kalung", "Topi", "Tas"],
-            items: [
-                { id: 5, image: "https://via.placeholder.com/150", code: "MMM457", name: "Kalung Emas", price: 50000, kategori: "Kalung" },
-                { id: 6, image: "https://via.placeholder.com/150", code: "MMM458", name: "Topi Keren", price: 30000, kategori: "Topi" },
-                { id: 7, image: "https://via.placeholder.com/150", code: "MMM459", name: "Tas Ransel", price: 100000, kategori: "Tas" },
-                { id: 8, image: "https://via.placeholder.com/150", code: "MMM460", name: "Kalung Perak", price: 45000, kategori: "Kalung" },
-            ],
-        },
-    ];
-
-    useEffect(() => {
-        if (selectBayar === 1) { // Jika Cash
-            setIsMetodeDisabled(true);
-        } else if (selectBayar === 2) { // Jika Non-Cash
-            setIsMetodeDisabled(false);
-        }
-    }, [selectBayar]);
-
     const handleSelectItem = (item, count) => {
+        console.log('Selected item:', item, 'count:', count);
+        
         setSelectedItems((prev) => {
             const updated = [...prev];
-            const existingItem = updated.find((i) => i.id === item.id);
-            if (existingItem) {
+            const existingItemIndex = updated.findIndex((i) => i.id === item.id);
+            
+            if (existingItemIndex !== -1) {
                 if (count === 0) {
                     return updated.filter((i) => i.id !== item.id);
                 } else {
-                    existingItem.count = count;
+                    updated[existingItemIndex] = { ...item, count };
                 }
-            } else {
+            } else if (count > 0) {
                 updated.push({ ...item, count });
             }
+            
             return updated;
         });
     };
 
-    const filteredItems = dataBarang
-        .find((data) => data.jenis === selectedJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
-                item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    const filteredItems = isLoadingData ? [] : dataBarang.items.filter(
+        (item) =>
+            (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
+            item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
 
     const resetSelection = () => {
         setSelectedItems([]);
@@ -156,33 +149,20 @@ export default function TambahAbsensiProduksi() {
     };
 
     const handleModalSubmit = () => {
-        if (activeCabang !== null) {
+        if (activeCabang !== null && selectedItems.length > 0) {
             const updatedCabang = [...dataCabang];
-            
-            // Ambil semua items dari dataBarang
-            const allItems = [];
-            dataBarang.forEach(category => {
-                category.items.forEach(item => {
-                    allItems.push({
-                        label: item.name,
-                        id: item.id,
-                        jenis: category.jenis,
-                        kategori: item.kategori,
-                        code: item.code,
-                        price: item.price
-                    });
-                });
-            });
+            const allItems = getAllItems();
     
-            const newItems = selectedItems.map((item) => {
+            const newItems = selectedItems.map((item, index) => {
+                const currentIndex = updatedCabang[activeCabang].data.length + index;
                 return {
                     id: item.id,
-                    No: updatedCabang[activeCabang].data.length + 1,
+                    No: currentIndex + 1,
                     "Nama Barang": (
                         <InputDropdown
                             showRequired={false}
                             options={allItems}
-                            value={item.name}
+                            value={item.id}
                             onSelect={(newSelection) => handleDropdownChange(item.id, newSelection)}
                         />
                     ),
@@ -194,8 +174,20 @@ export default function TambahAbsensiProduksi() {
                             onChange={(newCount) => handleQuantityChange(item.id, newCount)}
                         />
                     ),
+                    "Aksi": (
+                        <button 
+                            type="button" 
+                            onClick={(e) => handleDeleteRow(e, activeCabang, currentIndex)}
+                            className="text-red-500 hover:text-red-700"
+                        >
+                            <p className="text-merah">Hapus</p>
+                        </button>
+                    ),
+                    quantity: item.count,
+                    name: item.name
                 };
             });
+    
             updatedCabang[activeCabang].data.push(...newItems);
             setDataCabang(updatedCabang);
         }
@@ -211,30 +203,21 @@ export default function TambahAbsensiProduksi() {
         );
     
         if (rowIndex !== -1) {
-            // Ambil semua items dari dataBarang
-            const allItems = [];
-            dataBarang.forEach(category => {
-                category.items.forEach(item => {
-                    allItems.push({
-                        label: item.name, 
-                        id: item.id,
-                        jenis: category.jenis,
-                        kategori: item.kategori,
-                        code: item.code,
-                        price: item.price
-                    });
-                });
-            });
-    
-            const selectedValue = typeof nextSelection === 'object' ? nextSelection.label : nextSelection;
-    
-            updatedDataCabang[activeCabang].data[rowIndex] = {
-                ...updatedDataCabang[activeCabang].data[rowIndex],
+            const allItems = getAllItems();
+            
+            const currentRow = updatedDataCabang[activeCabang].data[rowIndex];
+            const existingQuantity = currentRow.quantity || 
+                                    (currentRow["Jumlah"]?.props?.value) || 
+                                    0;
+            const updatedRow = {
+                ...currentRow,
+                id: nextSelection.value,
+                quantity: existingQuantity, 
                 "Nama Barang": (
                     <InputDropdown
                         showRequired={false}
                         options={allItems}
-                        value={selectedValue}
+                        value={nextSelection.value}
                         onSelect={(newVal) => handleDropdownChange(itemId, newVal)}
                     />
                 ),
@@ -242,14 +225,14 @@ export default function TambahAbsensiProduksi() {
                     <Input
                         showRequired={false}
                         type="number"
-                        value={updatedDataCabang[activeCabang].data[rowIndex].quantity || 0}
+                        value={existingQuantity} 
                         onChange={(newCount) => handleQuantityChange(itemId, newCount)}
                     />
                 ),
-                name: selectedValue,
-                quantity: updatedDataCabang[activeCabang].data[rowIndex].quantity || 0
+                name: nextSelection.label
             };
     
+            updatedDataCabang[activeCabang].data[rowIndex] = updatedRow;
             setDataCabang(updatedDataCabang);
         }
     };
@@ -261,53 +244,113 @@ export default function TambahAbsensiProduksi() {
         );
     
         if (rowIndex !== -1) {
-            updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
-            updatedCabangCopy[activeCabang].data[rowIndex]["Jumlah"] = (
-                <Input
-                    showRequired={false}
-                    type="number"
-                    value={newCount}
-                    onChange={(newerCount) => handleQuantityChange(itemId, newerCount)}
-                />
-            );
+            const currentRow = updatedCabangCopy[activeCabang].data[rowIndex];
+            
+            updatedCabangCopy[activeCabang].data[rowIndex] = {
+                ...currentRow,
+                quantity: newCount, 
+                "Jumlah": (
+                    <Input
+                        showRequired={false}
+                        type="number"
+                        value={newCount}
+                        onChange={(newerCount) => handleQuantityChange(itemId, newerCount)}
+                    />
+                )
+            };
             
             setDataCabang(updatedCabangCopy);
         }
     };
 
-    const handleDeleteItem = (cabangIndex, itemId) => {
-        const updatedCabang = [...dataCabang];
-        updatedCabang[cabangIndex].data = updatedCabang[cabangIndex].data.filter(
-            (item) => item.id !== itemId
-        );
-        setDataCabang(updatedCabang);
+    const handleDeleteRow = (e, cabangIndex, rowIndex) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const updatedDataCabang = [...dataCabang];
+        updatedDataCabang[cabangIndex].data = updatedDataCabang[cabangIndex].data.filter((_, index) => index !== rowIndex);
+
+        updatedDataCabang[cabangIndex].data = updatedDataCabang[cabangIndex].data.map((item, idx) => ({
+            ...item,
+            No: idx + 1
+        }));
+        
+        setDataCabang(updatedDataCabang);
     };
 
-    const dataBayar = [
-        { id: 1, label: "Cash" },
-        { id: 2, label: "Non-Cash" }
-    ];
-
-    const dataMetode = [
-        { id: 1, label: "-" },
-        { id: 2, label: "Mandiri" },
-        { id: 3, label: "Bank Nagari" }
-    ];
-
-    const selectedBayarLabel = dataBayar.find(option => option.id === selectBayar)?.label || "";
-    const selectedMetodeLabel = dataMetode.find(option => option.id === selectMetode)?.label || "";
-
-    const subtotal = calculateSubtotal();
-    const totalPenjualan = calculateTotalPenjualan(subtotal);
     const navigate = useNavigate();
 
-    const handleTambahSubmit = (e) => {
-        e.preventDefault();
+    const calculateTotalMenitAndJumlah = async (barangData) => {
+        let totalMenit = 0;
+        let totalJumlah = 0;
+        
         try {
-            setLoading(true);
+            for (const row of barangData) {
+                if (!row.id) continue;
+                
+                const response = await api.get(`/barang-handmade-gudang/${row.id}`);
+                const waktuPengerjaan = response.data.data.waktu_pengerjaan;
+                
+                const menitPerBarang = waktuPengerjaan * row.quantity;
+                totalMenit += menitPerBarang;
+                totalJumlah += row.quantity;
+            }
+            
+            return { totalMenit, totalJumlah };
+        } catch (error) {
+            console.error('Error calculating totals:', error);
+            throw error;
+        }
+    };
+
+    const handleTambahSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        
+        try {
+            if (!selectedImage) {
+                throw new Error('Mohon upload foto absen terlebih dahulu');
+            }
+
+            if (!tanggal) {
+                throw new Error('Mohon pilih tanggal terlebih dahulu');
+            }
+
+            const barangData = dataCabang[0].data;
+            if (!barangData || barangData.length === 0) {
+                throw new Error('Mohon pilih minimal satu barang terlebih dahulu');
+            }
+    
+            const formattedDate = new Date(tanggal).toISOString().split('T')[0];
+            const { totalMenit, totalJumlah } = await calculateTotalMenitAndJumlah(barangData);
+
+
+            const formData = new FormData();
+            formData.append('image', selectedImage);
+            formData.append('tanggal', formattedDate);
+            formData.append('jumlah_produksi', totalJumlah.toString());
+            formData.append('total_menit', totalMenit.toString());
+            formData.append('karyawan_id', '1');
+            barangData.forEach((row, index) => {
+                formData.append(`produk[${index}][barang_handmade_id]`, row.id);
+                formData.append(`produk[${index}][jumlah]`, row.quantity.toString());
+            });
+
+            // console.log('Form data entries:');
+            // for (let pair of formData.entries()) {
+            //     console.log(pair[0], pair[1]);
+            // }
+    
+            await api.post('/produksi-gudang', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+    
             setModalSucc(true);
         } catch (error) {
-            console.error(error);
+            console.error('Error submitting form:', error);
+            setError(error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
@@ -315,7 +358,7 @@ export default function TambahAbsensiProduksi() {
 
     const handleAcc = () => {
         setModalSucc(false);
-        navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
+        navigate('/absensi-karyawan-produksi');
     };
 
 
@@ -334,7 +377,7 @@ export default function TambahAbsensiProduksi() {
                                         <label className="block text-gray-700 font-medium mb-2">Foto Absen</label>
                                         <FileInput
                                             label="Masukan Foto Absen"
-                                            onFileChange={(file) => console.log(file)}
+                                            onFileChange={(file) => setSelectedImage(file)}
                                             width="w-48 h-48"
                                         />
                                     </div>
@@ -351,8 +394,7 @@ export default function TambahAbsensiProduksi() {
                                     </div>
                                 </div>
                             </section>
-    
-                            {/* Section Tambah Data Per Cabang */}
+
                             <section className="">
                                 {dataCabang.map((cabang, index) => (
                                     <div key={index} className="">
@@ -460,48 +502,54 @@ export default function TambahAbsensiProduksi() {
                                         </div>
                                     </div>
     
-                                    {/* Tabs for Barang Types */}
-                                    <div className="flex border-b border-gray-300 mb-4">
-                                        {["Barang Handmade", "Barang Non-Handmade"].map((jenis) => (
-                                            <button
-                                                key={jenis}
-                                                onClick={() => setSelectedJenis(jenis)}
-                                                className={`px-4 py-2 text-sm font-semibold ${
-                                                    selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
-                                                }`}
-                                            >
-                                                {jenis}
-                                            </button>
-                                        ))}
-                                    </div>
-    
-                                    {/* Kategori Buttons */}
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {dataBarang
-                                            .find((data) => data.jenis === selectedJenis)
-                                            ?.kategori.map((kategori) => (
-                                                <button
-                                                    key={kategori}
-                                                    onClick={() => setSelectedCategory(kategori)}
-                                                    className={`px-3 py-1 text-sm md:text-base rounded-md ${
-                                                        selectedCategory === kategori
-                                                            ? "bg-primary text-white"
-                                                            : "border border-gray-300"
-                                                    }`}
-                                                >
-                                                    {kategori}
-                                                </button>
-                                            ))}
-                                    </div>
-    
-                                    {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                        <Gallery2
-                                            items={filteredItems || []}
-                                            onSelect={handleSelectItem}
-                                            selectedItems={selectedItems}
-                                        />
-                                    </div>
+                                    {isLoadingData ? (
+                                        <div className="flex justify-center items-center h-64">
+                                            <Spinner />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Tabs for Barang Types */}
+                                            <div className="flex border-b border-gray-300 mb-4">
+                                                {["Barang Handmade"].map((jenis) => (
+                                                    <button
+                                                        key={jenis}
+                                                        onClick={() => setSelectedJenis(jenis)}
+                                                        className={`px-4 py-2 text-sm font-semibold ${
+                                                            selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
+                                                        }`}
+                                                    >
+                                                        {jenis}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Kategori Buttons */}
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                {categories.map((kategori) => (
+                                                    <button
+                                                        key={kategori}
+                                                        onClick={() => setSelectedCategory(kategori)}
+                                                        className={`px-3 py-1 text-sm md:text-base rounded-md ${
+                                                            selectedCategory === kategori
+                                                                ? "bg-primary text-white"
+                                                                : "border border-gray-300"
+                                                        }`}
+                                                    >
+                                                        {kategori}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Gallery */}
+                                            <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                                <Gallery2
+                                                    items={filteredItems || []}
+                                                    onSelect={handleSelectItem}
+                                                    selectedItems={selectedItems}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </section>
                         )}
@@ -511,7 +559,7 @@ export default function TambahAbsensiProduksi() {
                 {isModalSucc && (
                     <AlertSuccess
                         title="Berhasil!!"
-                        description="Data berhasil dihapus"
+                        description="Data berhasil ditambahkan"
                         confirmLabel="Ok"
                         onConfirm={handleAcc}
                     />
@@ -520,6 +568,14 @@ export default function TambahAbsensiProduksi() {
                 {isLoading && (
                     <Spinner/>
                 )}
+
+                    {error && (
+                        <AlertError
+                            title={'Failed'}
+                            description={error}
+                            onConfirm={() => setError(null)}
+                        />
+                    )}
             </LayoutWithNav>
         </>
     );

@@ -6,6 +6,7 @@ import Spinner from '../../../components/Spinner';
 import AlertSuccess from '../../../components/AlertSuccess';
 import AlertError from '../../../components/AlertError';
 import { useNavigate } from 'react-router-dom';
+import { useRefresh } from '../../../context/RefreshContext';
 
 const Modal = ({ isOpen, onClose }) => {
   const [name, setName] = useState('');
@@ -17,25 +18,28 @@ const Modal = ({ isOpen, onClose }) => {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate()
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isManajer = userData?.role === 'manajer';
+   const refresh = isManajer ? useRefresh() : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       
-      // Menyiapkan data untuk dikirim
       const data = {
         nama: name,
         tanggal: date,
         judul: judul,
         isi: isi
       };
-
-      // Kirim data ke API
       const response = await api.post('/catatan', data);
 
       if (response.data.success) {
         setAlertSucc(true);
+        if (isManajer && refresh) {
+          refresh.triggerRefresh();
+        }
       } else {
         setErrorMessage(response.data.message);
         setErrorAlert(true);

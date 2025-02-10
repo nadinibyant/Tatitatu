@@ -420,7 +420,7 @@ const fetchAllData = async () => {
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
-                total_pembelian: calculateTotalPenjualan(calculateSubtotal()),
+                total_penjualan: calculateTotalPenjualan(calculateSubtotal()),
                 produk: [
                     ...detailData.products.map(item => ({
                         ...(item.barang_handmade_id ? { barang_handmade_id: item.barang_handmade_id } : 
