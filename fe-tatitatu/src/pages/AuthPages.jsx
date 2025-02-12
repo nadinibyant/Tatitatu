@@ -1,66 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, ShoppingBag } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-
-const AuthPages = ({ defaultTab = 'login' }) => {
-  const [isLogin, setIsLogin] = useState(defaultTab === 'login');
+import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import InputDropdown from '../components/InputDropdown';
+const AuthPages = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Daftar role berdasarkan email
-  const roleMapping = {
-    'admin@gmail.com': { role: 'admin', route: '/dashboard' },
-    'headgudang@gmail.com': { role: 'headgudang', route: '/dashboard' },
-    'kasirtoko@gmail.com': { role: 'kasirtoko', route: '/dashboard-kasir' },
-    'admingudang@gmail.com': { role: 'admingudang', route: '/dashboard-admin-gudang' },
-    'karyawanumum@gmail.com': { role: 'karyawanumum', route: '/izin-cuti-karyawan' },
-    'karyawanproduksi@gmail.com': { role: 'karyawanproduksi', route: '/izin-cuti-karyawan' },
-    'karyawanlogistik@gmail.com': { role: 'karyawanlogistik', route: '/izin-cuti-karyawan' },
-    'karyawantransportasi@gmail.com': { role: 'karyawantransportasi', route: '/izin-cuti-karyawan' },
-    'owner@gmail.com': { role: 'owner', route: '/dashboard' },
-    'finance@gmail.com': { role: 'finance', route: '/laporanKeuangan' },
-    'manajer@gmail.com': { role: 'manajer', route: '/dashboard' },
+  const roles = [
+    { value: '1', label: 'Owner', storedRole: 'owner' },
+    { value: '2', label: 'Finance', storedRole: 'finance' },
+    { value: '3', label: 'Manager', storedRole: 'manajer' },
+    { value: '4', label: 'Spv', storedRole: 'admin' },
+    { value: '5', label: 'Head Gudang', storedRole: 'headgudang' },
+    { value: '6', label: 'Admin Gudang', storedRole: 'admingudang' },
+    { value: '7', label: 'Kasir', storedRole: 'kasirtoko' },
+    { value: '8', label: 'Karyawan Umum', storedRole: 'karyawanumum' },
+    { value: '9', label: 'Karyawan Logistik', storedRole: 'karyawanlogistik' },
+    { value: '10', label: 'Karyawan Produksi', storedRole: 'karyawanproduksi' },
+    { value: '11', label: 'Karyawan Transportasi', storedRole: 'karyawantransportasi' }
+  ];
+
+  // Route mapping based on roles
+  const routeMapping = {
+    'admin': '/dashboard',
+    'headgudang': '/dashboard',
+    'kasirtoko': '/dashboard-kasir',
+    'admingudang': '/dashboard-admin-gudang',
+    'karyawanumum': '/izin-cuti-karyawan',
+    'karyawanproduksi': '/izin-cuti-karyawan',
+    'karyawanlogistik': '/izin-cuti-karyawan',
+    'karyawantransportasi': '/izin-cuti-karyawan',
+    'owner': '/dashboard',
+    'finance': '/laporanKeuangan',
+    'manajer': '/dashboard'
   };
 
-
-  const handleTabChange = (isLoginTab) => {
-    setIsLogin(isLoginTab);
-    setError(''); 
-    navigate(isLoginTab ? '/login' : '/register', { replace: true });
+  const handleRoleSelect = (selectedOption) => {
+    setSelectedRole(selectedOption.value);
   };
 
   // Handle login
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    
     setError('');
 
-    // More secure role check
-    const userConfig = roleMapping[email];
-    
-    if (userConfig && password === 'password123') { 
-      const userData = {
+    const selectedRoleObj = roles.find(r => r.value === selectedRole);
+    const storedRoleName = selectedRoleObj?.storedRole || '';
+
+    try {
+      const response = await api.post('/login', {
         email,
-        role: userConfig.role,
-        token: `token-${userConfig.role}-${Date.now()}`, 
+        password,
+        role: selectedRole 
+      });
+
+      const { data } = response;
+      
+      const userData = {
+        ...data.data, 
+        role: storedRoleName 
       };
-      
       localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('token', data.data.token); 
+
+      const targetRoute = routeMapping[storedRoleName];
+      if (targetRoute) {
+        navigate(targetRoute);
+      } else {
+        navigate('/dashboard');
+      }
       
-      // Redirect to role-specific route
-      navigate(userConfig.route);
-    } else {
+    } catch (err) {
       setError('Email atau kata sandi tidak valid');
     }
   };
-
-  useEffect(() => {
-    setIsLogin(location.pathname === '/login');
-  }, [location.pathname]);
 
   return (
     <div className="min-h-screen w-full bg-[#FFE0ED] flex items-center justify-center p-4">
@@ -74,7 +92,7 @@ const AuthPages = ({ defaultTab = 'login' }) => {
           
           <div className="space-y-6">
             <h2 className="text-4xl font-bold text-white">
-              {isLogin ? "Selamat Datang Kembali!" : "Bergabung Dengan Kami"}
+              Selamat Datang Kembali!
             </h2>
             <p className="text-[#FFE0ED]">
               Temukan koleksi aksesoris eksklusif kami yang mendefinisikan keanggunan dan gaya.
@@ -95,7 +113,7 @@ const AuthPages = ({ defaultTab = 'login' }) => {
 
           <div className="space-y-6">
             <h3 className="text-2xl md:text-3xl font-bold text-[#7B0C42]">
-              {isLogin ? "Masuk" : "Daftar Akun"}
+              Masuk
             </h3>
             
             {error && (
@@ -105,16 +123,13 @@ const AuthPages = ({ defaultTab = 'login' }) => {
             )}
             
             <form className="space-y-4" onSubmit={handleLogin}>
-              {!isLogin && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#7B0C42] focus:border-transparent transition"
-                    placeholder="Masukkan nama lengkap Anda"
-                  />
-                </div>
-              )}
+              <InputDropdown
+                label="Role"
+                options={roles}
+                value={selectedRole}
+                onSelect={handleRoleSelect}
+                required={true}
+              />
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -147,36 +162,13 @@ const AuthPages = ({ defaultTab = 'login' }) => {
                 </div>
               </div>
 
-              {isLogin && (
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#7B0C42] focus:ring-[#7B0C42]" />
-                    <span className="text-sm text-gray-600">Ingat Saya</span>
-                  </label>
-                  <button type="button" className="text-sm text-[#7B0C42] hover:text-[#C21747] font-medium">
-                    Lupa Kata Sandi?
-                  </button>
-                </div>
-              )}
-
               <button
                 type="submit"
                 className="w-full py-3 px-4 bg-[#7B0C42] hover:bg-[#C21747] text-white font-medium rounded-lg transition-colors duration-200"
               >
-                {isLogin ? "Masuk" : "Daftar"}
+                Masuk
               </button>
             </form>
-
-            <p className="text-center text-sm text-gray-600">
-              {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
-              <button
-                type="button"
-                onClick={() => handleTabChange(!isLogin)}
-                className="font-medium text-[#7B0C42] hover:text-[#C21747]"
-              >
-                {isLogin ? "Daftar Sekarang" : "Masuk"}
-              </button>
-            </p>
           </div>
         </div>
       </div>

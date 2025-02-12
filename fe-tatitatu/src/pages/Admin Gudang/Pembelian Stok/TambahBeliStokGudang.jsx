@@ -580,7 +580,7 @@ export default function TambahBeliStokGudang() {
                                         </div>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
-                                        <p className="font-bold">Total Penjualan</p>
+                                        <p className="font-bold">Total pembelian</p>
                                         <p className="font-bold">Rp{totalPenjualan.toLocaleString()}</p>
                                     </div>
                                     <div>

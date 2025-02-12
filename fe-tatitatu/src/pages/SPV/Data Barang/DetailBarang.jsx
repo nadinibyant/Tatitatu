@@ -112,7 +112,7 @@ export default function DetailBarang() {
 
                         setData({
                             "Nama Barang": itemData.nama_barang,
-                            "Nomor Barang": itemData.barang_non_handmade_id,
+                            "Nomor Barang": itemData.barang_handmade_id,
                             "Kategori": itemData.kategori_barang.nama_kategori_barang,
                             "Total HPP": itemData.rincian_biaya[0]?.total_hpp || 0,
                             "Total Keuntungan": itemData.rincian_biaya[0]?.keuntungan || 0,

@@ -42,7 +42,7 @@ export default function PembelianStok() {
         try {
             setLoading(true);
             const endpoint = isAdminGudang ? '/pembelian-gudang' : '/pembelian';
-            const response = await api.get(endpoint);
+            const response = await api.get(`${endpoint}?bulan=${selectedMonth}&tahun=${selectedYear}`);
             
             const formattedData = response.data.data.map((item) => {
                 let namaBarang;
@@ -68,7 +68,7 @@ export default function PembelianStok() {
                         metodePembayaran: item.metode
                     };
                 } else {
-                    namaBarang = item.produk_pembelian
+                    namaBarang = item.produk
                         .map(produk => {
                             if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
                             if (produk.barang_non_handmade) return produk.barang_non_handmade.nama_barang;
@@ -78,7 +78,7 @@ export default function PembelianStok() {
                         })
                         .filter(nama => nama);
     
-                    totalKuantitas = item.produk_pembelian.reduce((sum, produk) => sum + produk.kuantitas, 0);
+                    totalKuantitas = item.produk.reduce((sum, produk) => sum + produk.kuantitas, 0);
                 }
                     
                 return {
@@ -91,7 +91,7 @@ export default function PembelianStok() {
                     "Pajak": `Rp${item.pajak.toLocaleString()}`,
                     "Total Transaksi": `Rp${(isAdminGudang ? item.total_penjualan : item.total_pembelian)?.toLocaleString()}`,
                     type: item.cash_or_non ? 'cash' : 'non-cash',
-                    ...(isAdminGudang && { metodePembayaran: item.metode_pembelian?.nama_metode })
+                    metodePembayaran: item.metode_pembayaran?.nama_metode
                 };
             });
     
@@ -107,7 +107,7 @@ export default function PembelianStok() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [selectedMonth, selectedYear, isAdminGudang]);
 
 
     const handleRowClick = (row) => {

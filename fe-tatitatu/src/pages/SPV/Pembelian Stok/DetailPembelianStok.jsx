@@ -34,7 +34,6 @@ const fetchPaymentMethods = async () => {
     }
 };
 
-// Panggil fetch saat component mount
 useEffect(() => {
     fetchPaymentMethods();
 }, [isAdminGudang]);
@@ -112,13 +111,16 @@ const processedData = useMemo(() => {
             };
         });
     } else {
+        // const groupedByCabang = {};
+        
         const groupedByCabang = {};
         
-        pembelianData.produk_pembelian.forEach(produk => {
-            const cabang = cabangData.find(c => c.cabang_id === produk.cabang_id);
-            if (!groupedByCabang[produk.cabang_id]) {
-                groupedByCabang[produk.cabang_id] = {
-                    nama: cabang?.nama_cabang,
+        pembelianData.produk.forEach(produk => {
+            const cabangName = produk.cabang?.nama_cabang;
+            
+            if (!groupedByCabang[cabangName]) {
+                groupedByCabang[cabangName] = {
+                    nama: cabangName,
                     data: []
                 };
             }
@@ -141,9 +143,9 @@ const processedData = useMemo(() => {
                 imageUrl = productDetails.image ? `${baseUrl}/images-packaging/${productDetails.image}` : '/placeholder-image.jpg';
             }
 
-            groupedByCabang[produk.cabang_id].data.push({
-                id: produk.produk_pembelian_id,
-                No: groupedByCabang[produk.cabang_id].data.length + 1,
+            groupedByCabang[cabangName].data.push({
+                id: productDetails?.barang_handmade_id || productDetails?.barang_non_handmade_id || productDetails?.packaging_id || productDetails?.barang_custom_id,
+                No: groupedByCabang[cabangName].data.length + 1,
                 "Foto Produk": (
                     <div className="w-12 h-12 flex items-center justify-center">
                         <img 
@@ -239,130 +241,33 @@ const headers = [
 { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
 ]
 
-// const data = {
+// const dataAdminGudang = {
 //     id: 1,
 //     nomor: 'STK1133',
 //     invoice: 'INV123',
 //     tanggal: '21/12/2024',
 //     pembayaran: 'Cash',
 //     metode: '-',
-//     dataCabang: [
+//     data: [
 //         {
-//             nama: "Cabang GOR.Haji Agus Salim",
-//             data: [
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//             ]
+//             id: 1,
+//             No: "1",
+//             "Foto Produk" : (
+//                 <img src="/api/placeholder/50/50" alt="Foto Produk" />
+//             ),
+//             "Nama Produk": "Barbie",
+//             "Jenis Barang": "Barang Handmade", 
+//             "Harga Satuan": "Rp15.000",
+//             Kuantitas: 10,
+//             "Total Biaya": "Rp150.000"
 //         },
-//         {
-//             nama: "Cabang GOR.Lubuk Begalung",
-//             data: [
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//                 {
-//                     id: 1,
-//                     No: "1",
-//                     "Foto Produk" : (
-//                     <img src="https://via.placeholder.com/50" alt="Foto Produk" />
-//                     ),
-//                     "Nama Produk": "Barbie",
-//                     "Jenis Barang": "Barang Handmade",
-//                     "Harga Satuan": "Rp15.000",
-//                     Kuantitas: 10,
-//                     "Total Biaya": "Rp150.000"
-//                 },
-//             ]
-//         }
+//         // ... data lainnya
 //     ],
 //     subtotal: 8000,
 //     diskon: 30,
 //     pajak: 1000,
 //     totalpenjualan: 18000
 // }
-
-const dataAdminGudang = {
-    id: 1,
-    nomor: 'STK1133',
-    invoice: 'INV123',
-    tanggal: '21/12/2024',
-    pembayaran: 'Cash',
-    metode: '-',
-    data: [
-        {
-            id: 1,
-            No: "1",
-            "Foto Produk" : (
-                <img src="/api/placeholder/50/50" alt="Foto Produk" />
-            ),
-            "Nama Produk": "Barbie",
-            "Jenis Barang": "Barang Handmade", 
-            "Harga Satuan": "Rp15.000",
-            Kuantitas: 10,
-            "Total Biaya": "Rp150.000"
-        },
-        // ... data lainnya
-    ],
-    subtotal: 8000,
-    diskon: 30,
-    pajak: 1000,
-    totalpenjualan: 18000
-}
 
 const formatCurrency = (amount) => {
     return amount.toLocaleString('id-ID', {
@@ -451,7 +356,6 @@ return (
                 </section>
 
                 {/* section cabang -> perulangan sesuai data cabang */}
-                {/* section tabel */}
                 <section className="pt-10">
                     {isAdminGudang ? (
                         <div className="pt-5">

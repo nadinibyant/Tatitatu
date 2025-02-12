@@ -138,7 +138,7 @@ function App() {
       <Routes>
         {/* Auth Routes */}
         <Route path="/login" element={<AuthPages defaultTab="login" />} />
-        <Route path="/register" element={<AuthPages defaultTab="register" />} />
+        {/* <Route path="/register" element={<AuthPages defaultTab="register" />} /> */}
         
         {/* Root Route */}
         <Route path="/" element={<Navigate to="/login" replace />} />

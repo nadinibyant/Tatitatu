@@ -244,7 +244,6 @@ export default function TambahBarangNonHandmade() {
         const cabangData = cabangResponse.data.data;
         const biayaData = biayaResponse.data.data;
   
-        // Filter cabang yang memiliki data rincian biaya
         const cabangDenganBiaya = cabangData.filter((cabang) => {
           const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
           return biayaToko;
@@ -269,33 +268,49 @@ export default function TambahBarangNonHandmade() {
           const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
   
           if (biayaToko) {
-            const biayaList = [{
-              id: biayaToko.biaya_toko_id,
-              "Nama Biaya": `Biaya Operasional dan Staff ${cabang.nama_cabang}`,
-              "Jumlah Biaya": biayaToko.total_biaya,
-              isEditable: false,
-            }];
-
+            const biayaList = [
+              {
+                id: 'modal',
+                "Nama Biaya": "Modal",
+                "Jumlah Biaya": 0,
+                isEditable: {
+                  name: false,
+                  amount: true
+                }
+              },
+              {
+                id: biayaToko.biaya_toko_id,
+                "Nama Biaya": `Biaya Operasional dan Staff ${cabang.nama_cabang}`,
+                "Jumlah Biaya": biayaToko.total_biaya,
+                isEditable: false,
+              }
+            ];
+  
             initialRincian[cabang.nama_cabang] = biayaList;
   
-            // data harga per cabang
             initialHargaPerCabang[cabang.nama_cabang] = {
               totalHPP: biayaToko.total_biaya,
               hargaJual: 0,
               keuntungan: 0,
             };
           } else {
-            // Jika tidak ada data biaya
-            initialRincian[cabang.nama_cabang] = null;
+            initialRincian[cabang.nama_cabang] = [{
+              id: 'modal',
+              "Nama Biaya": "Modal",
+              "Jumlah Biaya": 0,
+              isEditable: {
+                name: false,
+                amount: true
+              }
+            }];
             initialHargaPerCabang[cabang.nama_cabang] = {
-              totalHPP: 0, 
+              totalHPP: 0,
               hargaJual: 0,
               keuntungan: 0,
             };
           }
         });
   
-        // Set rincian dan harga per cabang
         setRincianBiayaPerCabang(initialRincian);
   
         if (cabangDenganBiaya.length > 0) {
@@ -386,7 +401,7 @@ export default function TambahBarangNonHandmade() {
 
   const handleAddRow = (type) => {
     const newRow = {
-      id: null,  
+      id: `new-${Date.now()}`,  
       "Nama Biaya": "",
       "Jumlah Biaya": 0,
       isEditable: true,
@@ -841,7 +856,9 @@ export default function TambahBarangNonHandmade() {
                         headers={headers}
                         data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => ({
                           No: index + 1,
-                          "Nama Biaya": row.isEditable ? (
+                          "Nama Biaya": row.isEditable?.name === false ? (
+                            row["Nama Biaya"] 
+                          ) : row.isEditable ? (
                             <Input
                               showRequired={false}
                               className="w-full max-w-xs sm:max-w-sm"
@@ -853,7 +870,7 @@ export default function TambahBarangNonHandmade() {
                           ) : (
                             row["Nama Biaya"]
                           ),
-                          "Jumlah Biaya": row.isEditable ? (
+                          "Jumlah Biaya": row.isEditable?.amount === true || row.isEditable === true ? (
                             <Input
                               showRequired={false}
                               type="number"
@@ -866,7 +883,7 @@ export default function TambahBarangNonHandmade() {
                           ) : (
                             `Rp${formatCurrency(row["Jumlah Biaya"])}`
                           ),
-                          Aksi: row.isEditable && (
+                          Aksi: row.isEditable === true && row["Nama Biaya"] !== "Modal" && (
                             <Button
                               label="Hapus"
                               bgColor=""

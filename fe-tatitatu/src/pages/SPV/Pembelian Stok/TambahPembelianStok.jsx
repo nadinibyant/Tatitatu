@@ -105,16 +105,39 @@ export default function TambahPembelianStok() {
 
             setKategoriList(kategoriRes.data.data.filter(k => !k.is_deleted));
 
-            const formatItems = (items, type) => items.map(item => ({
-                id: item[`${type}_id`],
-                image: item.image,
-                code: item[`${type}_id`],
-                name: type === 'packaging' ? item.nama_packaging : item.nama_barang,
-                price: type === 'packaging' ? item.harga_satuan : 
-                       type === 'barang_custom' ? item.harga :
-                       item.rincian_biaya[0]?.harga_jual || 0,
-                kategori_id: item.kategori_barang_id || item.kategori_barang?.kategori_barang_id
-            }));
+            const formatItems = (items, type) => items.map(item => {
+                let price = 0;
+                if ((type === 'barang_handmade' || type === 'barang_non_handmade') && item.rincian_biaya) {
+                    const currentCabangId = dataCabang[activeCabang]?.id;
+                    const rincianBiaya = item.rincian_biaya.find(
+                        rincian => rincian.cabang_id === currentCabangId
+                    );
+                    
+                    if (rincianBiaya?.detail_rincian_biaya) {
+                        const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
+                            detail => detail.nama_biaya === "Modal"
+                        );
+                        
+                        if (modalBiaya) {
+                            price = modalBiaya.jumlah_biaya;
+                        }
+                    }
+                } else if (type === 'packaging') {
+                    price = item.harga_satuan;
+                } else if (type === 'barang_custom') {
+                    price = item.harga_satuan;
+                }
+            
+                return {
+                    id: item[`${type}_id`],
+                    image: item.image,
+                    code: item[`${type}_id`],
+                    name: type === 'packaging' ? item.nama_packaging : item.nama_barang,
+                    rincian_biaya: item.rincian_biaya,
+                    price: price,
+                    kategori_id: item.kategori_barang_id || item.kategori_barang?.kategori_barang_id
+                };
+            });
 
             const handmadeData = {
                 jenis: "Barang Handmade",
@@ -262,14 +285,31 @@ export default function TambahPembelianStok() {
     const filteredItems = useMemo(() => {
         const selectedData = dataBarang.find((data) => data.jenis === selectedJenis);
         if (!selectedData) return [];
-
+    
+        const currentCabangId = dataCabang[activeCabang]?.id;
+    
         return selectedData.items.filter(item => {
             const matchesCategory = selectedCategory === "Semua" || 
                                   item.kategori_id === parseInt(selectedCategory);
             const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            if ((selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") && item.rincian_biaya) {
+                const cabangRincian = item.rincian_biaya.find(
+                    rincian => rincian.cabang_id === currentCabangId
+                );
+                if (cabangRincian) {
+                    const modalDetail = cabangRincian.detail_rincian_biaya.find(
+                        detail => detail.nama_biaya === "Modal"
+                    );
+                    if (modalDetail) {
+                        item.price = modalDetail.jumlah_biaya;
+                    }
+                }
+            }
+    
             return matchesCategory && matchesSearch;
         });
-    }, [dataBarang, selectedJenis, selectedCategory, searchTerm]);
+    }, [dataBarang, selectedJenis, selectedCategory, searchTerm, activeCabang, dataCabang]);
 
 
     const resetSelection = () => {
@@ -281,14 +321,28 @@ const handleModalSubmit = () => {
     if (activeCabang !== null) {
         const updatedCabang = [...dataCabang];
         const newItems = selectedItems.map(item => {
-            const totalBiaya = parseInt(item.price) * item.count;
+            let price = item.price;
+            if (item.rincian_biaya) {
+                const cabangRincian = item.rincian_biaya.find(
+                    rincian => rincian.cabang_id === dataCabang[activeCabang].id
+                );
+                if (cabangRincian) {
+                    const modalDetail = cabangRincian.detail_rincian_biaya.find(
+                        detail => detail.nama_biaya === "Modal"
+                    );
+                    if (modalDetail) {
+                        price = modalDetail.jumlah_biaya;
+                    }
+                }
+            }
+
+            const totalBiaya = price * item.count;
             const dropdownValue = item.id;
             const itemType = dataBarang.find(cat => 
                 cat.items.find(i => i.id === item.id)
             )?.jenis;
 
             let typeSpecificId = {};
-            console.log(itemType)
             switch(itemType) {
                 case "Barang Handmade":
                     typeSpecificId = { barang_handmade_id: item.id };
@@ -330,7 +384,8 @@ const handleModalSubmit = () => {
                                 jenis: data.jenis,
                                 kategori: item.kategori,
                                 image: item.image,
-                                code: item.code
+                                code: item.code,
+                                rincian_biaya: item.rincian_biaya
                             }));
                             return [...allItems, ...items];
                         }, [])}
@@ -355,8 +410,26 @@ const handleModalSubmit = () => {
                                 );
 
                                 if (itemIndex !== -1) {
+                                    let newPrice = selectedItem.price;
+
+                                    if (jenisBarang === "Barang Non-Handmade" && selectedItem.rincian_biaya) {
+                                        const currentCabangId = dataCabang[activeCabang].id;
+                                        const rincianBiaya = selectedItem.rincian_biaya.find(
+                                            rincian => rincian.cabang_id === currentCabangId
+                                        );
+                                        
+                                        if (rincianBiaya?.detail_rincian_biaya) {
+                                            const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
+                                                detail => detail.nama_biaya === "Modal"
+                                            );
+                                            if (modalBiaya) {
+                                                newPrice = modalBiaya.jumlah_biaya;
+                                            }
+                                        }
+                                    }
+
                                     const currentQuantity = updatedDataCabang[activeCabang].data[itemIndex].quantity || 0;
-                                    const newTotalBiaya = selectedItem.price * currentQuantity;
+                                    const newTotalBiaya = newPrice * currentQuantity;
                                     const newImageData = {
                                         imageUrl: getImageUrl(selectedItem, jenisBarang),
                                         image: selectedItem.image,
@@ -379,8 +452,8 @@ const handleModalSubmit = () => {
                                             </div>
                                         ),
                                         "Jenis Barang": jenisBarang,
-                                        "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
-                                        rawHargaSatuan: selectedItem.price,
+                                        "Harga Satuan": `Rp${newPrice.toLocaleString()}`,
+                                        rawHargaSatuan: newPrice,
                                         rawTotalBiaya: newTotalBiaya,
                                         "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
                                     };
@@ -392,7 +465,7 @@ const handleModalSubmit = () => {
                     />
                 ),
                 "Jenis Barang": itemType,
-                "Harga Satuan": `Rp${item.price.toLocaleString()}`,
+                "Harga Satuan": `Rp${price.toLocaleString()}`,
                 rawHargaSatuan: item.price,
                 "Kuantitas": (
                     <Input
@@ -415,8 +488,11 @@ const handleModalSubmit = () => {
                                 };
                                 updatedCabangCopy[activeCabang].data.push(updatedItem);
                             } else {
+                                const currentItem = updatedCabangCopy[activeCabang].data[itemIndex];
+                                const currentPrice = currentItem.rawHargaSatuan;
+                                
                                 updatedCabangCopy[activeCabang].data[itemIndex].quantity = newCount;
-                                const newTotal = item.price * Number(newCount);
+                                const newTotal = currentPrice * Number(newCount);
                                 updatedCabangCopy[activeCabang].data[itemIndex].rawTotalBiaya = newTotal;
                                 updatedCabangCopy[activeCabang].data[itemIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
                             }

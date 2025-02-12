@@ -298,7 +298,7 @@ export default function DetailBarang() {
 
                                 <div>
                                     <p className="text-gray-500">Jumlah Minimum Stok</p>
-                                    <p className="font-medium">{data["Jumlah Minimum Stok"]}</p>
+                                    <p className="font-medium">{data["Jumlah Minimum Stok"].toLocaleString('id-ID') || 0}</p>
                                 </div>
                             </div>
                         </div>

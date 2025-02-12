@@ -236,7 +236,6 @@ export default function TambahBarang() {
         const cabangData = cabangResponse.data.data;
         const biayaData = biayaResponse.data.data;
   
-        // Filter cabang yang memiliki data rincian biaya
         const cabangDenganBiaya = cabangData.filter((cabang) => {
           const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
           return biayaToko;
@@ -261,13 +260,24 @@ export default function TambahBarang() {
           const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
   
           if (biayaToko) {
-            // Simplified to show only one row with total_biaya
-            const biayaList = [{
-              id: biayaToko.biaya_toko_id,
-              "Nama Biaya": `Biaya Operasional dan Staff ${cabang.nama_cabang}`,
-              "Jumlah Biaya": biayaToko.total_biaya,
-              isEditable: false,
-            }];
+            const biayaList = [
+              {
+                id: 'modal', 
+                "Nama Biaya": "Modal",
+                "Jumlah Biaya": 0,
+                isEditable: {
+                  name: false, 
+                  amount: true, 
+                },
+                isDefault: true 
+              },
+              {
+                id: biayaToko.biaya_toko_id,
+                "Nama Biaya": `Biaya Operasional dan Staff ${cabang.nama_cabang}`,
+                "Jumlah Biaya": biayaToko.total_biaya,
+                isEditable: false,
+              }
+            ];
   
             initialRincian[cabang.nama_cabang] = biayaList;
   
@@ -362,11 +372,13 @@ export default function TambahBarang() {
       }));
     } else {
       setRincianBiayaPerCabang(prevData => {
-        const updatedCabangData = [...prevData[type]];
-        const rowIndex = updatedCabangData.findIndex(row => row.id === rowId);
-        if (rowIndex !== -1) {
-          updatedCabangData.splice(rowIndex, 1);
-        }
+        const updatedCabangData = prevData[type].filter(row => {
+          if (row.isDefault) {
+            return true;
+          }
+          return row.id !== rowId;
+        });
+        
         return {
           ...prevData,
           [type]: updatedCabangData
@@ -814,46 +826,58 @@ export default function TambahBarang() {
                      <section className="pt-5">
                     <p className="font-bold">Rincian Biaya</p>
                     <div className="pt-3">
-                      <Table
-                        headers={headers}
-                        data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => ({
-                          No: index + 1,
-                          "Nama Biaya": row.isEditable ? (
-                            <Input
-                              showRequired={false}
-                              className="w-full max-w-xs sm:max-w-sm"
-                              value={row["Nama Biaya"]}
-                              onChange={(value) =>
-                                handleInputChange(selectedCabang, index, "Nama Biaya", value)
-                              }
-                            />
-                          ) : (
-                            row["Nama Biaya"]
-                          ),
-                          "Jumlah Biaya": row.isEditable ? (
-                            <Input
-                              showRequired={false}
-                              type="number"
-                              width="w-full"
-                              value={row["Jumlah Biaya"]}
-                              onChange={(value) =>
-                                handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
-                              }
-                            />
-                          ) : (
-                            `Rp${formatCurrency(row["Jumlah Biaya"])}`
-                          ),
-                          Aksi: row.isEditable && (
-                            <Button
-                              label="Hapus"
-                              bgColor=""
-                              textColor="text-red-600"
-                              hoverColor="hover:text-red-800"
-                              onClick={() => handleDeleteRow(selectedCabang, row.id)}
-                            />
-                          ),
-                        }))}
-                      />
+                    <Table
+                      headers={headers}
+                      data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => ({
+                        No: index + 1,
+                        "Nama Biaya": row.isDefault ? (
+                          row["Nama Biaya"]
+                        ) : row.isEditable ? (
+                          <Input
+                            showRequired={false}
+                            className="w-full max-w-xs sm:max-w-sm"
+                            value={row["Nama Biaya"]}
+                            onChange={(value) =>
+                              handleInputChange(selectedCabang, index, "Nama Biaya", value)
+                            }
+                          />
+                        ) : (
+                          row["Nama Biaya"]
+                        ),
+                        "Jumlah Biaya": row.isDefault ? (
+                          <Input
+                            showRequired={false}
+                            type="number"
+                            width="w-full"
+                            value={row["Jumlah Biaya"]}
+                            onChange={(value) =>
+                              handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
+                            }
+                          />
+                        ) : row.isEditable ? (
+                          <Input
+                            showRequired={false}
+                            type="number"
+                            width="w-full"
+                            value={row["Jumlah Biaya"]}
+                            onChange={(value) =>
+                              handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
+                            }
+                          />
+                        ) : (
+                          `Rp${formatCurrency(row["Jumlah Biaya"])}`
+                        ),
+                        Aksi: !row.isDefault && row.isEditable && (
+                          <Button
+                            label="Hapus"
+                            bgColor=""
+                            textColor="text-red-600"
+                            hoverColor="hover:text-red-800"
+                            onClick={() => handleDeleteRow(selectedCabang, row.id)}
+                          />
+                        ),
+                      }))}
+                    />
                       <Button
                         label="Tambah Baris"
                         icon={

@@ -180,6 +180,7 @@ const handleAddBtn = () => {
     { label: "Harga", key: "Harga", align: "text-left" },
     { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
     { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
+    { label: "Harga Jual", key: "HargaJual", align: "text-left" },
   ];
 
   const formatCurrency = (amount) => {
