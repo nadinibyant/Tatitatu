@@ -11,9 +11,11 @@ import Spinner from "../../../components/Spinner";
 import api from "../../../utils/api";
 
 export default function IzinCutiKaryawan(){
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const karyawan_id = userData.userId
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
-        karyawan_id: '1', 
+        karyawan_id: karyawan_id, 
         tanggal_mulai: '',
         tanggal_selesai: '',
         alasan: ''
@@ -24,6 +26,7 @@ export default function IzinCutiKaryawan(){
     const [data, setData] = useState([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const navigate = useNavigate();
+
 
     useEffect(() => {
         if (isInitialLoad) {
@@ -44,26 +47,27 @@ export default function IzinCutiKaryawan(){
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/cuti-karyawan/02/2025');
+            // const response = await api.get(`/cuti-karyawan/${karyawan_id}/karyawan`);
+            const response = await api.get(`/cuti-karyawan/02/2025`);
             
             if (response.data.success) {
-                // Mengambil data cuti dari response
-                const cutiData = response.data.data[0].cuti_karyawan;
-
+                const cutiData = response.data.data?.[0]?.cuti_karyawan || [];
+    
                 const formattedData = cutiData.map((item, index) => ({
                     nomor: index + 1,
                     Tanggal: `${formatDate(item.tanggal_mulai)}`,
-                    // Tanggal: `${formatDate(item.tanggal_mulai)} s/d ${formatDate(item.tanggal_selesai)}`,
                     'Alasan Izin/Cuti': item.alasan,
                     Status: <StatusBadge status={item.status || 'Menunggu'} />,
                     'Jumlah Hari': item.jumlah_cuti
                 }));
                 
                 setData(formattedData);
+            } else {
+                setData([]);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            setError('Gagal mengambil data');
+            setData([]);
         } finally {
             setIsLoading(false);
         }

@@ -43,7 +43,7 @@ const EditPenjualanCustom = () => {
     const [dataBarang, setDataBarang] = useState([]);
     const [dataPackaging, setDataPackaging] = useState([]);
     const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
-
+    const toko_id = userData.userId
     // UI state
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
@@ -61,17 +61,17 @@ const EditPenjualanCustom = () => {
     }, [id]);
 
     const mapCustomProducts = (data) => data.map(item => ({
-        id: item.barang_custom_id,
+        barang_custom_id: item.barang_custom_id,
         image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
         code: item.barang_custom_id,
-        name: item.nama_barang,
-        price: item.harga
+        nama_barang: item.nama_barang,
+        price: item.harga_jual
     }));
     
     const mapPackagingProducts = (data) => data.map(item => ({
-        id: item.packaging_id,
-        name: item.nama_packaging,
-        price: item.harga,
+        packaging_id: item.packaging_id,
+        nama_packaging: item.nama_packaging,
+        price: item.harga_jual,
         image: item.image ? 
             `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
             "https://via.placeholder.com/50"
@@ -82,9 +82,9 @@ const EditPenjualanCustom = () => {
             setLoading(true);
             const [penjualanRes, customRes, packagingRes, metodeRes] = await Promise.all([
                 api.get(`/penjualan/${id}`),
-                api.get('/barang-custom'),
-                api.get('/packaging'),
-                api.get('/metode-pembayaran')
+                api.get(`/barang-custom?toko_id=${toko_id}`),
+                api.get(`/packaging?toko_id=${toko_id}`),
+                api.get(`/metode-pembayaran?toko_id=${toko_id}`)
             ]);
 
             const metodeList = [
@@ -114,13 +114,19 @@ const EditPenjualanCustom = () => {
     
             setIsMetodeDisabled(isCash);
             setDetailData({
-                customProducts: detail.produk_penjualan.filter(p => p.barang_custom_id),
+                customProducts: detail.produk.filter(p => p.barang_custom).map(item => ({
+                    ...item,
+                    id: item.produk_penjualan_id || `custom-${Date.now()}-${item.barang_custom?.barang_custom_id}`
+                })),
                 biayaProducts: detail.rincian_biaya_custom ? detail.rincian_biaya_custom.map(biaya => ({
-                    id: biaya.rincian_biaya_custom_id,
+                    id: biaya.rincian_biaya_custom_id || `biaya-${Date.now()}-${Math.random()}`,
                     nama_biaya: biaya.nama_biaya,
                     jumlah_biaya: biaya.jumlah_biaya
                 })) : [],
-                packagingProducts: detail.produk_penjualan.filter(p => p.packaging_id)
+                packagingProducts: detail.produk.filter(p => p.packaging).map(item => ({
+                    ...item,
+                    id: item.produk_penjualan_id || `packaging-${Date.now()}-${item.packaging?.packaging_id}`
+                }))
             });
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -145,51 +151,58 @@ const EditPenjualanCustom = () => {
     ];
     
 
-    const createTableRow = (item, index, type) => ({
-        id: item.produk_penjualan_id || item.id,
-        No: index + 1,
-        "Foto Produk": <img 
-        src={type === 'custom' ? 
-            (item.barang_custom?.image?.includes('http') ? 
-                item.barang_custom.image : 
-                `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.barang_custom?.image}`
-            ) : 
-            (item.packaging?.image?.includes('http') ? 
-                item.packaging.image : 
-                `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
-            )}
-        alt="product" 
-        className="w-12 h-12" 
-        />,
-        "Nama Barang": <InputDropdown 
-            showRequired={false}
-            options={type === 'custom' ? 
-                dataBarang.map(item => ({
-                    value: item.id,
-                    label: item.name
-                })) : 
-                dataPackaging.map(item => ({
-                    value: item.id,
-                    label: item.name
-                }))}
-            value={type === 'custom' ? item.barang_custom_id : item.packaging_id}
-            onSelect={(selected) => handleProductSelect(type, item.produk_penjualan_id || item.id, selected)}
-        />,
-        "Harga Satuan": `Rp${item.harga_satuan?.toLocaleString('id-ID')}`,
-        "Kuantitas": <Input
-            showRequired={false}
-            type="number"
-            value={item.kuantitas}
-            onChange={(value) => handleQuantityChange(type, item.produk_penjualan_id || item.id, value)}
-        />,
-        "Total Biaya": `Rp${item.total_biaya?.toLocaleString('id-ID')}`,
-        Aksi: <button 
-            className="text-red-500 hover:text-red-700"
-            onClick={() => handleDeleteRow(type, item.produk_penjualan_id || item.id)}
-        >
-            Hapus
-        </button>
-    });
+    const createTableRow = (item, index, type) => {
+        // Generate a unique ID if none exists
+        const itemId = item.id || `${type}-${index}-${Date.now()}`;
+        
+        return {
+            id: itemId,
+            No: index + 1,
+            "Foto Produk": <img 
+                src={type === 'custom' ? 
+                    (item.barang_custom?.image?.includes('http') ? 
+                        item.barang_custom.image : 
+                        `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.barang_custom?.image}`
+                    ) : 
+                    (item.packaging?.image?.includes('http') ? 
+                        item.packaging.image : 
+                        `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
+                    )}
+                alt="product" 
+                className="w-12 h-12" 
+            />,
+            "Nama Barang": <InputDropdown 
+                showRequired={false}
+                options={type === 'custom' ? 
+                    dataBarang.map(item => ({
+                        value: item.barang_custom_id,
+                        label: item.nama_barang
+                    })) : 
+                    dataPackaging.map(item => ({
+                        value: item.packaging_id,
+                        label: item.nama_packaging
+                    }))}
+                value={type === 'custom' ? 
+                       item.barang_custom?.barang_custom_id || item.barang_custom_id : 
+                       item.packaging?.packaging_id || item.packaging_id}
+                onSelect={(selected) => handleProductSelect(type, itemId, selected)}
+            />,
+            "Harga Satuan": `Rp${item.harga_satuan?.toLocaleString('id-ID')}`,
+            "Kuantitas": <Input
+                showRequired={false}
+                type="number"
+                value={item.kuantitas}
+                onChange={(value) => handleQuantityChange(type, itemId, value)}
+            />,
+            "Total Biaya": `Rp${item.total_biaya?.toLocaleString('id-ID')}`,
+            Aksi: <button 
+                className="text-red-500 hover:text-red-700"
+                onClick={() => handleDeleteRow(type, itemId)}
+            >
+                Hapus
+            </button>
+        };
+    };
 
     const createBiayaRow = (item, index) => ({
         id: item.id,
@@ -242,9 +255,17 @@ const EditPenjualanCustom = () => {
         setDetailData(prev => {
             const key = type === 'custom' ? 'customProducts' : 
                        type === 'biaya' ? 'biayaProducts' : 'packagingProducts';
+                       
+            console.log('Deleting item with id:', id);
+            console.log('Current items:', prev[key]);
+            
             return {
                 ...prev,
-                [key]: prev[key].filter(item => (item.produk_penjualan_id || item.id) !== id)
+                [key]: prev[key].filter(item => {
+                    // Log item details for debugging
+                    console.log('Checking item:', item);
+                    return item.id !== id;
+                })
             };
         });
     };
@@ -255,23 +276,40 @@ const EditPenjualanCustom = () => {
         
         setDetailData(prev => {
             const items = [...prev[key]];
-            const itemIndex = items.findIndex(item => (item.produk_penjualan_id || item.id) === itemId);
+            const itemIndex = items.findIndex(item => item.id === itemId);
             
             if (itemIndex !== -1) {
-                const selectedProduct = products.find(p => p.id === selected.value);
-                const currentQuantity = items[itemIndex].kuantitas || 1;
-                
-                items[itemIndex] = {
-                    ...items[itemIndex],
-                    [`${type === 'custom' ? 'barang_custom' : 'packaging'}_id`]: selected.value,
-                    harga_satuan: selectedProduct.price,
-                    kuantitas: currentQuantity,
-                    total_biaya: selectedProduct.price * currentQuantity,
-                    [`${type === 'custom' ? 'barang_custom' : 'packaging'}`]: {
-                        id: selectedProduct.id,
-                        image: selectedProduct.image
+                const selectedProduct = products.find(p => 
+                    type === 'custom' 
+                        ? p.barang_custom_id === selected.value 
+                        : p.packaging_id === selected.value
+                );
+    
+                if (selectedProduct) {
+                    const currentQuantity = items[itemIndex].kuantitas || 1;
+                    
+                    items[itemIndex] = {
+                        ...items[itemIndex],
+                        id: itemId,
+                        kuantitas: currentQuantity,
+                        harga_satuan: selectedProduct.price,
+                        total_biaya: selectedProduct.price * currentQuantity
+                    };
+    
+                    if (type === 'custom') {
+                        items[itemIndex].barang_custom = {
+                            barang_custom_id: selected.value,
+                            image: selectedProduct.image
+                        };
+                        items[itemIndex].barang_custom_id = selected.value;
+                    } else {
+                        items[itemIndex].packaging = {
+                            packaging_id: selected.value,
+                            image: selectedProduct.image
+                        };
+                        items[itemIndex].packaging_id = selected.value;
                     }
-                };
+                }
             }
             
             return { ...prev, [key]: items };
@@ -310,23 +348,36 @@ const EditPenjualanCustom = () => {
         const { activeTable, selectedItems } = modalState;
         const key = activeTable === 0 ? 'customProducts' : 'packagingProducts';
         
-        const newItems = selectedItems.map(item => ({
-            id: `${key}-${Date.now()}-${item.id}`,
-            [`${activeTable === 0 ? 'barang_custom' : 'packaging'}_id`]: item.id,
-            harga_satuan: item.price,
-            kuantitas: item.count,
-            total_biaya: item.price * item.count,
-            [activeTable === 0 ? 'barang_custom' : 'packaging']: {
-                id: item.id,
-                image: item.image
+        const newItems = selectedItems.map(item => {
+            const newItem = {
+                id: `${key}-${Date.now()}-${item.id}`,
+                kuantitas: item.count,
+                harga_satuan: item.price,
+                total_biaya: item.price * item.count
+            };
+    
+            if (activeTable === 0) {
+                newItem.barang_custom = {
+                    barang_custom_id: item.id,
+                    image: item.image
+                };
+                newItem.barang_custom_id = item.id;
+            } else {
+                newItem.packaging = {
+                    packaging_id: item.id,
+                    image: item.image
+                };
+                newItem.packaging_id = item.id;
             }
-        }));
-
+    
+            return newItem;
+        });
+    
         setDetailData(prev => ({
             ...prev,
             [key]: [...prev[key], ...newItems]
         }));
-
+    
         setModalState(prev => ({
             ...prev,
             isOpen: false,
@@ -351,39 +402,52 @@ const EditPenjualanCustom = () => {
         try {
             setLoading(true);
             
+            // Mengumpulkan semua produk (yang lama dan baru)
+            const allProducts = [
+                ...detailData.customProducts.map(item => ({
+                    produk_penjualan_id: item.produk_penjualan_id, // untuk data existing
+                    barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
+                    harga_satuan: item.harga_satuan,
+                    kuantitas: item.kuantitas,
+                    total_biaya: item.total_biaya
+                })),
+                ...detailData.packagingProducts.map(item => ({
+                    produk_penjualan_id: item.produk_penjualan_id,
+                    packaging_id: item.packaging?.packaging_id || item.packaging_id,
+                    harga_satuan: item.harga_satuan,
+                    kuantitas: item.kuantitas,
+                    total_biaya: item.total_biaya
+                }))
+            ];
+    
+            // Mengumpulkan semua rincian biaya (yang lama dan baru)
+            const allBiaya = detailData.biayaProducts.map(item => ({
+                rincian_biaya_custom_id: item.rincian_biaya_custom_id, 
+                nama_biaya: item.nama_biaya,
+                jumlah_biaya: Number(item.jumlah_biaya)
+            }));
+    
             const payload = {
+                toko_id: toko_id,
                 cash_or_non: formData.selectBayar === 1,
-                metode_id: formData.selectBayar === 1 ? null : formData.selectMetode, 
-                catatan: formData.note, 
+                metode_id: formData.selectBayar === 1 ? null : formData.selectMetode,
+                nama_pembeli: formData.namaPembeli,
+                tanggal: formData.tanggal,
+                catatan: formData.note,
                 sub_total: calculateSubtotal(),
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
                 total_penjualan: calculateTotalPenjualan(calculateSubtotal()),
-                produk: [
-                    ...detailData.customProducts.map(item => ({
-                        barang_custom_id: item.barang_custom_id,
-                        harga_satuan: item.harga_satuan,
-                        kuantitas: item.kuantitas,
-                        total_biaya: item.total_biaya
-                    })),
-                    ...detailData.packagingProducts.map(item => ({
-                        packaging_id: item.packaging_id,
-                        harga_satuan: item.harga_satuan,
-                        kuantitas: item.kuantitas,
-                        total_biaya: item.total_biaya
-                    }))
-                ],
-                rincian_biaya_custom: detailData.biayaProducts.map(item => ({
-                    nama_biaya: item.nama_biaya,
-                    jumlah_biaya: Number(item.jumlah_biaya)
-                }))
+                produk: allProducts,
+                rincian_biaya_custom: allBiaya
             };
     
             await api.put(`/penjualan/${id}`, payload);
+            navigate('/penjualanToko')
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
-            setErrorMessage(error.response.data.message)
+            setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat menyimpan data')
         } finally {
             setLoading(false);
         }
@@ -404,7 +468,7 @@ const EditPenjualanCustom = () => {
         { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
         { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
         { label: 'Harga Satuan', key: 'Harga Satuan', align: 'text-left' },
-        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'200px' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
         { label: 'Total Biaya', key: 'Total Biaya', align: 'text-left' },
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
@@ -412,7 +476,7 @@ const EditPenjualanCustom = () => {
     const biayaHeaders = [
         { label: 'No', key: 'No', align: 'text-left' },
         { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
-        { label: 'Jumlah Biaya', key: 'Jumlah Biaya', align: 'text-left', width: '200px' },
+        { label: 'Jumlah Biaya', key: 'Jumlah Biaya', align: 'text-left', width: '110px' },
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
@@ -582,7 +646,7 @@ const EditPenjualanCustom = () => {
                                     </span>
                                     <input
                                         type="text"
-                                        placeholder="Cari Barang yang mau dibeli"
+                                        placeholder="Cari barang..."
                                         value={modalState.searchTerm}
                                         onChange={(e) => setModalState(prev => ({...prev, searchTerm: e.target.value}))}
                                         className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -631,34 +695,39 @@ const EditPenjualanCustom = () => {
                                 <Gallery2
                                     items={modalState.content === 'packaging' 
                                         ? dataPackaging.filter(item => 
-                                            item.name.toLowerCase().includes(modalState.searchTerm.toLowerCase())
+                                            item.nama_packaging?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
                                         ).map(item => ({
-                                            ...item,
-                                            formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
+                                            id: item.packaging_id,
+                                            image: item.image,
+                                            code: item.packaging_id,
+                                            name: item.nama_packaging,
+                                            price: item.price || item.harga_jual || item.harga
                                         }))
                                         : dataBarang.filter(item =>
-                                            item.name.toLowerCase().includes(modalState.searchTerm.toLowerCase())
+                                            item.nama_barang?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
                                         ).map(item => ({
-                                            ...item,
-                                            formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
+                                            id: item.barang_custom_id,
+                                            image: item.image,
+                                            code: item.barang_custom_id,
+                                            name: item.nama_barang,
+                                            price: item.price || item.harga_jual || item.harga
                                         }))
                                     }
-                                    onSelect={(item, count) => 
+                                    onSelect={(item, count) => {
                                         setModalState(prev => {
-                                            const updatedItems = [...prev.selectedItems];
-                                            const existingIndex = updatedItems.findIndex(i => i.id === item.id);
-                                            if (existingIndex !== -1) {
-                                                if (count === 0) {
-                                                    updatedItems.splice(existingIndex, 1);
-                                                } else {
-                                                    updatedItems[existingIndex].count = count;
-                                                }
-                                            } else if (count > 0) {
-                                                updatedItems.push({ ...item, count });
+                                            const updatedItems = prev.selectedItems.filter(i => i.id !== item.id);
+                                            if (count > 0) {
+                                                updatedItems.push({
+                                                    ...item,
+                                                    count
+                                                });
                                             }
-                                            return { ...prev, selectedItems: updatedItems };
-                                        })
-                                    }
+                                            return {
+                                                ...prev,
+                                                selectedItems: updatedItems
+                                            };
+                                        });
+                                    }}
                                     selectedItems={modalState.selectedItems}
                                 />
                             </div>

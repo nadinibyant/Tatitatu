@@ -13,6 +13,8 @@ import api from "../../../../utils/api";
 
 export default function AbsensiKaryawan() {
     // State Management
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const karyawan_id = userData.userId
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         foto: null,
@@ -123,28 +125,37 @@ export default function AbsensiKaryawan() {
     const fetchData = async () => {
         try {
             setIsLoading(true);
-
-            const mockData = [
-                {
-                    nomor: 1,
-                    tanggal: '18-05-2024',
-                    foto: <img src="/api/placeholder/64/64" alt="Lokasi" className="w-16 h-16 object-cover rounded"/>,
-                    lokasi: 'GOR Haji Agus Salim',
-                    status: <StatusBadge status="Antar" />
-                },
-                {
-                    nomor: 2,
-                    tanggal: '18-05-2024',
-                    foto: <img src="/api/placeholder/64/64" alt="Lokasi" className="w-16 h-16 object-cover rounded"/>,
-                    lokasi: 'GOR Haji Agus Salim',
-                    status: <StatusBadge status="Jemput" />
-                }
-            ];
+            const response = await api.get(`/absensi-karyawan?karyawanId=${karyawan_id}`);
             
-            setData(mockData);
+            if (response.data.success) {
+                const formattedData = response.data.data.map((item, index) => ({
+                    nomor: index + 1,
+                    tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }),
+                    foto: (
+                        <img 
+                            src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`}
+                            alt="Lokasi" 
+                            className="w-16 h-16 object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = "/api/placeholder/64/64"; 
+                            }}
+                        />
+                    ),
+                    lokasi: item.lokasi,
+                    status: <StatusBadge status={item.status} />
+                }));
+                
+                setData(formattedData);
+            } else {
+                setData([]);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
-            setError('Gagal mengambil data');
+            setData([]); 
         } finally {
             setIsLoading(false);
         }
@@ -166,7 +177,7 @@ export default function AbsensiKaryawan() {
             submitData.append('tanggal', formData.tanggal);
             submitData.append('lokasi', formData.lokasi);
             submitData.append('status', formData.status);
-            submitData.append('karyawan_id', 2)
+            submitData.append('karyawan_id', karyawan_id)
 
             // console.log('Form data entries:');
             // for (let pair of submitData.entries()) {

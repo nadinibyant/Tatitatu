@@ -20,7 +20,7 @@ export default function EditKaryawan(){
         email: '',
         name: '',
         division: '',
-        store: 'Tatitatu',
+        store: '',
         branch: '',
         baseSalary: '',
         bonus: '',
@@ -38,6 +38,8 @@ export default function EditKaryawan(){
       const [isAlertSuccess, setAlertSucc] = useState(false)
       const [isErrorAlert, setErrorAlert] = useState(false);
       const [errorMessage, setErrorMessage] = useState('');
+      const userData = JSON.parse(localStorage.getItem('userData'))
+      const toko_id = userData.userId
 
       const [errors, setErrors] = useState({});
 
@@ -65,7 +67,7 @@ export default function EditKaryawan(){
                 name: data.nama_karyawan || '',
                 password: data.password, 
                 division: data.divisi_karyawan_id,  
-                store: 'Tatitatu',
+                store: data.toko_id,
                 branch: data.cabang_id, 
                 baseSalary: data.jumlah_gaji_pokok?.toString() || '',  
                 bonus: data.bonus?.toString() || '',
@@ -89,12 +91,29 @@ export default function EditKaryawan(){
         }
     };
 
-    console.log(formData)
+    const fetchStore = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/toko/${toko_id}`);
+            if (response.data.success) {
+                setFormData(prev => ({
+                    ...prev,
+                    store: response.data.data.nama_toko
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching store:', error);
+            setErrorMessage('Gagal mengambil data toko');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Fetch cabang
     const fetchBranches = async () => {
         try {
-            const response = await api.get('/cabang');
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
             if (response.data.success) {
                 const options = response.data.data.map(branch => ({
                     value: branch.cabang_id,
@@ -110,7 +129,7 @@ export default function EditKaryawan(){
     // Fetch divisi
     const fetchDivisi = async () => {
         try {
-            const response = await api.get('/divisi-karyawan');
+            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
             if (response.data.success) {
                 const options = response.data.data.map(div => ({
                     value: div.divisi_karyawan_id,
@@ -127,7 +146,8 @@ export default function EditKaryawan(){
         fetchBranches();
         fetchDivisi();
         fetchKaryawanById();
-    }, [id]);
+        fetchStore()
+    }, [id, toko_id]);
     
     const handleInputChange = (field) => (value) => {
       console.log(`Updating ${field} with value:`, value);
@@ -201,6 +221,7 @@ export default function EditKaryawan(){
                 }
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
+                formDataToSend.append('toko_id', toko_id)
     
                 const response = await api.put(`/karyawan/${id}`, formDataToSend, {
                     headers: {
@@ -307,7 +328,7 @@ export default function EditKaryawan(){
 
                               <Input
                                   label="Toko"
-                                  value="Tatitatu"
+                                  value={formData.store}
                                   disabled={true}
                                   required={false}
                               />

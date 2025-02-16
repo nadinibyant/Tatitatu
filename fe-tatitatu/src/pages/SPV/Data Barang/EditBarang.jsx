@@ -32,6 +32,7 @@ export default function EditBarang() {
   const [isAlertSuccess, setAlertSucc] = useState(false)
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const toko_id = userData.userId
   const { id } = useParams();
 
   const [biayaGudangData, setBiayaGudangData] = useState(null);
@@ -292,7 +293,7 @@ export default function EditBarang() {
 
   const fetchKategori = async () => {
     try {
-      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
       const response = await api.get(endpoint);
       
       if (response.data.success) {
@@ -368,7 +369,7 @@ export default function EditBarang() {
   const fetchCabangAndBiayaData = async () => {
     try {
       const [cabangResponse, biayaResponse] = await Promise.all([
-        api.get('/cabang'),
+        api.get(`/cabang?toko_id=${toko_id}`),
         api.get('/biaya-toko'),
       ]);
   

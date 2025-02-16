@@ -31,6 +31,28 @@ export default function MasterKategori() {
     const [errorMessage, setErrorMessage] = useState('');
     const [isAlertSuccDel, setAlertDelSucc] = useState(false)
     const [tableData, setTableData] = useState([]);
+    const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+    const [toko_id, setTokoId] = useState(null);
+
+    useEffect(() => {
+        const fetchTokoId = async () => {
+            try {
+                if (userDataLogin.role === 'kasirtoko') {
+                    const response = await api.get(`/cabang/${userDataLogin.userId}`);
+                    console.log(response)
+                    if (response.data.success) {
+                        setTokoId(response.data.data.toko_id)
+                    }
+                } else {
+                    setTokoId(userDataLogin.userId);
+                }
+            } catch (error) {
+                console.error('Error fetching toko id:', error);
+            }
+        };
+
+        fetchTokoId();
+    }, [userDataLogin.role, userDataLogin.userId]);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('userData'));
@@ -41,11 +63,10 @@ export default function MasterKategori() {
         setUserData(user);
     }, [navigate]);
 
-    // get data divisi
     const fetchDivisi = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/divisi-karyawan');
+            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
             const items = response.data.data.map(item => ({
                 id: item.divisi_karyawan_id,
                 kategori: item.nama_divisi
@@ -78,7 +99,7 @@ export default function MasterKategori() {
     const fetchBarang = async () => {
         try {
             setLoading(true);
-            const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : '/kategori-barang';
+            const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
             const response = await api.get(endpoint);
             const items = response.data.data.map(item => ({
                 id: item.kategori_barang_id,
@@ -112,12 +133,19 @@ export default function MasterKategori() {
         try {
             setLoading(true);
             const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
-            const response = await api.get(endpoint);
+            let url = endpoint;
+            if (userData?.role === 'admin' || userData?.role === 'kasirtoko') {
+                url = `${endpoint}?toko_id=${toko_id}`;
+            }
+
+
+            const response = await api.get(url);
             const items = response.data.data.map(item => ({
                 id: item.metode_id,
                 kategori: item.nama_metode
             }));
-    
+
+            
             setData(prevData => ({
                 ...prevData,
                 categories: prevData.categories.map(category => {
@@ -300,7 +328,8 @@ export default function MasterKategori() {
             if(selectedCategory.title === 'Divisi') {
                 if(formType === 'add') {
                     await api.post('/divisi-karyawan', {
-                        nama_divisi: formData
+                        nama_divisi: formData,
+                        toko_id: toko_id
                     });
                     await fetchDivisi();
                     setShowFormModal(false);
@@ -316,9 +345,10 @@ export default function MasterKategori() {
             } else if (selectedCategory.title === 'Kategori Barang'){
                 const endpoint = userData?.role === 'admingudang' ? '/kategori-barang-gudang' : '/kategori-barang';
                 if(formType === 'add') {
-                    await api.post(endpoint, {
-                        nama_kategori_barang: formData
-                    });
+                    const payload = userData?.role === 'admingudang' 
+                        ? { nama_kategori_barang: formData }
+                        : { nama_kategori_barang: formData, toko_id: toko_id };
+                    await api.post(endpoint, payload);
                     await fetchBarang();
                     setShowFormModal(false);
                     setAlertSucc(true);
@@ -334,7 +364,8 @@ export default function MasterKategori() {
                 const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
                 if(formType === 'add') {
                     await api.post(endpoint, {
-                        nama_metode: formData
+                        nama_metode: formData,
+                        toko_id: toko_id
                     });
                     await fetchMetode();
                     setShowFormModal(false);

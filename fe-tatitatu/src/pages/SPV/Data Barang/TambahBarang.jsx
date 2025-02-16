@@ -33,6 +33,8 @@ export default function TambahBarang() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [biayaGudangData, setBiayaGudangData] = useState(null);
+  const toko_id = userData.userId
+
 
   const fetchBiayaGudang = async () => {
     try {
@@ -154,7 +156,7 @@ export default function TambahBarang() {
 
   const fetchKategori = async () => {
     try {
-      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
       const response = await api.get(endpoint);
       
       if (response.data.success) {
@@ -228,7 +230,7 @@ export default function TambahBarang() {
   const fetchCabangAndBiayaData = async () => {
     try {
       const [cabangResponse, biayaResponse] = await Promise.all([
-        api.get('/cabang'),
+        api.get(`/cabang?toko_id=${toko_id}`),
         api.get('/biaya-toko'),
       ]);
   
@@ -609,6 +611,7 @@ export default function TambahBarang() {
         formData.append('kategori_barang_id', data.info_barang.Kategori);
         formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formData.append('toko_id', toko_id)
   
         const rincianBiayaData = [];
         let hasError = false;
@@ -713,8 +716,7 @@ export default function TambahBarang() {
       setLoading(false);
     }
   };
-  
-  console.log(materials)
+
 
   const navigate = useNavigate()
   const handleBtnCancel = () => {

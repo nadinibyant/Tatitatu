@@ -12,10 +12,12 @@ import api from "../../../utils/api";
 
 export default function Absensi() {
     // State Management
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const karyawan_id = userData.userId
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         image: null,
-        karyawan_id: '3', 
+        karyawan_id: karyawan_id, 
         tanggal: '',
         jam_masuk: '',
         jam_keluar: '',
@@ -67,26 +69,38 @@ export default function Absensi() {
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            // const response = await api.get('/absensi-karyawan');
+            const response = await api.get(`/absensi-karyawan?karyawanId=${karyawan_id}`);
             
-            // const formattedData = response.data.map((item, index) => ({
-            //     nomor: index + 1,
-            //     tanggal: item.tanggal,
-            //     foto: <img 
-            //         src={item.image_url || "/api/placeholder/64/64"} 
-            //         alt="Foto Absensi" 
-            //         className="w-16 h-16 object-cover rounded"
-            //     />,
-            //     jam_masuk: item.jam_masuk,
-            //     jam_keluar: item.jam_keluar,
-            //     total_menit: `${formatNumber(item.total_menit)} Menit`
-            // }));
-            
-            // setData(formattedData);
-            setData([])
+            if (response.data.success) {
+                const formattedData = response.data.data.map((item, index) => ({
+                    nomor: index + 1,
+                    tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }),
+                    foto: (
+                        <img 
+                            src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`}
+                            alt="Foto Absensi" 
+                            className="w-16 h-16 object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = "/api/placeholder/64/64"; 
+                            }}
+                        />
+                    ),
+                    jam_masuk: item.jam_masuk || '-',
+                    jam_keluar: item.jam_keluar || '-',
+                    total_menit: item.total_menit ? `${formatNumber(item.total_menit)} Menit` : '-'
+                }));
+                
+                setData(formattedData);
+            } else {
+                setData([]);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
-            setError('Gagal mengambil data');
+            setData([]);
         } finally {
             setIsLoading(false);
         }

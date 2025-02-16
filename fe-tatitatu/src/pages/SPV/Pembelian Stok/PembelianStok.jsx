@@ -11,6 +11,7 @@ import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import ActionMenu from "../../../components/ActionMenu";
 import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
 
 export default function PembelianStok() {
     const [isModalMore, setModalMore] = useState(false)
@@ -27,6 +28,7 @@ export default function PembelianStok() {
     const [isLoading, setLoading] = useState(false);
     const [errorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const toko_id = userData.userId
 
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
@@ -42,7 +44,22 @@ export default function PembelianStok() {
         try {
             setLoading(true);
             const endpoint = isAdminGudang ? '/pembelian-gudang' : '/pembelian';
-            const response = await api.get(`${endpoint}?bulan=${selectedMonth}&tahun=${selectedYear}`);
+
+            const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+            
+            const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+
+            let url;
+            if (isAdminGudang) {
+                url = `${endpoint}/date?startDate=${startDate}&endDate=${endDate}`;
+            } else {
+                url = `${endpoint}?bulan=${selectedMonth}&tahun=${selectedYear}`;
+                if (!isAdminGudang) {
+                    url += `&toko_id=${toko_id}`;
+                }
+            }
+            
+            const response = await api.get(url);
             
             const formattedData = response.data.data.map((item) => {
                 let namaBarang;
@@ -365,6 +382,14 @@ return (
             onConfirm={handleSucc}
             />
         )}
+
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
     </LayoutWithNav>
 </>
 );

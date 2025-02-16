@@ -10,6 +10,8 @@ export default function BiayaGudang() {
   const [data, setData] = useState({ branches: [] });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const toko_id = userData.userId
 
   useEffect(() => {
     fetchData();
@@ -26,7 +28,7 @@ export default function BiayaGudang() {
     try {
       setLoading(true);
       const [branchResponse, biayaResponse] = await Promise.all([
-        api.get('/cabang'),
+        api.get(`/cabang?toko_id=${toko_id}`),
         api.get('/biaya-toko')
       ]);
   

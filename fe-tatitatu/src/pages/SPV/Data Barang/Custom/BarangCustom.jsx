@@ -29,12 +29,16 @@ export default function BarangCustom() {
   const [data,setData] = useState([])
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const toko_id = userData.userId
 
     const fetchDataBarang = async () => {
       try {
         setIsLoading(true);
         const endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
-        const response = await api.get(endpoint);
+
+        const url = isAdminGudang ? endpoint : `${endpoint}?toko_id=${toko_id}`;
+        
+        const response = await api.get(url);
         
         if (response.data.success) {
           const transformedData = response.data.data.map(item => ({
@@ -48,7 +52,8 @@ export default function BarangCustom() {
             category: item.kategori_barang_id,
             jumlah_minimum_stok: item.jumlah_minimum_stok,
             isi: item.isi,
-            harga_satuan: item.harga_satuan
+            harga_satuan: item.harga_satuan,
+            harga_jual: item.harga_jual
           }));
           
           setData(transformedData);
@@ -75,13 +80,14 @@ const [data2, setData2] = useState({
       Harga: "",
       Isi: "",
       HargaSatuan: "",
+      HargaJual: ""
     },
   ],
 });
 
 const fetchCategories = async () => {
  try {
-   const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+   const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
    const response = await api.get(endpoint);
    if (response.data.success) {
      const options = response.data.data.map(item => ({
@@ -116,6 +122,7 @@ const handleAddBtn = () => {
         Harga: "",
         Isi: "",
         HargaSatuan: "",
+        HargaJual: ""
       },
     ],
   });
@@ -142,6 +149,7 @@ const handleAddBtn = () => {
           Harga: priceNumber,
           Isi: itemToEdit.isi,
           HargaSatuan: itemToEdit.harga_satuan,
+          HargaJual: itemToEdit.harga_jual
         },
       ],
     });
@@ -234,6 +242,8 @@ const handleAddBtn = () => {
         formData.append('harga', data2.rincian_biaya[0].Harga);
         formData.append('isi', data2.rincian_biaya[0].Isi);
         formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+        formData.append('harga_jual', data2.rincian_biaya[0].HargaJual)
+        formData.append('toko_id', toko_id)
       }
   
       const endpoint = isAdminGudang 
@@ -254,7 +264,7 @@ const handleAddBtn = () => {
         fetchDataBarang();
       }
     } catch (error) {
-      setErrorMessage('Terjadi kesalahan saat menyimpan data');
+      setErrorMessage(error.response.data.message);
       setErrorAlert(true);
     } finally {
       setIsLoading(false);
@@ -317,6 +327,7 @@ const handleAddBtn = () => {
           Harga: priceNumber,
           Isi: itemToShow.isi,
           HargaSatuan: itemToShow.harga_satuan,
+          HargaJual: itemToShow.harga_jual
         },
       ],
     });
@@ -473,6 +484,15 @@ const handleAddBtn = () => {
                                   onChange={(value) => handleInputChange("Isi", value)}
                                 />
                               ),
+                              HargaJual: (
+                                <Input
+                                showRequired={false}
+                                  type={'number'}
+                                  width="w-full"
+                                  value={data2.rincian_biaya[0].HargaJual}
+                                  onChange={(value) => handleInputChange("HargaJual", value)}
+                                />
+                              ),
                               HargaSatuan: `Rp${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
                             },
                           ]}
@@ -534,7 +554,7 @@ const handleAddBtn = () => {
                     
                     <div>
                       <p className="text-gray-500">Jumlah Minimum Stok</p>
-                      <p className="font-medium">{data2.info_barang["Jumlah Minimum Stok"]}</p>
+                      <p className="font-medium">{data2.info_barang["Jumlah Minimum Stok"].toLocaleString('id-ID')}</p>
                     </div>
       
                     <div>
@@ -554,7 +574,8 @@ const handleAddBtn = () => {
                         No: index + 1,
                         Harga: `Rp${formatCurrency(item.Harga)}`,
                         Isi: formatCurrency(item.Isi),
-                        HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`
+                        HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`,
+                        HargaJual: `Rp${formatCurrency(item.HargaJual)}`
                     }))}
                     hasPagination={false}
                     hasSearch={false}
@@ -575,7 +596,10 @@ const handleAddBtn = () => {
                     </svg>
                   } 
                   hoverColor="hover:bg-gray-100"
-                  onClick={handleEdit}
+                  onClick={() => {
+                    handleEdit({ id: id }); 
+                    setModalDetail(false); 
+                  }}
                 />
               </div>
             </div>

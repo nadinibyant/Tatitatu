@@ -32,6 +32,7 @@ export default function EditBarang() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { id } = useParams();
+  const toko_id = userData.userId
 
   const fetchDetailBarang = async () => {
     try {
@@ -272,7 +273,7 @@ export default function EditBarang() {
 
   const fetchKategori = async () => {
     try {
-      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
       const response = await api.get(endpoint);
       
       if (response.data.success) {

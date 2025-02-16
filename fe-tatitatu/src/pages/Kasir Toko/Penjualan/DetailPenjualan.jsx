@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
@@ -8,16 +8,35 @@ import Table from "../../../components/Table";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import Spinner from "../../../components/Spinner";
+import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
 
 export default function DetailPenjualanKasir() {
     const location = useLocation()
     const { nomor, tipe } = location.state || {};
     const isCustom = tipe === 'custom';
-    
+    const [errorMessage, setErrorMessage] = useState("");
     const [isModalDel, setModalDel] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const [isLoading, setIsLoading] = useState(false)
+    const [data, setData] = useState({
+        nomor: '',
+        tanggal: '',
+        nama_pembeli: '',
+        bayar: '',
+        metode: '',
+        catatan: '',
+        data_produk: [], 
+        rincian_biaya: [], 
+        data_packaging: [], 
+        sub_total: 0,
+        diskon: 0,
+        pajak: 0,
+        total_penjualan: 0
+    });
 
     const breadcrumbItems = isAdminGudang 
     ? [
@@ -29,51 +48,150 @@ export default function DetailPenjualanKasir() {
         { label: "Detail Penjualan", href: "" },
     ];
 
-    const data = {
-        nomor: 'INV123',
-        tanggal: '2024-12-12',
-        nama_pembeli: 'Suryani',
-        bayar: 'Cash',
-        metode: '-',
-        catatan: 'Catatan penting mengenai transaksi ini',  
-        data_produk: [
-            {
-                "Foto Produk": "https://via.placeholder.com/150",
-                "Nama Produk": "Gelang Cantik",
-                "Jenis Barang": "Barang Handmade",
-                "Harga Satuan": 15000,
-                kuantitas: 10,
-                "Total Biaya": 150000
-            },
-            {
-                "Foto Produk": "https://via.placeholder.com/150",
-                "Nama Produk": "Gelang Cantik",
-                "Jenis Barang": "Barang Handmade",
-                "Harga Satuan": 15000,
-                kuantitas: 10,
-                "Total Biaya": 150000
-            },
-        ],
-        rincian_biaya: [
-            {
-                "Nama Biaya": "Jasa",
-                "Jumlah Biaya": 1000
+    const getImageUrl = (item) => {
+        if (item.barang_handmade) {
+            return `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.barang_handmade.image}`;
+        }
+        if (item.barang_non_handmade) {
+            return `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.barang_non_handmade.image}`;
+        }
+        if (item.packaging) {
+            return `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging.image}`;
+        }
+        if (item.barang_custom) {
+            return `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.barang_custom.image}`;
+        }
+        return "https://via.placeholder.com/150";
+    };
+
+    
+    const fetchData = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get(`/penjualan/${nomor}`);
+            if (response.data.success) {
+                const salesData = response.data.data;
+                
+                let productData;
+                if (isCustom) {
+                    // custom
+                    productData = salesData.produk
+                        .filter(item => item.barang_custom)
+                        .map(item => ({
+                            "Foto Produk": item.barang_custom?.image || "placeholder.jpg",
+                            "Nama Produk": item.barang_custom?.nama_barang || 'Unknown',
+                            "Jenis Barang": item.barang_custom?.jenis_barang?.nama_jenis_barang || 'Custom',
+                            "Harga Satuan": item.harga_satuan || 0,
+                            "kuantitas": item.kuantitas || 0,
+                            "Total Biaya": item.total_biaya || 0,
+                            imageUrl: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.barang_custom?.image}`
+                        }));
+                } else {
+                    //hand dan non
+                    productData = salesData.produk
+                        .filter(item => item.barang_handmade || item.barang_non_handmade)
+                        .map(item => {
+                            const barang = item.barang_handmade || item.barang_non_handmade;
+                            const imagePrefix = item.barang_handmade ? 
+                                'images-barang-handmade' : 'images-barang-non-handmade';
+                                
+                            return {
+                                "Foto Produk": barang?.image || "placeholder.jpg",
+                                "Nama Produk": barang?.nama_barang || 'Unknown',
+                                "Jenis Barang": barang?.jenis_barang?.nama_jenis_barang || 
+                                              barang?.jenis?.nama_jenis_barang || 'Unknown',
+                                "Harga Satuan": item.harga_satuan || 0,
+                                "kuantitas": item.kuantitas || 0,
+                                "Total Biaya": item.total_biaya || 0,
+                                imageUrl: `${import.meta.env.VITE_API_URL}/${imagePrefix}/${barang?.image}`
+                            };
+                        });
+                }
+    
+                // Filter packaging
+                const packagingData = salesData.produk
+                    .filter(item => item.packaging)
+                    .map(item => ({
+                        "Foto Produk": item.packaging?.image || "placeholder.jpg",
+                        "Nama Packaging": item.packaging?.nama_packaging || 'Unknown',
+                        "Harga Satuan": item.harga_satuan || 0,
+                        "kuantitas": item.kuantitas || 0,
+                        "Total Biaya": item.total_biaya || 0,
+                        imageUrl: `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
+                    }));
+                
+                setData({
+                    nomor: salesData.penjualan_id,
+                    tanggal: salesData.tanggal,
+                    nama_pembeli: salesData.nama_pembeli,
+                    bayar: salesData.cash_or_non ? 'Cash' : 'Non-Cash',
+                    metode: salesData.metode_pembayaran?.nama_metode || '-',
+                    catatan: salesData.catatan || '',
+                    data_produk: productData,
+                    rincian_biaya_custom: salesData.rincian_biaya_custom || [],
+                    data_packaging: packagingData,
+                    sub_total: salesData.sub_total || 0,
+                    diskon: salesData.diskon || 0,
+                    pajak: salesData.pajak || 0,
+                    total_penjualan: salesData.total_penjualan || 0
+                });
             }
-        ],
-        data_packaging: [
-            {
-                "Foto Produk": "https://via.placeholder.com/150",
-                "Nama Packaging": "zipper",
-                "Harga Satuan": 1000,
-                kuantitas: 10,
-                "Total Biaya": 10000
-            }
-        ],
-        sub_total: 8000,
-        diskon: 30,
-        pajak: 1000,
-        total_penjualan: 18000
-    }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [nomor]);
+
+    // const data = {
+    //     nomor: 'INV123',
+    //     tanggal: '2024-12-12',
+    //     nama_pembeli: 'Suryani',
+    //     bayar: 'Cash',
+    //     metode: '-',
+    //     catatan: 'Catatan penting mengenai transaksi ini',  
+    //     data_produk: [
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/150",
+    //             "Nama Produk": "Gelang Cantik",
+    //             "Jenis Barang": "Barang Handmade",
+    //             "Harga Satuan": 15000,
+    //             kuantitas: 10,
+    //             "Total Biaya": 150000
+    //         },
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/150",
+    //             "Nama Produk": "Gelang Cantik",
+    //             "Jenis Barang": "Barang Handmade",
+    //             "Harga Satuan": 15000,
+    //             kuantitas: 10,
+    //             "Total Biaya": 150000
+    //         },
+    //     ],
+    //     rincian_biaya: [
+    //         {
+    //             "Nama Biaya": "Jasa",
+    //             "Jumlah Biaya": 1000
+    //         }
+    //     ],
+    //     data_packaging: [
+    //         {
+    //             "Foto Produk": "https://via.placeholder.com/150",
+    //             "Nama Packaging": "zipper",
+    //             "Harga Satuan": 1000,
+    //             kuantitas: 10,
+    //             "Total Biaya": 10000
+    //         }
+    //     ],
+    //     sub_total: 8000,
+    //     diskon: 30,
+    //     pajak: 1000,
+    //     total_penjualan: 18000
+    // }
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -92,23 +210,31 @@ export default function DetailPenjualanKasir() {
     ];
 
     const formatRupiah = (amount) => {
-        return `Rp ${amount.toLocaleString('id-ID')}`;
+        return `Rp ${typeof amount === 'number' ? amount.toLocaleString('id-ID') : '0'}`;
     };
 
     const headers2 = [
         { label: "No", key: "No", align: "text-left" },
-        ...(isCustom ? [{ label: "Foto Produk", key: "Foto Produk", align: "text-left" }] : []),
-        { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
-        { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
-        { label: "Kuantitas", key: "kuantitas", align: "text-left" },
-        { label: "Total Biaya", key: "Total Biaya", align: "text-left"},
+        ...(isCustom ? [
+            { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
+            { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
+            { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
+            { label: "Kuantitas", key: "kuantitas", align: "text-left" },
+            { label: "Total Biaya", key: "Total Biaya", align: "text-left"}
+        ] : [
+            { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
+            { label: "Nama Packaging", key: "Nama Packaging", align: "text-left" },
+            { label: "Kuantitas", key: "kuantitas", align: "text-left" }
+        ])
     ];
 
     const formatCurrency = (amount) => {
-        return amount.toLocaleString('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-        });
+        return typeof amount === 'number' 
+            ? amount.toLocaleString('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+            })
+            : 'Rp 0';
     };
 
     const navigate = useNavigate()
@@ -124,10 +250,27 @@ export default function DetailPenjualanKasir() {
         setModalDel(true)
     };
 
-    const handleConfirmDel = () => {
-        //logika delete
-        setModalSucc(true)
-    }
+    const handleCancelDel = () => {
+        setModalDel(false);
+    };
+
+    const handleConfirmDel = async () => {
+        try {
+            const response = await api.delete(`/penjualan/${data.nomor}`);
+            if (response.data.success) {
+                setModalSucc(true);
+                setTimeout(() => {
+                    const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
+                    navigate(baseRoute);
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            setErrorMessage(error.response?.data?.message || "Gagal menghapus data");
+        } finally {
+            setModalDel(false);
+        }
+    };
 
     return (
         <>
@@ -194,12 +337,12 @@ export default function DetailPenjualanKasir() {
                         <div className="pt-5">
                             <Table
                                 headers={headers}
-                                data={data.data_produk.map((item, index) => ({
+                                data={(data.data_produk || []).map((item, index) => ({
                                     ...item,
-                                    "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Produk"]} className="w-12 h-12 object-cover" />, 
-                                    "kuantitas": formatRupiah(item["kuantitas"]),
-                                    "Harga Satuan": formatRupiah(item["Harga Satuan"]),  
-                                    "Total Biaya": formatRupiah(item["Total Biaya"]),  
+                                    "Foto Produk": <img src={item.imageUrl} alt={item["Nama Produk"]} className="w-12 h-12 object-cover rounded-md" />, 
+                                    "kuantitas": (typeof item.kuantitas === 'number' ? item.kuantitas.toLocaleString('id-ID') : '0'),
+                                    "Harga Satuan": formatRupiah(item["Harga Satuan"] || 0),  
+                                    "Total Biaya": formatRupiah(item["Total Biaya"] || 0),  
                                     No: index + 1  
                                 }))}
                             />
@@ -212,36 +355,38 @@ export default function DetailPenjualanKasir() {
                             <div className="pt-5">
                                 <Table
                                     headers={headersRincianBiaya}
-                                    data={data.rincian_biaya.map((item, index) => ({
-                                        ...item,
+                                    data={(data.rincian_biaya_custom || []).map((item, index) => ({
                                         "No": index + 1,
-                                        "Jumlah Biaya": formatRupiah(item["Jumlah Biaya"])
+                                        "Nama Biaya": item.nama_biaya || 'Unknown',
+                                        "Jumlah Biaya": formatRupiah(item.jumlah_biaya || 0)
                                     }))}
                                 />
                             </div>
                         </section>
                     )}
 
-                    {isCustom && (
                         <section className="pt-10">
                             <p className="font-bold">Packging</p>
                             <div className="pt-5">
                                 <Table
                                     headers={headers2}
-                                    data={data.data_packaging.map((item, index) => ({
-                                        ...item,
-                                        "No": index + 1,
-                                        ...(isCustom && {
-                                            "Foto Produk": <img src={item["Foto Produk"]} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover" />
-                                        }),
-                                        "kuantitas": formatRupiah(item["kuantitas"]),
-                                        "Harga Satuan": formatRupiah(item["Harga Satuan"]),
-                                        "Total Biaya": formatRupiah(item["Total Biaya"])
+                                    data={(data.data_packaging || []).map((item, index) => ({
+                                        No: index + 1,
+                                        ...(isCustom ? {
+                                            "Foto Produk": <img src={item.imageUrl} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover rounded-md" />,
+                                            "Nama Packaging": item["Nama Packaging"],
+                                            "Harga Satuan": formatRupiah(item["Harga Satuan"]),
+                                            "kuantitas": formatRupiah(item.kuantitas),
+                                            "Total Biaya": formatRupiah(item["Total Biaya"])
+                                        } : {
+                                            "Foto Produk": <img src={item.imageUrl} alt={item["Nama Packaging"]} className="w-12 h-12 object-cover rounded-md" />,
+                                            "Nama Packaging": item["Nama Packaging"],
+                                            "kuantitas": item.kuantitas
+                                        })
                                     }))}
                                 />
                             </div>
                         </section>
-                    )}
 
                     {/* Section Total and Notes */}
                     <section className="flex justify-between py-10">
@@ -284,25 +429,37 @@ export default function DetailPenjualanKasir() {
                 </section>
             </div>
 
+            {isLoading && <Spinner/>}
+
             {/* modal delete */}
             {isModalDel && (
                 <Alert
-                title="Hapus Data"
-                description="Apakah kamu yakin ingin menghapus data ini?"
-                confirmLabel="Hapus"
-                cancelLabel="Kembali"
-                onConfirm={handleConfirmDel}
-                onCancel={() => setModalDel(false)}
+                    title="Hapus Data"
+                    description="Apakah kamu yakin ingin menghapus data ini?"
+                    confirmLabel="Hapus"
+                    cancelLabel="Kembali"
+                    onConfirm={handleConfirmDel}
+                    onCancel={handleCancelDel}
+                    open={isModalDel}
+                    onClose={() => setModalDel(false)}
                 />
             )}
 
-            {/* modal success */}
-            {isModalSucc&& (
+            {errorMessage && (
+                <AlertError
+                    title="Error"
+                    description={errorMessage}
+                    confirmLabel="Ok"
+                    onConfirm={() => setErrorMessage("")}
+                />
+            )}
+
+            {isModalSucc && (
                 <AlertSuccess
-                title="Berhasil!!"
-                description="Data berhasil dihapus"
-                confirmLabel="Ok"
-                onConfirm={() => setModalSucc(false)}
+                    title="Berhasil!!"
+                    description="Data berhasil dihapus"
+                    confirmLabel="Ok"
+                    onConfirm={() => setModalSucc(false)}
                 />
             )}
         </LayoutWithNav>

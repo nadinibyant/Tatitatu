@@ -9,15 +9,10 @@ import AlertSuccess from "../../../components/AlertSuccess";
 import AlertError from "../../../components/AlertError";
 import Alert from "../../../components/Alert";
 
-// Branch Card Component
 const BranchCard = ({ branch, onEdit, onDelete }) => {
   const [showPassword, setShowPassword] = useState(false);
-
-  // Function to decode hashed password (this is a mock - you'll need to implement actual decoding)
   const decodeHashedPassword = (hashedPassword) => {
-    // In a real implementation, you would need to implement proper password decoding
-    // This is just a placeholder - replace with actual decoding logic
-    return hashedPassword.substring(0, 12) + "..."; // Just showing part of hash for demo
+    return hashedPassword.substring(0, 12) + "...";
   };
 
   const togglePasswordVisibility = () => {
@@ -100,6 +95,8 @@ export default function Cabang(){
     const [passwordError, setPasswordError] = useState('');
     const [isAlertDel, setAlertDel] = useState(false)
     const [isAlertSuccDel, setAlertDelSucc] = useState(false)
+    const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+    const toko_id = userDataLogin.userId
     const [id,setId] = useState('')
     const [formData, setFormData] = useState({
       branchName: '',
@@ -130,7 +127,7 @@ export default function Cabang(){
     const fetchBranchData = async () => {
         try {
           setLoading(true);
-          const response = await api.get('/cabang');
+          const response = await api.get(`/cabang?toko_id=${toko_id}`);
           if (response.data.success) {
             const transformedData = response.data.data.map(branch => ({
               id: branch.cabang_id,
@@ -230,7 +227,8 @@ export default function Cabang(){
               nama_cabang: formData.branchName,
               email: formData.email,
               password: formData.password,
-              confirmPassword: formData.confirmPassword
+              confirmPassword: formData.confirmPassword,
+              toko_id: toko_id
             })
             if (response.data.success) {
               await fetchBranchData(); 

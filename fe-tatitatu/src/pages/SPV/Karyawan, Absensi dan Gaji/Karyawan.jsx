@@ -12,10 +12,6 @@ import api from "../../../utils/api";
 import Spinner from "../../../components/Spinner";
 
 export default function Karyawan(){
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [selectedStore, setSelectedStore] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -31,6 +27,7 @@ export default function Karyawan(){
     const [filterFields, setFilterFields] = useState([]);
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
+    const toko_id = userData.userId
 
     useEffect(() => {
         const initializeFilters = async () => {
@@ -78,7 +75,7 @@ export default function Karyawan(){
   
         const fetchBranches = async () => {
             try {
-                const response = await api.get('/cabang');
+                const response = await api.get(`/cabang?toko_id=${toko_id}`);
                 if (response.data.success) {
                     const options = [
                         { 
@@ -101,7 +98,7 @@ export default function Karyawan(){
 
         const fetchDivisi = async () => {
             try {
-                const response = await api.get('/divisi-karyawan');
+                const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
                 const divisiList = [
                     { label: "Semua", value: "Semua" },
                     ...response.data.data.map(div => ({
@@ -127,7 +124,7 @@ export default function Karyawan(){
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}`);
+                const response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`);
         
                 
                 if (response.data.success) {
@@ -138,7 +135,9 @@ export default function Karyawan(){
                         Cabang: item.karyawan.cabang.nama_cabang,
                         Absen: item.kehadiran,
                         KPI: item.totalPersentaseTercapai,
-                        "Total Gaji Akhir": item.totalGajiAkhir
+                        "Total Gaji Akhir": item.totalGajiAkhir,
+                        "waktu_kerja_sebulan_menit": item.karyawan.waktu_kerja_sebulan_menit || null,
+                        "waktu_kerja_sebulan_antar": item.karyawan.waktu_kerja_sebulan_antar || null
                     }));
                     
                     setData(formattedData);
@@ -193,8 +192,18 @@ export default function Karyawan(){
 
         const navigate = useNavigate()
         const handleRowClick = (row) => {
-            navigate('/dataKaryawanAbsenGaji/detail', { state: { id: row.id, divisi: row.Divisi } });
-        }
+            const employeeData = data.find(item => item.id === row.id);
+            
+            const isUmum = employeeData.waktu_kerja_sebulan_antar === "null" || employeeData.waktu_kerja_sebulan_antar === null;
+            const divisiType = isUmum ? "Umum" : "Transportasi";
+            
+            navigate('/dataKaryawanAbsenGaji/detail', { 
+                state: { 
+                    id: row.id, 
+                    divisi: divisiType 
+                } 
+            });
+        };
 
     return(
         <>

@@ -24,6 +24,9 @@ export default function KPISeluruhDivisi() {
     const [fullApiData, setFullApiData] = useState([])
     const [errorMessage, setErrorMessage] = useState(false)
     const [isErrorAlert, setErrorAlert] = useState(false)
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const isManager = userData.role === 'manajer'
+    const toko_id = userData.userId
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -36,22 +39,39 @@ export default function KPISeluruhDivisi() {
     const fetchKPIDivisi = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/kpi-divisi'); 
-
-            const formattedData = response.data.data.map(item => ({
-                id: item.divisi_karyawan_id,
-                Divisi: item.nama_divisi,
-                JumlahKPI: item.kpi_count,
-            }));
+            let response;
             
-            setData(formattedData);
+            if (isManager) {
+                response = await api.get('/manager-kpi-divisi');
+                const formattedData = response.data.data.map(item => ({
+                    id: item.divisi_karyawan_id,
+                    Divisi: item.nama_divisi,
+                    JumlahKPI: item.kpi_count
+                }));
+                setData(formattedData);
+            } else {
+                response = await api.get(`/kpi-divisi?toko_id=${toko_id}`);
+                const formattedData = response.data.data.map(item => ({
+                    id: item.divisi_karyawan_id,
+                    Divisi: item.nama_divisi,
+                    JumlahKPI: item.kpi_count,
+                }));
+                setData(formattedData);
+            }
+            
             setFullApiData(response.data.data);
         } catch (error) {
             console.error('Error fetching KPI:', error);
+            setErrorMessage("Gagal mengambil data KPI");
+            setErrorAlert(true);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchKPIDivisi();
+    }, []);
     
 
     useEffect(() => {

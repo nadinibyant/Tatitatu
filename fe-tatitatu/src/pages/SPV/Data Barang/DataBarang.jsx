@@ -20,11 +20,12 @@ export default function DataBarang() {
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const toko_id = userData.userId
 
     const fetchSubMenus = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
             const response = await api.get(endpoint);
             
             if (response.data.success) {
@@ -41,7 +42,7 @@ export default function DataBarang() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/barang-handmade-gudang' : '/barang-handmade';
+            const endpoint = isAdminGudang ? '/barang-handmade-gudang' : `/barang-handmade?toko_id=${toko_id}`;
             const response = await api.get(endpoint);
             
             if (response.data.success) {

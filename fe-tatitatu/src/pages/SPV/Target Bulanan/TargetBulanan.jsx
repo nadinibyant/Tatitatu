@@ -16,10 +16,12 @@ export default function TargetBulanan() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [data, setData] = useState({
-    branches: []  // Modified initial state
+    branches: [] 
   });
+  const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+  const toko_id = userDataLogin.userId
 
-  const [selectedBranch, setSelectedBranch] = useState(null);  // Modified initial state
+  const [selectedBranch, setSelectedBranch] = useState(null); 
   const [showModal, setShowModal] = useState(false);
   const [editingMonth, setEditingMonth] = useState(null);
   const [newTarget, setNewTarget] = useState('');
@@ -72,7 +74,7 @@ export default function TargetBulanan() {
   const fetchBranches = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/cabang');
+      const response = await api.get(`/cabang?toko_id=${toko_id}`);
       
       if (response.data.success) {
         const options = response.data.data.map(branch => ({

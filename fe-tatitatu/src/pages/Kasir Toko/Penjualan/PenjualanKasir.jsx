@@ -1,66 +1,100 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import { menuKasirToko, userOptions } from "../../../data/menu";
 import Button from "../../../components/Button";
 import Table from "../../../components/Table";
 import ActionMenu from "../../../components/ActionMenu";
 import { useNavigate } from "react-router-dom";
+import Spinner from "../../../components/Spinner";
+import api from "../../../utils/api";
+import moment from "moment";
+import Alert from "../../../components/Alert";
+import AlertSuccess from "../../../components/AlertSuccess";
+import AlertError from "../../../components/AlertError";
 
 export default function PenjualanKasir() {
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState(5);
-    const [selectedYear, setSelectedYear] = useState(2024);
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const cabang_id = userData.userId
+    const toko_id = userData.tokoId
+    const [isLoading,setLoading] = useState(false)
+    const [data, setData] = useState([]);
+    const [isModalDel, setModalDel] = useState(false)
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [isSuccess, setSuccess] = useState(false)
+    const [errorAlert, setErrorAlert] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
-    const months = [
-        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
+    const monthValue = `${selectedYear}-${selectedMonth}`;
 
-    const years = Array.from(
-        { length: 11 }, 
-        (_, i) => new Date().getFullYear() - 5 + i
-    );
-
-    const formatDateLabel = () => {
-        return `${months[selectedMonth - 1]} ${selectedYear}`;
+    const handleMonthChange = (e) => {
+        const value = e.target.value; 
+        const [year, month] = value.split('-');
+        setSelectedMonth(month);
+        setSelectedYear(year);
     };
+    const fetchData = async () => {
+        if (isAdminGudang) return;
+        
+        try {
+            setLoading(true);
+            const formattedMonth = String(selectedMonth).padStart(2, '0');
+            const response = await api.get(`/penjualan?bulan=${formattedMonth}&tahun=${selectedYear}&cabang=${cabang_id}`);
+            
+            if (response.data.success) {
+                const formattedData = response.data.data.map(item => ({
+                    Nomor: item.penjualan_id,
+                    Tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
+                    "Nama Barang": item.produk.map(p => 
+                        p.barang_handmade?.nama_barang || 
+                        p.barang_non_handmade?.nama_barang || 
+                        p.packaging?.nama_packaging ||
+                        p.barang_custom?.nama_barang || 'Unknown'
+                    ),
+                    "Jumlah Barang": item.produk.reduce((acc, curr) => acc + curr.kuantitas, 0),
+                    Diskon: item.diskon ? `${(item.diskon / item.sub_total * 100).toFixed(0)}%` : '0%',
+                    Pajak: item.pajak ? `${(item.pajak / item.sub_total * 100).toFixed(0)}%` : '0%',
+                    "Total Transaksi": `Rp${item.total_penjualan.toLocaleString('id-ID')}`,
+                    tipe: item.rincian_biaya_custom.length > 0 ? 'custom' : 'non-custom'
+                }));
+                setData(formattedData);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
 
-    // Data penjualan
-    const [data, setData] = useState([
-        {
-            Nomor: "STK1323",
-            Tanggal: "31/05/2024",
-            "Nama Barang": [
-                "Gelang Barbie", 
-                "Gelang Bulan", 
-                "Kalung Mutiara",
-                "Cincin Perak",
-                "Gelang Perak"
-            ],
-            "Jumlah Barang": 2,
-            Diskon: "11%",
-            Pajak: "11%",
-            "Total Transaksi": "Rp.200.000",
-            tipe: "custom"
-        },
-        // Duplicate data untuk contoh
-        ...Array(10).fill(null).map((_, i) => ({
-            Nomor: "STK1323",
-            Tanggal: "31/05/2024",
-            "Nama Barang": [
-                "Gelang Barbie", 
-                "Gelang Bulan",
-                "Kalung Mutiara"
-            ],
-            "Jumlah Barang": 2,
-            Diskon: "11%",
-            Pajak: "11%",
-            "Total Transaksi": "Rp.200.000",
-            tipe: "non-custom"
-        }))
-    ]);
+    useEffect(() => {
+        fetchData();
+    }, [selectedMonth, selectedYear]);
+
+    const handleCancelDel = () => {
+        setModalDel(false)
+    }
+
+    const handleConfirmDel = async () => {
+        try {
+            if (!selectedItem?.id) {
+                throw new Error('No item selected');
+            }
+            await api.delete(`/penjualan/${selectedItem.id}`);
+            setSuccess(true);
+            fetchData(); 
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            setErrorMessage('Gagal menghapus data penjualan');
+            setErrorAlert(true);
+        } finally {
+            setModalDel(false);
+            setSelectedItem(null); 
+        }
+    };
 
     const handleRowClick = (row) => {
         const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
@@ -87,7 +121,6 @@ export default function PenjualanKasir() {
         return `${items[0]}, ${items[1]}, +${items.length - 2} Lainnya`;
     };
 
-    // Handlers untuk action menu
     const handleEdit = (row) => {
         const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
         if (row.tipe === 'custom') {
@@ -97,8 +130,8 @@ export default function PenjualanKasir() {
         }
     };
 
-    const handleDelete = (row) => {
-        console.log("Delete:", row);
+    const handleDelete = () => {
+        setModalDel(true)
     };
 
     const navigate = useNavigate()
@@ -121,87 +154,17 @@ export default function PenjualanKasir() {
                         <p className="text-primary text-base font-bold">Daftar Penjualan Toko</p>
                     </div>
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                        <Button 
-                            label={formatDateLabel()}
-                            icon={<svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6 1V4M12 1V4M1.5 7.5H16.5M4.5 3H13.5C14.8807 3 16 4.11929 16 5.5V15.5C16 16.8807 14.8807 18 13.5 18H4.5C3.11929 18 2 16.8807 2 15.5V5.5C2 4.11929 3.11929 3 4.5 3Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>}
-                            bgColor="border border-secondary"
-                            hoverColor="hover:bg-white"
-                            textColor="text-black"
-                            onClick={() => setIsDateModalOpen(true)}
-                        />
-
-                        {/* Modal pemilihan bulan dan tahun */}
-                        {isDateModalOpen && (
-                            <div className="fixed inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg p-6 w-72">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold">Pilih Periode</h3>
-                                        <button 
-                                            onClick={() => setIsDateModalOpen(false)}
-                                            className="text-gray-500 hover:text-gray-700"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Bulan
-                                        </label>
-                                        <select
-                                            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-primary"
-                                            value={selectedMonth}
-                                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                                        >
-                                            {months.map((month, index) => (
-                                                <option key={month} value={index + 1}>
-                                                    {month}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Tahun
-                                        </label>
-                                        <select
-                                            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-primary"
-                                            value={selectedYear}
-                                            onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                        >
-                                            {years.map(year => (
-                                                <option key={year} value={year}>
-                                                    {year}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex justify-end space-x-2">
-                                        <button
-                                            onClick={() => setIsDateModalOpen(false)}
-                                            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                                        >
-                                            Batal
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                // Di sini bisa ditambahkan logic untuk fetch data sesuai periode yang dipilih
-                                                setIsDateModalOpen(false);
-                                            }}
-                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-                                        >
-                                            Terapkan
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <div className="w-full md:w-auto">
+                                    <input 
+                                        type="month"
+                                        value={monthValue}
+                                        onChange={handleMonthChange}
+                                        className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                        style={{
+                                            maxWidth: '200px',
+                                        }}
+                                    />
+                        </div>
 
                         <Button
                             label="Custom"
@@ -235,7 +198,12 @@ export default function PenjualanKasir() {
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
                                 aksi: <ActionMenu 
                                     onEdit={() => handleEdit(item)} 
-                                    onDelete={() => handleDelete(item)} 
+                                    onDelete={() => {
+                                        setSelectedItem({
+                                            id: item.Nomor
+                                        });
+                                        handleDelete();
+                                    }} 
                                 />
                             }))}
                             hasSearch={true}
@@ -245,6 +213,36 @@ export default function PenjualanKasir() {
                     </div>
                 </section>
             </div>
+
+            {isLoading && <Spinner/>}
+
+            {isModalDel && (
+                <Alert
+                title="Hapus Data"
+                description="Apakah kamu yakin ingin menghapus data ini?"
+                confirmLabel="Hapus"
+                cancelLabel="Kembali"
+                onConfirm={handleConfirmDel}
+                onCancel={handleCancelDel}
+                open={isModalDel}
+                onClose={() => setModalDel(false)}
+                />
+            )}
+
+            {isSuccess && (
+                <AlertSuccess
+                title="Berhasil!!"
+                description="Data berhasil dihapus"
+                confirmLabel="Ok"
+                />
+            )}
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
         </LayoutWithNav>
     );
 }

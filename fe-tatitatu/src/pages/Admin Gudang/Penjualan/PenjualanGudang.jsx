@@ -49,7 +49,11 @@ export default function PenjualanGudang() {
     const fetchPenjualan = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/penjualan-gudang');
+            const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+            
+            const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+            
+            const response = await api.get(`/penjualan-gudang/date?startDate=${startDate}&endDate=${endDate}`);
             if (response.data.success) {
                 setPenjualanData(response.data.data);
             }

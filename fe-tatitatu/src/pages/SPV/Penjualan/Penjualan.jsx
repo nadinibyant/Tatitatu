@@ -33,12 +33,14 @@ export default function Penjualan() {
     const [isModalDel, setModalDel] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
 
     useEffect(() => {
     const fetchCabang = async () => {
         try {
             setLoading(true)
-            const response = await api.get('/cabang');
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
             if (response.data.success) {
                 const cabangList = response.data.data.map(cabang => ({
                     label: cabang.nama_cabang,
@@ -64,62 +66,57 @@ export default function Penjualan() {
 useEffect(() => {
     const fetchPenjualan = async () => {
         try {
-            setLoading(true)
-            const response = await api.get('/penjualan');
+            setLoading(true);
+            const response = await api.get(`/penjualan?toko_id=${toko_id}&bulan=${selectedMonth}&tahun=${selectedYear}`);
             const penjualanList = response.data.data;
 
-            const detailedData = await Promise.all(
-                penjualanList.map(async (penjualan) => {
-                    const detailResponse = await api.get(`/penjualan/${penjualan.penjualan_id}`);
-                    const detail = detailResponse.data.data;
+            const detailedData = penjualanList.map(penjualan => {
+                // Get names of all products
+                const namaBarang = penjualan.produk
+                    .map(produk => {
+                        if (produk.barang_handmade) return produk.barang_handmade.nama_barang;
+                        if (produk.barang_non_handmade) return produk.barang_non_handmade.nama_barang;
+                        if (produk.barang_custom) return produk.barang_custom.nama_barang;
+                        if (produk.packaging) return produk.packaging.nama_packaging;
+                        return null;
+                    })
+                    .filter(Boolean)
+                    .join(', ');
 
-                    const cabangResponse = await api.get(`/cabang/${detail.cabang_id}`);
-                    const cabangData = cabangResponse.data.data;
+                // Calculate total quantity
+                const jumlahBarang = penjualan.produk.reduce(
+                    (sum, produk) => sum + produk.kuantitas,
+                    0
+                );
 
-                    const namaBarang = detail.produk_penjualan
-                        .map(produk => {
-                            const barang = 
-                                produk.barang_handmade || 
-                                produk.barang_non_handmade || 
-                                produk.barang_custom || 
-                                produk.packaging;
-                            return barang?.nama_barang || barang?.nama_packaging;
-                        })
-                        .filter(Boolean)
-                        .join(', ');
+                // Check if any product is custom
+                const hasCustom = penjualan.produk.some(
+                    produk => produk.barang_custom
+                );
 
-                    const jumlahBarang = detail.produk_penjualan.reduce(
-                        (sum, produk) => sum + produk.kuantitas, 
-                        0
-                    );
-                    const hasCustom = detail.produk_penjualan.some(
-                        produk => produk.barang_custom_id
-                    );
-
-                    return {
-                        Nomor: detail.penjualan_id,
-                        Tanggal: detail.tanggal.split('T')[0],
-                        Cabang: cabangData.nama_cabang, 
-                        "Nama Barang": namaBarang,
-                        "Jumlah Barang": jumlahBarang.toLocaleString('id-ID'),
-                        Diskon: detail.diskon,
-                        Pajak: detail.pajak,
-                        "Total Transaksi": detail.total_penjualan,
-                        tipe: hasCustom ? 'custom' : 'non-custom'
-                    };
-                })
-            );
+                return {
+                    Nomor: penjualan.penjualan_id,
+                    Tanggal: penjualan.tanggal.split('T')[0],
+                    Cabang: penjualan.cabang.nama_cabang,
+                    "Nama Barang": namaBarang,
+                    "Jumlah Barang": jumlahBarang.toLocaleString('id-ID'),
+                    Diskon: penjualan.diskon,
+                    Pajak: penjualan.pajak,
+                    "Total Transaksi": penjualan.total_penjualan,
+                    tipe: hasCustom ? 'custom' : 'non-custom'
+                };
+            });
 
             setData(detailedData);
         } catch (error) {
             console.error('Error fetching penjualan:', error);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     };
 
     fetchPenjualan();
-}, [selectedMonth, selectedYear]);
+}, [selectedMonth, selectedYear, toko_id]);
 
 // console.log(data)
 

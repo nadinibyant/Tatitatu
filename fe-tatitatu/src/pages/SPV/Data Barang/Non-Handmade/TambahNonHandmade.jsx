@@ -31,6 +31,7 @@ export default function TambahBarangNonHandmade() {
   const [isAlertSuccess, setAlertSucc] = useState(false)
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const toko_id = userData.userId
 
 
   const fetchMaterialData2 = async () => {
@@ -162,7 +163,7 @@ export default function TambahBarangNonHandmade() {
 
   const fetchKategori = async () => {
     try {
-      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+      const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
       const response = await api.get(endpoint);
       
       if (response.data.success) {
@@ -236,7 +237,7 @@ export default function TambahBarangNonHandmade() {
   const fetchCabangAndBiayaData = async () => {
     try {
       const [cabangResponse, biayaResponse] = await Promise.all([
-        api.get('/cabang'),
+        api.get(`/cabang?toko_id=${toko_id}`),
         api.get('/biaya-toko'),
       ]);
   
@@ -569,6 +570,7 @@ export default function TambahBarangNonHandmade() {
         formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
         formData.append('image', data.info_barang.Foto);
+        formData.append('toko_id', toko_id)
 
         const rincianBiayaData = [];
         let hasError = false;

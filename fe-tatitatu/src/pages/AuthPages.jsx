@@ -20,7 +20,6 @@ const AuthPages = () => {
     { value: '6', label: 'Admin Gudang', storedRole: 'admingudang' },
     { value: '7', label: 'Kasir', storedRole: 'kasirtoko' },
     { value: '8', label: 'Karyawan Umum', storedRole: 'karyawanumum' },
-    { value: '9', label: 'Karyawan Logistik', storedRole: 'karyawanlogistik' },
     { value: '10', label: 'Karyawan Produksi', storedRole: 'karyawanproduksi' },
     { value: '11', label: 'Karyawan Transportasi', storedRole: 'karyawantransportasi' }
   ];

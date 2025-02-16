@@ -7,6 +7,7 @@ import moment from "moment";
 import Table from "../../../components/Table";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
 
 export default function ProdukTerlaris() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +20,16 @@ export default function ProdukTerlaris() {
   const [filters, setFilters] = useState({});
   const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
   const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+  const [barangTerlaris, setBarangTerlaris] = useState([]);
+  const [dashboardData, setDashboardData] = useState({
+    barang_handmade: { nama: '-', jumlah: 0 },
+    barang_non_handmade: { nama: '-', jumlah: 0 },
+    packging: { nama: '-', jumlah: 0 },
+    barang_custom: { nama: '-', jumlah: 0 }
+  });
+  const [productData, setProductData] = useState([]);
+
+  
 
   const monthValue = `${selectedYear}-${selectedMonth}`;
 
@@ -28,6 +39,13 @@ export default function ProdukTerlaris() {
     setSelectedMonth(month);
     setSelectedYear(year);
   };  
+
+  const getDateRange = (year, month) => {
+    const startDate = moment(`${year}-${month}-01`).format('YYYY-MM-DD');
+    const endDate = moment(`${year}-${month}-01`).endOf('month').format('YYYY-MM-DD');
+    return { startDate, endDate };
+  };
+  
 
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
 
@@ -87,6 +105,150 @@ export default function ProdukTerlaris() {
   //     day: "2-digit",
   //     year: "numeric",
   //   });
+  const getImagePath = (kategori) => {
+    switch(kategori) {
+      case 'Handmade':
+        return 'images-barang-handmade-gudang';
+      case 'NonHandmade':
+        return 'images-barang-non-handmade-gudang';
+      case 'Packaging':
+        return 'images-packaging-gudang';
+      case 'Mentah':
+        return 'images-barang-mentah';
+      default:
+        return 'images-barang-handmade-gudang';
+    }
+  };  
+
+  const fetchProductData = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const response = await api.get(`/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.data.success) {
+        const { data } = response.data;
+        const tableData = [];
+
+        if (data.handmade) {
+          tableData.push({
+            nomor: tableData.length + 1,
+            Nama: data.handmade.nama,
+            Kategori: "Handmade",
+            Jenis: "Handmade",
+            Terjual: data.handmade.total_terjual
+          });
+        }
+        
+        if (data.nonhandmade) {
+          tableData.push({
+            nomor: tableData.length + 1,
+            Nama: data.nonhandmade.nama,
+            Kategori: "Non Handmade",
+            Jenis: "Non Handmade",
+            Terjual: data.nonhandmade.total_terjual
+          });
+        }
+  
+        if (data.packaging) {
+          tableData.push({
+            nomor: tableData.length + 1,
+            Nama: data.packaging.nama,
+            Kategori: "Packaging",
+            Jenis: "Packaging",
+            Terjual: data.packaging.total_terjual
+          });
+        }
+  
+        if (data.mentah) {
+          tableData.push({
+            nomor: tableData.length + 1,
+            Nama: data.mentah.nama,
+            Kategori: "Mentah",
+            Jenis: "Mentah",
+            Terjual: data.mentah.total_terjual
+          });
+        }
+  
+        setProductData(tableData);
+      }
+    } catch (error) {
+      console.error('Error fetching product data:', error);
+      setProductData([]);
+    }
+  };
+
+  const fetchBarangTerlaris = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const response = await api.get(`/produk-penjualan-gudang/topten?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.data.success) {
+        const formattedData = response.data.data.map((item, index) => ({
+          nomor: index + 1,
+          "Foto": (
+            <img 
+              src={`${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}`}
+              className="w-8 h-8 object-cover rounded-lg"
+              onError={(e) => {
+                e.target.src = "/api/placeholder/64/64";
+              }}
+            />
+          ),
+          "Nama Barang": item.nama,
+          "Terjual": `${formatNumberWithDots(item.total_terjual)} Pcs`
+        }));
+        setBarangTerlaris(formattedData);
+      }
+    } catch (error) {
+      console.error('Error fetching top products:', error);
+      setBarangTerlaris([]);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const response = await api.get(`/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.data.success) {
+        const { data } = response.data;
+        setDashboardData({
+          barang_handmade: data.handmade ? {
+            nama: data.handmade.nama,
+            jumlah: data.handmade.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          barang_non_handmade: data.nonhandmade ? {
+            nama: data.nonhandmade.nama,
+            jumlah: data.nonhandmade.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          packging: data.packaging ? {
+            nama: data.packaging.nama,
+            jumlah: data.packaging.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          barang_custom: data.mentah ? {
+            nama: data.mentah.nama,
+            jumlah: data.mentah.total_terjual
+          } : { nama: '-', jumlah: 0 }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setDashboardData({
+        barang_handmade: { nama: '-', jumlah: 0 },
+        barang_non_handmade: { nama: '-', jumlah: 0 },
+        packging: { nama: '-', jumlah: 0 },
+        barang_custom: { nama: '-', jumlah: 0 }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminGudang) {
+      fetchDashboardData();
+      fetchBarangTerlaris();
+      fetchProductData();
+    }
+  }, [selectedMonth, selectedYear]);
 
   const dataCabang = [
     { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
@@ -200,25 +362,23 @@ export default function ProdukTerlaris() {
 
   const headers = [
     { label: "#", key: "nomor", align: "text-left" },
-    { label: "Nama", key: "Nama", align: "text-center" },
+    { label: "Nama", key: "Nama", align: "text-left" },
     { label: "Kategori", key: "Kategori", align: "text-left" },
     { label: "Jenis", key: "Jenis", align: "text-left" },
-    { label: "Terjual", key: "Terjual", align: "text-center" },
+    { label: "Terjual", key: "Terjual", align: "text-left" },
   ];
 
   const headers2 = [
     { label: "#", key: "nomor", align: "text-left" },
     { label: "Foto", key: "Foto", align: "text-left" },
     { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
-    { label: "Terjual", key: "Terjual", align: "text-center" },
+    { label: "Terjual", key: "Terjual", align: "text-left" },
   ]
 
   const filteredData = () => {
     let dataToDisplay = [];
 
-    // Apply filter for 'Jenis'
     if (selectedJenis === "Semua") {
-      // Combine all data when "Semua" is selected
       dataToDisplay = [
         ...data.data_handmade.data,
         ...data.data_non_handmade.data,
@@ -232,7 +392,6 @@ export default function ProdukTerlaris() {
       dataToDisplay = data.data_custom.data;
     }
 
-    // Apply filter for 'Kategori'
     if (selectedKategori !== "Semua") {
       dataToDisplay = dataToDisplay.filter(item => item.Kategori === selectedKategori);
     }
@@ -399,8 +558,8 @@ export default function ProdukTerlaris() {
                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
-                                <p className="font-bold text-lg truncate">{data.dashboard.barang_handmade.nama}</p>
-                                <p>{formatNumberWithDots(data.dashboard.barang_handmade.jumlah)} Pcs</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_handmade.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_handmade.jumlah)} Pcs</p>
                             </div>
                             <div className="flex-shrink-0 ml-4">
                                 <img src="/Dashboard Produk/handmade.svg" alt="handmade" className="w-12 h-12" />
@@ -413,8 +572,8 @@ export default function ProdukTerlaris() {
                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
-                                <p className="font-bold text-lg truncate">{data.dashboard.barang_non_handmade.nama}</p>
-                                <p>{formatNumberWithDots(data.dashboard.barang_non_handmade.jumlah)} Pcs</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_non_handmade.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_non_handmade.jumlah)} Pcs</p>
                             </div>
                             <div className="flex-shrink-0 ml-4">
                                 <img src="/Dashboard Produk/nonhandmade.svg" alt="nonhandmade" className="w-12 h-12" />
@@ -427,8 +586,8 @@ export default function ProdukTerlaris() {
                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-400 text-sm">Packaging Terlaris</p>
-                                <p className="font-bold text-lg truncate">{data.dashboard.packging.nama}</p>
-                                <p>{formatNumberWithDots(data.dashboard.packging.jumlah)} Pcs</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.packging.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.packging.jumlah)} Pcs</p>
                             </div>
                             <div className="flex-shrink-0 ml-4">
                                 <img src="/Dashboard Produk/packaging.svg" alt="packaging" className="w-12 h-12" />
@@ -441,8 +600,8 @@ export default function ProdukTerlaris() {
                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                                <p className="font-bold text-lg truncate">{data.dashboard.barang_custom.nama}</p>
-                                <p>{formatNumberWithDots(data.dashboard.barang_custom.jumlah)} Pcs</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
                             </div>
                             <div className="flex-shrink-0 ml-4">
                                 <img src="/Dashboard Produk/custom.svg" alt="Custom" className="w-12 h-12" />
@@ -457,16 +616,19 @@ export default function ProdukTerlaris() {
           <section className="mt-5">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="bg-white rounded-xl p-5">
-                      <Table
-                          headers={headers}
-                          data={selectedData.map((item, index) => ({
-                              ...item,
-                              nomor: index + 1,
-                              Terjual: `${item.Terjual} Pcs`,
-                          }))}
-                          hasFilter={true}
-                          onFilterClick={handleFilterClick}
-                      />
+                    <Table
+                      headers={headers}
+                      data={isAdminGudang ? productData.map(item => ({
+                          ...item,
+                          Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
+                      })) : selectedData.map((item, index) => ({
+                          ...item,
+                          nomor: index + 1,
+                          Terjual: `${item.Terjual} Pcs`,
+                      }))}
+                      hasFilter={!isAdminGudang}
+                      onFilterClick={handleFilterClick}
+                  />
                   </div>
 
                   <div className="bg-white rounded-xl p-5">
@@ -476,17 +638,17 @@ export default function ProdukTerlaris() {
                         </h3>
                       </div>
                       <Table
-                          headers={headers2}
-                          data={data.barang_terlaris.map((item, index) => ({
-                              ...item,
-                              "Foto": <img src={item["Foto"]} className="w-8 h-8 object-cover rounded-lg" />,
-                              nomor: index + 1,
-                              Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
-                          }))}
-                          bg_header="bg-none"
-                          text_header="text-gray-400"
-                          hasSearch={false}
-                          hasPagination={false}
+                        headers={headers2}
+                        data={isAdminGudang ? barangTerlaris : data.barang_terlaris.map((item, index) => ({
+                          ...item,
+                          "Foto": <img src={item["Foto"]} className="w-8 h-8 object-cover rounded-lg" />,
+                          nomor: index + 1,
+                          Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
+                        }))}
+                        bg_header="bg-none"
+                        text_header="text-gray-400"
+                        hasSearch={false}
+                        hasPagination={false}
                       />
                   </div>
               </div>

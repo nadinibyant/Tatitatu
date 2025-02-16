@@ -19,22 +19,40 @@ export default function TambahKPISeluruhDivisi() {
     const [isAlertSuccess, setAlertSucc] = useState(false)
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
+    const isManager = userData.role === 'manajer'
 
 
-    // Fungsi untuk fetch data divisi
     const fetchDivisi = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/get-divisi-kpi');
+            let response;
             
-            const formattedDivisions = response.data.data.map(div => ({
-                id: div.divisi_karyawan_id,
-                label: div.nama_divisi
-            }));
-            
-            setDivisions(formattedDivisions);
+            if (isManager) {
+                response = await api.get('/manager-kpi-list');
+                const formattedDivisions = response.data.data.map(div => ({
+                    id: div.divisi_karyawan_id,
+                    label: div.nama_divisi
+                }));
+                setDivisions(formattedDivisions);
+            } else {
+                response = await api.get('/get-divisi-kpi');
+                const filteredDivisions = response.data.data.filter(div => 
+                    div.toko_id === toko_id 
+                );
+                
+                const formattedDivisions = filteredDivisions.map(div => ({
+                    id: div.divisi_karyawan_id,
+                    label: div.nama_divisi
+                }));
+                
+                setDivisions(formattedDivisions);
+            }
         } catch (error) {
             console.error('Error fetching divisi:', error);
+            setErrorMessage('Gagal mengambil data divisi');
+            setErrorAlert(true);
         } finally {
             setLoading(false);
         }

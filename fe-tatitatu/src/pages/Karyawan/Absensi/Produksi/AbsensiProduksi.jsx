@@ -16,16 +16,16 @@ export default function AbsensiProduksi(){
     const [detailData, setDetailData] = useState(null);
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const navigate = useNavigate();
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const karyawan_id = userData.userId
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const response = await api.get('/produksi-gudang/karyawan/1');
+                const response = await api.get(`/produksi-gudang/karyawan/${karyawan_id}`);
                 
-                // Transform data untuk table
                 const transformedData = response.data.data.map((item, index) => {
-                    // Format tanggal
                     const date = new Date(item.tanggal);
                     const formattedDate = date.toLocaleDateString('id-ID', {
                         day: '2-digit',

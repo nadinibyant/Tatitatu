@@ -29,6 +29,7 @@ export default function PenilaianKPI() {
     const [isLoading,setLoading] = useState(false)
     const [branchList, setBranchList] = useState([])
     const [tokoList, setTokoList] = useState([]);
+    const toko_id = userData.userId
 
     useEffect(() => {
         const newFilterFields = isHeadGudang ? [
@@ -84,17 +85,35 @@ export default function PenilaianKPI() {
     const fetchKPIData = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/kpi-karyawan/${selectedMonth}/${selectedYear}`); 
+            let response
+            if (isManajer) {
+                response = await api.get(`/manager-absensi-karyawan?bulan=${selectedMonth}&tahun=${selectedYear}`);
+            } else {
+                response = await api.get(`/kpi-karyawan/${selectedMonth}/${selectedYear}`);
+            }
             
+            let formattedData
             if (response.data.success) {
-                const formattedData = response.data.data.map(item => ({
-                    id: item.karyawan_id,
-                    Nama: item.nama_karyawan,
-                    Divisi: item.divisi,
-                    Cabang: item.cabang,
-                    KPI: item.kpi_count || 0,
-                    "Total Gaji Akhir": item.total_gaji_akhir || 0
-                }));
+                if (isManajer) {
+                    formattedData = response.data.data.map(item => ({
+                        id: item.karyawan.karyawan_id,
+                        Nama: item.karyawan.nama_karyawan,
+                        Divisi: item.karyawan.divisi.nama_divisi,
+                        Toko: item.karyawan.toko?.nama_toko || item.karyawan.cabang?.nama_cabang || '-',
+                        KPI: item.totalPersentaseTercapai || 0,
+                        "Total Gaji Akhir": item.totalGajiAkhir || 0
+                    }));
+                } else {
+                    formattedData = response.data.data.map(item => ({
+                        id: item.karyawan_id,
+                        Nama: item.nama_karyawan,
+                        Divisi: item.divisi,
+                        Cabang: item.cabang,
+                        KPI: item.kpi_count || 0,
+                        "Total Gaji Akhir": item.total_gaji_akhir || 0
+                    }));
+                }
+                
                 
                 setData(formattedData);
             }
@@ -130,7 +149,7 @@ export default function PenilaianKPI() {
 
     const fetchBranches = async () => {
         try {
-            const response = await api.get('/cabang');
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
             const branchList = [
                 { label: "Semua", value: "Semua" },
                 ...response.data.data.map(div => ({
@@ -146,8 +165,8 @@ export default function PenilaianKPI() {
 
     const fetchToko = async () => {
         try {
-            const response = await api.get('/toko'); // Sesuaikan dengan endpoint toko
-            const filteredToko = response.data.data.filter(toko => !toko.is_deleted); // Filter hanya toko yang aktif
+            const response = await api.get('/toko'); 
+            const filteredToko = response.data.data.filter(toko => !toko.is_deleted); 
             const tokoList = [
                 { label: "Semua", value: "Semua" },
                 ...filteredToko.map(toko => ({
@@ -163,7 +182,13 @@ export default function PenilaianKPI() {
 
     const fetchDivisi = async () => {
         try {
-            const response = await api.get('/divisi-karyawan');
+            let response;
+            if (isManajer) {
+                response = await api.get('/manager-kpi-divisi');
+            } else {
+                response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
+            }
+            
             const divisiList = [
                 { label: "Semua", value: "Semua" },
                 ...response.data.data.map(div => ({
@@ -250,6 +275,7 @@ export default function PenilaianKPI() {
                                     ...item,
                                     nomor: index + 1,
                                     "Total Gaji Akhir": `Rp${formatNumberWithDots(item["Total Gaji Akhir"])}`,
+                                    KPI: `${item.KPI}%`,
                                 }))}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}

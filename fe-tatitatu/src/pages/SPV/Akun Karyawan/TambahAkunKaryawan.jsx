@@ -26,7 +26,7 @@ export default function TambahAkunKaryawan(){
       password: '12345678',
       name: '',
       division: '',
-      store: 'Tatitatu',
+      store: '',
       branch: '',        
       baseSalary: '',
       bonus: '',
@@ -38,6 +38,8 @@ export default function TambahAkunKaryawan(){
   });
 
   const [errors, setErrors] = useState({});
+  const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+  const toko_id = userDataLogin.userId
 
   const validateForm = () => {
         const newErrors = {};
@@ -54,10 +56,29 @@ export default function TambahAkunKaryawan(){
         return Object.keys(newErrors).length === 0;
     };
 
+    const fetchStore = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/toko/${toko_id}`);
+            if (response.data.success) {
+                setFormData(prev => ({
+                    ...prev,
+                    store: response.data.data.nama_toko
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching store:', error);
+            setErrorMessage('Gagal mengambil data toko');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
       const fetchBranches = async () => {
         try {
             setLoading(true)
-            const response = await api.get('/cabang');
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
             if (response.data.success) {
                 const options = response.data.data.map(branch => ({
                     value: branch.cabang_id,
@@ -75,9 +96,8 @@ export default function TambahAkunKaryawan(){
       const fetchDivisi = async () => {
         try {
             setLoading(true)
-            const response = await api.get('/divisi-karyawan');
+            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
             if (response.data.success) {
-                // Transform data untuk InputDropdown
                 const options = response.data.data.map(div => ({
                     value: div.divisi_karyawan_id,
                     label: div.nama_divisi
@@ -94,7 +114,8 @@ export default function TambahAkunKaryawan(){
       useEffect(() => {
         fetchBranches();
         fetchDivisi();
-      }, []);
+        fetchStore();
+    }, []);
 
       const [photoPreview, setPhotoPreview] = useState(null);
   
@@ -152,6 +173,7 @@ export default function TambahAkunKaryawan(){
                 }
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
+                formDataToSend.append('toko_id', toko_id)
         
                 const response = await api.post('/karyawan', formDataToSend, {
                     headers: {
@@ -285,7 +307,7 @@ export default function TambahAkunKaryawan(){
 
                             <Input
                               label="Toko"
-                              value="Tatitatu"
+                              value={formData.store}
                               disabled={true}
                               required={true}
                             />

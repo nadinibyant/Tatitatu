@@ -20,6 +20,7 @@ export default function TambahAbsensiProduksi() {
     ]);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const karyawan_id = userData.userId
     const [selectedImage, setSelectedImage] = useState(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -330,16 +331,11 @@ export default function TambahAbsensiProduksi() {
             formData.append('tanggal', formattedDate);
             formData.append('jumlah_produksi', totalJumlah.toString());
             formData.append('total_menit', totalMenit.toString());
-            formData.append('karyawan_id', '1');
+            formData.append('karyawan_id', karyawan_id);
             barangData.forEach((row, index) => {
                 formData.append(`produk[${index}][barang_handmade_id]`, row.id);
                 formData.append(`produk[${index}][jumlah]`, row.quantity.toString());
             });
-
-            // console.log('Form data entries:');
-            // for (let pair of formData.entries()) {
-            //     console.log(pair[0], pair[1]);
-            // }
     
             await api.post('/produksi-gudang', formData, {
                 headers: {

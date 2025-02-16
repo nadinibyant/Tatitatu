@@ -61,6 +61,8 @@ export default function EditPembelianStok() {
         value: data.metode || 1,
         label: dataMetode.find(opt => opt.value === data.metode)?.label || "-"
     });
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
 
     useEffect(() => {
         const fetchPembelianData = async () => {
@@ -190,7 +192,7 @@ export default function EditPembelianStok() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await api.get('/kategori-barang');
+                const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
                 if (response.data.success) {
                     const categoryList = response.data.data.map(cat => cat.nama_kategori_barang);
                     setCategories(['Semua', ...categoryList]);
@@ -207,7 +209,7 @@ export default function EditPembelianStok() {
         const fetchAllItems = async () => {
             try {
                 // Fetch handmade items
-                const handmadeRes = await api.get('/barang-handmade');
+                const handmadeRes = await api.get(`/barang-handmade?toko_id=${toko_id}`);
                 const handmadeItems = handmadeRes.data.data.map(item => ({
                     id: item.barang_handmade_id,
                     image: `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.image}`,
@@ -218,7 +220,7 @@ export default function EditPembelianStok() {
                 }));
         
                 // Fetch non-handmade items
-                const nonHandmadeRes = await api.get('/barang-non-handmade');
+                const nonHandmadeRes = await api.get(`/barang-non-handmade?toko_id=${toko_id}`);
                 const nonHandmadeItems = nonHandmadeRes.data.data.map(item => ({
                     id: item.barang_non_handmade_id,
                     image: `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}`,
@@ -229,7 +231,7 @@ export default function EditPembelianStok() {
                 }));
         
                 // Fetch custom items
-                const customRes = await api.get('/barang-custom');
+                const customRes = await api.get(`/barang-custom?toko_id=${toko_id}`);
                 const customItems = customRes.data.data.map(item => ({
                     id: item.barang_custom_id,
                     image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
@@ -240,11 +242,11 @@ export default function EditPembelianStok() {
                 }));
         
                 // Fetch packaging items
-                const packagingRes = await api.get('/packaging');
+                const packagingRes = await api.get(`/packaging?toko_id=${toko_id}`);
                 const packagingItems = packagingRes.data.data.map(item => ({
-                    id: item.packaging_id,
+                    id: item.packaging_id, 
                     image: `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`,
-                    code: item.packaging_id,
+                    code: item.packaging_id, 
                     name: item.nama_packaging,
                     price: item.harga_satuan,
                     kategori: item.kategori_barang.nama_kategori_barang
@@ -302,7 +304,7 @@ export default function EditPembelianStok() {
     useEffect(() => {
         const fetchMetodePembayaran = async () => {
             try {
-                const response = await api.get('/metode-pembayaran');
+                const response = await api.get(`/metode-pembayaran?toko_id=${toko_id}`);
                 if (response.data.success && response.data.data) {
                     const transformedMetode = response.data.data.map(metode => ({
                         id: metode.metode_id,
@@ -324,12 +326,11 @@ export default function EditPembelianStok() {
     useEffect(() => {
         const fetchCabangData = async () => {
             try {
-                const response = await api.get('/cabang');
+                const response = await api.get(`/cabang?toko_id=${toko_id}`);
                 if (response.data.success) {
-                    // Buat array untuk semua cabang terlebih dahulu
                     const allCabang = response.data.data.map(cabang => ({
                         nama: cabang.nama_cabang,
-                        data: [] // Inisialisasi dengan array kosong
+                        data: [] 
                     }));
     
                     if (data.dataCabang && data.dataCabang.length > 0) {
@@ -614,8 +615,7 @@ export default function EditPembelianStok() {
 
                     let price;
                     if (jenisBarang === "Barang Handmade" || jenisBarang === "Barang Non-Handmade") {
-                        // Ambil cabang_id dari dataCabang
-                        const cabang = await api.get('/cabang');
+                        const cabang = await api.get(`/cabang?toko_id=${toko_id}`);
                         const cabangData = cabang.data.data;
                         const currentCabangId = cabangData.find(c => c.nama_cabang === currentCabang.nama)?.cabang_id;
                         price = getModalPrice(selectedItem, currentCabangId);
@@ -829,7 +829,7 @@ export default function EditPembelianStok() {
         try {
             setLoading(true);
     
-            const cabangResponse = await api.get('/cabang');
+            const cabangResponse = await api.get(`/cabang?toko_id=${toko_id}`);
             const cabangList = cabangResponse.data.data;
     
             const produkData = dataCabang.flatMap(cabang => {
@@ -839,16 +839,18 @@ export default function EditPembelianStok() {
                     let productId;
                     let productType;
 
-                    if (item["Jenis Barang"] === "Handmade") {
+                    if (item["Jenis Barang"] === "Handmade" || item["Jenis Barang"] === "Barang Handmade") {
                         productType = "barang_handmade_id";
-                    } else if (item["Jenis Barang"] === "Barang Non-Handmade") {
+                    } else if (item["Jenis Barang"] === "Barang Non-Handmade" || item["Jenis Barang"] === "Non Handmade") {
                         productType = "barang_non_handmade_id";
-                    } else if (item["Jenis Barang"] === "Barang Custom") {
+                    } else if (item["Jenis Barang"] === "Barang Custom" || item["Jenis Barang"] === "Custom") {
                         productType = "barang_custom_id";
+                    } else if (item["Jenis Barang"] === "Packaging") {  
+                        productType = "packaging_id";
                     } else {
                         productType = "packaging_id";
                     }
-    
+
                     const hargaSatuan = typeof item["Harga Satuan"] === 'string' 
                         ? parseInt(item["Harga Satuan"].replace(/[^0-9.-]+/g, ""))
                         : parseInt(item["Harga Satuan"]);
@@ -868,18 +870,41 @@ export default function EditPembelianStok() {
             });
     
             const basePayload = {
-                cash_or_non: selectBayar === 1,
+                cash_or_non: selectBayar === 1 ? true : false,
                 sub_total: parseInt(subtotal),
                 diskon: parseInt(diskon),
                 pajak: parseInt(pajak),
                 catatan: note || '',
                 total_pembelian: parseInt(totalPenjualan),
-                produk: produkData
+                produk: produkData,
             };
 
-            const payload = selectBayar === 2 
-                ? { ...basePayload, metode_id: parseInt(selectMetode?.value) }
-                : basePayload;
+            let payload = basePayload;
+            if (selectBayar === 1) {
+                payload = {
+                    ...basePayload,
+                    metode_id: null
+                };
+            } else if (selectBayar === 2 && selectMetode?.value) {
+                payload = {
+                    ...basePayload,
+                    metode_id: selectMetode.value
+                };
+            }
+
+            // console.log('Final Payload:', {
+            //     url: `/pembelian/${pembelianId}`,
+            //     method: 'PUT',
+            //     payload: payload,
+            //     detailPembayaran: {
+            //         selectBayar,
+            //         selectMetode,
+            //         subtotal,
+            //         diskon,
+            //         pajak,
+            //         totalPenjualan
+            //     }
+            // });
     
             const response = await api.put(`/pembelian/${pembelianId}`, payload);
             

@@ -28,11 +28,20 @@ export default function StokBarang() {
     const [selectedItem, setSelectedItem] = useState(null);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const isKasirToko = userData?.role === 'kasirtoko'
     const [stokData, setStokData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cabangData, setCabangData] = useState([]);
     const [cabangMapping, setCabangMapping] = useState({});
     const [selectedItemDetail, setSelectedItemDetail] = useState(null);
+    const toko_id = userData.userId
+    const [cabang_id, setCabangId] = useState(null)
+
+    useEffect(() => {
+        if (isKasirToko) {
+            setCabangId(userData.userId);
+        }
+    }, []);
 
     const getDetailEndpoint = (item) => {
         if (item.barang_handmade_id) return `/barang-handmade/${item.barang_handmade_id}`;
@@ -70,7 +79,7 @@ export default function StokBarang() {
     const fetchCabangData = async () => {
         if (!isAdminGudang) {
             try {
-                const response = await api.get('/cabang');
+                const response = await api.get(`/cabang?toko_id=${toko_id}`);
                 if (response.data.success) {
                     const cabangMap = response.data.data.reduce((acc, cabang) => {
                         acc[cabang.nama_cabang] = cabang.cabang_id;
@@ -104,7 +113,7 @@ export default function StokBarang() {
     const fetchKategoriOptions = async () => {
         if (!isAdminGudang) {
             try {
-                const response = await api.get('/kategori-barang');
+                const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
                 if (response.data.success) {
                     const kategoriOpts = response.data.data
                         .filter(item => !item.is_deleted)
@@ -186,11 +195,15 @@ export default function StokBarang() {
             setLoading(true);
             
             if (isAdminGudang) {
-                const response = await api.get('/stok-barang-gudang');
-            
+            const response = await api.get('/stok-barang-gudang');
+            if (response.data.success) {
+                const transformedData = transformStokGudang(response.data.data);
+                setStokData(transformedData);
+            }
+            } else if (isKasirToko) {
+                const response = await api.get(`/stok-barang?cabang=${cabang_id}`);
                 if (response.data.success) {
-                    const transformedData = transformStokGudang(response.data.data);
-                    setStokData(transformedData);
+                    setStokData(response.data.data.filter(item => !item.is_deleted));
                 }
             } else {
                 const response = await api.get('/stok-barang');
@@ -428,7 +441,7 @@ export default function StokBarang() {
                                 />
                             </div>
 
-                            {!isAdminGudang && (
+                            {!isAdminGudang || !isKasirToko && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={'/icon/toko.svg'} 

@@ -32,10 +32,19 @@ export default function EditKPISeluruhDivisi() {
         divisi: "",
         data: [],
     });
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
+    const isManager = userData.role === 'manajer';
 
     const fetchDivisi = async () => {
         try {
-            const response = await api.get('/divisi-karyawan'); 
+            let response;
+            if (isManager) {
+                response = await api.get('/manager-kpi-divisi');
+            } else {
+                response = await api.get(`/kpi-divisi?toko_id=${toko_id}`);
+            }
+
             const formattedDivisi = response.data.data
                 .filter(div => !div.is_deleted)
                 .map(div => ({
@@ -45,6 +54,8 @@ export default function EditKPISeluruhDivisi() {
             setDataDivisi(formattedDivisi);
         } catch (error) {
             console.error('Error fetching divisi:', error);
+            setErrorMessage('Gagal mengambil data divisi');
+            setErrorAlert(true);
         }
     };
 

@@ -48,10 +48,12 @@ export default function TambahPembelianStok() {
     const [errorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
 
     const fetchPaymentMethods = async () => {
         try {
-            const response = await api.get('/metode-pembayaran');
+            const response = await api.get(`/metode-pembayaran?toko_id=${toko_id}`);
             const formattedMethods = [
                 { id: 0, label: "-", value: 0 },
                 ...response.data.data
@@ -96,11 +98,11 @@ export default function TambahPembelianStok() {
         try {
             setLoadingBarang(true);
             const [handmadeRes, nonHandmadeRes, customRes, packagingRes, kategoriRes] = await Promise.all([
-                api.get('/barang-handmade'),
-                api.get('/barang-non-handmade'),
-                api.get('/barang-custom'),
-                api.get('/packaging'),
-                api.get('/kategori-barang')
+                api.get(`/barang-handmade?toko_id=${toko_id}`),
+                api.get(`/barang-non-handmade?toko_id=${toko_id}`),
+                api.get(`/barang-custom?toko_id=${toko_id}`),
+                api.get(`/packaging?toko_id=${toko_id}`),
+                api.get(`/kategori-barang?toko_id=${toko_id}`)
             ]);
 
             setKategoriList(kategoriRes.data.data.filter(k => !k.is_deleted));
@@ -174,7 +176,7 @@ export default function TambahPembelianStok() {
     const fetchCabang = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/cabang');
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
             const formattedCabang = response.data.data.map(cabang => ({
                 nama: cabang.nama_cabang,
                 id: cabang.cabang_id,
@@ -190,7 +192,7 @@ export default function TambahPembelianStok() {
 
     useEffect(() => {
         fetchCabang();
-    }, []);
+    }, [toko_id]);
 
 
     useEffect(() => {
@@ -577,6 +579,7 @@ const handleModalSubmit = () => {
                 pajak: parseInt(pajak),
                 total_pembelian: parseInt(calculateTotalPenjualan(calculateSubtotal())),
                 metode_id: selectBayar === 1 ? null : parseInt(selectMetode),
+                toko_id: toko_id,
                 produk
             };
     

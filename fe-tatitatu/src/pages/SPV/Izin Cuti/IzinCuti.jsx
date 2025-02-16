@@ -26,6 +26,8 @@ export default function IzinCuti() {
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData.userId
 
 
     const handleMonthChange = (e) => {
@@ -180,7 +182,7 @@ const ActionButtons = ({ id, status }) => {
     const fetchCutiKaryawan = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}`); 
+            const response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`); 
             
             const formattedData = response.data.data.flatMap(karyawan => 
                 karyawan.cuti_karyawan.map(cuti => ({
@@ -211,7 +213,7 @@ const ActionButtons = ({ id, status }) => {
     const fetchDivisi = async () => {
         try {
             setLoading(true)
-            const response = await api.get('/divisi-karyawan')
+            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`)
             const divisiList = [
                 { label: "Semua", value: "Semua" },
                 ...response.data.data.map(div => ({
@@ -269,7 +271,7 @@ const ActionButtons = ({ id, status }) => {
                                     value={monthValue}
                                     onChange={handleMonthChange}
                                     className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    style={{
+                                    style={{ 
                                         maxWidth: '200px',
                                     }}
                                 />

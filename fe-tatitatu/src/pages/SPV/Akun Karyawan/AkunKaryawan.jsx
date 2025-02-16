@@ -33,6 +33,8 @@ export default function AkunKaryawan() {
     const [errorMessage, setErrorMessage] = useState('');
     const [filterFields, setFilterFields] = useState([]);
     const [showPassword, setShowPassword] = useState(false);
+    const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+    const toko_id = userDataLogin.userId
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -138,11 +140,13 @@ export default function AkunKaryawan() {
         return `Rp${amount?.toLocaleString('id-ID')}`;
     };
 
+
+    const [data, setData] = useState([])
     // get data akun
     const fetchKaryawan = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/karyawan');
+            const response = await api.get(`/karyawan?toko_id=${toko_id}`);
             
             const formattedData = response.data.data.map(item => ({
                 id: item.karyawan_id,
@@ -186,12 +190,11 @@ export default function AkunKaryawan() {
         }
     };
 
-    const [data, setData] = useState([])
 
     const fetchDivisi = async () => {
         try {
             setLoading(true)
-            const response = await api.get('/divisi-karyawan')
+            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`)
             const divisiList = response.data.data.map(div => ({
                 label: div.nama_divisi,
                 value: div.nama_divisi 
@@ -228,7 +231,7 @@ export default function AkunKaryawan() {
     useEffect(() => {
         fetchKaryawan();
         fetchDivisi()
-    }, []);
+    }, [toko_id]);
 
 
 
@@ -241,7 +244,6 @@ export default function AkunKaryawan() {
     
         return dataToDisplay;
     };
-    console.log(selectedEmployee)
 
     return (
         <>

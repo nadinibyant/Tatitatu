@@ -47,10 +47,16 @@ export default function TambahPenjualanKasir() {
             items: []
         }
     ]);
+    
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang';
+    const cabang_id = userData.userId
+    const toko_id = userData.tokoId
+
 
     const fetchPackaging = async () => {
         try {
-            const response = await api.get('/packaging');
+            const response = await api.get(`/packaging?toko_id=${toko_id}`);
             if (response.data.success) {
                 const packagingItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -60,7 +66,7 @@ export default function TambahPenjualanKasir() {
                             ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` 
                             : "/placeholder-image.jpg",
                         name: `${item.nama_packaging} - ${item.ukuran}`,
-                        price: item.harga_satuan,
+                        price: item.harga_jual,
                         kategori: item.kategori_barang.nama_kategori_barang
                     }));
 
@@ -86,8 +92,6 @@ export default function TambahPenjualanKasir() {
         fetchPackaging();
     }, []);
 
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const isAdminGudang = userData?.role === 'admingudang';
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(null);
@@ -366,7 +370,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchKategoriBarang = async () => {
         try {
-            const response = await api.get('/kategori-barang');
+            const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
             if (response.data.success) {
                 const kategoriBaru = response.data.data
                     .filter(kategori => !kategori.is_deleted)
@@ -397,7 +401,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchBarangHandmade = async () => {
         try {
-            const response = await api.get('/barang-handmade');
+            const response = await api.get(`/barang-handmade?cabang=${cabang_id}`);
             if (response.data.success) {
                 const handmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -533,7 +537,7 @@ export default function TambahPenjualanKasir() {
                                 }));
                                 return [...allItems, ...items];
                             }, [])}
-                            value={item.id} // Use item ID as the value
+                            value={item.id} 
                             onSelect={(newSelection) => handleDropdownChange(item.id, newSelection)}
                         />
                     ),
@@ -667,7 +671,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchMetodePembayaran = async () => {
         try {
-            const response = await api.get('/metode-pembayaran');
+            const response = await api.get(`/metode-pembayaran?toko_id=${toko_id}`);
             if (response.data.success) {
                 const metodePembayaranOptions = response.data.data
                     .filter(metode => !metode.is_deleted)
@@ -751,7 +755,7 @@ export default function TambahPenjualanKasir() {
     
             // Buat requestBody dasar
             const requestBody = {
-                cabang_id: 1,
+                cabang_id: cabang_id,
                 tanggal: tanggal 
                     ? new Date(tanggal).toISOString() 
                     : new Date().toISOString(),
@@ -762,7 +766,8 @@ export default function TambahPenjualanKasir() {
                 diskon: parseFloat(diskon),
                 pajak: parseFloat(pajak),
                 total_penjualan: totalPenjualan,
-                produk: produkArray
+                produk: produkArray,
+                toko_id: toko_id
             };
     
             // Tambahkan metode_id hanya jika non-cash

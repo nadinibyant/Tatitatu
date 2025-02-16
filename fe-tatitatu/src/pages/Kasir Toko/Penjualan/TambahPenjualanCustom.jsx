@@ -56,6 +56,8 @@ const TambahPenjualanCustom = () => {
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const toko_id = userData.tokoId
+    const cabang_id = userData.userId
 
     useEffect(() => {
         if (isModalOpen) {
@@ -211,7 +213,7 @@ const TambahPenjualanCustom = () => {
 
     const fetchBarangCustom = async () => {
         try {
-            const response = await api.get('/barang-custom');
+            const response = await api.get(`/barang-custom?toko_id=${toko_id}`);
             if (response.data.success) {
                 const transformedData = response.data.data
                     .filter(item => !item.is_deleted)
@@ -220,7 +222,7 @@ const TambahPenjualanCustom = () => {
                         image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
                         name: item.nama_barang,
                         code: item.barang_custom_id,
-                        price: item.harga,
+                        price: item.harga_jual,
                         jenis: item.jenis_barang.nama_jenis_barang,
                         kategori: item.kategori.nama_kategori_barang
                     }));
@@ -236,17 +238,17 @@ const TambahPenjualanCustom = () => {
 
     const fetchPackaging = async () => {
         try {
-            const response = await api.get('/packaging');
+            const response = await api.get(`/packaging?toko_id=${toko_id}`);
             if (response.data.success) {
                 const transformedData = response.data.data
                     .filter(item => !item.is_deleted)
                     .map(item => ({
                         id: item.packaging_id,
                         name: item.nama_packaging,
-                        price: item.harga,
+                        price: item.harga_jual,
                         image: item.image 
                             ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
-                            : "/placeholder-image.jpg", // Default image jika image null
+                            : "/placeholder-image.jpg",
                         jenis: item.jenis_barang.nama_jenis_barang,
                         kategori: item.kategori_barang.nama_kategori_barang,
                         ukuran: item.ukuran
@@ -447,7 +449,7 @@ const TambahPenjualanCustom = () => {
     
     const fetchMetodePembayaran = async () => {
         try {
-            const response = await api.get('/metode-pembayaran');
+            const response = await api.get(`/metode-pembayaran?toko_id=${toko_id}`);
             if (response.data.success) {
                 const metodeOptions = response.data.data
                     .filter(metode => !metode.is_deleted)
@@ -618,7 +620,7 @@ const TambahPenjualanCustom = () => {
             }
     
             const baseRequestBody = {
-                cabang_id: userData?.cabang_id || 1,
+                cabang_id: cabang_id,
                 tanggal: new Date(tanggal).toISOString(),
                 nama_pembeli: namaPembeli,
                 cash_or_non: selectedBayar === 1,
@@ -628,7 +630,8 @@ const TambahPenjualanCustom = () => {
                 pajak: Number(pajak),
                 total_penjualan: totalPenjualan,
                 produk,
-                rincian_biaya_custom: rincianBiaya
+                rincian_biaya_custom: rincianBiaya,
+                toko_id: toko_id
             };
     
             const requestBody = selectedBayar === 2 

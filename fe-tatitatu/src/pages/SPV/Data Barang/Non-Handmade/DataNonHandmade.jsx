@@ -17,6 +17,7 @@ export default function DataBarangNonHandmade() {
     const [subMenus, setSubMenus] = useState([]);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const toko_id = userData.userId
     
     const navigate = useNavigate();
 
@@ -24,7 +25,7 @@ export default function DataBarangNonHandmade() {
     const fetchSubMenus = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : '/kategori-barang';
+            const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
             const response = await api.get(endpoint);
             
             if (response.data.success) {
@@ -41,7 +42,7 @@ export default function DataBarangNonHandmade() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : '/barang-non-handmade';
+            const endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : `/barang-non-handmade?toko_id=${toko_id}`;
             const response = await api.get(endpoint);
             
             if (response.data.success) {

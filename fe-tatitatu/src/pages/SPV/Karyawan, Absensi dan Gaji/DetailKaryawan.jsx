@@ -52,7 +52,7 @@ export default function DetailKaryawan(){
 
         const headers = [
             { label: "Tanggal", key: "Tanggal", align: "text-left" },
-            { label: "Foto", key: "Foto", align: "text-left" },
+            { label: "Foto", key: "Foto", align: "text-left"},
             { label: "Jam Masuk", key: "Jam Masuk", align: "text-left" },
             { label: "Jam Keluar", key: "Jam Keluar", align: "text-left" },
             { label: "Total Waktu", key: "Total Waktu", align: "text-left" },
@@ -70,7 +70,7 @@ export default function DetailKaryawan(){
     
         const headersTransportasi = [
             { label: "Tanggal", key: "Tanggal", align: "text-left" },
-            { label: "Foto", key: "Foto", align: "text-left" },
+            { label: "Foto", key: "Foto", align: "text-left"},
             { label: "Lokasi", key: "Lokasi", align: "text-left" },
             { label: "Status", key: "Status", align: "text-left" },
         ];
@@ -90,76 +90,14 @@ export default function DetailKaryawan(){
                 divisi: '',
                 total_gaji_pokok: 0,
                 total_bonus: 0,
-                waktu_kerja_sebulan: 0,
+                waktu_kerja_sebulan_antar: 0,
+                waktu_kerja_sebulan_menit: 0,
                 kehadiran:0,
                 izin:0,
                 tidak_ada_kejelasan: 0,
                 foto: ''
             },
             data: [
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // },
-                // {
-                //     id:1,
-                //     Tanggal: '2024-12-11',
-                //     Foto: 'https://via.placeholder.com/50',
-                //     "Jam Masuk": '13.00',
-                //     "Jam Keluar": '19.00',
-                //     "Total Waktu": 500,
-                //     "Gaji Pokok Perhari": 35000
-                // }
             ]
         })
     
@@ -195,7 +133,9 @@ export default function DetailKaryawan(){
                         divisi: karyawan.divisi.nama_divisi,
                         total_gaji_pokok: karyawan.jumlah_gaji_pokok || 0,
                         total_bonus: karyawan.bonus || 0,
-                        waktu_kerja_sebulan: karyawan.waktu_kerja_sebulan_menit || karyawan.waktu_kerja_sebulan_antar || 0,
+                        waktu_kerja_sebulan_antar: karyawan.waktu_kerja_sebulan_antar,
+                        waktu_kerja_sebulan_menit: karyawan.waktu_kerja_sebulan_menit,
+                        // waktu_kerja_sebulan: karyawan.waktu_kerja_sebulan_menit || karyawan.waktu_kerja_sebulan_antar || 0,
                         kehadiran: kehadiran || 0,
                         izin: totalCutiDays || 0,
                         tidak_ada_kejelasan: tidakHadir || 0,
@@ -547,7 +487,11 @@ export default function DetailKaryawan(){
 
                             <div className="">
                                 <p className="text-sm text-gray-500">Waktu Kerja Sebulan</p>
-                                <p className="font-bold">{formatNumberWithDots(data.profile.waktu_kerja_sebulan)} Menit</p>
+                                {divisi === "Transportasi" ? (
+                                    <p className="font-bold">{formatNumberWithDots(data.profile.waktu_kerja_sebulan_antar) || 0} Antar</p>   
+                                ) : (
+                                    <p className="font-bold">{formatNumberWithDots(data.profile.waktu_kerja_sebulan_menit) || 0} Menit</p>   
+                                )}
                             </div>
 
 

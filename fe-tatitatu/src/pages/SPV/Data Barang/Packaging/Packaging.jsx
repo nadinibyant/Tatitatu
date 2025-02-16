@@ -27,6 +27,7 @@ export default function Packaging() {
   const [isLoading, setIsLoading] = useState(false)
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isAdminGudang = userData?.role === 'admingudang';
+  const toko_id = userData.userId
 
   const [isAlertSUcc, setAlertSucc] = useState(false)
   const [data,setData] = useState([])
@@ -35,7 +36,9 @@ export default function Packaging() {
     try {
         setIsLoading(true);
         const endpoint = isAdminGudang ? '/packaging-gudang' : '/packaging';
-        const response = await api.get(endpoint);
+        const url = isAdminGudang ? endpoint : `${endpoint}?toko_id=${toko_id}`;
+        
+        const response = await api.get(url);
         
         if (response.data.success) {
             const transformedData = response.data.data.map(item => {
@@ -45,7 +48,6 @@ export default function Packaging() {
                   title: item.nama_packaging,
                   ukuran: item.ukuran,
                   price: `Rp${item.harga.toLocaleString('id-ID')}`,
-                  // image: item.image ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : "https://via.placeholder.com/50",
                   image: item.image 
                   ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'packaging-gudang' : 'packaging'}/${item.image}` 
                   : "https://via.placeholder.com/50",
@@ -65,7 +67,8 @@ export default function Packaging() {
                 category: item.kategori_barang.kategori_barang_id,
                 jumlah_minimum_stok: item.jumlah_minimum_stok,
                 isi: item.isi,
-                harga_satuan: item.harga_satuan
+                harga_satuan: item.harga_satuan,
+                harga_jual: item.harga_jual
               };
             });
             
@@ -94,13 +97,14 @@ const [data2, setData2] = useState({
       Harga: "",
       Isi: "",
       HargaSatuan: "",
+      HargaJual: ""
     },
   ],
 });
 
 const fetchCategories = async () => {
   try {
-    const response = await api.get('/kategori-barang');
+    const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
     if (response.data.success) {
       const options = response.data.data.map(item => ({
         value: item.kategori_barang_id.toString(),
@@ -135,6 +139,7 @@ const handleAddBtn = () => {
         Harga: "",
         Isi: "",
         HargaSatuan: "",
+        HargaJual: ""
       },
     ],
   });
@@ -162,6 +167,7 @@ const handleEdit = (itemId) => {
         Harga: priceNumber,
         Isi: itemToEdit.isi,
         HargaSatuan: itemToEdit.harga_satuan,
+        HargaJual: itemToEdit.harga_jual
       },
     ],
   });
@@ -200,6 +206,7 @@ const handleEdit = (itemId) => {
     { label: "Harga", key: "Harga", align: "text-left" },
     { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
     { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
+    { label: "Harga Jual", key: "HargaJual", align: "text-left" },
   ];
 
   const formatCurrency = (amount) => {
@@ -242,6 +249,8 @@ const handleEdit = (itemId) => {
       formData.append('harga', data2.rincian_biaya[0].Harga);
       formData.append('isi', data2.rincian_biaya[0].Isi);
       formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
+      formData.append('toko_id', toko_id)
+      formData.append('harga_jual', data2.rincian_biaya[0].HargaJual)
 
       if (!isAdminGudang) {
         formData.append('kategori_barang_id', data2.info_barang.Kategori);
@@ -332,6 +341,7 @@ const handleEdit = (itemId) => {
           Harga: priceNumber,
           Isi: itemToShow.isi,
           HargaSatuan: itemToShow.harga_satuan,
+          HargaJual: itemToShow.harga_jual
         },
       ],
     });
@@ -501,6 +511,15 @@ const handleEdit = (itemId) => {
                                 />
                               ),
                               HargaSatuan: `Rp${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
+                              HargaJual: (
+                                <Input
+                                showRequired={false}
+                                  type={'number'}
+                                  width="w-full"
+                                  value={data2.rincian_biaya[0].HargaJual}
+                                  onChange={(value) => handleInputChange("HargaJual", value)}
+                                />
+                              ),
                             },
                           ]}
                         />
@@ -566,7 +585,7 @@ const handleEdit = (itemId) => {
                     
                     <div>
                       <p className="text-gray-500">Jumlah Minimum Stok</p>
-                      <p className="font-medium">{data2.info_barang["Jumlah Minimum Stok"]}</p>
+                      <p className="font-medium">{data2.info_barang["Jumlah Minimum Stok"].toLocaleString('id-ID') || 0}</p>
                     </div>
       
                     <div>
@@ -586,7 +605,8 @@ const handleEdit = (itemId) => {
                         No: index + 1,
                         Harga: `Rp${formatCurrency(item.Harga)}`,
                         Isi: formatCurrency(item.Isi),
-                        HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`
+                        HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`,
+                        HargaJual: `Rp${formatCurrency(item.HargaJual)}`,
                     }))}
                     hasPagination={false}
                     hasSearch={false}
