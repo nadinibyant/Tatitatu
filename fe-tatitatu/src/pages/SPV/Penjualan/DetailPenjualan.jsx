@@ -44,7 +44,7 @@ export default function DetailPemasukanJual() {
         { label: "Detail Penjualan", href: "" },
     ]
     : [
-        { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+        { label: "Daftar Penjualan Toko", href: "/penjualanToko" },
         { label: "Detail Penjualan", href: "" },
     ];
 

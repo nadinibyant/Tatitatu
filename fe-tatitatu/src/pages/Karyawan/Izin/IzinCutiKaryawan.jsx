@@ -13,6 +13,7 @@ import api from "../../../utils/api";
 export default function IzinCutiKaryawan(){
     const userData = JSON.parse(localStorage.getItem('userData'))
     const karyawan_id = userData.userId
+    const toko_id = userData.tokoId
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         karyawan_id: karyawan_id, 
@@ -47,13 +48,14 @@ export default function IzinCutiKaryawan(){
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            // const response = await api.get(`/cuti-karyawan/${karyawan_id}/karyawan`);
             const response = await api.get(`/cuti-karyawan/02/2025`);
             
             if (response.data.success) {
-                const cutiData = response.data.data?.[0]?.cuti_karyawan || [];
+                const allCutiData = response.data.data.reduce((acc, karyawan) => {
+                    return [...acc, ...karyawan.cuti_karyawan];
+                }, []);
     
-                const formattedData = cutiData.map((item, index) => ({
+                const formattedData = allCutiData.map((item, index) => ({
                     nomor: index + 1,
                     Tanggal: `${formatDate(item.tanggal_mulai)}`,
                     'Alasan Izin/Cuti': item.alasan,
@@ -75,10 +77,11 @@ export default function IzinCutiKaryawan(){
 
     const handleAdd = () => {
         setFormData({
-            karyawan_id: '1',
+            karyawan_id: karyawan_id,
             tanggal_mulai: '',
             tanggal_selesai: '',
-            alasan: ''
+            alasan: '',
+            toko_id: toko_id
         });
         setShowModal(true);
     };
@@ -119,6 +122,8 @@ export default function IzinCutiKaryawan(){
         return errors;
     };
 
+    console.log(formData)
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -135,7 +140,8 @@ export default function IzinCutiKaryawan(){
                 karyawan_id: formData.karyawan_id,
                 tanggal_mulai: formData.tanggal_mulai,
                 tanggal_selesai: formData.tanggal_selesai,
-                alasan: formData.alasan
+                alasan: formData.alasan,
+                toko_id: toko_id
             });
 
             if (response.status === 200 || response.status === 201) {

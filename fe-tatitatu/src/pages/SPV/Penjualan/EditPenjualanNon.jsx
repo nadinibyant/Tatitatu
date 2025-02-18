@@ -303,7 +303,7 @@ export default function EditPenjualanNon() {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal - pajak;
+        return subtotal - diskonNominal + pajak;
     };
 
     const handleSelectBayar = (selectedOption) => {
@@ -940,7 +940,7 @@ export default function EditPenjualanNon() {
                 sub_total: subtotal,
                 diskon: parseFloat(diskon),
                 pajak: parseFloat(pajak),
-                total_pembelian: total,
+                total_penjualan: total,
                 produk: produkArray
             };
 

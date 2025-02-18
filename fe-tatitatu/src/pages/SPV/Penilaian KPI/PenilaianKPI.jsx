@@ -85,14 +85,14 @@ export default function PenilaianKPI() {
     const fetchKPIData = async () => {
         try {
             setLoading(true);
-            let response
+            let response;
             if (isManajer) {
                 response = await api.get(`/manager-absensi-karyawan?bulan=${selectedMonth}&tahun=${selectedYear}`);
             } else {
-                response = await api.get(`/kpi-karyawan/${selectedMonth}/${selectedYear}`);
+                response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`);
             }
             
-            let formattedData
+            let formattedData;
             if (response.data.success) {
                 if (isManajer) {
                     formattedData = response.data.data.map(item => ({
@@ -105,15 +105,14 @@ export default function PenilaianKPI() {
                     }));
                 } else {
                     formattedData = response.data.data.map(item => ({
-                        id: item.karyawan_id,
-                        Nama: item.nama_karyawan,
-                        Divisi: item.divisi,
-                        Cabang: item.cabang,
-                        KPI: item.kpi_count || 0,
-                        "Total Gaji Akhir": item.total_gaji_akhir || 0
+                        id: item.karyawan.karyawan_id,
+                        Nama: item.karyawan.nama_karyawan,
+                        Divisi: item.karyawan.divisi.nama_divisi,
+                        Cabang: item.karyawan.cabang?.nama_cabang || '-',
+                        KPI: item.totalPersentaseTercapai || 0,
+                        "Total Gaji Akhir": item.totalGajiAkhir || 0
                     }));
                 }
-                
                 
                 setData(formattedData);
             }
@@ -275,7 +274,7 @@ export default function PenilaianKPI() {
                                     ...item,
                                     nomor: index + 1,
                                     "Total Gaji Akhir": `Rp${formatNumberWithDots(item["Total Gaji Akhir"])}`,
-                                    KPI: `${item.KPI}%`,
+                                    KPI: `${item.KPI.toFixed(2)}%`
                                 }))}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}

@@ -39,9 +39,8 @@ export default function MasterKategori() {
             try {
                 if (userDataLogin.role === 'kasirtoko') {
                     const response = await api.get(`/cabang/${userDataLogin.userId}`);
-                    console.log(response)
                     if (response.data.success) {
-                        setTokoId(response.data.data.toko_id)
+                        setTokoId(response.data.data.toko_id);
                     }
                 } else {
                     setTokoId(userDataLogin.userId);
@@ -50,10 +49,12 @@ export default function MasterKategori() {
                 console.error('Error fetching toko id:', error);
             }
         };
-
-        fetchTokoId();
-    }, [userDataLogin.role, userDataLogin.userId]);
-
+    
+        if (userDataLogin) {
+            fetchTokoId();
+        }
+    }, [userDataLogin]);
+    
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('userData'));
         if (!user) {
@@ -170,7 +171,7 @@ export default function MasterKategori() {
     };
 
     useEffect(() => {
-        if (userData) {  
+        if (userData && toko_id) {  
             if (userData.role === 'admingudang' || userData.role === 'admin') {
                 fetchBarang();
             }
@@ -181,7 +182,7 @@ export default function MasterKategori() {
                 fetchDivisi();
             }
         }
-    }, [userData]);
+    }, [userData, toko_id]);
 
     const [data, setData] = useState({
         categories: [

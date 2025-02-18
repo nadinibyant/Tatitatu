@@ -304,12 +304,12 @@ export default function EditPenjualanNonCustomKasir() {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal - pajak;
+        return subtotal - diskonNominal + pajak;
     };
 
     const handleSelectBayar = (selectedOption) => {
         setSelectedBayar(selectedOption.value);
-        if (selectedOption.value === 2) { // Non-Cash
+        if (selectedOption.value === 2) {
             setIsMetodeDisabled(false);
             setSelectMetode(""); 
         } else { // Cash
@@ -317,6 +317,7 @@ export default function EditPenjualanNonCustomKasir() {
             setIsMetodeDisabled(true);
         }
     };
+    
     const handleSelectMetode = (selectedOption) => {
         setSelectMetode(selectedOption.value);
     };
@@ -931,7 +932,7 @@ export default function EditPenjualanNonCustomKasir() {
                 });
             });
     
-            const isCash = selectBayar === "1";
+            const isCash = selectBayar === 1;
             const subtotal = calculateSubtotal();
             const total = calculateTotalPenjualan(subtotal);
 

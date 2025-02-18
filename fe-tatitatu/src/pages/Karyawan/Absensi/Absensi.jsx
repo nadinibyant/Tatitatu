@@ -40,6 +40,19 @@ export default function Absensi() {
         { label: "Total Menit", key: "total_menit", align: "text-left" },
     ];
 
+    const handleTimeChange = (field, value) => {
+        const updatedFormData = { ...formData, [field]: value };
+        const totalMenit = calculateTotalMinutes(
+            field === 'jam_masuk' ? value : formData.jam_masuk,
+            field === 'jam_keluar' ? value : formData.jam_keluar
+        );
+        
+        setFormData({
+            ...updatedFormData,
+            total_menit: totalMenit
+        });
+    };
+
     // Utility Functions
     const formatNumber = (num) => {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -110,7 +123,7 @@ export default function Absensi() {
     const handleAdd = () => {
         setFormData({
             image: null,
-            karyawan_id: '2',
+            karyawan_id: karyawan_id,
             tanggal: '',
             jam_masuk: '',
             jam_keluar: '',
@@ -160,6 +173,8 @@ export default function Absensi() {
 
         return errors;
     };
+
+    console.log(formData)
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -311,7 +326,7 @@ export default function Absensi() {
                                                 label="Jam Masuk"
                                                 type1="time"
                                                 value={formData.jam_masuk}
-                                                onChange={(value) => setFormData({...formData, jam_masuk: value})}
+                                                onChange={(value) => handleTimeChange('jam_masuk', value)}
                                                 width="w-1/2"
                                                 required={true}
                                             />
@@ -321,7 +336,7 @@ export default function Absensi() {
                                             label="Jam Keluar"
                                             type1="time"
                                             value={formData.jam_keluar}
-                                            onChange={(value) => setFormData({...formData, jam_keluar: value})}
+                                            onChange={(value) => handleTimeChange('jam_keluar', value)}
                                             width="w-full md:w-1/2"
                                             required={true}
                                         />

@@ -35,13 +35,7 @@ export default function StokBarang() {
     const [cabangMapping, setCabangMapping] = useState({});
     const [selectedItemDetail, setSelectedItemDetail] = useState(null);
     const toko_id = userData.userId
-    const [cabang_id, setCabangId] = useState(null)
-
-    useEffect(() => {
-        if (isKasirToko) {
-            setCabangId(userData.userId);
-        }
-    }, []);
+    const cabang_id = userData.userId
 
     const getDetailEndpoint = (item) => {
         if (item.barang_handmade_id) return `/barang-handmade/${item.barang_handmade_id}`;
@@ -131,7 +125,7 @@ export default function StokBarang() {
 
     const getJenisBarang = (item) => {
         if (item.barang_handmade_id) return "Handmade";
-        if (item.barang_non_handmade_id) return "Non-Handmade";
+        if (item.barang_non_handmade_id) return "Non Handmade";
         if (item.barang_custom_id) return "Custom";
         if (item.packaging_id) return "Packaging";
         return "-";
@@ -402,7 +396,7 @@ export default function StokBarang() {
             options: isAdminGudang ? jenisOptions : [
                 { label: "Semua", value: "Semua" },
                 { label: "Handmade", value: "Handmade" },
-                { label: "Non-Handmade", value: "Non-Handmade" },
+                { label: "Non Handmade", value: "Non Handmade" },
                 { label: "Custom", value: "Custom" },
                 { label: "Packaging", value: "Packaging" },
             ]
