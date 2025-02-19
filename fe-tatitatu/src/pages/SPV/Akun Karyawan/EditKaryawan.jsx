@@ -40,6 +40,7 @@ export default function EditKaryawan(){
       const [errorMessage, setErrorMessage] = useState('');
       const userData = JSON.parse(localStorage.getItem('userData'))
       const toko_id = userData.userId
+      const isHeadGudang = userData.role === 'headgudang'
 
       const [errors, setErrors] = useState({});
 
@@ -192,7 +193,7 @@ export default function EditKaryawan(){
     };
 
     
-      const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm()
         if (isValid) {
@@ -208,7 +209,10 @@ export default function EditKaryawan(){
                 formDataToSend.append('nama_karyawan', formData.name);
                 formDataToSend.append('password', formData.password);
                 formDataToSend.append('divisi_karyawan_id', formData.division);
-                formDataToSend.append('cabang_id', formData.branch);
+
+                if (!isHeadGudang) {
+                    formDataToSend.append('cabang_id', formData.branch);
+                }
                 formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
                 formDataToSend.append('bonus', formData.bonus);
                 
@@ -243,7 +247,6 @@ export default function EditKaryawan(){
                 setLoading(false);
             }
         }
-        
     };
     
       const navigate = useNavigate()
@@ -333,15 +336,16 @@ export default function EditKaryawan(){
                                   required={false}
                               />
 
-                              <InputDropdown
-                                  label="Cabang"
-                                  options={branchList}
-                                  value={formData.branch}
-                                  error={!!errors.branch}
-                                  errorMessage={errors.branch}
-                                  onSelect={(option) => handleInputChange('branch')(option.value)}
-                                  required={false}
-                              />
+                                <InputDropdown
+                                    label="Cabang"
+                                    options={branchList}
+                                    value={formData.branch}
+                                    error={!isHeadGudang && !!errors.branch}
+                                    errorMessage={errors.branch}
+                                    onSelect={(option) => handleInputChange('branch')(option.value)}
+                                    required={!isHeadGudang}
+                                    disabled={isHeadGudang}
+                                />
 
                               <Input
                                   label="Jumlah Gaji Pokok"

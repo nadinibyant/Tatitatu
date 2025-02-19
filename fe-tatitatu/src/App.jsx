@@ -249,7 +249,7 @@ function App() {
         <Route path='/stokBarang' element={getProtectedRoute(StokBarang, ['admin', 'kasirtoko', 'admingudang'])} />
         <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
         <Route path='/pengajuanAbsensi' element={getProtectedRoute(IzinCuti, ['admingudang'])} />
-        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko', 'finance', 'admingudang'])} />
+        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko', 'finance', 'admingudang', 'headgudang'])} />
         <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan)} />
 
         {/* karyawan */}

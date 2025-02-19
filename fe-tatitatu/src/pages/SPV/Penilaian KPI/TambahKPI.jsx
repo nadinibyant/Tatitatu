@@ -17,6 +17,8 @@ export default function TambahKPI(){
     const [daysInMonth, setDaysInMonth] = useState(moment(startDate).daysInMonth()); 
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const isHeadGudang = userData.role === 'headgudang'
     
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
@@ -39,7 +41,8 @@ export default function TambahKPI(){
             email: "",
             name: "",
             role: "",
-            department: "",
+            toko: "",
+            cabang: "",
             stats: {
                 kehadiran: 0,
                 izin: 0,
@@ -66,7 +69,9 @@ export default function TambahKPI(){
                         name: karyawanData.nama_karyawan || "",
                         role: karyawanData.divisi.nama_divisi || "",
                         id_divisi: karyawanData.divisi_karyawan_id || "",
-                        department: karyawanData.cabang.nama_cabang || "",
+                        // department: isHeadGudang ? "-" : (karyawanData.cabang?.nama_cabang || "-"),
+                        toko: karyawanData.toko?.nama_toko || "-", 
+                        cabang: karyawanData.cabang?.nama_cabang || "-",
                         image: karyawanData.image || "",
                         stats: {
                             kehadiran: profileData.kehadiran || 0,
@@ -82,11 +87,8 @@ export default function TambahKPI(){
         }
     };
 
-    console.log(data)
-
     const fetchKPIDefinitions = async () => {
         try {
-            // First ensure we have the employee's division ID
             if (!data.profile.id_divisi) {
                 return;
             }
@@ -500,7 +502,7 @@ export default function TambahKPI(){
 
                                 <div className="">
                                     <p className="text-sm text-gray-500">Toko/Cabang</p>
-                                    <p className="font-bold">{data.profile.department}</p>
+                                    <p className="font-bold">{data.profile.toko}/{data.profile.cabang}</p>
                                 </div>
 
                                 <div className="">

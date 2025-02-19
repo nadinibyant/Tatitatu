@@ -130,9 +130,10 @@ export default function Karyawan(){
                 if (response.data.success) {
                     const formattedData = response.data.data.map(item => ({
                         id: item.karyawan.karyawan_id,
+                        toko_id: item.karyawan.toko_id, 
                         Nama: item.karyawan.nama_karyawan,
                         Divisi: item.karyawan.divisi.nama_divisi,
-                        Cabang: item.karyawan.cabang.nama_cabang,
+                        Cabang: isHeadGudang ? item.karyawan.toko.nama_toko : (item.karyawan.cabang?.nama_cabang || '-'),
                         Absen: item.kehadiran,
                         KPI: item.totalPersentaseTercapai,
                         "Total Gaji Akhir": item.totalGajiAkhir,
@@ -194,8 +195,16 @@ export default function Karyawan(){
         const handleRowClick = (row) => {
             const employeeData = data.find(item => item.id === row.id);
             
-            const isUmum = employeeData.waktu_kerja_sebulan_antar === "null" || employeeData.waktu_kerja_sebulan_antar === null;
-            const divisiType = isUmum ? "Umum" : "Transportasi";
+            let divisiType;
+            if (employeeData.toko_id === 1) {
+                if (employeeData.waktu_kerja_sebulan_antar === null) {
+                    divisiType = "Produksi";
+                } else if (employeeData.waktu_kerja_sebulan_menit === null) {
+                    divisiType = "Transportasi";
+                }
+            } else {
+                divisiType = employeeData.waktu_kerja_sebulan_antar === null ? "Umum" : "Transportasi";
+            }
             
             navigate('/dataKaryawanAbsenGaji/detail', { 
                 state: { 

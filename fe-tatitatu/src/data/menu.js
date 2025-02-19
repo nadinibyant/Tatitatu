@@ -156,7 +156,13 @@ export const menuItems = [
         link: "/pengajuanCuti",
         icon: "/Menu/izinCuti.svg",
         iconWarna: '/Icon Warna/izinCuti.svg',
-    }
+    },
+    {
+      label: "Master Kategori",
+      link: "/master-kategori",
+      icon: "/Menu/masterKategori.svg",
+      iconWarna: '/Icon Warna/masterKategori.svg',
+    },
   ];
 
 //   kasir toko

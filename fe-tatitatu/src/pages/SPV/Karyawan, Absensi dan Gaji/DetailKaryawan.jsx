@@ -17,7 +17,10 @@ export default function DetailKaryawan(){
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const monthValue = `${selectedYear}-${selectedMonth}`;
+    const userData = JSON.parse(localStorage.getItem('userData'))
+    const isHeadGudang = userData?.role === 'headgudang'
 
+    console.log(divisi)
     const handleMonthChange = (e) => {
         const value = e.target.value; 
         const [year, month] = value.split('-');
@@ -128,8 +131,8 @@ export default function DetailKaryawan(){
                         nama: karyawan.nama_karyawan,
                         phone: karyawan.nomor_handphone || '-',
                         email: karyawan.email,
-                        toko: 'Tatitatu', 
-                        cabang: karyawan.cabang.nama_cabang,
+                        toko: karyawan.toko.nama_toko, 
+                        cabang: karyawan.cabang?.nama_cabang || '-',
                         divisi: karyawan.divisi.nama_divisi,
                         total_gaji_pokok: karyawan.jumlah_gaji_pokok || 0,
                         total_bonus: karyawan.bonus || 0,
@@ -144,6 +147,33 @@ export default function DetailKaryawan(){
                 }));
             } catch (error) {
                 console.error('Error fetching profile:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const fetchProduksiGudangData = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get(`/produksi-gudang/karyawan/${id}`);
+                
+                if (response.data.success) {
+                    const formattedData = response.data.data.map(item => ({
+                        Tanggal: item.tanggal,
+                        Foto: `${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
+                        "Jumlah Produksi": `${item.jumlah_produksi} Pcs`,
+                        "Total Menit": `${item.total_menit} Menit`,
+                        Status: item.status,
+                        "Gaji Pokok Perhari": item.gaji_pokok_perhari
+                    }));
+        
+                    setData(prevData => ({
+                        ...prevData,
+                        data: formattedData
+                    }));
+                }
+            } catch (error) {
+                console.error('Error fetching produksi gudang data:', error);
             } finally {
                 setLoading(false);
             }
@@ -212,10 +242,13 @@ export default function DetailKaryawan(){
 
         useEffect(() => {
             const fetchData = async () => {
-                await Promise.all([
-                    fetchProfile(),
-                    fetchAbsensiData()
-                ]);
+                await fetchProfile();
+                
+                if (isHeadGudang && divisi === 'Produksi') {
+                    await fetchProduksiGudangData();
+                } else {
+                    await fetchAbsensiData();
+                }
             };
             fetchData();
         }, [selectedMonth, selectedYear]);
@@ -263,7 +296,9 @@ export default function DetailKaryawan(){
                 Tanggal: formatDate2(item.Tanggal),
                 Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
                 Status: <span className={`px-3 py-1 rounded-lg ${
-                  item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : ''
+                  item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : '',
+                  item.Status === 'Ditolak' ? 'bg-red-100 text-red-800' : '',
+                  item.Status === 'proses' ? 'bg-yellow-100 text-yellow-800' : ''
                 }`}>{item.Status}</span>,
                 "Gaji Pokok Perhari": `Rp${formatNumberWithDots(item["Gaji Pokok Perhari"])}`,
               }))}

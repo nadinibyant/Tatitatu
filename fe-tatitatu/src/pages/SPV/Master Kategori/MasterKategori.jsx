@@ -34,6 +34,8 @@ export default function MasterKategori() {
     const userDataLogin = JSON.parse(localStorage.getItem('userData'));
     const [toko_id, setTokoId] = useState(null);
 
+    console.log(toko_id)
+
     useEffect(() => {
         const fetchTokoId = async () => {
             try {
@@ -178,7 +180,7 @@ export default function MasterKategori() {
             if (['admin', 'kasirtoko', 'finance', 'admingudang'].includes(userData.role)) {
                 fetchMetode();
             }
-            if (userData.role === 'admin') {
+            if (userData.role === 'admin' || userData.role === 'headgudang') {
                 fetchDivisi();
             }
         }
@@ -280,6 +282,10 @@ export default function MasterKategori() {
                     category.title === 'Metode Pembayaran' || 
                     category.title === 'Kategori Barang'
                 )
+            case 'headgudang':
+                return data.categories.filter(category => 
+                    category.title === 'Divisi'
+                );
             default:
                 return data.categories;
         }

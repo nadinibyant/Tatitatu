@@ -254,6 +254,8 @@ const ActionButtons = ({ id, status }) => {
         setSelectedRow(row);
         setModalDetail(true);
     };
+
+    console.log(selectedRow)
     
     return (
         <>
@@ -331,7 +333,7 @@ const ActionButtons = ({ id, status }) => {
                         {/* Number of Days */}
                         <div>
                           <label className="block text-gray-500 text-sm mb-1">Jumlah Hari</label>
-                          <div className="font-medium">4{selectedRow["jumlah Hari"]}</div>
+                          <div className="font-medium">{selectedRow["Jumlah Hari"]}</div>
                         </div>
               
                         {/* Reason Section */}

@@ -28,8 +28,25 @@ export default function ProdukTerlaris() {
     barang_custom: { nama: '-', jumlah: 0 }
   });
   const [productData, setProductData] = useState([]);
+  const [kategoriBarang, setKategoriBarang] = useState([]);
 
+  const fetchKategoriBarang = async () => {
+    try {
+      const response = await api.get('/kategori-barang-gudang');
+      if (response.data.success) {
+        setKategoriBarang(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching kategori barang:', error);
+      setKategoriBarang([]);
+    }
+  };
   
+  useEffect(() => {
+    if (isAdminGudang || isHeadGudang) {
+      fetchKategoriBarang();
+    }
+  }, []);
 
   const monthValue = `${selectedYear}-${selectedMonth}`;
 
@@ -115,6 +132,8 @@ export default function ProdukTerlaris() {
         return 'images-packaging-gudang';
       case 'Mentah':
         return 'images-barang-mentah';
+      case 'Bahan Mentah':
+          return 'images-barang-mentah';
       default:
         return 'images-barang-handmade-gudang';
     }
@@ -243,7 +262,7 @@ export default function ProdukTerlaris() {
   };
 
   useEffect(() => {
-    if (isAdminGudang) {
+    if (isAdminGudang || isHeadGudang) {
       fetchDashboardData();
       fetchBarangTerlaris();
       fetchProductData();
@@ -401,39 +420,62 @@ export default function ProdukTerlaris() {
 
   const filterFields = isOwner ? [
     {
-        label: "Kategori",
-        key: "Kategori",
-        options: [
-            { label: "Semua", value: "Semua" },
-            { label: "Gelang", value: "Gelang" },
-            { label: "Cincin", value: "Cincin" },
-            { label: "Anting", value: "Anting" },
-            { label: "Tas", value: "Tas" },
-        ]
+      label: "Kategori",
+      key: "Kategori",
+      options: [
+        { label: "Semua", value: "Semua" },
+        { label: "Gelang", value: "Gelang" },
+        { label: "Cincin", value: "Cincin" },
+        { label: "Anting", value: "Anting" },
+        { label: "Tas", value: "Tas" },
+      ]
     }
-] : [
+  ] : (isAdminGudang || isHeadGudang) ? [
     {
-        label: "Jenis",
-        key: "Jenis",
-        options: [
-            { label: "Semua", value: "Semua" },
-            { label: "Barang Handmade", value: "Barang Handmade" },
-            { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
-            { label: "Barang Custom", value: "Barang Custom" },
-        ]
+      label: "Jenis",
+      key: "Jenis",
+      options: [
+        { label: "Semua", value: "Semua" },
+        { label: "Handmade", value: "Handmade" },
+        { label: "Non Handmade", value: "Non Handmade" },
+        { label: "Mentah", value: "Mentah" },
+        { label: "Packaging", value: "Packaging" },
+      ]
     },
     {
-        label: "Kategori",
-        key: "Kategori",
-        options: [
-            { label: "Semua", value: "Semua" },
-            { label: "Gelang", value: "Gelang" },
-            { label: "Cincin", value: "Cincin" },
-            { label: "Anting", value: "Anting" },
-            { label: "Tas", value: "Tas" },
-        ]
+      label: "Kategori",
+      key: "Kategori",
+      options: [
+        { label: "Semua", value: "Semua" },
+        ...kategoriBarang.map(kategori => ({
+          label: kategori.nama_kategori_barang,
+          value: kategori.nama_kategori_barang
+        }))
+      ]
     }
-];
+  ] : [
+    {
+      label: "Jenis",
+      key: "Jenis",
+      options: [
+        { label: "Semua", value: "Semua" },
+        { label: "Barang Handmade", value: "Barang Handmade" },
+        { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
+        { label: "Barang Custom", value: "Barang Custom" },
+      ]
+    },
+    {
+      label: "Kategori",
+      key: "Kategori",
+      options: [
+        { label: "Semua", value: "Semua" },
+        { label: "Gelang", value: "Gelang" },
+        { label: "Cincin", value: "Cincin" },
+        { label: "Anting", value: "Anting" },
+        { label: "Tas", value: "Tas" },
+      ]
+    }
+  ];
 
   const selectedData = filteredData().filter((item) => {
     const isStoreMatch = selectedStore === "Semua" || item.Cabang === selectedStore;
@@ -599,7 +641,7 @@ export default function ProdukTerlaris() {
                     <div className="w-full">
                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                             <div className="flex-1 min-w-0">
-                                <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
+                                <p className="text-gray-400 text-sm">Barang Mentah Terlaris</p>
                                 <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
                                 <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
                             </div>
@@ -639,7 +681,7 @@ export default function ProdukTerlaris() {
                       </div>
                       <Table
                         headers={headers2}
-                        data={isAdminGudang ? barangTerlaris : data.barang_terlaris.map((item, index) => ({
+                        data={(isAdminGudang || isHeadGudang) ? barangTerlaris : data.barang_terlaris.map((item, index) => ({
                           ...item,
                           "Foto": <img src={item["Foto"]} className="w-8 h-8 object-cover rounded-lg" />,
                           nomor: index + 1,

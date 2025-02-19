@@ -40,6 +40,7 @@ export default function TambahAkunKaryawan(){
   const [errors, setErrors] = useState({});
   const userDataLogin = JSON.parse(localStorage.getItem('userData'));
   const toko_id = userDataLogin.userId
+  const isHeadGudang = userDataLogin.role === 'headgudang'
 
   const validateForm = () => {
         const newErrors = {};
@@ -49,7 +50,7 @@ export default function TambahAkunKaryawan(){
         if (!formData.division) {
             newErrors.division = 'divisi harus dipilih';
         }
-        if (!formData.branch) {
+        if (!isHeadGudang && !formData.branch) {
             newErrors.branch = 'cabang harus dipilih';
         }
         setErrors(newErrors);
@@ -162,7 +163,10 @@ export default function TambahAkunKaryawan(){
                 formDataToSend.append('nama_karyawan', formData.name);
                 formDataToSend.append('password', '12345678');
                 formDataToSend.append('divisi_karyawan_id', formData.division);
-                formDataToSend.append('cabang_id', formData.branch);
+
+                if (!isHeadGudang) {
+                    formDataToSend.append('cabang_id', formData.branch);
+                }
                 formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
                 formDataToSend.append('bonus', formData.bonus);
                 
@@ -317,9 +321,10 @@ export default function TambahAkunKaryawan(){
                                 options={branchList}
                                 value={formData.branch}
                                 onSelect={(option) => handleInputChange('branch')(option.value)}
-                                required={true}
-                                error={!!errors.branch}
+                                required={!isHeadGudang}
+                                error={!isHeadGudang && !!errors.branch}
                                 errorMessage={errors.branch}
+                                disabled={isHeadGudang}
                             />
                             <Input
                                 label="Jumlah Gaji Pokok"

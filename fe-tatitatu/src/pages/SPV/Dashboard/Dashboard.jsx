@@ -8,6 +8,7 @@ import { menuHeadGudang, menuItems, userOptions } from "../../../data/menu";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import { useNavigate } from "react-router-dom";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
 
 export default function Dashboard(){
 
@@ -26,8 +27,35 @@ export default function Dashboard(){
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [kategoriBarang, setKategoriBarang] = useState([]);
+
+    const fetchKategoriBarang = async () => {
+      try {
+        const response = await api.get('/kategori-barang-gudang');
+        if (response.data.success) {
+          setKategoriBarang(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching kategori barang:', error);
+        setKategoriBarang([]);
+      }
+    };
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
+
+    const [dashboardData, setDashboardData] = useState({
+      barang_handmade: { nama: '-', jumlah: 0 },
+      barang_non_handmade: { nama: '-', jumlah: 0 },
+      packging: { nama: '-', jumlah: 0 },
+      barang_custom: { nama: '-', jumlah: 0 }
+    });
+
+      const getDateRange = (year, month) => {
+        const startDate = moment(`${year}-${month}-01`).format('YYYY-MM-DD');
+        const endDate = moment(`${year}-${month}-01`).endOf('month').format('YYYY-MM-DD');
+        return { startDate, endDate };
+      };
+      
 
     const handleMonthChange = (e) => {
       const value = e.target.value; 
@@ -51,6 +79,49 @@ export default function Dashboard(){
     setIsFilterModalOpen(false);
   };
 
+  const fetchDashboardData = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const response = await api.get(`/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.data.success) {
+        const { data } = response.data;
+        setDashboardData({
+          barang_handmade: data.handmade ? {
+            nama: data.handmade.nama,
+            jumlah: data.handmade.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          barang_non_handmade: data.nonhandmade ? {
+            nama: data.nonhandmade.nama,
+            jumlah: data.nonhandmade.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          packging: data.packaging ? {
+            nama: data.packaging.nama,
+            jumlah: data.packaging.total_terjual
+          } : { nama: '-', jumlah: 0 },
+          barang_custom: data.mentah ? {
+            nama: data.mentah.nama,
+            jumlah: data.mentah.total_terjual
+          } : { nama: '-', jumlah: 0 }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setDashboardData({
+        barang_handmade: { nama: '-', jumlah: 0 },
+        barang_non_handmade: { nama: '-', jumlah: 0 },
+        packging: { nama: '-', jumlah: 0 },
+        barang_custom: { nama: '-', jumlah: 0 }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isHeadGudang) {
+      fetchDashboardData();
+      fetchKategoriBarang();
+    }
+  }, []);
 
   useEffect(() => {
     setSelectedStore("Semua");
@@ -291,15 +362,22 @@ export default function Dashboard(){
           key: "Jenis",
           options: [
             { label: "Semua", value: "Semua" },
-            { label: "Barang Handmade", value: "Barang Handmade" },
-            { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
-            { label: "Barang Custom", value: "Barang Custom" },
+            { label: "Handmade", value: "Handmade" },
+            { label: "Non Handmade", value: "Non Handmade" },
+            { label: "Mentah", value: "Mentah" },
+            { label: "Packaging", value: "Packaging" },
           ]
         },
         {
           label: "Kategori",
           key: "Kategori",
-          options: [
+          options: isHeadGudang ? [
+            { label: "Semua", value: "Semua" },
+            ...kategoriBarang.map(kategori => ({
+              label: kategori.nama_kategori_barang,
+              value: kategori.nama_kategori_barang
+            }))
+          ] : [
             { label: "Semua", value: "Semua" },
             { label: "Gelang", value: "Gelang" },
             { label: "Cincin", value: "Cincin" },
@@ -330,9 +408,9 @@ export default function Dashboard(){
                   <div className="w-full">
                       <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                           <div className="flex-1">
-                              <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
-                              <p className="font-bold text-lg">{data.barang_terlaris.handmade.nama}</p>
-                              <p className="">{formatNumberWithDots(data.barang_terlaris.handmade.jumlah)} Pcs Terjual</p>
+                            <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_handmade.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_handmade.jumlah)} Pcs Terjual</p>
                           </div>
                           <div className="flex items-center justify-center ml-4">
                               <img src="/Dashboard Produk/handmade.svg" alt="handmade" />
@@ -344,9 +422,9 @@ export default function Dashboard(){
                   <div className="w-full">
                       <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                           <div className="flex-1">
-                              <p className="text-gray-400 text-sm">Barang Non-Handmade</p>
-                              <p className="font-bold text-lg">{data.barang_terlaris.non_handmade.nama}</p>
-                              <p className="">{formatNumberWithDots(data.barang_terlaris.non_handmade.jumlah)} Pcs Terjual</p>
+                            <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_non_handmade.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_non_handmade.jumlah)} Pcs Terjual</p>
                           </div>
                           <div className="flex items-center justify-center ml-4">
                               <img src="/Dashboard Produk/nonhandmade.svg" alt="nonhandmade" />
@@ -358,9 +436,9 @@ export default function Dashboard(){
                   <div className="w-full">
                       <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                           <div className="flex-1">
-                              <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                              <p className="font-bold text-lg">{data.barang_terlaris.custom.nama}</p>
-                              <p className="">{formatNumberWithDots(data.barang_terlaris.custom.jumlah)} Pcs Terjual</p>
+                                <p className="text-gray-400 text-sm">Barang Mentah Terlaris</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs Terjual</p>
                           </div>
                           <div className="flex items-center justify-center ml-4">
                               <img src="/Dashboard Produk/custom.svg" alt="custom" />
@@ -373,8 +451,8 @@ export default function Dashboard(){
                       <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                           <div className="flex-1">
                               <p className="text-gray-400 text-sm">Packaging Terlaris</p>
-                              <p className="font-bold text-lg">{data.barang_terlaris.packaging.nama}</p>
-                              <p className="">{formatNumberWithDots(data.barang_terlaris.packaging.jumlah)} Pcs Terjual</p>
+                                <p className="font-bold text-lg truncate">{dashboardData.packging.nama}</p>
+                                <p>{formatNumberWithDots(dashboardData.packging.jumlah)} Pcs Terjual</p>
                           </div>
                           <div className="flex items-center justify-center ml-4">
                               <img src="/Dashboard Produk/packaging.svg" alt="packaging" />
