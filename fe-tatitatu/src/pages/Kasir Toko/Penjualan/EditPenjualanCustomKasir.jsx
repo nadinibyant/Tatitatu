@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Breadcrumbs from '../../../components/Breadcrumbs';
 import Input from '../../../components/Input';
 import InputDropdown from '../../../components/InputDropdown';
@@ -17,8 +17,10 @@ const EditPenjualanCustomKasir = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
+    const location = useLocation();
     const isAdminGudang = userData?.role === 'admingudang';
     const [errorMessage, setErrorMessage] = useState(null)
+    const { toko_id: stateTokoId, cabang_id: stateCabangId, fromLaporanKeuangan } = location.state || {};
 
     // Form state
     const [formData, setFormData] = useState({
@@ -43,8 +45,8 @@ const EditPenjualanCustomKasir = () => {
     const [dataBarang, setDataBarang] = useState([]);
     const [dataPackaging, setDataPackaging] = useState([]);
     const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
-    const toko_id = userData.tokoId
-    const cabang_id = userData.userId
+    const toko_id = fromLaporanKeuangan ? stateTokoId : userData.tokoId;
+    const cabang_id = fromLaporanKeuangan ? stateCabangId : userData.userId;
     // UI state
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
@@ -403,11 +405,10 @@ const EditPenjualanCustomKasir = () => {
         e.preventDefault();
         try {
             setLoading(true);
-            
-            // Mengumpulkan semua produk (yang lama dan baru)
+        
             const allProducts = [
                 ...detailData.customProducts.map(item => ({
-                    produk_penjualan_id: item.produk_penjualan_id, // untuk data existing
+                    produk_penjualan_id: item.produk_penjualan_id, 
                     barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
                     harga_satuan: item.harga_satuan,
                     kuantitas: item.kuantitas,
@@ -421,8 +422,7 @@ const EditPenjualanCustomKasir = () => {
                     total_biaya: item.total_biaya
                 }))
             ];
-    
-            // Mengumpulkan semua rincian biaya (yang lama dan baru)
+
             const allBiaya = detailData.biayaProducts.map(item => ({
                 rincian_biaya_custom_id: item.rincian_biaya_custom_id, 
                 nama_biaya: item.nama_biaya,
@@ -446,7 +446,7 @@ const EditPenjualanCustomKasir = () => {
             };
     
             await api.put(`/penjualan/${id}`, payload);
-            navigate('/penjualan-kasir')
+            // navigate('/penjualan-kasir')
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
@@ -456,15 +456,20 @@ const EditPenjualanCustomKasir = () => {
         }
     };
 
-    const breadcrumbItems = isAdminGudang 
+    const breadcrumbItems = fromLaporanKeuangan 
     ? [
-        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Daftar Laporan Keuangan", href: "/laporanKeuangan" },
         { label: "Edit Penjualan Custom", href: "" },
     ]
-    : [
-        { label: "Daftar Penjualan Toko", href: "/penjualanToko" },
-        { label: "Edit Penjualan Custom", href: "" },
-    ];
+    : isAdminGudang 
+      ? [
+          { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+          { label: "Edit Penjualan Custom", href: "" },
+      ]
+      : [
+          { label: "Daftar Penjualan Toko", href: "/penjualanToko" },
+          { label: "Edit Penjualan Custom", href: "" },
+      ];
 
     const headers = [
         { label: 'No', key: 'No', align: 'text-left' },
@@ -745,7 +750,11 @@ const EditPenjualanCustomKasir = () => {
                         confirmLabel="OK"
                         onConfirm={() => {
                             setModalSucc(false);
-                            navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualanToko');
+                            if (fromLaporanKeuangan) {
+                                navigate('/laporanKeuangan');
+                            } else {
+                                navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
+                            }
                         }}
                     />
                 )}

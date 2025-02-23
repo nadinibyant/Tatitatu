@@ -8,11 +8,10 @@ import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function LaporanKeuangan() {
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [selectedStore, setSelectedStore] = useState("Semua"); 
     const [selectedKategori, setSelectedKategori] = useState("Semua");
@@ -20,6 +19,30 @@ export default function LaporanKeuangan() {
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [data, setData] = useState({
+        keuntungan: 0,
+        pemasukan: 0,
+        pengeluaran: 0,
+        produkTerjual: 0,
+        dataLaporan: [
+            {
+                id_jenis: 1,
+                nama_jenis: 'Pemasukan',
+                data: []
+            },
+            {
+                id_jenis: 2,
+                nama_jenis: 'Pengeluaran',
+                data: []
+            }
+        ]
+    });
+    
+    // Store and category options state
+    const [tokoOptions, setTokoOptions] = useState([{ label: "Semua", value: "Semua" }]);
+    const [kategoriOptions, setKategoriOptions] = useState([{ label: "Semua", value: "Semua" }]);
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
 
@@ -42,251 +65,268 @@ export default function LaporanKeuangan() {
     const handleApplyFilter = () => {
       setIsFilterModalOpen(false);
     };
-  
 
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
     const isOwner = userData?.role === 'owner';
     const isFinance = userData?.role === 'finance';
 
+    // Fetch toko data
     useEffect(() => {
-        setSelectedStore("Semua");
+        const fetchToko = async () => {
+            try {
+                const response = await api.get('/toko');
+                if (response.data.success) {
+                    const options = response.data.data.map(item => ({
+                        value: item.nama_toko,
+                        label: item.nama_toko,
+                        icon: '/icon/toko.svg'
+                    }));
+                    setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                }
+            } catch (error) {
+                console.error('Error fetching toko data:', error);
+            }
+        };
+        
+        fetchToko();
     }, []);
 
-    // const handleFilterClick = () => {
-    //     setIsFilterModalOpen(true);
-    // };
-
-    // const handleApplyFilter = () => {
-    //     setIsFilterModalOpen(false);
-    // };
-
+    // Fetch kategori data (combine pemasukan and pengeluaran)
     useEffect(() => {
-        setSelectedStore("Semua");
-      }, []); 
+        const fetchKategori = async () => {
+            try {
+                // Fetch kategori pemasukan
+                const pemasukanResponse = await api.get('/kategori-pemasukan');
+                let kategoriOptions = [];
+                
+                if (pemasukanResponse.data.success) {
+                    const pemasukanOptions = pemasukanResponse.data.data.map(item => ({
+                        value: item.kategori_pemasukan,
+                        label: item.kategori_pemasukan
+                    }));
+                    kategoriOptions = [...kategoriOptions, ...pemasukanOptions];
+                }
+                
+                // Fetch kategori pengeluaran
+                const pengeluaranResponse = await api.get('/kategori-pengeluaran');
+                if (pengeluaranResponse.data.success) {
+                    const pengeluaranOptions = pengeluaranResponse.data.data.map(item => ({
+                        value: item.kategori_pengeluaran || item.kategori_pemasukan, // Adjust based on your API response
+                        label: item.kategori_pengeluaran || item.kategori_pemasukan
+                    }));
+                    kategoriOptions = [...kategoriOptions, ...pengeluaranOptions];
+                }
+                
+                // Remove duplicates and prepend "Semua" option
+                const uniqueOptions = Array.from(new Set(kategoriOptions.map(option => option.value)))
+                    .map(value => {
+                        return kategoriOptions.find(option => option.value === value);
+                    });
+                
+                setKategoriOptions([{ label: "Semua", value: "Semua" }, ...uniqueOptions]);
+            } catch (error) {
+                console.error('Error fetching kategori data:', error);
+            }
+        };
+        
+        fetchKategori();
+    }, []);
 
-    // const handleToday = () => {
-    //     const today = moment().startOf("day");
-    //     setStartDate(today.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
+    // Fetch laporan keuangan data based on date range
+    useEffect(() => {
+        const fetchLaporanKeuangan = async () => {
+            setLoading(true);
+            try {
+                // Calculate start and end dates for the selected month
+                const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+                const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+                
+                const response = await api.get(`/laporan-keuangan?startDate=${startDate}&endDate=${endDate}`);
+                
+                if (response.data.success) {
+                    const apiData = response.data.data;
+                    
+                    // Transform the API response to match your existing data structure
+                    const transformedData = {
+                        keuntungan: apiData.keuntungan || 0,
+                        pemasukan: apiData.total_pemasukan || 0,
+                        pengeluaran: apiData.total_pengeluaran || 0,
+                        produkTerjual: apiData.produk_terjual || 0,
+                        dataLaporan: [
+                            {
+                                id_jenis: 1,
+                                nama_jenis: 'Pemasukan',
+                                data: apiData.pemasukan ? apiData.pemasukan.map(item => {
+                                    if (item.pemasukan_id) {
+                                        return {
+                                            nomor: item.pemasukan_id,
+                                            tanggal: item.tanggal,
+                                            deskripsi: item.deskripsi,
+                                            cabang: item.nama_cabang,
+                                            toko: item.nama_toko,
+                                            kategori: item.kategori_pemasukan,
+                                            total: item.jumlah_pemasukan,
+                                            jenis: 'pemasukan'
+                                        };
+                                    } else if (item.penjualan_id) {
+                                        return {
+                                            nomor: item.penjualan_id,
+                                            tanggal: item.tanggal,
+                                            deskripsi: item.produk && item.produk.length > 0 
+                                                ? `Penjualan ${item.produk.map(p => p.nama_barang).join(', ')}`
+                                                : 'Penjualan Produk',
+                                            cabang: item.produk && item.produk.length > 0 
+                                                ? item.produk[0].nama_cabang
+                                                : '',
+                                            toko: item.nama_toko,
+                                            kategori: item.kategori_pemasukan,
+                                            total: item.total_pengeluaran, 
+                                            jenis: 'penjualan'
+                                        };
+                                    }
+                                    return null;
+                                }).filter(item => item !== null) : []
+                            },
+                            {
+                                id_jenis: 2,
+                                nama_jenis: 'Pengeluaran',
+                                data: apiData.pengeluaran ? apiData.pengeluaran.map(item => {
+                                    if (item.pengeluaran_id) {
 
-    // const handleLast7Days = () => {
-    //     const today = moment().startOf("day");
-    //     const sevenDaysAgo = today.clone().subtract(7, "days");
-    //     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
-
-    // const handleThisMonth = () => {
-    //     const startMonth = moment().startOf("month");
-    //     const endMonth = moment().endOf("month");
-    //     setStartDate(startMonth.format("YYYY-MM-DD"));
-    //     setEndDate(endMonth.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    // };
-
-    // const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-    // const formatDate = (date) =>
-    //     new Date(date).toLocaleDateString("en-US", {
-    //         month: "short",
-    //         day: "2-digit",
-    //         year: "numeric",
-    //     });
-
-    const dataCabang = [
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    ];
-    
+                                        return {
+                                            nomor: item.pengeluaran_id,
+                                            tanggal: item.tanggal,
+                                            deskripsi: item.deskripsi,
+                                            cabang: item.nama_cabang,
+                                            toko: item.nama_toko,
+                                            kategori: item.kategori_pengeluaran,
+                                            total: item.jumlah_pengeluaran,
+                                            jenis: 'pengeluaran'
+                                        };
+                                    } else if (item.pembelian_id) {
+                                        return {
+                                            nomor: item.pembelian_id,
+                                            tanggal: item.tanggal,
+                                            deskripsi: item.produk && item.produk.length > 0 
+                                                ? `Pembelian ${item.produk.map(p => p.nama_barang).join(', ')}`
+                                                : 'Pembelian Produk',
+                                            cabang: item.produk && item.produk.length > 0 
+                                                ? item.produk[0].nama_cabang
+                                                : '',
+                                            toko: item.nama_toko,
+                                            kategori: item.kategori_pengeluaran,
+                                            total: item.total_pengeluaran,
+                                            jenis: 'pembelian'
+                                        };
+                                    }
+                                    return null;
+                                }).filter(item => item !== null) : []
+                            }
+                        ]
+                    };
+                    
+                    setData(transformedData);
+                } else {
+                    setError(response.data.message || 'Failed to fetch data');
+                }
+            } catch (err) {
+                setError(err.message || 'An error occurred while fetching data');
+                console.error('Error fetching laporan keuangan:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchLaporanKeuangan();
+    }, [selectedMonth, selectedYear]);
 
     const headers = [
         { label: "Nomor", key: "nomor", align: "text-left" },
-        { label: "Tanggal", key: "tanggal", align: "text-center" },
+        { label: "Tanggal", key: "tanggal", align: "text-left" },
         { label: "Deskripsi", key: "deskripsi", align: "text-left" },
-        { label: isOwner || isFinance? "Toko" : "Cabang", key: "cabang", align: "text-left" },
-        { label: "Kategori", key: "kategori", align: "text-center" },
-        { label: "Total", key: "total", align: "text-center" },
+        { label: isOwner || isFinance ? "Toko" : "Cabang", key: isOwner || isFinance ? "toko" : "cabang", align: "text-left" },
+        { label: "Kategori", key: "kategori", align: "text-left" },
+        { label: "Total", key: "total", align: "text-left" },
     ];
 
-    const data = {
-        keuntungan: 10000000,
-        pemasukan: 10000000,
-        pengeluaran: 10000000,
-        produkTerjual: 120,
-        dataLaporan: [
-            {
-                id_jenis: 1,
-                nama_jenis: 'Pemasukan',
-                data: [
-                    {
-                        nomor: 'BBN123',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Gor Agus",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'non-penjualan',
-                    },
-                    {
-                        nomor: 'BBN124',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Gor Agus",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'non-penjualan',
-                    },
-                    {
-                        nomor: 'BBN125',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'penjualan',
-                        tipe: 'non-custom'
-                    },
-                    {
-                        nomor: 'BBN126',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'penjualan',
-                        tipe: 'custom'
-                    },
-                    {
-                        nomor: 'BBN1213',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Penjualan Gudang',
-                        cabang: "Lubeg",
-                        kategori: 'Penjualan Gudang',
-                        total: 10000,
-                        jenis: 'penjualan',
-                        tipe: 'gudang' 
-                    },
-                ]
-            },
-            {
-                id_jenis: 2,
-                nama_jenis: 'Pengeluaran',
-                data: [
-                    {
-                        nomor: 'BBN127',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'pengeluaran',
-                    },
-                    {
-                        nomor: 'BBN128',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'pengeluaran',
-                    },
-                    {
-                        nomor: 'BBN129',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'gaji',
-                    },
-                    {
-                        nomor: 'BBN1210',
-                        tanggal: '2024-12-12',
-                        deskripsi: 'Pengeluaran Buat Listrik',
-                        cabang: "Lubeg",
-                        kategori: 'Beban Operasional',
-                        total: 10000,
-                        jenis: 'gaji',
-                    }
-                ]
-            }
-        ]
-    };
-
     const selectedData = selectedJenis === "Semua" 
-        ? data.dataLaporan.flatMap(item => item.data).filter((item) => {
-            // Filter by store
-            const isStoreMatch =
-                selectedStore === 'Semua' || item.cabang === selectedStore;
-
-            // Filter by date range
-            // const itemDate = moment(item.tanggal);
-            // const isDateMatch =
-            //     itemDate.isBetween(startDate, endDate, null, '[]');
-
-            return isStoreMatch 
-        })
+        ? data.dataLaporan.flatMap(item => item.data)
         : data.dataLaporan
             .find((item) => item.nama_jenis === selectedJenis)
-            ?.data.filter((item) => {
-                const isStoreMatch =
-                    selectedStore === 'Semua' || item.cabang === selectedStore;
-
-                // const itemDate = moment(item.tanggal);
-                // const isDateMatch =
-                //     itemDate.isBetween(startDate, endDate, null, '[]');
-
-                return isStoreMatch 
-            }) || [];
+            ?.data || [];
     
-    const navigate = useNavigate()
-    const handleRowClick = (row) => {
-        if (row.jenis === 'non-penjualan') {
-            navigate('/laporanKeuangan/pemasukan/non-penjualan', { state: { nomor: row.nomor } });
+    const navigate = useNavigate();
+    const handleRowClick = async (row) => {
+        if (row.jenis === 'pemasukan') {
+            if (isFinance) {
+                navigate('/laporanKeuangan/pemasukan-non-penjualan/detail', { 
+                    state: { 
+                        nomor: row.nomor,
+                        fromLaporanKeuangan: true 
+                    } 
+                });
+            } else {
+                navigate('/laporanKeuangan/pemasukan/non-penjualan', { state: { nomor: row.nomor } });
+            }
         } else if (row.jenis === 'penjualan') {
-            navigate('/laporanKeuangan/pemasukan/penjualan', { 
+            try {
+                setLoading(true);
+                const response = await api.get(`/penjualan/${row.nomor}`);
+                
+                if (response.data.success) {
+                    const penjualanData = response.data.data;
+                    const isCustom = penjualanData.rincian_biaya_custom?.length > 0 || 
+                                     penjualanData.produk?.some(item => item.barang_custom);
+                    
+                    navigate('/laporanKeuangan/pemasukan/penjualan/detail', {
+                        state: { 
+                            nomor: row.nomor,
+                            tipe: isCustom ? 'custom' : 'non-custom',
+                            fromLaporanKeuangan: true 
+                        }
+                    });
+                } else {
+                    console.error('Failed to fetch penjualan details:', response.data.message);
+                }
+            } catch (error) {
+                console.error('Error fetching penjualan details:', error);
+            } finally {
+                setLoading(false);
+            }
+        } else if (row.jenis === 'pengeluaran') {
+            if (isFinance) {
+                navigate('/laporanKeuangan/pengeluaran/detail', { 
+                    state: { 
+                        nomor: row.nomor,
+                        fromLaporanKeuangan: true 
+                    } 
+                });
+            } else {
+                navigate('/laporanKeuangan/pengeluaran', { state: { nomor: row.nomor } });
+            }
+        } else if (row.jenis === 'pembelian') {
+            navigate('/pembelianStok/detail', { 
                 state: { 
-                    nomor: row.nomor,
-                    tipe: row.tipe 
+                    id: row.nomor,
+                    fromLaporanKeuangan: true 
                 } 
             });
-        } else if (row.jenis === 'pengeluaran') {
-            navigate('/laporanKeuangan/pengeluaran', { state: { nomor: row.nomor } });
-        } else {
-            navigate('/laporanKeuangan/pengeluaran/gaji', { state: { nomor: row.nomor } });
         }
-    }
+    };
     
     const filterFields = [
         ...(!isHeadGudang ? [{
-            label: isOwner ? "Toko" : "Toko",
+            label: "Toko",
             key: "Toko",
-            options: isOwner ? [
-                { label: "Semua", value: "Semua" },
-                { label: "Tatitatu", value: "Tatitatu" },
-                { label: "Rotaliu", value: "Rotaliu" }
-            ] : [
-                { label: "Semua", value: "Semua" },
-                { label: "Gor Agus", value: "Gor Agus" },
-                { label: "Lubeg", value: "Lubeg" },
-            ]
+            options: tokoOptions
         }] : []),
         {
             label: "Kategori",
             key: "Kategori",
-            options: [
-                { label: "Semua", value: "Semua" },
-                { label: "Beban Operasional", value: "Beban Operasional" },
-                { label: "Beban Gaji", value: "Beban Gaji" },
-            ]
+            options: kategoriOptions
         }
     ];
-    
     
     const filteredData = () => {
         let filteredData = selectedData;
@@ -296,9 +336,11 @@ export default function LaporanKeuangan() {
             filteredData = filteredData.filter(item => item.kategori === selectedKategori);
         }
     
-        // Filter berdasarkan cabang hanya untuk admin
+        // Filter berdasarkan toko/cabang
         if (!isHeadGudang && selectedStore !== "Semua") {
-            filteredData = filteredData.filter(item => item.cabang === selectedStore);
+            filteredData = filteredData.filter(item => 
+                item.toko === selectedStore || item.cabang === selectedStore
+            );
         }
     
         return filteredData;
@@ -327,83 +369,30 @@ export default function LaporanKeuangan() {
                                     textColor="text-black" 
                                 />
                             </div>
-                            {/* ButtonDropdown untuk cabang hanya muncul jika bukan headgudang */}
+                            {/* ButtonDropdown untuk toko hanya muncul jika bukan headgudang */}
                             {!isHeadGudang && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={'/icon/toko.svg'} 
-                                        options={dataCabang} 
+                                        options={tokoOptions} 
                                         onSelect={(value) => setSelectedStore(value)} 
                                     />
                                 </div>
                             )}
-                            <div className="w-full md:w-auto">
-                                <input 
-                                    type="month"
-                                    value={monthValue}
-                                    onChange={handleMonthChange}
-                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    style={{
-                                        maxWidth: '200px',
-                                    }}
-                                />
-                            </div>
-
-                            {/* Modal */}
-                            {/* {isModalOpen && (
-                                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                    <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                                        <button
-                                            onClick={() => setIsModalOpen(false)}
-                                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                        <div className="flex space-x-4 w-full">
-                                            <div className="flex flex-col w-full">
-                                                <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                                                <input
-                                                    type="date"
-                                                    value={startDate}
-                                                    onChange={(e) => setStartDate(e.target.value)}
-                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                />
-                                            </div>
-                                            <div className="flex flex-col w-full">
-                                                <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                                                <input
-                                                    type="date"
-                                                    value={endDate}
-                                                    onChange={(e) => setEndDate(e.target.value)}
-                                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col space-y-3 w-full">
-                                            <button
-                                                onClick={handleToday}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                Hari Ini
-                                            </button>
-                                            <button
-                                                onClick={handleLast7Days}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                7 Hari Terakhir
-                                            </button>
-                                            <button
-                                                onClick={handleThisMonth}
-                                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                            >
-                                                Bulan Ini
-                                            </button>
-                                        </div>
-                                    </div>
+                            <div className="w-full md:w-auto relative">
+                                <div className="w-48 md:w-48">
+                                    <input
+                                        type="month"
+                                        value={`${selectedYear}-${selectedMonth}`}
+                                        onChange={(e) => {
+                                            const date = moment(e.target.value);
+                                            setSelectedMonth(date.format('MM'));
+                                            setSelectedYear(date.format('YYYY'));
+                                        }}
+                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                    />
                                 </div>
-                            )} */}
+                            </div>
                         </div>
                     </section>
 
@@ -473,107 +462,68 @@ export default function LaporanKeuangan() {
                                 ))}
                             </div>
 
-                            {/* <Table headers={headers} data={selectedData} onRowClick={handleRowClick}/> */}
-
-                            <Table
-                                headers={headers}
-                                data={filteredData().map((item, index) => ({
-                                    ...item,
-                                    tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric'
-                                    }),
-                                    total: `Rp${item.total.toLocaleString('id-ID')}`
-                                }))}
-                                onRowClick={handleRowClick}
-                                hasFilter={true}
-                                onFilterClick={handleFilterClick}
-                            />
+                            {loading ? (
+                                <div className="flex justify-center items-center py-10">
+                                    <Spinner />
+                                </div>
+                            ) : error ? (
+                                <div className="text-center py-4 text-red-500">{error}</div>
+                            ) : (
+                                <Table
+                                    headers={headers}
+                                    data={filteredData().map((item) => ({
+                                        ...item,
+                                        tanggal: moment(item.tanggal).format('DD MMMM YYYY'),
+                                        total: `Rp${Number(item.total).toLocaleString('id-ID')}`
+                                    }))}
+                                    onRowClick={handleRowClick}
+                                    hasFilter={true}
+                                    onFilterClick={handleFilterClick}
+                                />
+                            )}
                         </div>
                     </section>
                 </div>
 
-                    {/* Filter Modal */}
-                    {/* {isFilterModalOpen && (
-                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                    <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
-                        <button
+                {/* Filter Modal */}
+                {isFilterModalOpen && (
+                    <>
+                        <div 
+                            className="fixed inset-0"
                             onClick={() => setIsFilterModalOpen(false)}
-                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                        />
+                        <div 
+                            className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                            style={{ 
+                                top: filterPosition.top,
+                                left: filterPosition.left 
+                            }}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <h2 className="text-lg font-bold mb-4">Filter</h2>
-                        <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                            {filterFields.map((field, index) => (
-                                <div className="mb-4" key={index}>
-                                    <label className="block text-gray-700 font-medium mb-2">
-                                        {field.label}
-                                    </label>
-                                    <ButtonDropdown
+                            <div className="space-y-4">
+                                {filterFields.map((field) => (
+                                    <InputDropdown
+                                        key={field.key}
+                                        label={field.label}
                                         options={field.options}
-                                        // Sesuaikan kondisi berdasarkan label field
-                                        selectedStore={field.key === "Toko" ? selectedStore : selectedKategori}
+                                        value={field.key === "Toko" ? selectedStore : selectedKategori}
                                         onSelect={(value) => 
                                             field.key === "Toko" 
-                                                ? setSelectedStore(value) 
-                                                : setSelectedKategori(value)
+                                                ? setSelectedStore(value.value)
+                                                : setSelectedKategori(value.value)
                                         }
+                                        required={true}
                                     />
-                                </div>
-                            ))}
-                            <button
-                                type="submit"
-                                className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                            >
-                                Terapkan
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )} */}
-            {/* Filter Modal */}
-            {isFilterModalOpen && (
-            <>
-                <div 
-                    className="fixed inset-0"
-                    onClick={() => setIsFilterModalOpen(false)}
-                />
-                <div 
-                    className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
-                    style={{ 
-                        top: filterPosition.top,
-                        left: filterPosition.left 
-                    }}
-                >
-                    <div className="space-y-4">
-                        {filterFields.map((field) => (
-                            <InputDropdown
-                                key={field.key}
-                                label={field.label}
-                                options={field.options}
-                                value={field.key === "Toko" ? selectedJenis : selectedKategori}
-                                onSelect={(value) => 
-                                    field.key === "Toko" 
-                                        ? setSelectedStore(value.value)
-                                        : setSelectedKategori(value.value)
-                                }
-                                required={true}
-                            />
-                        ))}
-                        <button
-                            onClick={handleApplyFilter}
-                            className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
-                        >
-                            Simpan
-                        </button>
-                    </div>
-                </div>
-            </>
-        )}
+                                ))}
+                                <button
+                                    onClick={handleApplyFilter}
+                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                >
+                                    Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
             </LayoutWithNav>
         </>
     );

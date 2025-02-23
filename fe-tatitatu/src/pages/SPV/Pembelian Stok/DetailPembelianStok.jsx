@@ -13,7 +13,7 @@ import Spinner from "../../../components/Spinner";
 
 export default function DetailPembelianStok(){
 const location = useLocation()
-const {id} = location.state || {}
+const {id, fromLaporanKeuangan} = location.state || {}
 const navigate = useNavigate()
 const [isModalDel, setModalDel] = useState(false)
 const [isModelSucc, setModalSucc] = useState(false)
@@ -195,7 +195,12 @@ const handleEdit = () => {
     if (isAdminGudang) {
         navigate('/pembelianStok/edit-admin-gudang', {state : {id: id}});
     } else {
-        navigate('/pembelianStok/edit', {state : {id: id}});
+        navigate('/pembelianStok/edit', {
+            state: {
+                id: id,
+                fromLaporanKeuangan: fromLaporanKeuangan 
+            }
+        });
     }
 };
 
@@ -223,13 +228,23 @@ const handleCancelDel = () => {
 
 const handleConfirmSucc = () => {
     setModalSucc(false);
-    navigate('/pembelianStok');
+    if (fromLaporanKeuangan) {
+        navigate('/laporanKeuangan')
+    } else {
+        navigate('/pembelianStok');
+    }
 };
 
-const breadcrumbItems = [
-{ label: "Daftar Pembelian Stok", href: "/pembelianStok" },
-{ label: "Detail Pembelian", href: "" },
-];
+const breadcrumbItems = fromLaporanKeuangan 
+? [
+    { label: "Daftar Laporan Keuangan Toko", href: "/laporanKeuangan" },
+    { label: "Detail Pembelian", href: "" },
+  ]
+: [
+    { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
+    { label: "Detail Pembelian", href: "" },
+  ];
+
 
 const headers = [
 { label: "No", key: "No", align: "text-left" },

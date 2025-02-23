@@ -75,6 +75,7 @@ const AuthPages = () => {
       }
       
     } catch (err) {
+      console.error(err)
       setError('Email atau kata sandi tidak valid');
     }
   };

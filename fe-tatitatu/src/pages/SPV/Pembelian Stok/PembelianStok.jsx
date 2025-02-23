@@ -80,7 +80,7 @@ export default function PembelianStok() {
                         "Jumlah Barang": totalKuantitas.toLocaleString('id-ID'),
                         "Diskon": `${item.diskon}%`,
                         "Pajak": `Rp${item.pajak.toLocaleString()}`,
-                        "Total Transaksi": `Rp${item.total_penjualan.toLocaleString()}`,
+                        "Total Transaksi": `Rp${item.total_pembelian.toLocaleString()}` ,
                         type: item.cash_or_non ? 'cash' : 'non-cash',
                         metodePembayaran: item.metode
                     };

@@ -34,8 +34,6 @@ export default function MasterKategori() {
     const userDataLogin = JSON.parse(localStorage.getItem('userData'));
     const [toko_id, setTokoId] = useState(null);
 
-    console.log(toko_id)
-
     useEffect(() => {
         const fetchTokoId = async () => {
             try {
@@ -172,6 +170,70 @@ export default function MasterKategori() {
         }
     };
 
+    const fetchKategoriPemasukan = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/kategori-pemasukan');
+            const items = response.data.data.map(item => ({
+                id: item.kategori_pemasukan_id,
+                kategori: item.kategori_pemasukan
+            }));
+            
+            setData(prevData => ({
+                ...prevData,
+                categories: prevData.categories.map(category => {
+                    if (category.title === 'Kategori Pemasukan') {
+                        return {
+                            ...category,
+                            data: items
+                        };
+                    }
+                    return category;
+                })
+            }));
+    
+            if (selectedCategory?.title === 'Kategori Pemasukan') {
+                setTableData(items);
+            }
+        } catch (error) {
+            console.error('Error fetching kategori pemasukan:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchKategoriPengeluaran = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/kategori-pengeluaran');
+            const items = response.data.data.map(item => ({
+                id: item.kategori_pengeluaran_id,
+                kategori: item.kategori_pengeluaran
+            }));
+            
+            setData(prevData => ({
+                ...prevData,
+                categories: prevData.categories.map(category => {
+                    if (category.title === 'Kategori Pengeluaran') {
+                        return {
+                            ...category,
+                            data: items
+                        };
+                    }
+                    return category;
+                })
+            }));
+    
+            if (selectedCategory?.title === 'Kategori Pengeluaran') {
+                setTableData(items);
+            }
+        } catch (error) {
+            console.error('Error fetching kategori pengeluaran:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (userData && toko_id) {  
             if (userData.role === 'admingudang' || userData.role === 'admin') {
@@ -182,6 +244,10 @@ export default function MasterKategori() {
             }
             if (userData.role === 'admin' || userData.role === 'headgudang') {
                 fetchDivisi();
+            }
+            if (userData.role === 'finance') {
+                fetchKategoriPemasukan();
+                fetchKategoriPengeluaran()
             }
         }
     }, [userData, toko_id]);
@@ -370,10 +436,13 @@ export default function MasterKategori() {
             } else if (selectedCategory.title === 'Metode Pembayaran'){
                 const endpoint = userData?.role === 'admingudang' ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
                 if(formType === 'add') {
-                    await api.post(endpoint, {
-                        nama_metode: formData,
-                        toko_id: toko_id
-                    });
+                    let payload = { nama_metode: formData };
+                                    
+                    if (userData?.role === 'admin' || userData?.role === 'kasirtoko') {
+                        payload.toko_id = toko_id;
+                    }
+                    
+                    await api.post(endpoint, payload);
                     await fetchMetode();
                     setShowFormModal(false);
                     setAlertSucc(true);
@@ -385,6 +454,42 @@ export default function MasterKategori() {
                     setShowFormModal(false);
                     setAlertSucc(true);
                 }
+            } else if (selectedCategory.title === 'Kategori Pemasukan'){
+                if(formType === 'add') {
+                    const payload = { 
+                        kategori_pemasukan: formData 
+                    };
+                    
+                    await api.post('/kategori-pemasukan', payload);
+                    await fetchKategoriPemasukan();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } else {
+                    await api.put(`/kategori-pemasukan/${id}`, {
+                        kategori_pemasukan: formData
+                    });
+                    await fetchKategoriPemasukan();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } 
+            } else if (selectedCategory.title === 'Kategori Pengeluaran'){
+                if(formType === 'add') {
+                    const payload = { 
+                        kategori_pengeluaran: formData 
+                    };
+                    
+                    await api.post('/kategori-pengeluaran', payload);
+                    await fetchKategoriPengeluaran();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } else {
+                    await api.put(`/kategori-pengeluaran/${id}`, {
+                        kategori_pengeluaran: formData
+                    });
+                    await fetchKategoriPengeluaran();
+                    setShowFormModal(false);
+                    setAlertSucc(true);
+                } 
             }
         } catch (error) {
             console.error('Error submitting data:', error);
@@ -432,6 +537,26 @@ export default function MasterKategori() {
                 } else {
                     setErrorMessage(response.data.message);
                     setErrorAlert(true);
+                }
+            } else if (selectedCategory.title === 'Kategori Pemasukan'){
+                const response = await api.delete(`/kategori-pemasukan/${id}`)
+                if (response.data.success) {
+                    await fetchKategoriPemasukan()
+                    setAlertDel(false)
+                    setAlertDelSucc(true)
+                } else {
+                    setErrorMessage(response.data.message)
+                    setErrorAlert(true)
+                }
+            } else if (selectedCategory.title === 'Kategori Pengeluaran'){
+                const response = await api.delete(`/kategori-pengeluaran/${id}`)
+                if (response.data.success) {
+                    await fetchKategoriPengeluaran()
+                    setAlertDel(false)
+                    setAlertDelSucc(true)
+                } else {
+                    setErrorMessage(response.data.message)
+                    setErrorAlert(true)
                 }
             }
         } catch (error) {

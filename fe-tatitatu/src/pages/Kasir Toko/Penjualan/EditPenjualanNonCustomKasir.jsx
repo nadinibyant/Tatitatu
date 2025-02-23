@@ -7,7 +7,7 @@ import Table from "../../../components/Table";
 import Button from "../../../components/Button";
 import Gallery2 from "../../../components/Gallery2";
 import TextArea from "../../../components/Textarea";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import LayoutWithNav from "../../../components/LayoutWithNav";
@@ -17,7 +17,8 @@ import AlertError from "../../../components/AlertError";
 export default function EditPenjualanNonCustomKasir() {
     const [existingData, setExistingData] = useState(null);
     const { id } = useParams();
-
+    const location = useLocation()
+    const { toko_id: stateTokoId, cabang_id: stateCabangId, fromLaporanKeuangan } = location.state || {};
     const [nomor, setNomor] = useState("");
     const getCurrentDateTime = () => {
         const now = new Date();
@@ -53,9 +54,8 @@ export default function EditPenjualanNonCustomKasir() {
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
-    const cabang_id = userData.userId
-    const toko_id = userData.tokoId
-
+    const toko_id = fromLaporanKeuangan ? stateTokoId : userData.tokoId;
+    const cabang_id = fromLaporanKeuangan ? stateCabangId : userData.userId;
 
     const fetchPackaging = async () => {
         try {
@@ -321,14 +321,29 @@ export default function EditPenjualanNonCustomKasir() {
     const handleSelectMetode = (selectedOption) => {
         setSelectMetode(selectedOption.value);
     };
-    const breadcrumbItems = isAdminGudang 
+    // const breadcrumbItems = isAdminGudang 
+    //     ? [
+    //         { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+    //         { label: "Tambah Penjualan", href: "" },
+    //     ]
+    //     : [
+    //         { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+    //         { label: "Edit Penjualan", href: "" },
+    //     ];
+
+    const breadcrumbItems = fromLaporanKeuangan 
+    ? [
+        { label: "Daftar Laporan Keuangan", href: "/laporanKeuangan" },
+        { label: "Edit Penjualan Custom", href: "" },
+    ]
+    : isAdminGudang 
         ? [
             { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
             { label: "Tambah Penjualan", href: "" },
         ]
         : [
             { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
-            { label: "Tambah Penjualan", href: "" },
+            { label: "Edit Penjualan", href: "" },
         ];
 
     const headers = [
@@ -963,10 +978,10 @@ export default function EditPenjualanNonCustomKasir() {
         }
     };
 
-    const handleAcc = () => {
-        setModalSucc(false);
-        navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
-    };
+    // const handleAcc = () => {
+    //     setModalSucc(false);
+    //     navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
+    // };
 
 
     return (
@@ -1332,7 +1347,14 @@ export default function EditPenjualanNonCustomKasir() {
                         title="Berhasil!!"
                         description="Data berhasil diperbaharui"
                         confirmLabel="Ok"
-                        onConfirm={handleAcc}
+                        onConfirm={() => {
+                            setModalSucc(false);
+                            if (fromLaporanKeuangan) {
+                                navigate('/laporanKeuangan');
+                            } else {
+                                navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
+                            }
+                        }}
                     />
                 )}
     

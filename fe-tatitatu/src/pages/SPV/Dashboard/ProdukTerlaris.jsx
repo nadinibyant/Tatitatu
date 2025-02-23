@@ -484,6 +484,9 @@ export default function ProdukTerlaris() {
   });
 
   function formatNumberWithDots(number) {
+    if (number === null || number === undefined || isNaN(number)) {
+      return '0'; 
+    }
     return number.toLocaleString('id-ID');
   }
 

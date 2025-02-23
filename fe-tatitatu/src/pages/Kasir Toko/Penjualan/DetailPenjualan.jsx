@@ -14,7 +14,7 @@ import AlertError from "../../../components/AlertError";
 
 export default function DetailPenjualanKasir() {
     const location = useLocation()
-    const { nomor, tipe } = location.state || {};
+    const { nomor, tipe, fromLaporanKeuangan } = location.state || {};
     const isCustom = tipe === 'custom';
     const [errorMessage, setErrorMessage] = useState("");
     const [isModalDel, setModalDel] = useState(false)
@@ -38,15 +38,20 @@ export default function DetailPenjualanKasir() {
         total_penjualan: 0
     });
 
-    const breadcrumbItems = isAdminGudang 
+    const breadcrumbItems = fromLaporanKeuangan
     ? [
-        { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+        { label: "Daftar Laporan Keuangan", href: "/laporanKeuangan" },
         { label: "Detail Penjualan", href: "" },
     ]
-    : [
-        { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
-        { label: "Detail Penjualan", href: "" },
-    ];
+    : isAdminGudang 
+        ? [
+            { label: "Daftar Penjualan Toko", href: "/penjualan-admin-gudang" },
+            { label: "Detail Penjualan", href: "" },
+        ]
+        : [
+            { label: "Daftar Penjualan Toko", href: "/penjualan-kasir" },
+            { label: "Detail Penjualan", href: "" },
+        ];
 
     const getImageUrl = (item) => {
         if (item.barang_handmade) {
@@ -133,7 +138,9 @@ export default function DetailPenjualanKasir() {
                     sub_total: salesData.sub_total || 0,
                     diskon: salesData.diskon || 0,
                     pajak: salesData.pajak || 0,
-                    total_penjualan: salesData.total_penjualan || 0
+                    total_penjualan: salesData.total_penjualan || 0,
+                    toko_id: salesData.toko_id,
+                    cabang_id: salesData.cabang_id
                 });
             }
         } catch (error) {
@@ -239,10 +246,32 @@ export default function DetailPenjualanKasir() {
 
     const navigate = useNavigate()
     const handleEdit = () => {
-        if (isCustom) {
-            navigate(`/penjualan-kasir/edit/custom/${data.nomor}`);
+        const editState = {
+            toko_id: data.toko_id,
+            cabang_id: data.cabang_id,
+            fromLaporanKeuangan: fromLaporanKeuangan 
+        };
+    
+        if (fromLaporanKeuangan) {
+            if (isCustom) {
+                navigate(`/laporanKeuangan/pemasukan/penjualan-custom/${data.nomor}`, {
+                    state: editState
+                });
+            } else {
+                navigate(`/laporanKeuangan/pemasukan/penjualan-non-custom/${data.nomor}`, {
+                    state: editState
+                });
+            }
         } else {
-            navigate(`/penjualan-kasir/edit/non-custom/${data.nomor}`);
+            if (isCustom) {
+                navigate(`/penjualan-kasir/edit/custom/${data.nomor}`, {
+                    state: editState
+                });
+            } else {
+                navigate(`/penjualan-kasir/edit/non-custom/${data.nomor}`, {
+                    state: editState
+                });
+            }
         }
     };
 
@@ -260,8 +289,12 @@ export default function DetailPenjualanKasir() {
             if (response.data.success) {
                 setModalSucc(true);
                 setTimeout(() => {
-                    const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
-                    navigate(baseRoute);
+                    if (fromLaporanKeuangan) {
+                        navigate('/laporanKeuangan');
+                    } else {
+                        const baseRoute = isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir';
+                        navigate(baseRoute);
+                    }
                 }, 2000);
             }
         } catch (error) {

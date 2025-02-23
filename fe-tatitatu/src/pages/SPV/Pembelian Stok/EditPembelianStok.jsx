@@ -18,6 +18,7 @@ import api from "../../../utils/api";
 export default function EditPembelianStok() {
     const location = useLocation();
     const pembelianId = location.state?.id;
+    const fromLaporanKeuangan = location.state?.fromLaporanKeuangan
     const [data, setData] = useState({
         id: '',
         nomor: '',
@@ -62,7 +63,8 @@ export default function EditPembelianStok() {
         label: dataMetode.find(opt => opt.value === data.metode)?.label || "-"
     });
     const userData = JSON.parse(localStorage.getItem('userData'))
-    const toko_id = userData.userId
+    const isFinance = userData?.role === 'finance';
+    let toko_id = userData.userId;
 
     useEffect(() => {
         const fetchPembelianData = async () => {
@@ -70,6 +72,10 @@ export default function EditPembelianStok() {
                 setLoading(true);
                 const response = await api.get(`/pembelian/${pembelianId}`); 
                 const pembelianData = response.data.data;
+
+                if (isFinance && pembelianData.toko_id) {
+                    toko_id = pembelianData.toko_id;
+                }
         
                 const isCash = pembelianData.cash_or_non;
                 setSelectedBayar(isCash ? 1 : 2);
@@ -489,10 +495,20 @@ export default function EditPembelianStok() {
     };
 
 
-    const breadcrumbItems = [
+    // const breadcrumbItems = [
+    //     { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
+    //     { label: "Edit Pembelian", href: "" },
+    // ];
+
+    const breadcrumbItems = fromLaporanKeuangan 
+    ? [
+        { label: "Daftar Laporan Keuangan Toko", href: "/laporanKeuangan" },
+        { label: "Edit Pembelian", href: "" },
+      ]
+    : [
         { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
         { label: "Edit Pembelian", href: "" },
-    ];
+      ];
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -922,8 +938,12 @@ export default function EditPembelianStok() {
     };
 
     const handleModalSucc = () => {
-        navigate('/pembelianStok')
-    }
+        if (fromLaporanKeuangan) {
+            navigate('/laporanKeuangan');
+        } else {
+            navigate('/pembelianStok');
+        }
+    };
 
     useEffect(() => {
         if (data.catatan) {
