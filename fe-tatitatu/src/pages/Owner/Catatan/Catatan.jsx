@@ -13,34 +13,43 @@ function CatatanContent(){
     const [selectedData, setSelectedData] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [data, setData] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(moment().format("MMMM"));
-  const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
-  const { refreshTrigger } = useRefresh();
+    const [selectedMonth, setSelectedMonth] = useState(moment().format("MMMM"));
+    const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
+    const { refreshTrigger } = useRefresh();
 
-  const fetchData = async () => {
-      try {
-          const response = await api.get('/catatan');
-          if (response.data.success) {
+    const fetchData = async () => {
+        try {
+            const response = await api.get('/catatan');
+            if (response.data.success) {
+                const transformedData = response.data.data.map(item => ({
+                    Tanggal: item.tanggal ? moment(item.tanggal).format('DD/MM/YYYY') : '-',
+                    Nama: item.nama,
+                    Judul: item.judul,
+                    Isi: item.isi,
+                    originalIsi: item.isi,
+                    createdAt: item.createdAt,
+                    ...item
+                }));
 
-              const transformedData = response.data.data.map(item => ({
-                  Tanggal: item.tanggal ? moment(item.tanggal).format('DD/MM/YYYY') : '-',
-                  Nama: item.nama,
-                  Judul: item.judul,
-                  Isi: item.isi,
-                  originalIsi: item.isi, 
-                  ...item         
-              }));
-              setData(transformedData);
-          }
-      } catch (error) {
-          console.error('Error fetching data:', error);
-      }
-  };
+                const filteredData = transformedData.filter(item => {
+                    const itemDate = moment(item.createdAt);
+                    return (
+                        itemDate.format('MMMM') === selectedMonth &&
+                        itemDate.format('YYYY') === selectedYear
+                    );
+                });
+
+                setData(filteredData);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
 
   
-  useEffect(() => {
-      fetchData();
-    }, [startDate, endDate, refreshTrigger]);
+    useEffect(() => {
+        fetchData();
+    }, [selectedMonth, selectedYear, startDate, endDate, refreshTrigger]);
 
     const handleToday = () => {
       const today = moment().startOf("day");
@@ -77,11 +86,12 @@ function CatatanContent(){
       };
 
   const headers = [
-      { label: "Tanggal", key: "Tanggal", align: "text-left" },
-      { label: "Nama", key: "Nama", align: "text-left" },
-      { label: "Judul", key: "Judul", align: "text-left" },
-      { label: "Isi", key: "Isi", align: "text-left" },
+      { label: "Tanggal", key: "Tanggal", align: "text-left", width: "110px" },
+      { label: "Nama", key: "Nama", align: "text-left" ,width: "500px" },
+      { label: "Judul", key: "Judul", align: "text-left",width: "500px"  },
+      { label: "Isi", key: "Isi", align: "text-left", width: "1200px" },
   ];
+
 
   const truncateText = (text, wordLimit = 9) => {
       const words = text.split(' ');
@@ -241,9 +251,9 @@ function CatatanContent(){
 
                   <div>
                       <label className="block text-gray-500 mb-1">Isi</label>
-                      <div className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 whitespace-pre-line min-h-[150px]">
-                          {selectedData.originalIsi || selectedData.Isi}
-                      </div>
+                      <div className="w-full p-3 border border-gray-300 scrollbar-hide rounded-lg bg-white text-gray-900 whitespace-pre-line min-h-[150px] overflow-auto max-h-[300px] break-words">
+                        {selectedData.originalIsi || selectedData.Isi}
+                    </div>
                   </div>
               </div>
           </div>

@@ -1,18 +1,116 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "./Button";
 import Modal from "../pages/Manajer/Catatan/Modal";
+import api from "../utils/api";
 
 const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = false}) => {
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isManajer = userData?.role === 'manajer';
+  const isKasirToko = userData?.role === 'kasirtoko';
   const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [branchName, setBranchName] = useState('');
+  const [logoSrc, setLogoSrc] = useState('');
+  const navigate = useNavigate();
+
+  // Function to determine the appropriate logo based on user role
+  useEffect(() => {
+    const fetchLogoBasedOnRole = async () => {
+      // For roles that directly use a specific logo file
+      if (['headgudang', 'admingudang', 'karyawanproduksi'].includes(userData?.role)) {
+        setLogoSrc('/logoDansa.svg');
+        return;
+      }
+      
+      if (['owner', 'manajer', 'finance'].includes(userData?.role)) {
+        setLogoSrc('/logoDBI.svg');
+        return;
+      }
+      
+      // For roles that need to fetch toko data
+      if (['admin', 'kasirtoko', 'karyawanumum', 'karyawantransportasi'].includes(userData?.role)) {
+        try {
+          const tokoId = userData?.role === 'admin' 
+            ? userData?.userId 
+            : userData?.tokoId;
+            
+          if (!tokoId) {
+            console.error('No toko ID available');
+            setLogoSrc('/logo.png'); // Fallback logo
+            return;
+          }
+          
+          const response = await api.get(`/toko/${tokoId}`);
+          
+          if (response.data.success) {
+            const { image } = response.data.data;
+            if (image) {
+              setLogoSrc(`${import.meta.env.VITE_API_URL || ''}/images-toko/${image}`);
+            } else {
+              // Fallback if toko has no logo
+              setLogoSrc('/logo.png');
+            }
+          } else {
+            console.error('Failed to fetch toko data');
+            setLogoSrc('/logo.png'); // Fallback logo
+          }
+        } catch (error) {
+          console.error('Error fetching toko data:', error);
+          setLogoSrc('/logo.png'); // Fallback logo
+        }
+      } else {
+        // Default fallback
+        setLogoSrc('/logo.png');
+      }
+    };
+    
+    fetchLogoBasedOnRole();
+  }, [userData?.role, userData?.userId, userData?.tokoId]);
+
+  useEffect(() => {
+    const fetchBranchName = async () => {
+      if (isKasirToko && userData?.userId) {
+        try {
+          const response = await api.get(`/cabang/${userData.userId}`);
+          if (response.data.success) {
+            setBranchName(response.data.data.nama_cabang);
+          }
+        } catch (error) {
+          console.error('Error fetching branch name:', error);
+        }
+      }
+    };
+
+    fetchBranchName();
+  }, [isKasirToko, userData?.userId]);
 
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
+  const modifiedUserOptions = userOptions.map(option => 
+    option.label === 'Logout' 
+      ? { ...option, onClick: handleLogout } 
+      : option
+  );
+
+  async function handleLogout() {
+    try {
+      const response = await api.get('/logout');
+      
+      if (response.data.success) {
+        localStorage.removeItem('userData');
+        localStorage.removeItem('token');
+
+        navigate('/login');
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  }
 
  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
  const [submenuOpen, setSubmenuOpen] = useState({});
@@ -54,12 +152,18 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
        <div className="flex items-center justify-center h-20">
          <a href="">
             <img 
-              src={isAdminOrKasirToko ? "/logo.png" : "/dbi.png"} 
+              src={logoSrc} 
               alt="Logo" 
+              className="h-16 object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/logo.png"; // Fallback if logo fails to load
+              }}
             />
          </a>
        </div>
 
+       {/* Rest of the component remains unchanged */}
        {/* Menu Items */}
        <ul className="mt-4 text-black overflow-y-auto h-[calc(100%-80px)] pr-2 pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
          {menuItems.map((menu) => (
@@ -146,7 +250,20 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
            <button className="text-black mr-4" onClick={toggleSidebar}>
              ☰
            </button>
-           <p className="text-primary font-bold">{label}</p>
+           {isKasirToko && branchName && (
+            <div className="flex items-center mr-4">
+              <img 
+                src="/Icon Warna/toko.svg" 
+                alt="Toko Icon" 
+                className="w-6 h-6 mr-2"
+              />
+              <p className="text-sm font-medium">{branchName}</p>
+            </div>
+          )}
+          
+          <div className="flex flex-col">
+            <p className="text-primary font-bold">{label}</p>
+          </div>
          </div>
 
          <div className="flex items-center gap-4">
@@ -235,7 +352,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                 </div>
               }
             />
-            <div className="relative">
+             <div className="relative">
               <button
                 onClick={toggleDropdown}
                 className="flex items-center gap-2 focus:outline-none"
@@ -265,8 +382,18 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                       <li
                         key={option.label}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          
+                          if (option.label === 'Logout') {
+                            handleLogout();
+                          } 
+                          else if (option.link) {
+                            navigate(option.link);
+                          }
+                        }}
                       >
-                        <Link to={option.link}>{option.label}</Link>
+                        {option.label}
                       </li>
                     ))}
                   </ul>

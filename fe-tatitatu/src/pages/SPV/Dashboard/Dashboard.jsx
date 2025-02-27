@@ -317,9 +317,12 @@ export default function Dashboard(){
       }
   );
 
-    function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+  function formatNumberWithDots(number) {
+    if (number === undefined || number === null) {
+        return '0';
     }
+    return number.toLocaleString('id-ID');
+}
     
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },

@@ -20,13 +20,21 @@ const [isModelSucc, setModalSucc] = useState(false)
 
 const userData = JSON.parse(localStorage.getItem('userData'));
 const isAdminGudang = userData?.role === 'admingudang';
+const isHeadGudang = userData?.role === 'headgudang'
 const [pembelianData, setPembelianData] = useState(null);
 const [cabangData, setCabangData] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
 const [paymentMethods, setPaymentMethods] = useState([]);
 const fetchPaymentMethods = async () => {
     try {
-        const endpoint = isAdminGudang ? '/metode-pembayaran-gudang' : '/metode-pembayaran';
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        const isHeadGudang = userData?.role === 'headgudang';
+        const isAdminGudang = userData?.role === 'admingudang';
+        
+        const endpoint = (isAdminGudang || isHeadGudang) 
+            ? '/metode-pembayaran-gudang' 
+            : '/metode-pembayaran';
+        
         const response = await api.get(endpoint);
         setPaymentMethods(response.data.data);
     } catch (error) {
@@ -36,12 +44,12 @@ const fetchPaymentMethods = async () => {
 
 useEffect(() => {
     fetchPaymentMethods();
-}, [isAdminGudang]);
+}, [isAdminGudang, isHeadGudang]);
 
 useEffect(() => {
     const fetchData = async () => {
         try {
-            if (isAdminGudang) {
+            if (isAdminGudang || isHeadGudang) {
                 const pembelianRes = await api.get(`/pembelian-gudang/${id}`);
                 setPembelianData(pembelianRes.data.data);
             } else {
@@ -60,14 +68,14 @@ useEffect(() => {
     };
 
     fetchData();
-}, [id, isAdminGudang]);
+}, [id, isAdminGudang, isHeadGudang]);
 
 console.log(pembelianData)
 
 const processedData = useMemo(() => {
     if (!pembelianData || !cabangData) return [];
 
-    if (isAdminGudang) {
+    if (isAdminGudang || isHeadGudang) {
         const baseUrl = import.meta.env.VITE_API_URL;
         return pembelianData.produk.map((produk, index) => {
             let imageUrlPrefix;
@@ -159,9 +167,9 @@ const processedData = useMemo(() => {
                     </div>
                 ),
                 "Nama Produk": productDetails?.nama_barang || productDetails?.nama_packaging,
-                "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang,
+                "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang || productDetails?.jenis?.nama_jenis_barang,
                 "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
-                "Kuantitas": produk.kuantitas,
+                "Kuantitas": produk.kuantitas.toLocaleString('id-ID'),
                 "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
             });
         });
@@ -169,7 +177,7 @@ const processedData = useMemo(() => {
         return Object.values(groupedByCabang);
     }
 
-}, [pembelianData, cabangData, isAdminGudang]);
+}, [pembelianData, cabangData, isAdminGudang, isHeadGudang]);
 
 if (isLoading) return <Spinner />;
 
@@ -181,7 +189,7 @@ const getPaymentMethodName = (metodeId) => {
 const getPaymentMethodDisplay = (data) => {
     if (!data) return '-';
     
-    if (isAdminGudang) {
+    if (isAdminGudang || isHeadGudang) {
         return data.cash_or_non ? '-' : data.metode || '-';
     } else {
         if (data.cash_or_non) {
@@ -194,6 +202,13 @@ const getPaymentMethodDisplay = (data) => {
 const handleEdit = () => {
     if (isAdminGudang) {
         navigate('/pembelianStok/edit-admin-gudang', {state : {id: id}});
+    } else if(fromLaporanKeuangan && isHeadGudang){
+        navigate('/laporanKeuangan/pembelian-gudang/edit', { 
+            state: { 
+                id: id,
+                fromLaporanKeuangan: true 
+            } 
+        });
     } else {
         navigate('/pembelianStok/edit', {
             state: {
@@ -372,7 +387,7 @@ return (
 
                 {/* section cabang -> perulangan sesuai data cabang */}
                 <section className="pt-10">
-                    {isAdminGudang ? (
+                    {(isAdminGudang || isHeadGudang) ? (
                         <div className="pt-5">
                             <Table headers={headers} data={processedData} />
                         </div>

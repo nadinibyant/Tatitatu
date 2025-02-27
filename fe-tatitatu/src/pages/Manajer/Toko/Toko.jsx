@@ -64,37 +64,52 @@ export default function Toko(){
     };
 
     // Fetch data function
-    const fetchTokoData = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/toko');
-            
-            if (response.data.success) {
-                // Filter out deleted items and transform the data
-                const transformedData = response.data.data
-                    .filter(toko => !toko.is_deleted)
-                    .map(toko => ({
+    // Update the fetchTokoData function to handle specific logos for shops with IDs 1 and 2
+
+const fetchTokoData = async () => {
+    try {
+        setLoading(true);
+        const response = await api.get('/toko');
+        
+        if (response.data.success) {
+            // Filter out deleted items and transform the data
+            const transformedData = response.data.data
+                .filter(toko => !toko.is_deleted)
+                .map(toko => {
+                    let imageUrl;
+                    
+                    // Assign specific logos for shops with IDs 1 and 2
+                    if (toko.toko_id === 1) {
+                        imageUrl = "/logoDansa.svg";
+                    } else {
+                        imageUrl = toko.image 
+                            ? `${import.meta.env.VITE_API_URL}/images-toko/${toko.image}` 
+                            : "/logo.png";
+                    }
+                    
+                    return {
                         id: toko.toko_id,
                         nama: toko.nama_toko,
                         email: toko.email,
                         password: toko.password,
                         logo: toko.image,
-                        imageUrl: toko.image ? `${import.meta.env.VITE_API_URL}/toko/${toko.image}` : "/logo.png" 
-                    }));
-                    
-                setBranchData(transformedData);
-            } else {
-                setErrorMessage('Gagal mengambil data toko');
-                setErrorAlert(true);
-            }
-        } catch (error) {
-            console.error('Error fetching toko data:', error);
+                        imageUrl: imageUrl
+                    };
+                });
+                
+            setBranchData(transformedData);
+        } else {
             setErrorMessage('Gagal mengambil data toko');
             setErrorAlert(true);
-        } finally {
-            setLoading(false);
         }
-    };
+    } catch (error) {
+        console.error('Error fetching toko data:', error);
+        setErrorMessage('Gagal mengambil data toko');
+        setErrorAlert(true);
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchTokoData();
@@ -377,7 +392,7 @@ export default function Toko(){
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {branchData.map((branch) => (
+                        {branchData.map((branch) => (
                             <div key={branch.id} className="bg-white rounded-lg shadow-sm border p-4">
                                 <div className="flex items-center gap-3 mb-10">
                                 <img
@@ -404,38 +419,66 @@ export default function Toko(){
                                     <div className="text-pink-600">***</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="text-sm font-mono">
+                                    <div className="text-sm font-mono">
                                         {branch.showPassword 
-                                            ? partiallyRevealPassword(branch.password) 
-                                            : '***'}
-                                        </div>
-                                        <button 
-                                            onClick={() => {
-                                            setBranchData(prevData => 
-                                                prevData.map(item => 
-                                                item.id === branch.id 
-                                                    ? { ...item, showPassword: !item.showPassword }
-                                                    : item
-                                                )
-                                            );
-                                            }}
-                                            className="text-gray-500 hover:text-gray-700 flex-shrink-0"
-                                        >
-                                            {branch.showPassword ? <EyeOff size={16} /> : <Eye size={10} />}
-                                        </button>
+                                        ? partiallyRevealPassword(branch.password) 
+                                        : '***'}
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                        setBranchData(prevData => 
+                                            prevData.map(item => 
+                                            item.id === branch.id 
+                                                ? { ...item, showPassword: !item.showPassword }
+                                                : item
+                                            )
+                                        );
+                                        }}
+                                        className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                                    >
+                                        {branch.showPassword ? <EyeOff size={16} /> : <Eye size={10} />}
+                                    </button>
                                     </div>
                                 </div>
                                 </div>
 
                                 <div className="flex gap-2 mt-10">
-                                <button onClick={() => handleEdit(branch)} className="flex-1 flex items-center justify-center gap-2 border border-oren text-orange-500 py-2 rounded-md hover:bg-orange-50 transition-colors">
+                                {branch.id !== 1 ? (
+                                    <button 
+                                    onClick={() => handleEdit(branch)} 
+                                    className="flex-1 flex items-center justify-center gap-2 border border-oren text-orange-500 py-2 rounded-md hover:bg-orange-50 transition-colors"
+                                    >
                                     <Pencil size={16} />
                                     Edit
-                                </button>
-                                <button onClick={() => handleDelete(branch.id)} className="flex-1 flex items-center justify-center gap-2 bg-merah text-white py-2 rounded-md hover:bg-red-700 transition-colors">
+                                    </button>
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center gap-2 border bg-gray-300 text-gray-500 py-2 rounded-md transition-colors cursor-not-allowed">
+                                    <Pencil size={16} />
+                                    Edit
+                                    </div>
+                                )}
+                                {/* <button 
+                                    onClick={() => handleEdit(branch)} 
+                                    className="flex-1 flex items-center justify-center gap-2 border border-oren text-orange-500 py-2 rounded-md hover:bg-orange-50 transition-colors"
+                                >
+                                    <Pencil size={16} />
+                                    Edit
+                                </button> */}
+    
+                                {branch.id !== 1 && branch.id !== 2 ? (
+                                    <button 
+                                    onClick={() => handleDelete(branch.id)} 
+                                    className="flex-1 flex items-center justify-center gap-2 bg-merah text-white py-2 rounded-md hover:bg-red-700 transition-colors"
+                                    >
                                     <Trash2 size={16} />
                                     Hapus
-                                </button>
+                                    </button>
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center gap-2 bg-gray-300 text-gray-500 py-2 rounded-md cursor-not-allowed">
+                                    <Trash2 size={16} />
+                                    Hapus
+                                    </div>
+                                )}
                                 </div>
                             </div>
                             ))}

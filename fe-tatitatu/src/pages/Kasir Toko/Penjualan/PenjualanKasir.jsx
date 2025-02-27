@@ -155,15 +155,16 @@ export default function PenjualanKasir() {
                     </div>
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                         <div className="w-full md:w-auto">
-                                    <input 
-                                        type="month"
-                                        value={monthValue}
-                                        onChange={handleMonthChange}
-                                        className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                        style={{
-                                            maxWidth: '200px',
-                                        }}
-                                    />
+                            <input
+                                type="month"
+                                    value={`${selectedYear}-${selectedMonth}`}
+                                    onChange={(e) => {
+                                        const date = moment(e.target.value);
+                                        setSelectedMonth(date.format('MM'));
+                                        setSelectedYear(date.format('YYYY'));
+                                    }}
+                                    className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                            />
                         </div>
 
                         <Button

@@ -13,16 +13,21 @@ import Spinner from "../../../components/Spinner";
 
 export default function DetailPenjualanGudang() {
     const location = useLocation();
-    const { nomor, tipe } = location.state || {};
+    const { nomor, tipe, fromLaporanKeuangan } = location.state || {};
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isModalDel, setModalDel] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
 
-    const breadcrumbItems = [
-        { label: "Daftar Penjualan", href: "/penjualan-admin-gudang" },
-        { label: "Detail Penjualan", href: "" },
-    ];
+    const breadcrumbItems = fromLaporanKeuangan 
+        ? [
+            { label: "Daftar Laporan Keuangan", href: "/laporanKeuangan" },
+            { label: "Detail Penjualan", href: "" },
+        ]
+        : [
+            { label: "Daftar Penjualan", href: "/penjualan-admin-gudang" },
+            { label: "Detail Penjualan", href: "" },
+        ];
 
     useEffect(() => {
         const fetchData = async () => {
@@ -61,7 +66,9 @@ export default function DetailPenjualanGudang() {
     const navigate = useNavigate();
     
     const handleEdit = () => {
-        navigate(`/penjualan-admin-gudang/edit/${data?.penjualan_id}`);
+        navigate(`/penjualan-admin-gudang/edit/${data?.penjualan_id}`, {
+            state: { fromLaporanKeuangan }
+        });
     };
 
     const handleDelete = () => {
@@ -260,7 +267,7 @@ export default function DetailPenjualanGudang() {
                     confirmLabel="Ok"
                     onConfirm={() => {
                         setModalSucc(false);
-                        navigate('/penjualan-admin-gudang');
+                        navigate(fromLaporanKeuangan ? '/laporanKeuangan' : '/penjualan-admin-gudang');
                     }}
                 />
             )}

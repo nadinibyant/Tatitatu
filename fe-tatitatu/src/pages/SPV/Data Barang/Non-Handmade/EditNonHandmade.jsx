@@ -374,8 +374,7 @@ export default function EditBarang() {
   
           if (biayaToko) {
             const biayaList = [];
-  
-            // Proses biaya operasional
+
             biayaToko.biaya_operasional.forEach((biaya, index) => {
               biayaList.push({
                 id: biaya.biaya_toko_id,
@@ -385,7 +384,6 @@ export default function EditBarang() {
               });
             });
   
-            // Proses biaya staff
             biayaToko.biaya_staff.forEach((biaya, index) => {
               biayaList.push({
                 id: biaya.biaya_toko_id,
@@ -394,18 +392,15 @@ export default function EditBarang() {
                 isEditable: false,
               });
             });
-  
-            // Jika ada data biaya, tambahkan ke rincian
+
             initialRincian[cabang.nama_cabang] = biayaList;
   
-            // Set data harga per cabang
             initialHargaPerCabang[cabang.nama_cabang] = {
               totalHPP: biayaToko.total_biaya,
               hargaJual: 0,
               keuntungan: 0,
             };
           } else {
-            // Jika tidak ada data biaya
             initialRincian[cabang.nama_cabang] = null;
             initialHargaPerCabang[cabang.nama_cabang] = {
               totalHPP: 0, // Default 0
@@ -414,8 +409,7 @@ export default function EditBarang() {
             };
           }
         });
-  
-        // Set rincian dan harga per cabang
+ 
         setRincianBiayaPerCabang(initialRincian);
   
         if (cabangDenganBiaya.length > 0) {

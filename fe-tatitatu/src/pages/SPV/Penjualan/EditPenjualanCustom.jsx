@@ -18,7 +18,7 @@ const EditPenjualanCustom = () => {
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
-    const [errorMessage, setErrorMessage] = useState(null)
+    const [errorMessage, setErrorMessage] = useState(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -43,7 +43,8 @@ const EditPenjualanCustom = () => {
     const [dataBarang, setDataBarang] = useState([]);
     const [dataPackaging, setDataPackaging] = useState([]);
     const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
-    const toko_id = userData.userId
+    const toko_id = userData.userId;
+    
     // UI state
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
@@ -146,11 +147,10 @@ const EditPenjualanCustom = () => {
         },
         {
             nama: 'Packaging',
-            data: detailData.packagingProducts.map((item, idx) => createTableRow(item, idx, 'packaging'))
+            data: detailData.packagingProducts.map((item, idx) => createPackagingRow(item, idx))
         }
     ];
     
-
     const createTableRow = (item, index, type) => {
         // Generate a unique ID if none exists
         const itemId = item.id || `${type}-${index}-${Date.now()}`;
@@ -198,6 +198,44 @@ const EditPenjualanCustom = () => {
             Aksi: <button 
                 className="text-red-500 hover:text-red-700"
                 onClick={() => handleDeleteRow(type, itemId)}
+            >
+                Hapus
+            </button>
+        };
+    };
+
+    const createPackagingRow = (item, index) => {
+        const itemId = item.id || `packaging-${index}-${Date.now()}`;
+        
+        return {
+            id: itemId,
+            No: index + 1,
+            "Foto Produk": <img 
+                src={item.packaging?.image?.includes('http') ? 
+                    item.packaging.image : 
+                    `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
+                }
+                alt="product" 
+                className="w-12 h-12" 
+            />,
+            "Nama Barang": <InputDropdown 
+                showRequired={false}
+                options={dataPackaging.map(item => ({
+                    value: item.packaging_id,
+                    label: item.nama_packaging
+                }))}
+                value={item.packaging?.packaging_id || item.packaging_id}
+                onSelect={(selected) => handleProductSelect('packaging', itemId, selected)}
+            />,
+            "Kuantitas": <Input
+                showRequired={false}
+                type="number"
+                value={item.kuantitas}
+                onChange={(value) => handleQuantityChange('packaging', itemId, value)}
+            />,
+            Aksi: <button 
+                className="text-red-500 hover:text-red-700"
+                onClick={() => handleDeleteRow('packaging', itemId)}
             >
                 Hapus
             </button>
@@ -256,16 +294,9 @@ const EditPenjualanCustom = () => {
             const key = type === 'custom' ? 'customProducts' : 
                        type === 'biaya' ? 'biayaProducts' : 'packagingProducts';
                        
-            console.log('Deleting item with id:', id);
-            console.log('Current items:', prev[key]);
-            
             return {
                 ...prev,
-                [key]: prev[key].filter(item => {
-                    // Log item details for debugging
-                    console.log('Checking item:', item);
-                    return item.id !== id;
-                })
+                [key]: prev[key].filter(item => item.id !== id)
             };
         });
     };
@@ -288,26 +319,30 @@ const EditPenjualanCustom = () => {
                 if (selectedProduct) {
                     const currentQuantity = items[itemIndex].kuantitas || 1;
                     
-                    items[itemIndex] = {
-                        ...items[itemIndex],
-                        id: itemId,
-                        kuantitas: currentQuantity,
-                        harga_satuan: selectedProduct.price,
-                        total_biaya: selectedProduct.price * currentQuantity
-                    };
-    
                     if (type === 'custom') {
-                        items[itemIndex].barang_custom = {
-                            barang_custom_id: selected.value,
-                            image: selectedProduct.image
+                        items[itemIndex] = {
+                            ...items[itemIndex],
+                            id: itemId,
+                            kuantitas: currentQuantity,
+                            harga_satuan: selectedProduct.price,
+                            total_biaya: selectedProduct.price * currentQuantity,
+                            barang_custom: {
+                                barang_custom_id: selected.value,
+                                image: selectedProduct.image
+                            },
+                            barang_custom_id: selected.value
                         };
-                        items[itemIndex].barang_custom_id = selected.value;
                     } else {
-                        items[itemIndex].packaging = {
-                            packaging_id: selected.value,
-                            image: selectedProduct.image
+                        items[itemIndex] = {
+                            ...items[itemIndex],
+                            id: itemId,
+                            kuantitas: currentQuantity,
+                            packaging: {
+                                packaging_id: selected.value,
+                                image: selectedProduct.image
+                            },
+                            packaging_id: selected.value
                         };
-                        items[itemIndex].packaging_id = selected.value;
                     }
                 }
             }
@@ -321,14 +356,23 @@ const EditPenjualanCustom = () => {
         
         setDetailData(prev => {
             const items = [...prev[key]];
-            const itemIndex = items.findIndex(item => (item.produk_penjualan_id || item.id) === itemId);
+            const itemIndex = items.findIndex(item => item.id === itemId);
             
             if (itemIndex !== -1) {
-                items[itemIndex] = {
-                    ...items[itemIndex],
-                    kuantitas: Number(newQuantity),
-                    total_biaya: items[itemIndex].harga_satuan * Number(newQuantity)
-                };
+                const numericQuantity = Number(newQuantity) || 0;
+                
+                if (type === 'custom') {
+                    items[itemIndex] = {
+                        ...items[itemIndex],
+                        kuantitas: numericQuantity,
+                        total_biaya: items[itemIndex].harga_satuan * numericQuantity
+                    };
+                } else {
+                    items[itemIndex] = {
+                        ...items[itemIndex],
+                        kuantitas: numericQuantity
+                    };
+                }
             }
             
             return { ...prev, [key]: items };
@@ -339,7 +383,10 @@ const EditPenjualanCustom = () => {
         setDetailData(prev => ({
             ...prev,
             biayaProducts: prev.biayaProducts.map(item => 
-                item.id === id ? { ...item, [field]: value } : item
+                item.id === id ? { 
+                    ...item, 
+                    [field]: field === 'jumlah_biaya' ? Number(value) : value 
+                } : item
             )
         }));
     };
@@ -350,13 +397,13 @@ const EditPenjualanCustom = () => {
         
         const newItems = selectedItems.map(item => {
             const newItem = {
-                id: `${key}-${Date.now()}-${item.id}`,
-                kuantitas: item.count,
-                harga_satuan: item.price,
-                total_biaya: item.price * item.count
+                id: `${key === 'customProducts' ? 'custom' : 'packaging'}-${Date.now()}-${item.id}`,
+                kuantitas: item.count || 1,
             };
     
-            if (activeTable === 0) {
+            if (key === 'customProducts') {
+                newItem.harga_satuan = item.price;
+                newItem.total_biaya = item.price * newItem.kuantitas;
                 newItem.barang_custom = {
                     barang_custom_id: item.id,
                     image: item.image
@@ -387,14 +434,14 @@ const EditPenjualanCustom = () => {
 
     const calculateSubtotal = () => {
         const customTotal = detailData.customProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
-        const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (item.jumlah_biaya || 0), 0);
-        const packagingTotal = detailData.packagingProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
-        return customTotal + biayaTotal + packagingTotal;
+        const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (Number(item.jumlah_biaya) || 0), 0);
+        // Packaging no longer contributes to subtotal
+        return customTotal + biayaTotal;
     };
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (formData.diskon / 100) * subtotal;
-        return subtotal - diskonNominal + formData.pajak;
+        return subtotal - diskonNominal + Number(formData.pajak);
     };
 
     const handleSubmit = async (e) => {
@@ -402,31 +449,34 @@ const EditPenjualanCustom = () => {
         try {
             setLoading(true);
             
-            // Mengumpulkan semua produk (yang lama dan baru)
+            // Collect all products (existing and new)
             const allProducts = [
                 ...detailData.customProducts.map(item => ({
-                    produk_penjualan_id: item.produk_penjualan_id, // untuk data existing
+                    produk_penjualan_id: item.produk_penjualan_id, // for existing data
                     barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
                     harga_satuan: item.harga_satuan,
-                    kuantitas: item.kuantitas,
+                    kuantitas: Number(item.kuantitas),
                     total_biaya: item.total_biaya
                 })),
                 ...detailData.packagingProducts.map(item => ({
                     produk_penjualan_id: item.produk_penjualan_id,
                     packaging_id: item.packaging?.packaging_id || item.packaging_id,
-                    harga_satuan: item.harga_satuan,
-                    kuantitas: item.kuantitas,
-                    total_biaya: item.total_biaya
+                    harga_satuan: 0, // Set harga_satuan to 0 for packaging
+                    kuantitas: Number(item.kuantitas),
+                    total_biaya: 0 // Set total_biaya to 0 for packaging
                 }))
             ];
     
-            // Mengumpulkan semua rincian biaya (yang lama dan baru)
+            // Collect all biaya details (existing and new)
             const allBiaya = detailData.biayaProducts.map(item => ({
                 rincian_biaya_custom_id: item.rincian_biaya_custom_id, 
                 nama_biaya: item.nama_biaya,
                 jumlah_biaya: Number(item.jumlah_biaya)
             }));
     
+            const subtotal = calculateSubtotal();
+            const totalPenjualan = calculateTotalPenjualan(subtotal);
+            
             const payload = {
                 toko_id: toko_id,
                 cash_or_non: formData.selectBayar === 1,
@@ -434,16 +484,15 @@ const EditPenjualanCustom = () => {
                 nama_pembeli: formData.namaPembeli,
                 tanggal: formData.tanggal,
                 catatan: formData.note,
-                sub_total: calculateSubtotal(),
+                sub_total: subtotal,
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
-                total_penjualan: calculateTotalPenjualan(calculateSubtotal()),
+                total_penjualan: totalPenjualan,
                 produk: allProducts,
                 rincian_biaya_custom: allBiaya
             };
     
             await api.put(`/penjualan/${id}`, payload);
-            navigate('/penjualanToko')
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
@@ -473,6 +522,14 @@ const EditPenjualanCustom = () => {
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
+    const packagingHeaders = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
+        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
     const biayaHeaders = [
         { label: 'No', key: 'No', align: 'text-left' },
         { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
@@ -492,77 +549,118 @@ const EditPenjualanCustom = () => {
                 <section className="bg-white p-5 mt-5 rounded-xl">
                     <form onSubmit={handleSubmit}>
                         {/* Basic form inputs */}
-                        {/* Basic form inputs */}
-                    <section>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Input 
-                                label="Nomor" 
-                                type="text" 
-                                value={formData.nomor} 
-                                onChange={(e) => setFormData(prev => ({...prev, nomor: e}))} 
-                            />
-                            <Input 
-                                label="Tanggal dan Waktu" 
-                                type1="datetime-local" 
-                                value={formData.tanggal} 
-                                onChange={(e) => setFormData(prev => ({...prev, tanggal: e}))} 
-                            />
-                            <Input 
-                                label="Nama Pembeli" 
-                                value={formData.namaPembeli} 
-                                onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
-                            />
-                            <InputDropdown 
-                                label="Cash/Non-Cash" 
-                                options={[
-                                    { value: 1, label: 'Cash' },
-                                    { value: 2, label: 'Non-Cash' }
-                                ]}
-                                value={formData.selectBayar}
-                                onSelect={(selected) => {
-                                    setFormData(prev => ({
-                                        ...prev, 
-                                        selectBayar: selected.value,
-                                        selectMetode: selected.value === 1 ? 0 : dataMetode[1].value 
-                                    }));
-                                    setIsMetodeDisabled(selected.value === 1);
-                                }}
-                            />
-                            <InputDropdown 
-                                label="Metode Pembayaran" 
-                                disabled={isMetodeDisabled}
-                                options={dataMetode}
-                                value={formData.selectMetode}
-                                onSelect={(selected) => setFormData(prev => ({...prev, selectMetode: selected.value}))}
-                            />
-                        </div>
-                    </section>
+                        <section>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Input 
+                                    label="Nomor" 
+                                    type="text" 
+                                    value={formData.nomor} 
+                                    onChange={(e) => setFormData(prev => ({...prev, nomor: e}))} 
+                                />
+                                <Input 
+                                    label="Tanggal dan Waktu" 
+                                    type="datetime-local" 
+                                    value={formData.tanggal} 
+                                    onChange={(e) => setFormData(prev => ({...prev, tanggal: e}))} 
+                                />
+                                <Input 
+                                    label="Nama Pembeli" 
+                                    value={formData.namaPembeli} 
+                                    onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
+                                />
+                                <InputDropdown 
+                                    label="Cash/Non-Cash" 
+                                    options={dataBayar}
+                                    value={formData.selectBayar}
+                                    onSelect={(selected) => {
+                                        setFormData(prev => ({
+                                            ...prev, 
+                                            selectBayar: selected.value,
+                                            selectMetode: selected.value === 1 ? 0 : dataMetode[1]?.value || 0 
+                                        }));
+                                        setIsMetodeDisabled(selected.value === 1);
+                                    }}
+                                />
+                                <InputDropdown 
+                                    label="Metode Pembayaran" 
+                                    disabled={isMetodeDisabled}
+                                    options={dataMetode}
+                                    value={formData.selectMetode}
+                                    onSelect={(selected) => setFormData(prev => ({...prev, selectMetode: selected.value}))}
+                                />
+                            </div>
+                        </section>
 
                         {/* Tables section */}
                         <section className="pt-10">
-                            {transformToTableData().map((table, index) => (
-                                <div key={index} className="pt-5">
-                                    <p className="font-bold">{table.nama}</p>
-                                    <div className="pt-5">
-                                        <Table 
-                                            headers={index === 1 ? biayaHeaders : headers} 
-                                            data={table.data} 
-                                        />
-                                        <Button
-                                            label="Tambah Baris"
-                                            icon={
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                            }
-                                            onClick={() => handleAddRow(index)}
-                                            bgColor=""
-                                            hoverColor="hover:border-primary hover:border"
-                                            textColor="text-primary"
-                                            />
-                                    </div>
+                            {/* Custom Products Table */}
+                            <div className="pt-5">
+                                <p className="font-bold">Rincian Jumlah dan Bahan</p>
+                                <div className="pt-5">
+                                    <Table 
+                                        headers={headers} 
+                                        data={detailData.customProducts.map((item, idx) => createTableRow(item, idx, 'custom'))} 
+                                    />
+                                    <Button
+                                        label="Tambah Baris"
+                                        icon={
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        }
+                                        onClick={() => handleAddRow(0)}
+                                        bgColor=""
+                                        hoverColor="hover:border-primary hover:border"
+                                        textColor="text-primary"
+                                    />
                                 </div>
-                            ))}
+                            </div>
+                            
+                            {/* Biaya Table */}
+                            <div className="pt-5">
+                                <p className="font-bold">Rincian Biaya</p>
+                                <div className="pt-5">
+                                    <Table 
+                                        headers={biayaHeaders} 
+                                        data={detailData.biayaProducts.map((item, idx) => createBiayaRow(item, idx))} 
+                                    />
+                                    <Button
+                                        label="Tambah Baris"
+                                        icon={
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        }
+                                        onClick={() => handleAddRow(1)}
+                                        bgColor=""
+                                        hoverColor="hover:border-primary hover:border"
+                                        textColor="text-primary"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Packaging Table */}
+                            <div className="pt-5">
+                                <p className="font-bold">Packaging</p>
+                                <div className="pt-5">
+                                    <Table 
+                                        headers={packagingHeaders} 
+                                        data={detailData.packagingProducts.map((item, idx) => createPackagingRow(item, idx))} 
+                                    />
+                                    <Button
+                                        label="Tambah Baris"
+                                        icon={
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        }
+                                        onClick={() => handleAddRow(2)}
+                                        bgColor=""
+                                        hoverColor="hover:border-primary hover:border"
+                                        textColor="text-primary"
+                                    />
+                                </div>
+                            </div>
                         </section>
 
                         {/* Note and Summary section */}
@@ -581,7 +679,7 @@ const EditPenjualanCustom = () => {
                                 <div className="space-y-4 text-sm p-4">
                                     <div className="flex justify-between border-b pb-2">
                                         <p className="font-bold">Subtotal</p>
-                                        <p>Rp{calculateSubtotal().toLocaleString()}</p>
+                                        <p>Rp{calculateSubtotal().toLocaleString('id-ID')}</p>
                                     </div>
                                     <div className="flex justify-between items-center border-b pb-2">
                                         <p className="font-bold">Diskon Keseluruhan (%)</p>
@@ -591,10 +689,10 @@ const EditPenjualanCustom = () => {
                                                 showRequired={false}
                                                 value={formData.diskon}
                                                 required={false}
-                                                onChange={(value) => setFormData(prev => ({...prev, diskon: value}))}
+                                                onChange={(value) => setFormData(prev => ({...prev, diskon: Number(value)}))}
                                             />
                                         </div>
-                                    </div>
+                                        </div>
                                     <div className="flex justify-between items-center border-b pb-2">
                                         <p className="font-bold">Pajak</p>
                                         <div className="w-30">
@@ -603,14 +701,14 @@ const EditPenjualanCustom = () => {
                                                 showRequired={false}
                                                 required={false}
                                                 value={formData.pajak}
-                                                onChange={(value) => setFormData(prev => ({...prev, pajak: value}))}
+                                                onChange={(value) => setFormData(prev => ({...prev, pajak: Number(value)}))}
                                             />
                                         </div>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
                                         <p className="font-bold">Total Penjualan</p>
                                         <p className="font-bold">
-                                            Rp{calculateTotalPenjualan(calculateSubtotal()).toLocaleString()}
+                                            Rp{calculateTotalPenjualan(calculateSubtotal()).toLocaleString('id-ID')}
                                         </p>
                                     </div>
                                     <div>
@@ -669,7 +767,7 @@ const EditPenjualanCustom = () => {
                                         </svg>
                                     </button>
                                     <p className="text-primary font-semibold">
-                                        Terpilih {modalState.selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                        Terpilih {modalState.selectedItems.reduce((sum, item) => sum + (item.count || 0), 0)}
                                     </p>
                                 </div>
 
@@ -749,13 +847,13 @@ const EditPenjualanCustom = () => {
 
                 {isLoading && <Spinner />}
 
-                    {errorMessage && (
-                        <AlertError
-                            title={'Failed'}
-                            description={errorMessage}
-                            onConfirm={() => setErrorMessage(null)}
-                        />
-                    )}
+                {errorMessage && (
+                    <AlertError
+                        title="Failed"
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
             </div>
         </LayoutWithNav>
     );

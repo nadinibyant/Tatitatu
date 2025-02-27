@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs"; 
 import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
@@ -16,6 +16,9 @@ import AlertError from "../../../components/AlertError";
 
 export default function EditPenjualanGudang() {
     const { id } = useParams();
+    const location = useLocation();
+    const { fromLaporanKeuangan } = location.state || {};
+    
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [namaPembeli, setNamaPembeli] = useState("");
@@ -825,11 +828,15 @@ export default function EditPenjualanGudang() {
         return subtotal - diskonNominal + pajak;
     };
 
-
-    const breadcrumbItems = [
-        { label: "Daftar Penjualan Gudang", href: "/penjualan-admin-gudang" },
-        { label: "Edit Penjualan", href: "" },
-    ];
+    const breadcrumbItems = fromLaporanKeuangan 
+        ? [
+            { label: "Daftar Laporan Keuangan", href: "/laporanKeuangan" },
+            { label: "Edit Penjualan", href: "" },
+          ]
+        : [
+            { label: "Daftar Penjualan Gudang", href: "/penjualan-admin-gudang" },
+            { label: "Edit Penjualan", href: "" },
+          ];
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -920,7 +927,8 @@ export default function EditPenjualanGudang() {
 
     const handleAcc = () => {
         setModalSucc(false);
-        navigate('/penjualan-admin-gudang');
+        // Navigasi kembali ke halaman yang sesuai
+        navigate(fromLaporanKeuangan ? '/laporanKeuangan' : '/penjualan-admin-gudang');
     };
 
     const btnAddBaris = () => {
@@ -1307,5 +1315,3 @@ export default function EditPenjualanGudang() {
         </>
     );
 }
-  
-                                        

@@ -101,7 +101,7 @@ useEffect(() => {
                     "Nama Barang": namaBarang,
                     "Jumlah Barang": jumlahBarang.toLocaleString('id-ID'),
                     Diskon: penjualan.diskon,
-                    Pajak: penjualan.pajak,
+                    Pajak: penjualan.pajak.toLocaleString('id-ID'),
                     "Total Transaksi": penjualan.total_penjualan,
                     tipe: hasCustom ? 'custom' : 'non-custom'
                 };
@@ -152,13 +152,13 @@ useEffect(() => {
 
     const headers = [
         { label: "Nomor", key: "Nomor", align: "text-left" },
-        { label: "Tanggal", key: "Tanggal", align: "text-center" },
+        { label: "Tanggal", key: "Tanggal", align: "text-left" },
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
         { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-left" },
-        { label: "Diskon", key: "Diskon", align: "text-center" },
-        { label: "Pajak", key: "Pajak", align: "text-center" },
-        { label: "Total Transaksi", key: "Total Transaksi", align: "text-center" },
-        { label: "Aksi", key: "action", align: "text-center" },
+        { label: "Diskon", key: "Diskon", align: "text-left" },
+        { label: "Pajak", key: "Pajak", align: "text-left" },
+        { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
+        { label: "Aksi", key: "action", align: "text-left" },
     ];
 
     const formatNamaBarang = (namaBarang) => {
@@ -236,15 +236,16 @@ useEffect(() => {
                                 <ButtonDropdown selectedIcon={'/icon/toko.svg'} options={dataCabang} onSelect={(value) => setSelectedStore(value)} />
                             </div>
                             <div className="w-full md:w-auto">
-                                <input 
-                                    type="month"
-                                    value={monthValue}
-                                    onChange={handleMonthChange}
-                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    style={{
-                                        maxWidth: '200px',
-                                    }}
-                                />
+                                    <input
+                                        type="month"
+                                        value={`${selectedYear}-${selectedMonth}`}
+                                        onChange={(e) => {
+                                            const date = moment(e.target.value);
+                                            setSelectedMonth(date.format('MM'));
+                                            setSelectedYear(date.format('YYYY'));
+                                        }}
+                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                    />
                             </div>
                         </div>
                     </section>

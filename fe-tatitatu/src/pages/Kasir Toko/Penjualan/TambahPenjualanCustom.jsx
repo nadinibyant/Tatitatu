@@ -71,7 +71,8 @@ const TambahPenjualanCustom = () => {
     }, [isModalOpen]);
 
     const calculateSubtotal = () => {
-        return dataProduk.reduce((acc, table) => {
+        // Only calculate from tables 0 and 1, excluding packaging table (index 2)
+        return dataProduk.slice(0, 2).reduce((acc, table) => {
             const totalTable = table.data.reduce((tabAcc, row) => {
                 return tabAcc + (row.rawTotalBiaya || 0);
             }, 0);
@@ -108,6 +109,7 @@ const TambahPenjualanCustom = () => {
         { label: "Tambah Penjualan Custom", href: "" },
     ];
 
+    // Regular headers for product tables
     const headers = [
         { label: 'No', key: 'No', align: 'text-left' },
         { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
@@ -118,6 +120,15 @@ const TambahPenjualanCustom = () => {
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
+    // Simplified headers for packaging table
+    const packagingHeaders = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
+        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
     const getRincianBiayaHeaders = () => [
         { label: 'No', key: 'No', align: 'text-left' },
         { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
@@ -125,7 +136,12 @@ const TambahPenjualanCustom = () => {
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
-
+    // Helper function to get the appropriate headers based on table index
+    const getHeadersForTable = (index) => {
+        if (index === 1) return getRincianBiayaHeaders();
+        if (index === 2) return packagingHeaders;
+        return headers;
+    };
 
     const handleNamaBiayaChange = (tableIndex, itemId, value) => {
         const tables = [...dataProduk];
@@ -233,7 +249,6 @@ const TambahPenjualanCustom = () => {
         }
     };
 
-
     const [dataPackaging, setDataPackaging] = useState([]);
 
     const fetchPackaging = async () => {
@@ -245,7 +260,7 @@ const TambahPenjualanCustom = () => {
                     .map(item => ({
                         id: item.packaging_id,
                         name: item.nama_packaging,
-                        price: item.harga_jual,
+                        price: 0, // Set price to 0 since we don't want to use it for calculations
                         image: item.image 
                             ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
                             : "/placeholder-image.jpg",
@@ -259,29 +274,6 @@ const TambahPenjualanCustom = () => {
             console.error('Error fetching packaging:', error);
         }
     };
-
-
-    // const dataBarang = [
-    //     { id: 1, image: 'https://via.placeholder.com/150', code: 'MMM453', name: 'Gelang Barbie 123', price: 10000 },
-    //     { id: 2, image: 'https://via.placeholder.com/150', code: 'MMM454', name: 'Anting Keren 123', price: 15000 },
-    //     { id: 3, image: 'https://via.placeholder.com/150', code: 'MMM455', name: 'Cincin Cantik 123', price: 20000 },
-    //     { id: 4, image: 'https://via.placeholder.com/150', code: 'MMM456', name: 'Gelang Modern', price: 12000 },
-    // ];
-
-    // const dataPackaging = [
-    //     {
-    //         id: 1,
-    //         name: "Gelang Barbie 123",
-    //         price: 10000,
-    //         image: "https://via.placeholder.com/50",
-    //       },
-    //       {
-    //         id: 2,
-    //         name: "Cincin Diamond",
-    //         price: 15000,
-    //         image: "https://via.placeholder.com/50",
-    //       },
-    // ];
 
     const handleSelectItem = (item, count) => {
         setSelectedItems((prev) => {
@@ -353,17 +345,16 @@ const TambahPenjualanCustom = () => {
         }
     };
     
-
     const handleModalSubmit = () => {
         if (activeTable !== null) {
             const updatedTables = [...dataProduk];
             const newItems = selectedItems.map((item) => {
-                const totalBiaya = item.price * item.count;
                 const isPackaging = activeTable === 2;
                 const dropdownOptions = isPackaging ? dataPackaging : dataBarang;
                 const handleChange = isPackaging ? handlePackagingChange : handleBarangChange;
-    
-                return {
+                
+                // Create a base item with common properties
+                const baseItem = {
                     id: item.id,
                     No: updatedTables[activeTable].data.length + 1,
                     "Foto Produk": (
@@ -373,45 +364,7 @@ const TambahPenjualanCustom = () => {
                             className="w-12 h-12"
                         />
                     ),
-                    "Nama Barang": (
-                        <InputDropdown
-                            showRequired={false}
-                            options={dropdownOptions.map(prod => ({
-                                value: prod.id,
-                                label: isPackaging ? `${prod.name} - ${prod.ukuran}` : prod.name
-                            }))}
-                            value={item.id}
-                            onSelect={(selectedItem) => handleChange(activeTable, item.id, selectedItem)}
-                        />
-                    ),
-                    "Harga Satuan": `Rp${item.price.toLocaleString()}`,
-                    "Kuantitas": (
-                        <Input
-                            showRequired={false}
-                            type="number"
-                            value={item.count}
-                            onChange={(newCount) => {
-                                const updatedTablesCopy = [...dataProduk];
-                                const itemIndex = updatedTablesCopy[activeTable].data.findIndex(
-                                    (row) => row.id === item.id
-                                );
-    
-                                if (itemIndex !== -1) {
-                                    const currentPrice = updatedTablesCopy[activeTable].data[itemIndex].currentPrice || item.price;
-                                    const numericCount = Number(newCount) || 0;
-                                    updatedTablesCopy[activeTable].data[itemIndex].quantity = numericCount;
-                                    const newTotal = currentPrice * numericCount;
-                                    updatedTablesCopy[activeTable].data[itemIndex].rawTotalBiaya = newTotal;
-                                    updatedTablesCopy[activeTable].data[itemIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
-                                    setDataProduk(updatedTablesCopy);
-                                }
-                            }}
-                        />
-                    ),
                     quantity: item.count,
-                    "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
-                    rawTotalBiaya: totalBiaya,
-                    currentPrice: item.price,
                     Aksi: (
                         <button
                             className="text-red-500 hover:text-red-700"
@@ -421,14 +374,95 @@ const TambahPenjualanCustom = () => {
                         </button>
                     ),
                 };
+                
+                // For packaging table (no price-related fields)
+                if (isPackaging) {
+                    return {
+                        ...baseItem,
+                        "Nama Barang": (
+                            <InputDropdown
+                                showRequired={false}
+                                options={dataPackaging.map(pkg => ({
+                                    value: pkg.id,
+                                    label: `${pkg.name} - ${pkg.ukuran}`
+                                }))}
+                                value={item.id}
+                                onSelect={(selectedItem) => handlePackagingChange(activeTable, item.id, selectedItem)}
+                            />
+                        ),
+                        "Kuantitas": (
+                            <Input
+                                showRequired={false}
+                                type="number"
+                                value={item.count}
+                                onChange={(newCount) => {
+                                    const updatedTablesCopy = [...dataProduk];
+                                    const itemIndex = updatedTablesCopy[activeTable].data.findIndex(
+                                        (row) => row.id === item.id
+                                    );
+            
+                                    if (itemIndex !== -1) {
+                                        const numericCount = Number(newCount) || 0;
+                                        updatedTablesCopy[activeTable].data[itemIndex].quantity = numericCount;
+                                        setDataProduk(updatedTablesCopy);
+                                    }
+                                }}
+                            />
+                        ),
+                    };
+                } else {
+                    // For regular product table (with price fields)
+                    const totalBiaya = item.price * item.count;
+                    return {
+                        ...baseItem,
+                        "Nama Barang": (
+                            <InputDropdown
+                                showRequired={false}
+                                options={dataBarang.map(prod => ({
+                                    value: prod.id,
+                                    label: prod.name
+                                }))}
+                                value={item.id}
+                                onSelect={(selectedItem) => handleBarangChange(activeTable, item.id, selectedItem)}
+                            />
+                        ),
+                        "Harga Satuan": `Rp${item.price.toLocaleString()}`,
+                        "Kuantitas": (
+                            <Input
+                                showRequired={false}
+                                type="number"
+                                value={item.count}
+                                onChange={(newCount) => {
+                                    const updatedTablesCopy = [...dataProduk];
+                                    const itemIndex = updatedTablesCopy[activeTable].data.findIndex(
+                                        (row) => row.id === item.id
+                                    );
+            
+                                    if (itemIndex !== -1) {
+                                        const currentPrice = updatedTablesCopy[activeTable].data[itemIndex].currentPrice || item.price;
+                                        const numericCount = Number(newCount) || 0;
+                                        updatedTablesCopy[activeTable].data[itemIndex].quantity = numericCount;
+                                        const newTotal = currentPrice * numericCount;
+                                        updatedTablesCopy[activeTable].data[itemIndex].rawTotalBiaya = newTotal;
+                                        updatedTablesCopy[activeTable].data[itemIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+                                        setDataProduk(updatedTablesCopy);
+                                    }
+                                }}
+                            />
+                        ),
+                        "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
+                        rawTotalBiaya: totalBiaya,
+                        currentPrice: item.price,
+                    };
+                }
             });
+            
             updatedTables[activeTable].data.push(...newItems);
             setDataProduk(updatedTables);
         }
         setIsModalOpen(false);
         setSelectedItems([]);
     };
-
 
     const handleDeleteItem = (tableIndex, itemId) => {
         const updatedTables = [...dataProduk];
@@ -484,11 +518,10 @@ const TambahPenjualanCustom = () => {
             
             if (selectedPackaging) {
                 const currentQuantity = updatedTables[tableIndex].data[itemIndex].quantity || 1;
-                const newTotalBiaya = selectedPackaging.price * currentQuantity;
                 
                 updatedTables[tableIndex].data[itemIndex] = {
                     ...updatedTables[tableIndex].data[itemIndex],
-                    id: selectedOption.value, // Update id to match the selected packaging
+                    id: selectedOption.value,
                     "Foto Produk": (
                         <img
                             src={selectedPackaging.image}
@@ -507,10 +540,6 @@ const TambahPenjualanCustom = () => {
                             onSelect={(newSelection) => handlePackagingChange(tableIndex, itemId, newSelection)}
                         />
                     ),
-                    "Harga Satuan": `Rp${selectedPackaging.price.toLocaleString()}`,
-                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                    rawTotalBiaya: newTotalBiaya,
-                    currentPrice: selectedPackaging.price,
                     quantity: currentQuantity
                 };
                 setDataProduk(updatedTables);
@@ -575,22 +604,15 @@ const TambahPenjualanCustom = () => {
     
             const packagingItems = dataProduk[2].data.length > 0 
                 ? dataProduk[2].data.map(item => {
-
                     const packagingId = item["Nama Barang"]?.props?.value?.value 
                         || item["Nama Barang"]?.props?.value 
                         || item.id;
-
-                    console.log('Raw Packaging Item:', {
-                        item,
-                        packagingId,
-                        namaBarang: item["Nama Barang"]
-                    });
     
                     return {
                         packaging_id: packagingId,
-                        harga_satuan: Number(item.currentPrice || 0),
                         kuantitas: Number(item.quantity || 0),
-                        total_biaya: Number(item.rawTotalBiaya || 0)
+                        harga_satuan: 0, // Setting price to 0 as requested
+                        total_biaya: 0 // Setting total to 0 as requested
                     };
                 }) 
                 : [];
@@ -607,11 +629,12 @@ const TambahPenjualanCustom = () => {
                 ...packagingItems
             ];
 
-            const invalidItems = produk.filter(item => 
+            // Validate only product items, not packaging
+            const invalidItems = produkCustom.filter(item => 
                 !item.kuantitas || 
                 !item.harga_satuan || 
                 !item.total_biaya || 
-                !(item.barang_custom_id || item.packaging_id)
+                !item.barang_custom_id
             );
     
             if (invalidItems.length > 0) {
@@ -661,7 +684,7 @@ const TambahPenjualanCustom = () => {
 
     const handleAcc = () => {
         setModalSucc(false);
-        navigate('/penjualan-kasir  ');
+        navigate('/penjualan-kasir');
     };
 
 
@@ -710,7 +733,7 @@ const TambahPenjualanCustom = () => {
                                 <p className="font-bold">{table.nama}</p>
                                 <div className="pt-5">
                                     <Table 
-                                        headers={index === 1 ? getRincianBiayaHeaders() : headers} 
+                                        headers={getHeadersForTable(index)}
                                         data={table.data} 
                                     />
                                     <Button
@@ -879,7 +902,7 @@ const TambahPenjualanCustom = () => {
                                     ).map(item => ({
                                         ...item,
                                         price: item.price,
-                                        formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
+                                        formattedPrice: modalContent === 'packaging' ? '' : `Rp${item.price.toLocaleString('id-ID')}`
                                     }))
                                     : dataBarang.filter(item =>
                                         item.name.toLowerCase().includes(searchTerm.toLowerCase())

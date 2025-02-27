@@ -305,6 +305,28 @@ export default function DetailPenjualanKasir() {
         }
     };
 
+    const handlePrint = async () => {
+        try {
+            setIsLoading(true);
+
+            const response = await api.get(`/penjualan/${data.nomor}/invoice`, {
+                responseType: 'text'
+            });
+    
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(response.data);
+            printWindow.document.close();
+    
+            printWindow.print();
+        } catch (error) {
+            console.error('Error generating invoice:', error);
+            setErrorMessage(error.response?.data?.message || "Gagal mencetak invoice");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -315,7 +337,7 @@ export default function DetailPenjualanKasir() {
                     <div className="border-b py-2 flex justify-between items-center">
                         <p className="font-bold text-lg">{data.nomor}</p>
                         <div className="flex gap-2">
-                            <Button
+                        <Button
                                 label={'Cetak'}
                                 icon={
                                     <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -324,9 +346,8 @@ export default function DetailPenjualanKasir() {
                                     </svg>
                                 }
                                 bgColor="border border-primary"
-                                hoverColor="hover:bg-primary"
                                 textColor="text-primary"
-                                // onClick={handleEdit}
+                                onClick={handlePrint}
                             />
                             <Button
                                 label={'Edit'}

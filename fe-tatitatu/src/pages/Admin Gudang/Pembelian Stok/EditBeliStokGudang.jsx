@@ -15,8 +15,7 @@ import api from "../../../utils/api";
 export default function EditBeliStokGudang() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { id } = location.state || {};
-
+    const { id, fromLaporanKeuangan } = location.state || {};
     // Form states
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
@@ -474,7 +473,11 @@ export default function EditBeliStokGudang() {
 
     const handleAcc = () => {
         setModalSucc(false);
-        navigate('/pembelianStok');
+        if (fromLaporanKeuangan) {
+            navigate('/laporanKeuangan');   
+        } else {
+            navigate('/pembelianStok');
+        }
     };
 
     const resetSelection = () => {
@@ -484,7 +487,12 @@ export default function EditBeliStokGudang() {
 
     const subtotal = calculateSubtotal();
     const totalPenjualan = calculateTotalPenjualan(subtotal);
-    const breadcrumbItems = [
+    const breadcrumbItems = fromLaporanKeuangan 
+    ? [
+        { label: "Daftar Laporan Keuangan Toko", href: "/laporanKeuangan" },
+        { label: "Edit Pembelian", href: "" },
+    ]
+    : [
         { label: "Daftar Pembelian Stok", href: "/pembelianStok" },
         { label: "Edit Pembelian", href: "" },
     ];

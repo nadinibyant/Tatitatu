@@ -74,7 +74,7 @@ const EditPenjualanCustomKasir = () => {
     const mapPackagingProducts = (data) => data.map(item => ({
         packaging_id: item.packaging_id,
         nama_packaging: item.nama_packaging,
-        price: item.harga_jual,
+        price: 0, // Set price to 0 as per requirement
         image: item.image ? 
             `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
             "https://via.placeholder.com/50"
@@ -128,7 +128,10 @@ const EditPenjualanCustomKasir = () => {
                 })) : [],
                 packagingProducts: detail.produk.filter(p => p.packaging).map(item => ({
                     ...item,
-                    id: item.produk_penjualan_id || `packaging-${Date.now()}-${item.packaging?.packaging_id}`
+                    id: item.produk_penjualan_id || `packaging-${Date.now()}-${item.packaging?.packaging_id}`,
+                    // Set price-related fields to 0 for packaging items
+                    harga_satuan: 0,
+                    total_biaya: 0
                 }))
             });
         } catch (error) {
@@ -136,6 +139,41 @@ const EditPenjualanCustomKasir = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Regular headers for product tables
+    const headers = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
+        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
+        { label: 'Harga Satuan', key: 'Harga Satuan', align: 'text-left' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
+        { label: 'Total Biaya', key: 'Total Biaya', align: 'text-left' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
+    // Simplified headers for packaging table
+    const packagingHeaders = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
+        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
+        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
+    // Biaya headers
+    const biayaHeaders = [
+        { label: 'No', key: 'No', align: 'text-left' },
+        { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
+        { label: 'Jumlah Biaya', key: 'Jumlah Biaya', align: 'text-left', width: '110px' },
+        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
+    ];
+
+    // Helper function to get the appropriate headers based on table index
+    const getHeadersForTable = (index) => {
+        if (index === 1) return biayaHeaders;
+        if (index === 2) return packagingHeaders;
+        return headers;
     };
 
     const transformToTableData = () => [
@@ -149,11 +187,11 @@ const EditPenjualanCustomKasir = () => {
         },
         {
             nama: 'Packaging',
-            data: detailData.packagingProducts.map((item, idx) => createTableRow(item, idx, 'packaging'))
+            data: detailData.packagingProducts.map((item, idx) => createPackagingRow(item, idx))
         }
     ];
     
-
+    // Create row for custom products (with pricing)
     const createTableRow = (item, index, type) => {
         // Generate a unique ID if none exists
         const itemId = item.id || `${type}-${index}-${Date.now()}`;
@@ -201,6 +239,45 @@ const EditPenjualanCustomKasir = () => {
             Aksi: <button 
                 className="text-red-500 hover:text-red-700"
                 onClick={() => handleDeleteRow(type, itemId)}
+            >
+                Hapus
+            </button>
+        };
+    };
+
+    // New function to create packaging row (without pricing)
+    const createPackagingRow = (item, index) => {
+        const itemId = item.id || `packaging-${index}-${Date.now()}`;
+        
+        return {
+            id: itemId,
+            No: index + 1,
+            "Foto Produk": <img 
+                src={item.packaging?.image?.includes('http') ? 
+                    item.packaging.image : 
+                    `${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging?.image}`
+                }
+                alt="packaging" 
+                className="w-12 h-12" 
+            />,
+            "Nama Barang": <InputDropdown 
+                showRequired={false}
+                options={dataPackaging.map(pkg => ({
+                    value: pkg.packaging_id,
+                    label: pkg.nama_packaging
+                }))}
+                value={item.packaging?.packaging_id || item.packaging_id}
+                onSelect={(selected) => handleProductSelect('packaging', itemId, selected)}
+            />,
+            "Kuantitas": <Input
+                showRequired={false}
+                type="number"
+                value={item.kuantitas}
+                onChange={(value) => handleQuantityChange('packaging', itemId, value)}
+            />,
+            Aksi: <button 
+                className="text-red-500 hover:text-red-700"
+                onClick={() => handleDeleteRow('packaging', itemId)}
             >
                 Hapus
             </button>
@@ -291,26 +368,34 @@ const EditPenjualanCustomKasir = () => {
                 if (selectedProduct) {
                     const currentQuantity = items[itemIndex].kuantitas || 1;
                     
-                    items[itemIndex] = {
-                        ...items[itemIndex],
-                        id: itemId,
-                        kuantitas: currentQuantity,
-                        harga_satuan: selectedProduct.price,
-                        total_biaya: selectedProduct.price * currentQuantity
-                    };
-    
                     if (type === 'custom') {
-                        items[itemIndex].barang_custom = {
-                            barang_custom_id: selected.value,
-                            image: selectedProduct.image
+                        // For custom products, keep the price calculation
+                        items[itemIndex] = {
+                            ...items[itemIndex],
+                            id: itemId,
+                            kuantitas: currentQuantity,
+                            harga_satuan: selectedProduct.price,
+                            total_biaya: selectedProduct.price * currentQuantity,
+                            barang_custom: {
+                                barang_custom_id: selected.value,
+                                image: selectedProduct.image
+                            },
+                            barang_custom_id: selected.value
                         };
-                        items[itemIndex].barang_custom_id = selected.value;
                     } else {
-                        items[itemIndex].packaging = {
-                            packaging_id: selected.value,
-                            image: selectedProduct.image
+                        // For packaging, don't include pricing
+                        items[itemIndex] = {
+                            ...items[itemIndex],
+                            id: itemId,
+                            kuantitas: currentQuantity,
+                            harga_satuan: 0,
+                            total_biaya: 0,
+                            packaging: {
+                                packaging_id: selected.value,
+                                image: selectedProduct.image
+                            },
+                            packaging_id: selected.value
                         };
-                        items[itemIndex].packaging_id = selected.value;
                     }
                 }
             }
@@ -327,11 +412,23 @@ const EditPenjualanCustomKasir = () => {
             const itemIndex = items.findIndex(item => (item.produk_penjualan_id || item.id) === itemId);
             
             if (itemIndex !== -1) {
-                items[itemIndex] = {
-                    ...items[itemIndex],
-                    kuantitas: Number(newQuantity),
-                    total_biaya: items[itemIndex].harga_satuan * Number(newQuantity)
-                };
+                if (type === 'custom') {
+                    // For custom products, update price
+                    items[itemIndex] = {
+                        ...items[itemIndex],
+                        kuantitas: Number(newQuantity),
+                        total_biaya: items[itemIndex].harga_satuan * Number(newQuantity)
+                    };
+                } else {
+                    // For packaging, just update quantity
+                    items[itemIndex] = {
+                        ...items[itemIndex],
+                        kuantitas: Number(newQuantity),
+                        // Keep zero values for pricing fields
+                        harga_satuan: 0,
+                        total_biaya: 0
+                    };
+                }
             }
             
             return { ...prev, [key]: items };
@@ -352,20 +449,25 @@ const EditPenjualanCustomKasir = () => {
         const key = activeTable === 0 ? 'customProducts' : 'packagingProducts';
         
         const newItems = selectedItems.map(item => {
+            // Base item properties
             const newItem = {
                 id: `${key}-${Date.now()}-${item.id}`,
                 kuantitas: item.count,
-                harga_satuan: item.price,
-                total_biaya: item.price * item.count
             };
     
             if (activeTable === 0) {
+                // For custom products, include price
+                newItem.harga_satuan = item.price;
+                newItem.total_biaya = item.price * item.count;
                 newItem.barang_custom = {
                     barang_custom_id: item.id,
                     image: item.image
                 };
                 newItem.barang_custom_id = item.id;
             } else {
+                // For packaging, set price to 0
+                newItem.harga_satuan = 0;
+                newItem.total_biaya = 0; 
                 newItem.packaging = {
                     packaging_id: item.id,
                     image: item.image
@@ -389,39 +491,38 @@ const EditPenjualanCustomKasir = () => {
     };
 
     const calculateSubtotal = () => {
+        // Only include custom products and biaya products in calculation
         const customTotal = detailData.customProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
-        const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (item.jumlah_biaya || 0), 0);
-        const packagingTotal = detailData.packagingProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
-        return customTotal + biayaTotal + packagingTotal;
+        const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (Number(item.jumlah_biaya) || 0), 0);
+        // Packaging is excluded from calculation
+        return customTotal + biayaTotal;
     };
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (formData.diskon / 100) * subtotal;
-        return subtotal - diskonNominal + formData.pajak;
+        return subtotal - diskonNominal + Number(formData.pajak);
     };
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             setLoading(true);
         
-            const allProducts = [
-                ...detailData.customProducts.map(item => ({
-                    produk_penjualan_id: item.produk_penjualan_id, 
-                    barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
-                    harga_satuan: item.harga_satuan,
-                    kuantitas: item.kuantitas,
-                    total_biaya: item.total_biaya
-                })),
-                ...detailData.packagingProducts.map(item => ({
-                    produk_penjualan_id: item.produk_penjualan_id,
-                    packaging_id: item.packaging?.packaging_id || item.packaging_id,
-                    harga_satuan: item.harga_satuan,
-                    kuantitas: item.kuantitas,
-                    total_biaya: item.total_biaya
-                }))
-            ];
+            const customProducts = detailData.customProducts.map(item => ({
+                produk_penjualan_id: item.produk_penjualan_id, 
+                barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
+                harga_satuan: item.harga_satuan,
+                kuantitas: item.kuantitas,
+                total_biaya: item.total_biaya
+            }));
+            
+            const packagingProducts = detailData.packagingProducts.map(item => ({
+                produk_penjualan_id: item.produk_penjualan_id,
+                packaging_id: item.packaging?.packaging_id || item.packaging_id,
+                harga_satuan: 0, // Set to 0 as per requirement
+                kuantitas: item.kuantitas,
+                total_biaya: 0 // Set to 0 as per requirement
+            }));
 
             const allBiaya = detailData.biayaProducts.map(item => ({
                 rincian_biaya_custom_id: item.rincian_biaya_custom_id, 
@@ -441,12 +542,11 @@ const EditPenjualanCustomKasir = () => {
                 diskon: Number(formData.diskon),
                 pajak: Number(formData.pajak),
                 total_penjualan: calculateTotalPenjualan(calculateSubtotal()),
-                produk: allProducts,
+                produk: [...customProducts, ...packagingProducts],
                 rincian_biaya_custom: allBiaya
             };
     
             await api.put(`/penjualan/${id}`, payload);
-            // navigate('/penjualan-kasir')
             setModalSucc(true);
         } catch (error) {
             console.error('Error submitting:', error);
@@ -471,23 +571,6 @@ const EditPenjualanCustomKasir = () => {
           { label: "Edit Penjualan Custom", href: "" },
       ];
 
-    const headers = [
-        { label: 'No', key: 'No', align: 'text-left' },
-        { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
-        { label: 'Nama Barang', key: 'Nama Barang', align: 'text-left' },
-        { label: 'Harga Satuan', key: 'Harga Satuan', align: 'text-left' },
-        { label: 'Kuantitas', key: 'Kuantitas', align: 'text-left', width:'110px' },
-        { label: 'Total Biaya', key: 'Total Biaya', align: 'text-left' },
-        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
-    ];
-
-    const biayaHeaders = [
-        { label: 'No', key: 'No', align: 'text-left' },
-        { label: 'Nama Biaya', key: 'Nama Biaya', align: 'text-left' },
-        { label: 'Jumlah Biaya', key: 'Jumlah Biaya', align: 'text-left', width: '110px' },
-        { label: 'Aksi', key: 'Aksi', align: 'text-left' },
-    ];
-
     const dataBayar = [
         { value: 1, label: 'Cash' },
         { value: 2, label: 'Non-Cash' }
@@ -500,51 +583,50 @@ const EditPenjualanCustomKasir = () => {
                 <section className="bg-white p-5 mt-5 rounded-xl">
                     <form onSubmit={handleSubmit}>
                         {/* Basic form inputs */}
-                        {/* Basic form inputs */}
-                    <section>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Input 
-                                label="Nomor" 
-                                type="text" 
-                                value={formData.nomor} 
-                                onChange={(e) => setFormData(prev => ({...prev, nomor: e}))} 
-                            />
-                            <Input 
-                                label="Tanggal dan Waktu" 
-                                type1="datetime-local" 
-                                value={formData.tanggal} 
-                                onChange={(e) => setFormData(prev => ({...prev, tanggal: e}))} 
-                            />
-                            <Input 
-                                label="Nama Pembeli" 
-                                value={formData.namaPembeli} 
-                                onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
-                            />
-                            <InputDropdown 
-                                label="Cash/Non-Cash" 
-                                options={[
-                                    { value: 1, label: 'Cash' },
-                                    { value: 2, label: 'Non-Cash' }
-                                ]}
-                                value={formData.selectBayar}
-                                onSelect={(selected) => {
-                                    setFormData(prev => ({
-                                        ...prev, 
-                                        selectBayar: selected.value,
-                                        selectMetode: selected.value === 1 ? 0 : dataMetode[1].value 
-                                    }));
-                                    setIsMetodeDisabled(selected.value === 1);
-                                }}
-                            />
-                            <InputDropdown 
-                                label="Metode Pembayaran" 
-                                disabled={isMetodeDisabled}
-                                options={dataMetode}
-                                value={formData.selectMetode}
-                                onSelect={(selected) => setFormData(prev => ({...prev, selectMetode: selected.value}))}
-                            />
-                        </div>
-                    </section>
+                        <section>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Input 
+                                    label="Nomor" 
+                                    type="text" 
+                                    value={formData.nomor} 
+                                    onChange={(e) => setFormData(prev => ({...prev, nomor: e}))} 
+                                />
+                                <Input 
+                                    label="Tanggal dan Waktu" 
+                                    type1="datetime-local" 
+                                    value={formData.tanggal} 
+                                    onChange={(e) => setFormData(prev => ({...prev, tanggal: e}))} 
+                                />
+                                <Input 
+                                    label="Nama Pembeli" 
+                                    value={formData.namaPembeli} 
+                                    onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
+                                />
+                                <InputDropdown 
+                                    label="Cash/Non-Cash" 
+                                    options={[
+                                        { value: 1, label: 'Cash' },
+                                        { value: 2, label: 'Non-Cash' }
+                                    ]}
+                                    value={formData.selectBayar}
+                                    onSelect={(selected) => {
+                                        setFormData(prev => ({
+                                            ...prev, 
+                                            selectBayar: selected.value,
+                                            selectMetode: selected.value === 1 ? 0 : dataMetode[1].value 
+                                        }));
+                                        setIsMetodeDisabled(selected.value === 1);
+                                    }}
+                                />
+                                <InputDropdown 
+                                    label="Metode Pembayaran" 
+                                    disabled={isMetodeDisabled}
+                                    options={dataMetode}
+                                    value={formData.selectMetode}
+                                    onSelect={(selected) => setFormData(prev => ({...prev, selectMetode: selected.value}))}
+                                />
+                            </div>
+                        </section>
 
                         {/* Tables section */}
                         <section className="pt-10">
@@ -553,7 +635,7 @@ const EditPenjualanCustomKasir = () => {
                                     <p className="font-bold">{table.nama}</p>
                                     <div className="pt-5">
                                         <Table 
-                                            headers={index === 1 ? biayaHeaders : headers} 
+                                            headers={getHeadersForTable(index)} 
                                             data={table.data} 
                                         />
                                         <Button
@@ -709,7 +791,8 @@ const EditPenjualanCustomKasir = () => {
                                             image: item.image,
                                             code: item.packaging_id,
                                             name: item.nama_packaging,
-                                            price: item.price || item.harga_jual || item.harga
+                                            price: 0, // Set price to 0 for packaging
+                                            formattedPrice: '' // Hide price display for packaging
                                         }))
                                         : dataBarang.filter(item =>
                                             item.nama_barang?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
@@ -718,7 +801,8 @@ const EditPenjualanCustomKasir = () => {
                                             image: item.image,
                                             code: item.barang_custom_id,
                                             name: item.nama_barang,
-                                            price: item.price || item.harga_jual || item.harga
+                                            price: item.price || item.harga_jual || item.harga,
+                                            formattedPrice: `Rp${(item.price || item.harga_jual || item.harga).toLocaleString('id-ID')}`
                                         }))
                                     }
                                     onSelect={(item, count) => {
@@ -761,13 +845,13 @@ const EditPenjualanCustomKasir = () => {
 
                 {isLoading && <Spinner />}
 
-                    {errorMessage && (
-                        <AlertError
-                            title={'Failed'}
-                            description={errorMessage}
-                            onConfirm={() => setErrorMessage(null)}
-                        />
-                    )}
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
             </div>
         </LayoutWithNav>
     );

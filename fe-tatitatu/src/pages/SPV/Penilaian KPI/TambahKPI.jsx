@@ -19,6 +19,7 @@ export default function TambahKPI(){
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isHeadGudang = userData.role === 'headgudang'
+    const [totalCalculatedBonus, setTotalCalculatedBonus] = useState(0);
     
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
@@ -402,7 +403,20 @@ export default function TambahKPI(){
         setDaysInMonth(moment(startDate).daysInMonth());
       }, [startDate]);
 
+      const calculateAdjustedBonus = (kpiBonus, kpiPercentage) => {
+        const adjustedBonus = kpiBonus * (kpiPercentage / 100);
+        return Math.round(adjustedBonus);
+      };
 
+      useEffect(() => {
+        if (data.kpiList.length > 0) {
+          const calculatedTotal = data.kpiList.reduce((total, kpi) => {
+            return total + calculateAdjustedBonus(kpi.stats.bonus, kpi.percentage);
+          }, 0);
+          
+          setTotalCalculatedBonus(calculatedTotal);
+        }
+      }, [data.kpiList]);
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
@@ -465,7 +479,7 @@ export default function TambahKPI(){
                         {/* Bagian Bonus Diterima */}
                         <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0">
                         <p className="text-sm">Bonus Diterima</p>
-                        <p className="font-bold text-lg">Rp{formatNumberWithDots(data.bonus)}</p>
+                        <p className="font-bold text-lg">Rp{formatNumberWithDots(totalCalculatedBonus)}</p>
                         </div>
                     </div>
                 </section>
@@ -620,7 +634,7 @@ export default function TambahKPI(){
                                         <div className="">
                                             <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
                                             <p className="text-primary font-bold text-start">
-                                                Rp{formatNumberWithDots(kpi.stats.bonus)}
+                                                Rp{formatNumberWithDots(calculateAdjustedBonus(kpi.stats.bonus, kpi.percentage))}
                                             </p>
                                         </div>
                                     </div>

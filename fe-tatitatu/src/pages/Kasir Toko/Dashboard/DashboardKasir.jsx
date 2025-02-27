@@ -10,15 +10,96 @@ export default function DashboardKasir(){
     const navigate = useNavigate()
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
-    const monthValue = `${selectedYear}-${selectedMonth}`;
+    const [transactions, setTransactions] = useState([]);
+    const [topProducts, setTopProducts] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [targetBulanan, setTargetBulanan] = useState({
         target: 0,
         tercapai: 0
     });
     const userData = JSON.parse(localStorage.getItem('userData'))
     const cabang_id = userData.userId
-    console.log(cabang_id)
 
+    const getProductImagePath = (product) => {
+        switch (product.kategori) {
+            case 'Handmade':
+                return `${import.meta.env.VITE_API_URL}/images-barang-handmade/${product.image}`;
+            case 'Non Handmade':
+                return `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${product.image}`;
+            case 'Custom':
+                return `${import.meta.env.VITE_API_URL}/images-barang-custom/${product.image}`;
+            case 'Packaging':
+                return `${import.meta.env.VITE_API_URL}/images-packaging/${product.image}`;
+            default:
+                return '/icon/produk.svg';
+        }
+    };
+
+    const fetchTopProducts = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get('/produk-penjualan/terlaris', {
+                params: {
+                    bulan: selectedMonth,
+                    tahun: selectedYear,
+                    cabang: cabang_id
+                }
+            });
+
+            if (response.data.success) {
+                const transformedTopProducts = response.data.data.map((product, index) => ({
+                    No: index + 1,
+                    Foto: product.image ? getProductImagePath(product) : '/icon/produk.svg',
+                    "Nama Barang": product.name,
+                    Terjual: product.total_terjual,
+                    Kategori: product.kategori
+                }));
+
+                setTopProducts(transformedTopProducts);
+            }
+        } catch (error) {
+            console.error('Error fetching top products:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Fetch transactions
+    const fetchTransactions = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get('/penjualan', {
+                params: {
+                    bulan: selectedMonth,
+                    tahun: selectedYear,
+                    cabang: cabang_id
+                }
+            });
+
+            if (response.data.success) {
+                // Transform the data to match the existing table structure
+                const transformedTransactions = response.data.data.map(transaction => ({
+                    Nomor: transaction.penjualan_id,
+                    Tanggal: moment(transaction.tanggal).format('DD/MM/YYYY'),
+                    items: transaction.produk.map(produk => 
+                        produk.barang_handmade?.nama_barang || 
+                        produk.barang_non_handmade?.nama_barang || 
+                        produk.barang_custom?.nama_barang || 
+                        'Produk Tidak Dikenal'
+                    ),
+                    "Total Transaksi": transaction.total_penjualan
+                }));
+
+                setTransactions(transformedTransactions);
+            }
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Existing methods...
     const fetchTargetBulanan = async () => {
         try {
             if (!cabang_id) return;
@@ -52,15 +133,10 @@ export default function DashboardKasir(){
         }
     };
 
-    const handleMonthChange = (e) => {
-        const value = e.target.value;
-        const [year, month] = value.split('-');
-        setSelectedMonth(month);
-        setSelectedYear(year);
-    };
-
     useEffect(() => {
         fetchTargetBulanan();
+        fetchTransactions();
+        fetchTopProducts();
     }, [selectedMonth, cabang_id]);
 
     useEffect(() => {
@@ -71,73 +147,7 @@ export default function DashboardKasir(){
         }
     }, [navigate]);
 
-    // Data untuk target dan penjualan
-    const [data, setData] = useState({
-        target: {
-            tercapai: 1500000,
-            tersisa: 2500000
-        },
-        barang_terlaris: [
-            { 
-                No: 1,
-                Foto: '/icon/produk.svg',
-                "Nama Barang": "Mutiara Hitam",
-                Terjual: 1001
-            },
-            { 
-                No: 2,
-                Foto: '/icon/produk.svg',
-                "Nama Barang": "Mutiara Hitam",
-                Terjual: 1001
-            },
-            { 
-                No: 3,
-                Foto: '/icon/produk.svg',
-                "Nama Barang": "Mutiara Hitam",
-                Terjual: 1001
-            },
-        ],
-        transaksi: [
-            {
-                Nomor: "STK1323",
-                Tanggal: "31/05/2024",
-                items: [
-                    "Gelang Barbie",
-                    "Gelang Bulan",
-                    "Kalung Mutiara",
-                    "Cincin Perak",
-                    "Gelang Perak"
-                ],
-                "Total Transaksi": 200000
-            },
-            {
-                Nomor: "STK1324",
-                Tanggal: "31/05/2024",
-                items: [
-                    "Gelang Emas",
-                    "Kalung Emas"
-                ],
-                "Total Transaksi": 350000
-            },
-            {
-                Nomor: "STK1325",
-                Tanggal: "31/05/2024",
-                items: [
-                    "Gelang Silver"
-                ],
-                "Total Transaksi": 150000
-            }
-        ]
-    });
-
     // Headers untuk kedua tabel
-    const headersBarangTerlaris = [
-        { label: "#", key: "No", align: "text-left" },
-        { label: "Foto", key: "Foto", align: "text-left" },
-        { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
-        { label: "Terjual", key: "Terjual", align: "text-center" },
-    ];
-
     const headersTransaksi = [
         { label: "Nomor", key: "Nomor", align: "text-left" },
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
@@ -145,10 +155,18 @@ export default function DashboardKasir(){
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
     ];
 
+    const headersBarangTerlaris = [
+        { label: "#", key: "No", align: "text-left" },
+        { label: "Foto", key: "Foto", align: "text-left" },
+        { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
+        { label: "Terjual", key: "Terjual", align: "text-center" },
+        { label: "Kategori", key: "Kategori", align: "text-left" },
+    ];
+
     const formatNamaBarang = (items) => {
-    if (items.length <= 2) {
-        return items.join(", ");
-    }
+        if (items.length <= 2) {
+            return items.join(", ");
+        }
         return `${items[0]}, ${items[1]}, +${items.length - 2} Lainnya`;
     };
 
@@ -157,22 +175,25 @@ export default function DashboardKasir(){
             <div className="p-5">
                 {/* Header section */}
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
-                        <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Dashboard</p>
-                        </div>
+                    <div className="left w-full md:w-auto">
+                        <p className="text-primary text-base font-bold">Dashboard</p>
+                    </div>
 
-                        <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                            <div className="w-full md:w-auto">
-                                <input 
-                                    type="month"
-                                    value={monthValue}
-                                    onChange={handleMonthChange}
-                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    style={{ maxWidth: '200px' }}
-                                />
-                            </div>
+                    <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
+                        <div className="w-full md:w-auto">
+                            <input
+                                type="month"
+                                value={`${selectedYear}-${selectedMonth}`}
+                                onChange={(e) => {
+                                    const date = moment(e.target.value);
+                                    setSelectedMonth(date.format('MM'));
+                                    setSelectedYear(date.format('YYYY'));
+                                }}
+                                className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                            />
                         </div>
-                    </section>
+                    </div>
+                </section>
 
                 {/* Target section */}
                 <section className="mt-5">
@@ -207,7 +228,7 @@ export default function DashboardKasir(){
                         <div className="mt-4">
                             <Table
                                 headers={headersTransaksi}
-                                data={data.transaksi.map(item => ({
+                                data={transactions.map(item => ({
                                     ...item,
                                     "Nama Barang": formatNamaBarang(item.items),
                                     "Total Transaksi": `Rp${item["Total Transaksi"].toLocaleString('id-ID')}`
@@ -223,9 +244,9 @@ export default function DashboardKasir(){
                         <h2 className="font-bold mb-4">10 Barang Terlaris Cabang</h2>
                         <Table
                             headers={headersBarangTerlaris}
-                            data={data.barang_terlaris.map(item => ({
+                            data={topProducts.map(item => ({
                                 ...item,
-                                Terjual:`${item.Terjual.toLocaleString('id-ID')} Pcs`,
+                                Terjual: `${item.Terjual.toLocaleString('id-ID')} Pcs`,
                                 Foto: <img src={item.Foto} alt={item["Nama Barang"]} className="w-8 h-8"/>
                             }))}
                             hasSearch={false}

@@ -7,6 +7,8 @@ import moment from "moment";
 import Table from "../../../components/Table";
 import { useNavigate } from "react-router-dom";
 import InputDropdown from "../../../components/InputDropdown";
+import axios from 'axios'; // Make sure to install axios
+import api from "../../../utils/api";
 
 export default function KaryawanGaji() {
     const navigate = useNavigate();
@@ -18,9 +20,100 @@ export default function KaryawanGaji() {
     const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    
+    // State for filter options
+    const [filterOptions, setFilterOptions] = useState({
+        divisi: [{ label: "Semua", value: "Semua" }],
+        toko: [{ label: "Semua", value: "Semua" }],
+        cabang: [{ label: "Semua", value: "Semua" }]
+    });
+
+    // State for selected filters
     const [selectedDivisi, setSelectedDivisi] = useState("Semua")
     const [selectedToko, setSelectedToko] = useState("Semua")
     const [selectedCabang, setSelectedCabang] = useState("Semua")
+    const [cabangData, setCabangData] = useState([])
+    
+    // State for API data
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchFilterOptions = async () => {
+            try {
+                // Fetch divisi
+                const divisiResponse = await api.get('/divisi-karyawan');
+                const divisiOptions = [
+                    { label: "Semua", value: "Semua" },
+                    ...divisiResponse.data.data.map(divisi => ({
+                        label: divisi.nama_divisi,
+                        value: divisi.nama_divisi
+                    }))
+                ];
+
+                // Fetch toko
+                const tokoResponse = await api.get('/toko');
+                const tokoOptions = [
+                    { label: "Semua", value: "Semua" },
+                    ...tokoResponse.data.data.map(toko => ({
+                        label: toko.nama_toko,
+                        value: toko.nama_toko
+                    }))
+                ];
+
+                // Fetch cabang
+                const cabangResponse = await api.get('/cabang');
+                const cabangOptions = [
+                    { label: "Semua", value: "Semua" },
+                    ...cabangResponse.data.data.map(cabang => ({
+                        label: cabang.nama_cabang,
+                        value: cabang.nama_cabang
+                    }))
+                ];
+
+                setFilterOptions({
+                    divisi: divisiOptions,
+                    toko: tokoOptions,
+                    cabang: cabangOptions
+                });
+            } catch (err) {
+                console.error('Error fetching filter options:', err);
+                setError(err.response?.data?.message || 'An error occurred while fetching filter options');
+            }
+        };
+
+        fetchFilterOptions();
+    }, []);
+
+    useEffect(() => {
+        const fetchCabangData = async () => {
+            try {
+                const response = await api.get('/cabang');
+                
+                if (response.data.success) {
+                    const transformedCabangData = [
+                        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+                        ...response.data.data.map(cabang => ({
+                            label: cabang.nama_cabang,
+                            value: cabang.nama_cabang,
+                            icon: '/icon/toko.svg'
+                        }))
+                    ];
+                    
+                    setCabangData(transformedCabangData);
+                } else {
+                    setError(response.data.message);
+                }
+            } catch (err) {
+                console.error('Error fetching cabang data:', err);
+                setError(err.response?.data?.message || 'An error occurred while fetching cabang data');
+            }
+        };
+
+        fetchCabangData();
+    }, []);
+
     const formatCurrency = (number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -31,42 +124,7 @@ export default function KaryawanGaji() {
     };
 
     const [editedPotongan, setEditedPotongan] = useState({});
-    const [data, setData] = useState([
-        {
-            id: 1,
-            Nama: 'Hamzah Abdillah Arif',
-            Divisi: 'SPV',
-            Toko: 'Tatitatu',
-            Cabang: 'GOR. Haji Agus Salim',
-            "Potongan Gaji": 35000,
-            "Total Gaji Akhir": 350000,
-            isEditing: false
-        },
-        {
-            id: 2,
-            Nama: 'Hamzah Abdillah Arif',
-            Divisi: 'Transportasi',
-            Toko: 'Toko Dini',
-            Cabang: 'Lubeg',
-            "Potongan Gaji": 35000,
-            "Total Gaji Akhir": 350000,
-            isEditing: false
-        },
-        {
-            id: 3,
-            Nama: 'Hamzah Abdillah Arif',
-            Divisi: 'Produksi',
-            Toko: 'Toko Hamzah',
-            Cabang: 'Lumin',
-            "Potongan Gaji": 35000,
-            "Total Gaji Akhir": 350000,
-            isEditing: false
-        },
-
-    ]);
-
     const [isEditing, setIsEditing] = useState(false);
-    const [editedData, setEditedData] = useState(data);
 
     const headers = [
         { label: "No", key: "No", align: "text-left" },
@@ -78,6 +136,60 @@ export default function KaryawanGaji() {
         { label: "Total Gaji Akhir", key: "Total Gaji Akhir", align: "text-left" }
     ];
 
+    // Fetch data from API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const monthMapping = {
+                    'January': '01',
+                    'February': '02',
+                    'March': '03',
+                    'April': '04',
+                    'May': '05',
+                    'June': '06',
+                    'July': '07',
+                    'August': '08',
+                    'September': '09',
+                    'October': '10',
+                    'November': '11',
+                    'December': '12'
+                };
+        
+                const formattedMonth = monthMapping[selectedMonth] || moment().format('MM');
+                
+                setLoading(true);
+                const response = await api.get(`/absensi-karyawan/${formattedMonth}/${selectedYear}`);
+
+                if (response.data.success) {
+                    const transformedData = response.data.data.map((item, index) => ({
+                        id: item.karyawan.karyawan_id,
+                        No: index + 1,
+                        Nama: item.karyawan.nama_karyawan,
+                        toko_id: item.karyawan.toko_id,
+                        Divisi: item.karyawan.divisi.nama_divisi,
+                        Toko: item.karyawan.toko.nama_toko,
+                        Cabang: item.karyawan.cabang ? item.karyawan.cabang.nama_cabang : "-",
+                        "Potongan Gaji": 0,
+                        "Total Gaji Akhir": item.totalGajiAkhir,
+                        "waktu_kerja_sebulan_menit": item.karyawan.waktu_kerja_sebulan_menit || null,
+                        "waktu_kerja_sebulan_antar": item.karyawan.waktu_kerja_sebulan_antar || null
+                    }));
+
+                    setData(transformedData);
+                } else {
+                    setError(response.data.message);
+                }
+            } catch (err) {
+                setError(err.response?.data?.message || 'An error occurred while fetching data');
+                console.error('Error fetching data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [selectedMonth, selectedYear]);
+
     const handleFilterClick = (event) => {
         const buttonRect = event.currentTarget.getBoundingClientRect();
         setFilterPosition({
@@ -85,11 +197,6 @@ export default function KaryawanGaji() {
           left: buttonRect.left + window.scrollX
         });
         setIsFilterModalOpen(prev => !prev);
-      };
-
-    const handleSalaryDeduction = () => {
-        // Handle salary deduction logic
-        console.log("Salary deduction clicked");
     };
 
     const filteredData = data.filter(item => {
@@ -103,16 +210,16 @@ export default function KaryawanGaji() {
         setIsFilterModalOpen(false);
     };
 
-    const dataCabang = [
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    ];
+    // const dataCabang = [
+    //     { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+    //     { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
+    //     { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
+    // ];
 
     const handlePotongGajiChange = (id, value) => {
         const potongan = parseInt(value.replace(/\D/g, '')) || 0;
         const item = data.find(item => item.id === id);
-        const gajiAwal = item["Total Gaji Akhir"] + item["Potongan Gaji"]; // gaji sebelum potongan
+        const gajiAwal = item["Total Gaji Akhir"]; // existing total salary
         
         setEditedPotongan(prev => ({
             ...prev,
@@ -122,6 +229,7 @@ export default function KaryawanGaji() {
             }
         }));
     };
+
     const handleSelesai = () => {
         setData(prev => prev.map(item => ({
             ...item,
@@ -132,20 +240,71 @@ export default function KaryawanGaji() {
         setIsEditing(false);
     };
     
-
     const handleBatal = () => {
         setEditedPotongan({});
         setIsEditing(false);
     };
 
+    // const handleRowClick = (row) => {
+    //     navigate('/karyawan-absen-gaji/detail', { state: { id: row.id, divisi: row.Divisi } });
+    // }
+
     const handleRowClick = (row) => {
-        navigate('/karyawan-absen-gaji/detail', { state: { id: row.id, divisi: row.Divisi } });
-    }
+        const employeeData = data.find(item => item.id === row.id);
+        console.log(employeeData)
+        let divisiType;
+        if (employeeData.toko_id === 1) {
+            if (employeeData.waktu_kerja_sebulan_antar === null) {
+                divisiType = "Produksi";
+            } else if (employeeData.waktu_kerja_sebulan_menit === null) {
+                divisiType = "Transportasi";
+            }
+        } else {
+            divisiType = employeeData.waktu_kerja_sebulan_antar === null || employeeData.waktu_kerja_sebulan_antar === "null" ? "Umum" : "Transportasi";
+        }
+        
+        navigate('/dataKaryawanAbsenGaji/detail', { 
+            state: { 
+                id: row.id, 
+                divisi: divisiType 
+            } 
+        });
+    };
 
     const handleAddBayar = () => {
-        navigate('/karyawan-absen-gaji/bayar-gaji')
+        navigate('/karyawan-absen-gaji/bayar-gaji', { 
+            state: { 
+                selectedMonth: selectedMonth,
+                selectedYear: selectedYear,
+                selectedCabang: selectedStore,
+                karyawanData: data.map(item => ({
+                    id: item.id,
+                    nama: item.Nama,
+                    divisi: item.Divisi,
+                    toko: item.Toko,
+                    cabang: item.Cabang,
+                    potonganGaji: item["Potongan Gaji"],
+                    totalGajiAkhir: item["Total Gaji Akhir"]
+                }))
+            } 
+        });
     }
-    
+    // Render loading or error states
+    if (loading) {
+        return (
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
+                <div className="p-5">Loading...</div>
+            </LayoutWithNav>
+        );
+    }
+
+    if (error) {
+        return (
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
+                <div className="p-5 text-red-500">Error: {error}</div>
+            </LayoutWithNav>
+        );
+    }
 
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -170,7 +329,7 @@ export default function KaryawanGaji() {
                         <div className="w-44 md:w-44">
                             <ButtonDropdown 
                                 selectedIcon={'/icon/toko.svg'} 
-                                options={dataCabang} 
+                                options={cabangData} 
                                 onSelect={(value) => setSelectedStore(value)} 
                             />
                         </div>
@@ -210,16 +369,16 @@ export default function KaryawanGaji() {
                     <div className="p-5">
                         <Table
                             headers={headers}
-                            data={filteredData.map((item, index) => ({
+                            data={filteredData.map((item) => ({
                                 ...item,
-                                No: index + 1,
                                 "Potongan Gaji": isEditing ? (
-                                    <div className="flex items-center">
+                                    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                         <span className="mr-1">-Rp</span>
                                         <input
                                             type="text"
                                             value={editedPotongan[item.id]?.potongan?.toLocaleString() || item["Potongan Gaji"].toLocaleString()}
                                             onChange={(e) => handlePotongGajiChange(item.id, e.target.value)}
+                                            onClick={(e) => e.stopPropagation()} 
                                             className="w-24 border border-gray-300 rounded px-2 py-1 text-right"
                                             placeholder="0"
                                         />
@@ -252,10 +411,10 @@ export default function KaryawanGaji() {
                                         <Button
                                             label="Potong Gaji"
                                             icon={<svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>}
+                                                <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>}
                                             onClick={() => setIsEditing(true)}
                                             bgColor="border border-secondary"
                                             textColor="text-black"
@@ -286,36 +445,21 @@ export default function KaryawanGaji() {
                         <div className="space-y-4">
                             <InputDropdown
                             label="Divisi"
-                            options={[
-                                { label: "Semua", value: "Semua" },
-                                { label: "SPV", value: "SPV" },
-                                { label: "Transportasi", value: "Transportasi" },
-                                { label: "Produksi", value: "Produksi" }
-                            ]}
+                            options={filterOptions.divisi}
                             value={selectedDivisi}
                             onSelect={(value) => setSelectedDivisi(value.value)}
                             required={true}
                             />
                             <InputDropdown
                             label="Toko"
-                            options={[
-                                { label: "Semua", value: "Semua" },
-                                { label: "Tatitatu", value: "Tatitatu" },
-                                { label: "Toko Dini", value: "Toko Dini" },
-                                { label: "Toko Dila", value: "Toko Dila" }
-                            ]}
+                            options={filterOptions.toko}
                             value={selectedToko}
                             onSelect={(value) => setSelectedToko(value.value)}
                             required={true}
                             />
                             <InputDropdown
                             label="Cabang"
-                            options={[
-                                { label: "Semua", value: "Semua" },
-                                { label: "Gor Agus", value: "Gor Agus" },
-                                { label: "Lubeg", value: "Lubeg" },
-                                { label: "Lumin", value: "Lumin" }
-                            ]}
+                            options={filterOptions.cabang}
                             value={selectedCabang}
                             onSelect={(value) => setSelectedCabang(value.value)}
                             required={true}
@@ -329,7 +473,7 @@ export default function KaryawanGaji() {
                         </div>
                         </div>
                     </>
-                    )}
+                )}
             </div>
         </LayoutWithNav>
     );

@@ -86,6 +86,7 @@ import DetailPenjualanGudang from './pages/Admin Gudang/Penjualan/DetailPenjuala
 import TambahPenjualanGudang from './pages/Admin Gudang/Penjualan/TambahPenjualanGudang';
 import EditPenjualanGudangAdmin from './pages/Admin Gudang/Penjualan/EditPenjualanGudang';
 import TambahBarangNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
+import Profile from './pages/Profile';
 
 
 function App() {
@@ -168,9 +169,9 @@ function App() {
 
         {/* Pembelian Stok Routes */}
         <Route path='/pembelianStok' element={getProtectedRoute(PembelianStok, ['admin', 'admingudang'])} />
-        <Route path='/pembelianStok/detail' element={getProtectedRoute(DetailPembelianStok, ['admin', 'admingudang', 'finance'])} />
+        <Route path='/pembelianStok/detail' element={getProtectedRoute(DetailPembelianStok, ['admin', 'admingudang', 'finance', 'owner', 'manajer', 'headgudang'])} />
         <Route path='/pembelianStok/tambah' element={getProtectedRoute(TambahPembelianStok, ['admin'])} />
-        <Route path='/pembelianStok/edit' element={getProtectedRoute(EditPembelianStok, ['admin', 'finance'])} />
+        <Route path='/pembelianStok/edit' element={getProtectedRoute(EditPembelianStok, ['admin', 'finance', 'owner', 'manajer'])} />
 
         {/* pembelian stok admin gudang */}
         <Route path='/pembelianStok/tambah-admin-gudang' element={getProtectedRoute(TambahBeliStokGudang, ['admingudang'])} />
@@ -187,11 +188,17 @@ function App() {
         <Route path='/laporanKeuangan/pengeluaran' element={getProtectedRoute(Pengeluaran, ['admin', 'headgudang', 'owner', 'manajer'])} />
         <Route path='/laporanKeuangan/pengeluaran/gaji' element={getProtectedRoute(PengeluaranGaji, ['admin', 'headgudang', 'owner', 'manajer'])} />
 
-        <Route path='/laporanKeuangan/pengeluaran/detail' element={getProtectedRoute(DetailPengeluaran, ['finance'])} />
-        <Route path='/laporanKeuangan/pemasukan-non-penjualan/detail' element={getProtectedRoute(DetailPemasukan, ['finance'])} />
-        <Route path='/laporanKeuangan/pemasukan/penjualan/detail' element={getProtectedRoute(DetailPenjualanKasir, ['finance'])} />
-        <Route path='/laporanKeuangan/pemasukan/penjualan-custom/:id' element={getProtectedRoute(EditPenjualanCustomKasir, ['finance'])} />
-        <Route path='/laporanKeuangan/pemasukan/penjualan-non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['finance'])} />
+        <Route path='/laporanKeuangan/pengeluaran/detail' element={getProtectedRoute(DetailPengeluaran, ['finance', 'owner', 'admin', 'manajer', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan-non-penjualan/detail' element={getProtectedRoute(DetailPemasukan, ['finance', 'owner', 'admin', 'manajer', 'headgudang'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan/detail' element={getProtectedRoute(DetailPenjualanKasir, ['finance', 'owner', 'admin', 'manajer'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan-custom/:id' element={getProtectedRoute(EditPenjualanCustomKasir, ['finance', 'owner', 'admin', 'manajer'])} />
+        <Route path='/laporanKeuangan/pemasukan/penjualan-non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['finance', 'owner', 'admin', 'manajer'])} />
+
+
+        <Route path='/laporanKeuangan/penjualan-gudang/detail' element={getProtectedRoute(DetailPenjualanGudang, ['headgudang'])} />
+        <Route path='/laporanKeuangan/pembelian-gudang/edit' element={getProtectedRoute(EditBeliStokGudang, ['headgudang'])} />
+
+
 
 
         {/* Penjualan Routes */}
@@ -199,7 +206,7 @@ function App() {
         <Route path='/penjualanToko/detail' element={getProtectedRoute(DetailPenjualan)} />
         <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanCustom)} />
         <Route path='/penjualanToko/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNon)} />
-        <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanNon)} />
+        {/* <Route path='/penjualanToko/edit/custom/:id' element={getProtectedRoute(EditPenjualanNon)} /> */}
 
         {/* penjualan kasir toko */}
         <Route path='/penjualan-kasir' element={getProtectedRoute(PenjualanKasir, ['kasirtoko'])} />
@@ -214,7 +221,7 @@ function App() {
         <Route path='/penjualan-admin-gudang/tambah' element={getProtectedRoute(TambahPenjualanGudang, ['admingudang'])} />
         {/* <Route path='/penjualan-admin-gudang/tambah/custom' element={getProtectedRoute(TambahPenjualanCustom, ['admingudang'])} /> */}
         <Route path='/penjualan-admin-gudang/detail' element={getProtectedRoute(DetailPenjualanGudang, ['admingudang'])} />
-        <Route path='/penjualan-admin-gudang/edit/:id' element={getProtectedRoute(EditPenjualanGudangAdmin, ['admingudang'])} />
+        <Route path='/penjualan-admin-gudang/edit/:id' element={getProtectedRoute(EditPenjualanGudangAdmin, ['admingudang', 'headgudang'])} />
         {/* <Route path='/penjualan-admin-gudang/edit/non-custom/:id' element={getProtectedRoute(EditPenjualanNonCustomKasir, ['admingudang'])} /> */}
 
         {/* KPI Routes */}
@@ -226,7 +233,7 @@ function App() {
 
         {/* Karyawan Routes */}
         <Route path='/dataKaryawanAbsenGaji' element={getProtectedRoute(Karyawan, ['admin', 'headgudang'])} />
-        <Route path='/dataKaryawanAbsenGaji/detail' element={getProtectedRoute(DetailKaryawan, ['admin', 'headgudang'])} />
+        <Route path='/dataKaryawanAbsenGaji/detail' element={getProtectedRoute(DetailKaryawan, ['admin', 'headgudang', 'manajer'])} />
 
         {/* Other Routes */}
         <Route path='/daftarCabang' element={getProtectedRoute(Cabang)} />
@@ -284,6 +291,9 @@ function App() {
         <Route path='/karyawan-absen-gaji/detail' element={getProtectedRoute(DetailKaryawanGaji, ['manajer'])} />
         <Route path='/karyawan-absen-gaji/bayar-gaji' element={getProtectedRoute(BayarGaji, ['manajer'])} />
         <Route path='/toko' element={getProtectedRoute(Toko, ['manajer'])} />
+
+
+        <Route path='/profile' element={getProtectedRoute(Profile, ['admin', 'owner', 'finance', 'manajer', 'headgudang', 'admingudang', 'kasirtoko', 'karyawanumum', 'karyawanproduksi', 'karyawantransportasi'])} />
         
       </Routes>
     </Router>

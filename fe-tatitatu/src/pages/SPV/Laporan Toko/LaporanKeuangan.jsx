@@ -44,15 +44,6 @@ export default function LaporanKeuangan() {
     const [tokoOptions, setTokoOptions] = useState([{ label: "Semua", value: "Semua" }]);
     const [kategoriOptions, setKategoriOptions] = useState([{ label: "Semua", value: "Semua" }]);
 
-    const monthValue = `${selectedYear}-${selectedMonth}`;
-
-    const handleMonthChange = (e) => {
-      const value = e.target.value; 
-      const [year, month] = value.split('-');
-      setSelectedMonth(month);
-      setSelectedYear(year);
-    };
-
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
       setFilterPosition({
@@ -70,29 +61,43 @@ export default function LaporanKeuangan() {
     const isHeadGudang = userData?.role === 'headgudang';
     const isOwner = userData?.role === 'owner';
     const isFinance = userData?.role === 'finance';
+    const isAdmin = userData?.role === 'admin'
+    const toko_id = userData?.userId
 
     // Fetch toko data
     useEffect(() => {
-        const fetchToko = async () => {
+        const fetchTokoOrCabang = async () => {
             try {
-                const response = await api.get('/toko');
-                if (response.data.success) {
-                    const options = response.data.data.map(item => ({
-                        value: item.nama_toko,
-                        label: item.nama_toko,
-                        icon: '/icon/toko.svg'
-                    }));
-                    setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                if (isAdmin) {
+                    const response = await api.get(`/cabang?toko_id=${toko_id}`);
+                    if (response.data.success) {
+                        const options = response.data.data.map(item => ({
+                            value: item.nama_cabang,
+                            label: item.nama_cabang,
+                            icon: '/icon/toko.svg'
+                        }));
+                        setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                    }
+                } 
+                else {
+                    const response = await api.get('/toko');
+                    if (response.data.success) {
+                        const options = response.data.data.map(item => ({
+                            value: item.nama_toko,
+                            label: item.nama_toko,
+                            icon: '/icon/toko.svg'
+                        }));
+                        setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                    }
                 }
             } catch (error) {
-                console.error('Error fetching toko data:', error);
+                console.error('Error fetching toko/cabang data:', error);
             }
         };
         
-        fetchToko();
-    }, []);
+        fetchTokoOrCabang();
+    }, [toko_id, isAdmin]);
 
-    // Fetch kategori data (combine pemasukan and pengeluaran)
     useEffect(() => {
         const fetchKategori = async () => {
             try {
@@ -112,13 +117,12 @@ export default function LaporanKeuangan() {
                 const pengeluaranResponse = await api.get('/kategori-pengeluaran');
                 if (pengeluaranResponse.data.success) {
                     const pengeluaranOptions = pengeluaranResponse.data.data.map(item => ({
-                        value: item.kategori_pengeluaran || item.kategori_pemasukan, // Adjust based on your API response
+                        value: item.kategori_pengeluaran || item.kategori_pemasukan, 
                         label: item.kategori_pengeluaran || item.kategori_pemasukan
                     }));
                     kategoriOptions = [...kategoriOptions, ...pengeluaranOptions];
                 }
                 
-                // Remove duplicates and prepend "Semua" option
                 const uniqueOptions = Array.from(new Set(kategoriOptions.map(option => option.value)))
                     .map(value => {
                         return kategoriOptions.find(option => option.value === value);
@@ -133,21 +137,23 @@ export default function LaporanKeuangan() {
         fetchKategori();
     }, []);
 
-    // Fetch laporan keuangan data based on date range
     useEffect(() => {
         const fetchLaporanKeuangan = async () => {
             setLoading(true);
             try {
-                // Calculate start and end dates for the selected month
                 const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
                 const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
                 
-                const response = await api.get(`/laporan-keuangan?startDate=${startDate}&endDate=${endDate}`);
+                let url = `/laporan-keuangan?startDate=${startDate}&endDate=${endDate}`;
+                if (isAdmin || isHeadGudang) {
+                    url += `&toko_id=${toko_id}`;
+                }
+
+                const response = await api.get(url);
                 
                 if (response.data.success) {
                     const apiData = response.data.data;
                     
-                    // Transform the API response to match your existing data structure
                     const transformedData = {
                         keuntungan: apiData.keuntungan || 0,
                         pemasukan: apiData.total_pemasukan || 0,
@@ -239,13 +245,14 @@ export default function LaporanKeuangan() {
         };
         
         fetchLaporanKeuangan();
-    }, [selectedMonth, selectedYear]);
+    }, [selectedMonth, selectedYear, isAdmin, toko_id, selectedStore]);
 
     const headers = [
         { label: "Nomor", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-left" },
         { label: "Deskripsi", key: "deskripsi", align: "text-left" },
-        { label: isOwner || isFinance ? "Toko" : "Cabang", key: isOwner || isFinance ? "toko" : "cabang", align: "text-left" },
+        { label: isOwner || isFinance || isAdmin ? (isAdmin ? "Cabang" : "Toko") : "Cabang", 
+          key: isOwner || isFinance ? "toko" : "cabang", align: "text-left" },
         { label: "Kategori", key: "kategori", align: "text-left" },
         { label: "Total", key: "total", align: "text-left" },
     ];
@@ -259,16 +266,12 @@ export default function LaporanKeuangan() {
     const navigate = useNavigate();
     const handleRowClick = async (row) => {
         if (row.jenis === 'pemasukan') {
-            if (isFinance) {
-                navigate('/laporanKeuangan/pemasukan-non-penjualan/detail', { 
-                    state: { 
-                        nomor: row.nomor,
-                        fromLaporanKeuangan: true 
-                    } 
-                });
-            } else {
-                navigate('/laporanKeuangan/pemasukan/non-penjualan', { state: { nomor: row.nomor } });
-            }
+            navigate('/laporanKeuangan/pemasukan-non-penjualan/detail', { 
+                state: { 
+                    nomor: row.nomor,
+                    fromLaporanKeuangan: true 
+                } 
+            });
         } else if (row.jenis === 'penjualan') {
             try {
                 setLoading(true);
@@ -279,13 +282,22 @@ export default function LaporanKeuangan() {
                     const isCustom = penjualanData.rincian_biaya_custom?.length > 0 || 
                                      penjualanData.produk?.some(item => item.barang_custom);
                     
-                    navigate('/laporanKeuangan/pemasukan/penjualan/detail', {
-                        state: { 
-                            nomor: row.nomor,
-                            tipe: isCustom ? 'custom' : 'non-custom',
-                            fromLaporanKeuangan: true 
-                        }
-                    });
+                    if (isHeadGudang) {
+                        navigate('/laporanKeuangan/penjualan-gudang/detail', {
+                            state: { 
+                                nomor: row.nomor,
+                                fromLaporanKeuangan: true 
+                            }
+                        });
+                    } else {
+                        navigate('/laporanKeuangan/pemasukan/penjualan/detail', {
+                            state: { 
+                                nomor: row.nomor,
+                                tipe: isCustom ? 'custom' : 'non-custom',
+                                fromLaporanKeuangan: true 
+                            }
+                        });
+                    }
                 } else {
                     console.error('Failed to fetch penjualan details:', response.data.message);
                 }
@@ -295,16 +307,12 @@ export default function LaporanKeuangan() {
                 setLoading(false);
             }
         } else if (row.jenis === 'pengeluaran') {
-            if (isFinance) {
-                navigate('/laporanKeuangan/pengeluaran/detail', { 
-                    state: { 
-                        nomor: row.nomor,
-                        fromLaporanKeuangan: true 
-                    } 
-                });
-            } else {
-                navigate('/laporanKeuangan/pengeluaran', { state: { nomor: row.nomor } });
-            }
+            navigate('/laporanKeuangan/pengeluaran/detail', { 
+                state: { 
+                    nomor: row.nomor,
+                    fromLaporanKeuangan: true 
+                } 
+            });
         } else if (row.jenis === 'pembelian') {
             navigate('/pembelianStok/detail', { 
                 state: { 
@@ -317,8 +325,8 @@ export default function LaporanKeuangan() {
     
     const filterFields = [
         ...(!isHeadGudang ? [{
-            label: "Toko",
-            key: "Toko",
+            label: isAdmin ? "Cabang" : "Toko",
+            key: isAdmin ? "Cabang" : "Toko",
             options: tokoOptions
         }] : []),
         {
@@ -330,17 +338,20 @@ export default function LaporanKeuangan() {
     
     const filteredData = () => {
         let filteredData = selectedData;
-    
-        // Filter berdasarkan kategori
+
         if (selectedKategori !== "Semua") {
             filteredData = filteredData.filter(item => item.kategori === selectedKategori);
         }
     
-        // Filter berdasarkan toko/cabang
         if (!isHeadGudang && selectedStore !== "Semua") {
-            filteredData = filteredData.filter(item => 
-                item.toko === selectedStore || item.cabang === selectedStore
-            );
+            if (isAdmin) {
+                filteredData = filteredData.filter(item => item.cabang === selectedStore);
+                console.log('Filtering by cabang:', selectedStore, filteredData.length);
+            } else {
+                filteredData = filteredData.filter(item => 
+                    item.toko === selectedStore || item.cabang === selectedStore
+                );
+            }
         }
     
         return filteredData;
@@ -376,6 +387,7 @@ export default function LaporanKeuangan() {
                                         selectedIcon={'/icon/toko.svg'} 
                                         options={tokoOptions} 
                                         onSelect={(value) => setSelectedStore(value)} 
+                                        label={isAdmin ? "Cabang" : "Toko"}
                                     />
                                 </div>
                             )}
@@ -505,9 +517,9 @@ export default function LaporanKeuangan() {
                                         key={field.key}
                                         label={field.label}
                                         options={field.options}
-                                        value={field.key === "Toko" ? selectedStore : selectedKategori}
+                                        value={(field.key === "Toko" || field.key === "Cabang") ? selectedStore : selectedKategori}
                                         onSelect={(value) => 
-                                            field.key === "Toko" 
+                                            (field.key === "Toko" || field.key === "Cabang")
                                                 ? setSelectedStore(value.value)
                                                 : setSelectedKategori(value.value)
                                         }

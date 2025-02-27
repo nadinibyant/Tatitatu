@@ -48,7 +48,7 @@ export default function EditKaryawan(){
         const newErrors = {};
         if (!formData.division) {
           newErrors.division = 'divisi harus dipilih';
-        } else if(!formData.branch){
+        } else if(!formData.branch && !isHeadGudang){
             newErrors.branch = 'cabang harus dipilih';
     
         }
@@ -169,8 +169,6 @@ export default function EditKaryawan(){
           setIsPasswordChanged(value !== '');
       }
     };
-
-      console.log(formData)
     
       const handlePhotoChange = (e) => {
         const file = e.target.files[0];
@@ -232,6 +230,8 @@ export default function EditKaryawan(){
                         'Content-Type': 'multipart/form-data'
                     }
                 });
+
+                console.log(response)
     
                 if (response.data.success) {
                     setAlertSucc(true);

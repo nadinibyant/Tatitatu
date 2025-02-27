@@ -64,7 +64,9 @@ export default function EditPembelianStok() {
     });
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isFinance = userData?.role === 'finance';
-    let toko_id = userData.userId;
+    const isOwner = userData?.role === 'owner'
+    const isManajer = userData?.role === 'manajer'
+    const [toko_id, setTokoId] = useState(userData.userId);
 
     useEffect(() => {
         const fetchPembelianData = async () => {
@@ -73,8 +75,8 @@ export default function EditPembelianStok() {
                 const response = await api.get(`/pembelian/${pembelianId}`); 
                 const pembelianData = response.data.data;
 
-                if (isFinance && pembelianData.toko_id) {
-                    toko_id = pembelianData.toko_id;
+                if ((isFinance || isOwner || isManajer) && pembelianData.toko_id) {
+                    setTokoId(pembelianData.toko_id)
                 }
         
                 const isCash = pembelianData.cash_or_non;

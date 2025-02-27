@@ -1,16 +1,31 @@
 // components/ProtectedRoute.jsx
+import { jwtDecode } from 'jwt-decode';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  // Ambil data user dari localStorage
   const userData = JSON.parse(localStorage.getItem('userData'));
+  const token = localStorage.getItem('token');
   
-  // Jika tidak ada userData, redirect ke login
-  if (!userData || !userData.token) {
+  const isTokenValid = () => {
+    if (!token) return false;
+
+    try {
+      const decodedToken = jwtDecode(token);
+      const expirationTime = decodedToken.exp * 1000; 
+      const currentTime = Date.now();
+
+      return currentTime < expirationTime;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  if (!userData || !token || !isTokenValid()) {
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
     return <Navigate to="/login" replace />;
   }
 
-  // Jika ada role yang diizinkan dan role user tidak termasuk, redirect ke dashboard
   if (allowedRoles.length > 0 && !allowedRoles.includes(userData.role)) {
     return <Navigate to="/dashboard" replace />;
   }

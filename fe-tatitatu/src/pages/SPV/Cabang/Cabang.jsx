@@ -240,7 +240,7 @@ export default function Cabang(){
             }
           } catch (error) {
             console.error('Kesalahan Server', error)
-            setErrorMessage('Terjadi kesalahan saat menyimpan data');
+            setErrorMessage(error.response.data.message);
             setErrorAlert(true);
           } finally {
             setLoading(false)
@@ -255,6 +255,7 @@ export default function Cabang(){
             
             if (formData.password) {
               data.password = formData.password;
+              data.confirmPassword = formData.confirmPassword
             }
       
             const response = await api.put(`/cabang/${selectedBranch.id}`, data)
@@ -268,7 +269,7 @@ export default function Cabang(){
             }
           } catch (error) {
             console.error('Kesalahan Server', error)
-            setErrorMessage('Terjadi kesalahan saat memperbarui data');
+            setErrorMessage(error.response.data.message);
             setErrorAlert(true);
           } finally {
             setLoading(false)

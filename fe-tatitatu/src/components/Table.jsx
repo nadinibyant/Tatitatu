@@ -158,11 +158,16 @@ const Table = ({
               {headers.map((header, cellIndex) => (
                 <td
                   key={cellIndex}
-                  style={{ width: header.width || 'auto' }}
+                  style={{ 
+                    width: header.width || 'auto',
+                    maxWidth: header.width || 'auto',
+                    overflow: header.key === 'Isi' ? 'hidden' : 'visible',
+                    textOverflow: header.key === 'Isi' ? 'ellipsis' : 'clip'
+                  }}
                   className={`
                     text-sm text-gray-700 py-4 px-4 
                     ${header.align || "text-left"} 
-                    whitespace-nowrap
+                    ${header.key === 'Isi' ? 'whitespace-normal break-words' : 'whitespace-nowrap'}
                   `}
                 >
                   {row[header.key]}
