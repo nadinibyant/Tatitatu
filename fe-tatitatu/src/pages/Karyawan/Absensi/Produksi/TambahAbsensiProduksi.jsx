@@ -38,6 +38,44 @@ export default function TambahAbsensiProduksi() {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [error, setError] = useState(null);
 
+    const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
+    const [geoError, setGeoError] = useState(null);
+
+    const getCurrentLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser'));
+                return;
+            }
+    
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    let errorMessage;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'User denied the request for geolocation';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'The request to get user location timed out';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred';
+                    }
+                    reject(new Error(errorMessage));
+                }
+            );
+        });
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -312,26 +350,43 @@ export default function TambahAbsensiProduksi() {
             if (!selectedImage) {
                 throw new Error('Mohon upload foto absen terlebih dahulu');
             }
-
+    
             if (!tanggal) {
                 throw new Error('Mohon pilih tanggal terlebih dahulu');
             }
-
+    
             const barangData = dataCabang[0].data;
             if (!barangData || barangData.length === 0) {
                 throw new Error('Mohon pilih minimal satu barang terlebih dahulu');
             }
     
+            let currentLocation;
+            try {
+                currentLocation = await getCurrentLocation();
+            } catch (geoErr) {
+                setGeoError(geoErr.message);
+                throw new Error(`Gagal mendapatkan lokasi: ${geoErr.message}. Mohon izinkan akses lokasi.`);
+            }
+    
             const formattedDate = new Date(tanggal).toISOString().split('T')[0];
             const { totalMenit, totalJumlah } = await calculateTotalMenitAndJumlah(barangData);
-
-
+    
             const formData = new FormData();
             formData.append('image', selectedImage);
             formData.append('tanggal', formattedDate);
-            formData.append('jumlah_produksi', totalJumlah.toString());
-            formData.append('total_menit', totalMenit.toString());
+            formData.append('jumlah_produksi', totalJumlah);
+            formData.append('total_menit', totalMenit);
             formData.append('karyawan_id', karyawan_id);
+            
+            if (currentLocation && currentLocation.lat && currentLocation.lng) {
+                formData.append('lat', currentLocation.lat);
+                formData.append('lng', currentLocation.lng);
+                setCoordinates(currentLocation);
+            } else {
+                formData.append('lat', '0');
+                formData.append('lng', '0');
+            }
+            
             barangData.forEach((row, index) => {
                 formData.append(`produk[${index}][barang_handmade_id]`, row.id);
                 formData.append(`produk[${index}][jumlah]`, row.quantity.toString());

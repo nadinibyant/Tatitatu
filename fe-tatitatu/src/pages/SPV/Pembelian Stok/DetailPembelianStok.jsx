@@ -13,25 +13,26 @@ import Spinner from "../../../components/Spinner";
 
 export default function DetailPembelianStok(){
 const location = useLocation()
-const {id, fromLaporanKeuangan} = location.state || {}
+const {id, fromLaporanKeuangan, gudang} = location.state || {}
 const navigate = useNavigate()
 const [isModalDel, setModalDel] = useState(false)
 const [isModelSucc, setModalSucc] = useState(false)
 
 const userData = JSON.parse(localStorage.getItem('userData'));
-const isAdminGudang = userData?.role === 'admingudang';
-const isHeadGudang = userData?.role === 'headgudang'
+// Check if we should treat this as a gudang purchase based on the flag or user role
+const isAdminGudang = userData?.role === 'admingudang' || gudang;
+const isHeadGudang = userData?.role === 'headgudang' || gudang;
 const [pembelianData, setPembelianData] = useState(null);
 const [cabangData, setCabangData] = useState([]);
 const [isLoading, setIsLoading] = useState(true);
 const [paymentMethods, setPaymentMethods] = useState([]);
+
 const fetchPaymentMethods = async () => {
     try {
-        const userData = JSON.parse(localStorage.getItem('userData'));
-        const isHeadGudang = userData?.role === 'headgudang';
-        const isAdminGudang = userData?.role === 'admingudang';
+        // Use the gudang flag or check user role
+        const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
         
-        const endpoint = (isAdminGudang || isHeadGudang) 
+        const endpoint = isGudangMode 
             ? '/metode-pembayaran-gudang' 
             : '/metode-pembayaran';
         
@@ -44,12 +45,15 @@ const fetchPaymentMethods = async () => {
 
 useEffect(() => {
     fetchPaymentMethods();
-}, [isAdminGudang, isHeadGudang]);
+}, [isAdminGudang, isHeadGudang, gudang]);
 
 useEffect(() => {
     const fetchData = async () => {
         try {
-            if (isAdminGudang || isHeadGudang) {
+            // Use the gudang flag or check user role
+            const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
+            
+            if (isGudangMode) {
                 const pembelianRes = await api.get(`/pembelian-gudang/${id}`);
                 setPembelianData(pembelianRes.data.data);
             } else {
@@ -68,14 +72,17 @@ useEffect(() => {
     };
 
     fetchData();
-}, [id, isAdminGudang, isHeadGudang]);
+}, [id, isAdminGudang, isHeadGudang, gudang]);
 
 console.log(pembelianData)
 
 const processedData = useMemo(() => {
     if (!pembelianData || !cabangData) return [];
 
-    if (isAdminGudang || isHeadGudang) {
+    // Use the gudang flag or check user role
+    const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
+
+    if (isGudangMode) {
         const baseUrl = import.meta.env.VITE_API_URL;
         return pembelianData.produk.map((produk, index) => {
             let imageUrlPrefix;
@@ -114,13 +121,11 @@ const processedData = useMemo(() => {
                 "Nama Produk": produk.nama_barang,
                 "Jenis Barang": produk.jenis,
                 "Harga Satuan": `Rp${produk.harga_satuan.toLocaleString()}`,
-                "Kuantitas": produk.kuantitas,
+                "Kuantitas": produk.kuantitas.toLocaleString('id-ID'),
                 "Total Biaya": `Rp${produk.total_biaya.toLocaleString()}`
             };
         });
     } else {
-        // const groupedByCabang = {};
-        
         const groupedByCabang = {};
         
         pembelianData.produk.forEach(produk => {
@@ -177,7 +182,7 @@ const processedData = useMemo(() => {
         return Object.values(groupedByCabang);
     }
 
-}, [pembelianData, cabangData, isAdminGudang, isHeadGudang]);
+}, [pembelianData, cabangData, isAdminGudang, isHeadGudang, gudang, userData]);
 
 if (isLoading) return <Spinner />;
 
@@ -189,7 +194,10 @@ const getPaymentMethodName = (metodeId) => {
 const getPaymentMethodDisplay = (data) => {
     if (!data) return '-';
     
-    if (isAdminGudang || isHeadGudang) {
+    // Use the gudang flag or check user role
+    const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
+    
+    if (isGudangMode) {
         return data.cash_or_non ? '-' : data.metode || '-';
     } else {
         if (data.cash_or_non) {
@@ -200,13 +208,14 @@ const getPaymentMethodDisplay = (data) => {
 };
 
 const handleEdit = () => {
-    if (isAdminGudang) {
+    if (userData?.role === 'admingudang') {
         navigate('/pembelianStok/edit-admin-gudang', {state : {id: id}});
-    } else if(fromLaporanKeuangan && isHeadGudang){
+    } else if(fromLaporanKeuangan && (userData?.role === 'headgudang' || gudang)){
         navigate('/laporanKeuangan/pembelian-gudang/edit', { 
             state: { 
                 id: id,
-                fromLaporanKeuangan: true 
+                fromLaporanKeuangan: true,
+                gudang: gudang
             } 
         });
     } else {
@@ -225,7 +234,10 @@ const handleBtnDel = () => {
 
 const handleConfirmDel = async () => {
     try {
-        if (isAdminGudang) {
+        // Use the gudang flag or check user role
+        const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
+        
+        if (isGudangMode) {
             await api.delete(`/pembelian-gudang/${id}`);
         } else {
             await api.delete(`/pembelian/${id}`);
@@ -271,40 +283,15 @@ const headers = [
 { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
 ]
 
-// const dataAdminGudang = {
-//     id: 1,
-//     nomor: 'STK1133',
-//     invoice: 'INV123',
-//     tanggal: '21/12/2024',
-//     pembayaran: 'Cash',
-//     metode: '-',
-//     data: [
-//         {
-//             id: 1,
-//             No: "1",
-//             "Foto Produk" : (
-//                 <img src="/api/placeholder/50/50" alt="Foto Produk" />
-//             ),
-//             "Nama Produk": "Barbie",
-//             "Jenis Barang": "Barang Handmade", 
-//             "Harga Satuan": "Rp15.000",
-//             Kuantitas: 10,
-//             "Total Biaya": "Rp150.000"
-//         },
-//         // ... data lainnya
-//     ],
-//     subtotal: 8000,
-//     diskon: 30,
-//     pajak: 1000,
-//     totalpenjualan: 18000
-// }
-
 const formatCurrency = (amount) => {
     return amount.toLocaleString('id-ID', {
         style: 'currency',
         currency: 'IDR',
     });
 };
+
+// Check if we should render in gudang mode
+const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
 
 return (
 <>
@@ -387,7 +374,7 @@ return (
 
                 {/* section cabang -> perulangan sesuai data cabang */}
                 <section className="pt-10">
-                    {(isAdminGudang || isHeadGudang) ? (
+                    {isGudangMode ? (
                         <div className="pt-5">
                             <Table headers={headers} data={processedData} />
                         </div>
@@ -440,7 +427,7 @@ return (
                             </p>
                         </div>
                     </div>
-                </section>
+                    </section>
             </section>
         </div>
 

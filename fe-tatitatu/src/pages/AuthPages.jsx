@@ -30,10 +30,9 @@ const AuthPages = () => {
     'headgudang': '/dashboard',
     'kasirtoko': '/dashboard-kasir',
     'admingudang': '/dashboard-admin-gudang',
-    'karyawanumum': '/izin-cuti-karyawan',
-    'karyawanproduksi': '/izin-cuti-karyawan',
-    'karyawanlogistik': '/izin-cuti-karyawan',
-    'karyawantransportasi': '/izin-cuti-karyawan',
+    'karyawanumum': '/absensi-karyawan',
+    'karyawanproduksi': '/absensi-karyawan-produksi',
+    'karyawantransportasi': '/absensi-karyawan-transport',
     'owner': '/dashboard',
     'finance': '/laporanKeuangan',
     'manajer': '/dashboard'
@@ -87,7 +86,6 @@ const AuthPages = () => {
         <div className="hidden md:flex md:w-1/2 bg-[#7B0C42] flex-col justify-between p-12">
           <div className="flex items-center gap-3">
             <ShoppingBag className="w-10 h-10 text-white" />
-            <span className="text-2xl font-bold text-white">Tatitatu</span>
           </div>
           
           <div className="space-y-6">

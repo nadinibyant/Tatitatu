@@ -46,7 +46,7 @@ export default function EditPenjualanGudang() {
                         id: item.packaging_id,
                         label: item.nama_packaging, 
                         value: item.packaging_id,  
-                        price: item.harga,
+                        price: item.harga_satuan,
                         image: getImageUrl({
                             barang_id: item.packaging_id,
                             image: item.image
@@ -54,7 +54,7 @@ export default function EditPenjualanGudang() {
                         code: item.packaging_id,
                         nama_packaging: item.nama_packaging,  
                         packaging_id: item.packaging_id,      
-                        harga: item.harga                   
+                        harga: item             
                     }));
                     setDataPackaging(formattedData);
                 }
@@ -65,6 +65,8 @@ export default function EditPenjualanGudang() {
     
         fetchPackaging();
     }, []);
+
+    console.log(dataPackaging)
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("Semua");
@@ -424,7 +426,7 @@ export default function EditPenjualanGudang() {
         const newItems = selectedPackagingItems.map((item) => {
             const totalBiaya = parseInt(item.price) * item.count;
             const dropdownValue = {
-                label: item.name,
+                label: item.label,
                 value: item.id, 
                 price: item.price
             };
@@ -439,9 +441,9 @@ export default function EditPenjualanGudang() {
                     <InputDropdown
                         showRequired={false}
                         options={dataPackaging.map(pack => ({
-                            label: pack.name,
-                            value: pack.id,
-                            price: pack.price
+                            label: pack.label || pack.nama_packaging || String(pack.value),
+                            value: pack.value || pack.packaging_id,
+                            price: pack.price || pack.harga
                         }))}
                         value={dropdownValue.value}
                         onSelect={(newSelection) => handlePackagingDropdownChange(item.id, newSelection)}
@@ -1282,7 +1284,7 @@ export default function EditPenjualanGudang() {
                                 <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
                                     <Gallery2
                                         items={dataPackaging.filter(item => 
-                                            item.name.toLowerCase().includes(searchPackagingTerm.toLowerCase())
+                                            (item.label || "").toLowerCase().includes(searchPackagingTerm.toLowerCase())
                                         )}
                                         onSelect={handleSelectPackagingItem}
                                         selectedItems={selectedPackagingItems}

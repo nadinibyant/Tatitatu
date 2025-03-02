@@ -7,6 +7,7 @@ import moment from "moment";
 import Table from "../../../components/Table";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
+import api from "../../../utils/api";
 
 export default function KaryawanTerbaik() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,9 +16,16 @@ export default function KaryawanTerbaik() {
     const [selectedJenis, setSelectedJenis] = useState("Semua");
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [selectedStore, setSelectedStore] = useState("Semua");
+    const [selectedStoreId, setSelectedStoreId] = useState("");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filters, setFilters] = useState({});
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    const [storeData, setStoreData] = useState([]);
+    const [topKaryawan, setTopKaryawan] = useState([]);
+    const [karyawanData, setKaryawanData] = useState([]);
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [divisions, setDivisions] = useState([]);
 
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -31,10 +39,127 @@ export default function KaryawanTerbaik() {
     const handleApplyFilter = () => {
       setIsFilterModalOpen(false);
     };
-  
-
+    
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isManajer = userData?.role === 'manajer';
+    const isOwner = userData?.role === 'owner';
+
+    const fetchStoreData = async () => {
+        try {
+            const response = await api.get('/toko');
+            
+            if (response.data.success) {
+                const stores = [
+                    { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: '' },
+                    ...response.data.data.map(store => ({
+                        label: store.nama_toko,
+                        value: store.nama_toko,
+                        icon: '/icon/toko.svg',
+                        id: store.toko_id
+                    }))
+                ];
+                setStoreData(stores);
+            }
+        } catch (error) {
+            console.error('Error fetching store data:', error);
+            setStoreData([
+                { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: '' }
+            ]);
+        }
+    };
+
+    const fetchKaryawanData = async () => {
+        try {
+            const response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}`);
+            
+            if (response.data.success) {
+                // Process the data for the main table
+                const formattedData = response.data.data.map(item => ({
+                    id: item.karyawan.karyawan_id,
+                    Nama: item.karyawan.nama_karyawan,
+                    Toko: item.karyawan.toko.nama_toko,
+                    Divisi: item.karyawan.divisi.nama_divisi,
+                    KPI: item.totalPersentaseTercapai,
+                    cabang: item.karyawan.cabang.nama_cabang,
+                    toko_id: item.karyawan.toko_id
+                }));
+                
+                // Extract unique divisions for filter
+                const uniqueDivisions = [...new Set(formattedData.map(item => item.Divisi))];
+                setDivisions(uniqueDivisions);
+                
+                setKaryawanData(formattedData);
+            }
+        } catch (error) {
+            console.error('Error fetching karyawan data:', error);
+            setKaryawanData([]);
+        }
+    };
+
+    const fetchTopKaryawan = async () => {
+        try {
+            let url = `/karyawan/terbaik?bulan=${selectedMonth}&tahun=${selectedYear}`;
+
+            if (selectedStoreId) {
+                url += `&toko_id=${selectedStoreId}`;
+            }
+            
+            const response = await api.get(url);
+            
+            if (response.data.success) {
+                const formattedData = response.data.data.map((item, index) => ({
+                    nomor: index + 1,
+                    "Foto": (
+                        <img 
+                            src={`${import.meta.env.VITE_API_URL}/images-karyawan/${item.Image}`}
+                            className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => {
+                                e.target.src = "/api/placeholder/64/64";
+                            }}
+                        />
+                    ),
+                    "Nama": item.nama_karyawan,
+                    "KPI": `${formatNumberWithDots(item.kpi)}%`
+                }));
+                setTopKaryawan(formattedData);
+            }
+        } catch (error) {
+            console.error('Error fetching top karyawan data:', error);
+            setTopKaryawan([]);
+        }
+    };
+
+    useEffect(() => {
+        if (!isHeadGudang) {
+            fetchStoreData();
+        }
+        
+        // Fetch karyawan data when component mounts
+        fetchKaryawanData();
+    }, []);
+
+    useEffect(() => {
+        fetchTopKaryawan();
+        fetchKaryawanData();
+    }, [selectedStoreId, selectedMonth, selectedYear]);
+
+    const handleStoreSelect = (value, options) => {
+        // Find the selected store
+        const selectedStore = options.find(option => option.value === value);
+        
+        // Update the selected store ID
+        setSelectedStoreId(selectedStore?.id || "");
+        
+        // Update the selected store value
+        setSelectedStore(value);
+    };
+
+    const handleMonthChange = (e) => {
+        const date = moment(e.target.value);
+        setSelectedMonth(date.format('MM'));
+        setSelectedYear(date.format('YYYY'));
+    };
 
     useEffect(() => {
         setSelectedStore("Semua");
@@ -72,34 +197,12 @@ export default function KaryawanTerbaik() {
             year: "numeric",
         });
 
-    const dataCabang = [
+    // Use storeData if it's available, otherwise use default data
+    const dataCabang = storeData.length > 0 ? storeData : [
         { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
         { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
         { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
     ];
-
-    const data = {
-        karyawan: {
-            data: [
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Content Creator", KPI: 80, cabang: 'Gor Agus' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Content Creator", KPI: 80, cabang: 'Gor Agus' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Developer", KPI: 80, cabang: 'Gor Agus' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Developer", KPI: 80, cabang: 'Gor Agus' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Developer", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Content Creator", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Content Creator", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Content Creator", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Admin", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Admin", KPI: 80, cabang: 'Lubeg' },
-                { Nama: "Hamzah Abdillah", Toko: 'Tatitatu', Divisi: "Admin", KPI: 80, cabang: 'Lubeg' },
-            ]
-        },
-        karyawan_terbaik: [
-            { Foto: 'https://via.placeholder.com/150', Nama: 'Nadini Annisa Byant', KPI: 80, cabang: 'Lubeg' },
-            { Foto: 'https://via.placeholder.com/150', Nama: 'Nadini Annisa Byant', KPI: 80, cabang: 'Lubeg' },
-            { Foto: 'https://via.placeholder.com/150', Nama: 'Nadini Annisa Byant', KPI: 80, cabang: 'Gor Agus' },
-        ]
-    };
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
@@ -117,7 +220,10 @@ export default function KaryawanTerbaik() {
     ];
 
     function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+        if (number === null || number === undefined || isNaN(number)) {
+            return '0';
+        }
+        return Number(number).toLocaleString('id-ID');
     }
 
     const filterFields = [
@@ -126,25 +232,26 @@ export default function KaryawanTerbaik() {
           key: "Divisi",
           options: [
             { label: "Semua", value: "Semua" },
-            { label: "Content Creator", value: "Content Creator" },
-            { label: "Developer", value: "Developer" },
-            { label: "Admin", value: "Admin" },
+            ...divisions.map(division => ({
+              label: division,
+              value: division
+            }))
           ]
         },
     ];
 
-    // Filter Data berdasarkan Divisi atau Cabang
     const filteredKaryawanData = () => {
-        let filteredData = data.karyawan.data;
-    
-        // Jika filter divisi dipilih, filter berdasarkan divisi
+        let filteredData = karyawanData;
+   
+        // Filter by division
         if (selectedKategori !== "Semua") {
             filteredData = filteredData.filter(item => item.Divisi === selectedKategori);
         }
-    
-        // Filter cabang hanya diterapkan jika bukan head gudang
+
+        // Filter by store
         if (!isHeadGudang && selectedStore !== "Semua") {
-            filteredData = filteredData.filter(item => item.cabang === selectedStore);
+            // If a store is selected in dropdown, filter by Toko field
+            filteredData = filteredData.filter(item => item.Toko === selectedStore);
         }
     
         return filteredData;
@@ -160,38 +267,21 @@ export default function KaryawanTerbaik() {
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                            <div className="w-full md:w-auto">
-                                <Button 
-                                    label="Export" 
-                                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                    </svg>} 
-                                    bgColor="border border-secondary" 
-                                    hoverColor="hover:bg-white" 
-                                    textColor="text-black" 
-                                />
-                            </div>
                             {!isHeadGudang && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={'/icon/toko.svg'} 
                                         options={dataCabang} 
-                                        onSelect={(value) => setSelectedStore(value)} 
+                                        onSelect={(value) => handleStoreSelect(value, dataCabang)}
                                     />
                                 </div>
                             )}
                             <div className="w-full md:w-auto">
-                                <Button 
-                                    label={`${formatDate(startDate)} - ${formatDate(endDate)}`} 
-                                    icon={<svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M5.59961 1V4.2M11.9996 1V4.2" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M14.3996 2.60004H3.19961C2.31595 2.60004 1.59961 3.31638 1.59961 4.20004V15.4C1.59961 16.2837 2.31595 17 3.19961 17H14.3996C15.2833 17 15.9996 16.2837 15.9996 15.4V4.20004C15.99961 3.31638 15.2833 2.60004 14.3996 2.60004Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        <path d="M1.59961 7.39996H15.9996" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>} 
-                                    bgColor="border border-secondary" 
-                                    hoverColor="hover:bg-white" 
-                                    textColor="text-black" 
-                                    onClick={toggleModal} 
+                                <input
+                                    type="month"
+                                    value={`${selectedYear}-${selectedMonth}`}
+                                    onChange={handleMonthChange}
+                                    className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
                                 />
                             </div>
                         </div>
@@ -277,18 +367,15 @@ export default function KaryawanTerbaik() {
                                 <h3 className="font-bold text-lg mb-4">
                                     {isHeadGudang 
                                         ? "10 Karyawan Terbaik di Rumah Produksi"
-                                        : "10 Karyawan Terbaik"
+                                        : selectedStore === "Semua" 
+                                            ? "10 Karyawan Terbaik di Perusahaan"
+                                            : `10 Karyawan Terbaik di ${selectedStore}`
                                     }
                                 </h3>
                                 <div className="overflow-x-auto">
                                     <Table
                                         headers={headers2}
-                                        data={data.karyawan_terbaik.map((item, index) => ({
-                                            ...item,
-                                            "Foto": <img src={item["Foto"]} className="w-8 h-8 rounded-full object-cover" />,
-                                            nomor: index + 1,
-                                            KPI: `${formatNumberWithDots(item.KPI)}%`,
-                                        }))}
+                                        data={topKaryawan}
                                         bg_header="bg-none"
                                         text_header="text-gray-400"
                                         hasSearch={false}
@@ -320,7 +407,7 @@ export default function KaryawanTerbaik() {
                                     key={field.key}
                                     label={field.label}
                                     options={field.options}
-                                    value={selectedKategori} // karena hanya filter Divisi
+                                    value={selectedKategori}
                                     onSelect={(value) => setSelectedKategori(value.value)}
                                     required={true}
                                 />
@@ -335,43 +422,6 @@ export default function KaryawanTerbaik() {
                     </div>
                 </>
             )}
-
-                {/* Filter Modal */}
-                {/* {isFilterModalOpen && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                    <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
-                        <button
-                        onClick={() => setIsFilterModalOpen(false)}
-                        className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                        >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        </button>
-                        <h2 className="text-lg font-bold mb-4">Filter</h2>
-                        <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                        {filterFields.map((field, index) => (
-                            <div className="mb-4" key={index}>
-                            <label className="block text-gray-700 font-medium mb-2">
-                                {field.label}
-                            </label>
-                            <ButtonDropdown
-                                options={field.options}
-                                selectedStore={field.key === "Divisi" ? selectedKategori : selectedJenis}
-                                onSelect={(value) => setSelectedKategori(value)}
-                            />
-                            </div>
-                        ))}
-                        <button
-                            type="submit"
-                            className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                        >
-                            Terapkan
-                        </button>
-                        </form>
-                    </div>
-                    </div>
-                )} */}
             </LayoutWithNav>
         </>
     );

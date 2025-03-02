@@ -28,14 +28,48 @@ export default function AbsensiKaryawan() {
     const [data, setData] = useState([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const navigate = useNavigate();
+    const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
+    const [geoError, setGeoError] = useState(null);
 
-    // Constants
+    const getCurrentLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser'));
+                return;
+            }
+    
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    let errorMessage;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'User denied the request for geolocation';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'The request to get user location timed out';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred';
+                    }
+                    reject(new Error(errorMessage));
+                }
+            );
+        });
+    };
     const statusOptions = [
         { value: 'Antar', label: 'Antar' },
         { value: 'Jemput', label: 'Jemput' }
     ];
 
-    // Table Configuration
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-left" },
@@ -44,7 +78,6 @@ export default function AbsensiKaryawan() {
         { label: "Status", key: "status", align: "text-left" }
     ];
 
-    // Component for Status Badge
     const StatusBadge = ({ status }) => {
         return (
             <span 
@@ -59,7 +92,6 @@ export default function AbsensiKaryawan() {
         );
     };
 
-    // Effects
     useEffect(() => {
         if (isInitialLoad) {
             fetchData();
@@ -88,7 +120,6 @@ export default function AbsensiKaryawan() {
         navigate('/absensi-karyawan-transport');
     };
 
-    // Validation
     const validateForm = () => {
         const errors = [];
         
@@ -108,12 +139,9 @@ export default function AbsensiKaryawan() {
             errors.push('Status harus dipilih');
         }
 
-        // Validate file type
         if (formData.foto && !['image/jpeg', 'image/png', 'image/jpg'].includes(formData.foto.type)) {
             errors.push('File harus berupa gambar (JPG, JPEG, atau PNG)');
         }
-
-        // Validate file size (max 5MB)
         if (formData.foto && formData.foto.size > 5 * 1024 * 1024) {
             errors.push('Ukuran file tidak boleh lebih dari 5MB');
         }
@@ -121,7 +149,6 @@ export default function AbsensiKaryawan() {
         return errors;
     };
 
-    // API data
     const fetchData = async () => {
         try {
             setIsLoading(true);
@@ -145,7 +172,26 @@ export default function AbsensiKaryawan() {
                             }}
                         />
                     ),
-                    lokasi: item.lokasi,
+                    lokasi: (
+                        <a 
+                            href={item.gmaps} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-maroon hover:text-red-800 underline flex items-center"
+                        >
+                            {item.lokasi}
+                            <svg 
+                                className="w-4 h-4 ml-1" 
+                                fill="currentColor" 
+                                viewBox="0 0 24 24" 
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path 
+                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                                />
+                            </svg>
+                        </a>
+                    ),
                     status: <StatusBadge status={item.status} />
                 }));
                 
@@ -171,6 +217,14 @@ export default function AbsensiKaryawan() {
         }
 
         try {
+            let currentLocation;
+            try {
+                currentLocation = await getCurrentLocation();
+            } catch (geoErr) {
+                setGeoError(geoErr.message);
+                throw new Error(`Gagal mendapatkan lokasi: ${geoErr.message}. Mohon izinkan akses lokasi.`);
+            }
+
             setIsLoading(true);
             const submitData = new FormData();
             submitData.append('image', formData.foto);
@@ -178,11 +232,14 @@ export default function AbsensiKaryawan() {
             submitData.append('lokasi', formData.lokasi);
             submitData.append('status', formData.status);
             submitData.append('karyawan_id', karyawan_id)
-
-            // console.log('Form data entries:');
-            // for (let pair of submitData.entries()) {
-            //     console.log(pair[0], pair[1]);
-            // }
+            if (currentLocation && currentLocation.lat && currentLocation.lng) {
+                submitData.append('lat', currentLocation.lat);
+                submitData.append('lng', currentLocation.lng);
+                setCoordinates(currentLocation);
+            } else {
+                submitData.append('lat', '0');
+                submitData.append('lng', '0');
+            }
 
             await api.post('/absensi-karyawan', submitData, {
                 headers: {

@@ -29,6 +29,43 @@ export default function Absensi() {
     const [data, setData] = useState([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const navigate = useNavigate();
+    const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
+    const [geoError, setGeoError] = useState(null);
+
+    const getCurrentLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser'));
+                return;
+            }
+    
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => {
+                    let errorMessage;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'User denied the request for geolocation';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'The request to get user location timed out';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred';
+                    }
+                    reject(new Error(errorMessage));
+                }
+            );
+        });
+    };
 
     // Table Configuration
     const headers = [
@@ -38,6 +75,7 @@ export default function Absensi() {
         { label: "Jam Masuk", key: "jam_masuk", align: "text-left" },
         { label: "Jam Keluar", key: "jam_keluar", align: "text-left" },
         { label: "Total Menit", key: "total_menit", align: "text-left" },
+        { label: "Lokasi", key: "lokasi", align: "text-left" },
     ];
 
     const handleTimeChange = (field, value) => {
@@ -92,6 +130,26 @@ export default function Absensi() {
                         month: '2-digit',
                         year: 'numeric'
                     }),
+                    lokasi: (
+                        <a 
+                            href={item.gmaps} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-maroon hover:text-red-800 underline flex items-center"
+                        >
+                            Lokasi
+                            <svg 
+                                className="w-4 h-4 ml-1" 
+                                fill="currentColor" 
+                                viewBox="0 0 24 24" 
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path 
+                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                                />
+                            </svg>
+                        </a>
+                    ),
                     foto: (
                         <img 
                             src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`}
@@ -186,6 +244,13 @@ export default function Absensi() {
         }
 
         try {
+            let currentLocation;
+            try {
+                currentLocation = await getCurrentLocation();
+            } catch (geoErr) {
+                setGeoError(geoErr.message);
+                throw new Error(`Gagal mendapatkan lokasi: ${geoErr.message}. Mohon izinkan akses lokasi.`);
+            }
             setIsLoading(true);
             const totalMenit = calculateTotalMinutes(formData.jam_masuk, formData.jam_keluar);
             
@@ -196,15 +261,23 @@ export default function Absensi() {
             submitData.append('jam_masuk', formData.jam_masuk);
             submitData.append('jam_keluar', formData.jam_keluar);
             submitData.append('total_menit', totalMenit.toString());
+            if (currentLocation && currentLocation.lat && currentLocation.lng) {
+                submitData.append('lat', currentLocation.lat);
+                submitData.append('lng', currentLocation.lng);
+                setCoordinates(currentLocation);
+            } else {
+                submitData.append('lat', '0');
+                submitData.append('lng', '0');
+            }
 
             // Debug log
-            console.log('Submitting data:', {
-                karyawan_id: formData.karyawan_id,
-                tanggal: formData.tanggal,
-                jam_masuk: formData.jam_masuk,
-                jam_keluar: formData.jam_keluar,
-                total_menit: totalMenit
-            });
+            // console.log('Submitting data:', {
+            //     karyawan_id: formData.karyawan_id,
+            //     tanggal: formData.tanggal,
+            //     jam_masuk: formData.jam_masuk,
+            //     jam_keluar: formData.jam_keluar,
+            //     total_menit: totalMenit
+            // });
 
             const response = await api.post('/absensi-karyawan', submitData, {
                 headers: {

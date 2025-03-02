@@ -28,8 +28,15 @@ export default function EditKaryawan(){
             amount: '',
             unit: 'Menit'
         },
-        phone: ''
-    });
+        phone: '',
+        jenis_karyawan: ''
+      });
+
+      const jenisKaryawanOptions = [
+        { value: 'Umum', label: 'Umum' },
+        { value: 'Produksi', label: 'Produksi' },
+        { value: 'Transportasi', label: 'Transportasi' }
+      ];
       const [photoPreview, setPhotoPreview] = useState(null);
       const [branchList, setBranchList] = useState([]);
       const [divisiList, setDivisiList] = useState([]);
@@ -48,14 +55,16 @@ export default function EditKaryawan(){
         const newErrors = {};
         if (!formData.division) {
           newErrors.division = 'divisi harus dipilih';
-        } else if(!formData.branch && !isHeadGudang){
-            newErrors.branch = 'cabang harus dipilih';
-    
+        } 
+        if(!formData.branch && !isHeadGudang){
+          newErrors.branch = 'cabang harus dipilih';
+        }
+        if(!formData.jenis_karyawan){
+          newErrors.jenis_karyawan = 'jenis karyawan harus dipilih';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
       };
-
       const fetchKaryawanById = async () => {
         try {
             setLoading(true);
@@ -76,13 +85,14 @@ export default function EditKaryawan(){
                     amount: (data.waktu_kerja_sebulan_menit || data.waktu_kerja_sebulan_antar || '').toString(),
                     unit: data.waktu_kerja_sebulan_menit ? 'Menit' : 'Antar'
                 },
-                phone: data.nomor_handphone || ''
+                phone: data.nomor_handphone || '',
+                jenis_karyawan: data.jenis_karyawan || '' 
             });
-    
+      
             if (data.image) {
                 setPhotoPreview(`${import.meta.env.VITE_API_URL}/images-karyawan/${data.image}`);
             }
-    
+      
         } catch (error) {
             console.error('Error fetching karyawan:', error);
             setErrorMessage('Gagal mengambil data karyawan');
@@ -90,7 +100,7 @@ export default function EditKaryawan(){
         } finally {
             setLoading(false);
         }
-    };
+      };
 
     const fetchStore = async () => {
         try {
@@ -198,7 +208,7 @@ export default function EditKaryawan(){
             try {
                 setLoading(true);
                 const formDataToSend = new FormData();
-    
+      
                 if (formData.photo) {
                     formDataToSend.append('image', formData.photo);
                 }
@@ -207,7 +217,8 @@ export default function EditKaryawan(){
                 formDataToSend.append('nama_karyawan', formData.name);
                 formDataToSend.append('password', formData.password);
                 formDataToSend.append('divisi_karyawan_id', formData.division);
-
+                formDataToSend.append('jenis_karyawan', formData.jenis_karyawan); 
+      
                 if (!isHeadGudang) {
                     formDataToSend.append('cabang_id', formData.branch);
                 }
@@ -224,15 +235,15 @@ export default function EditKaryawan(){
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
                 formDataToSend.append('toko_id', toko_id)
-    
+      
                 const response = await api.put(`/karyawan/${id}`, formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
                 });
-
+      
                 console.log(response)
-    
+      
                 if (response.data.success) {
                     setAlertSucc(true);
                     setTimeout(() => {
@@ -247,7 +258,7 @@ export default function EditKaryawan(){
                 setLoading(false);
             }
         }
-    };
+      };
     
       const navigate = useNavigate()
 
@@ -328,6 +339,16 @@ export default function EditKaryawan(){
                                   onSelect={(option) => handleInputChange('division')(option.value)}
                                   required={true}
                               />
+
+                                <InputDropdown
+                                    label="Jenis Karyawan"
+                                    options={jenisKaryawanOptions}
+                                    value={formData.jenis_karyawan}
+                                    error={!!errors.jenis_karyawan}
+                                    errorMessage={errors.jenis_karyawan}
+                                    onSelect={(option) => handleInputChange('jenis_karyawan')(option.value)}
+                                    required={true}
+                                />
 
                               <Input
                                   label="Toko"

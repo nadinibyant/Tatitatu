@@ -6,6 +6,7 @@ import Table from "../../../components/Table";
 import InputDropdown from "../../../components/InputDropdown";
 import { useNavigate } from "react-router-dom";
 import api from "../../../utils/api";
+import Spinner from "../../../components/Spinner";
 
 export default function PengeluaranFinance() {
   const [selectedJenis, setSelectedJenis] = useState("Semua");
@@ -28,7 +29,23 @@ export default function PengeluaranFinance() {
         const response = await api.get(`/pengeluaran?startDate=${startDate}&endDate=${endDate}`);
         
         if (response.data.success) {
-          setData(response.data.data);
+          const processedData = response.data.data.map((item, index) => {
+            if (item.pengeluaran_id) return item;
+
+            if (item.kategori_pengeluaran === 'Gaji') {
+              return {
+                ...item,
+                bayar_gaji_id: `BGA_Temp_${index}`
+              };
+            }
+
+            return {
+              ...item,
+              pengeluaran_id: `EXP_Temp_${index}`
+            };
+          });
+          
+          setData(processedData);
         } else {
           setError(response.data.message || 'Failed to fetch data');
         }
@@ -64,15 +81,40 @@ export default function PengeluaranFinance() {
     { label: "Pengeluaran", key: "Pengeluaran", align: "text-left" },
   ];
 
-  // Transform data based on the API response structure for pengeluaran
-  const transformedData = data.map(item => ({
-    Nomor: item.pengeluaran_id,
-    Tanggal: moment(item.tanggal).format('DD/MM/YYYY'),
-    'Deskripsi/Barang': item.deskripsi_pengeluaran.map(desc => desc.deskripsi),
-    Kategori: item.kategori_pengeluaran,
-    'Cash/Non-Cash': item.cash_or_non ? 'Cash' : 'Non-Cash',
-    Pengeluaran: item.total
-  }));
+  const calculateTotal = (item) => {
+    if (item.total !== undefined) return item.total;
+
+    if (item.deskripsi_pengeluaran && Array.isArray(item.deskripsi_pengeluaran)) {
+      return item.deskripsi_pengeluaran.reduce((sum, desc) => 
+        sum + (desc.jumlah_pengeluaran || 0), 0);
+    }
+    
+    return 0;
+  };
+
+  const determineExpenseType = (item) => {
+    if (item.bayar_gaji_id || item.kategori_pengeluaran === 'Gaji') {
+      return 'salary';
+    }
+  
+    return 'regular';
+  };
+
+  const transformedData = data.map(item => {
+    const expenseType = determineExpenseType(item);
+    
+    return {
+      Nomor: item.pengeluaran_id || item.bayar_gaji_id || '-',
+      Tanggal: item.tanggal ? moment(item.tanggal).format('DD/MM/YYYY') : '-',
+      'Deskripsi/Barang': item.deskripsi_pengeluaran 
+        ? item.deskripsi_pengeluaran.map(desc => desc.deskripsi)
+        : ['No description'],
+      Kategori: item.kategori_pengeluaran || 'Uncategorized',
+      'Cash/Non-Cash': item.cash_or_non !== undefined ? (item.cash_or_non ? 'Cash' : 'Non-Cash') : '-',
+      Pengeluaran: calculateTotal(item),
+      _type: expenseType
+    };
+  });
 
   const filteredData = transformedData.filter(item => {
     const matchesKategori = selectedKategori === "Semua" || item.Kategori === selectedKategori;
@@ -86,8 +128,22 @@ export default function PengeluaranFinance() {
   }
 
   const handleRowClick = (row) => {
-    navigate('/pengeluaran/detail', {state: {nomor: row.Nomor}})
+
+    if (row._type === 'salary' || (row.Nomor && row.Nomor.startsWith('BGA'))) {
+      navigate('/pengeluaran/gaji', {
+        state: { nomor: row.Nomor }
+      });
+    } else {
+      navigate('/pengeluaran/detail', {
+        state: { nomor: row.Nomor }
+      });
+    }
   }
+
+  const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null) return 'Rp0';
+    return `Rp${Number(amount).toLocaleString('id-ID')}`;
+  };
 
   return(
     <>
@@ -144,27 +200,38 @@ export default function PengeluaranFinance() {
         <section className="mt-5 bg-white rounded-xl">
           <div className="p-5">
             {loading ? (
-              <div className="text-center py-4">Loading...</div>
+              <div className="flex justify-center py-4">
+                <Spinner />
+              </div>
             ) : error ? (
               <div className="text-center py-4 text-red-500">{error}</div>
             ) : (
               <Table
                 headers={headers}
-                data={filteredData.map((item, index) => ({
-                  ...item,
-                  "Deskripsi/Barang": Array.isArray(item["Deskripsi/Barang"]) 
-                    ? item["Deskripsi/Barang"].length > 2 
-                      ? <span>
-                          {item["Deskripsi/Barang"].slice(0, 2).join(", ")}
-                          <span className="text-gray-400"> +{item["Deskripsi/Barang"].length - 2} Lainnya</span>
-                        </span>
-                      : item["Deskripsi/Barang"].join(", ")
-                    : item["Deskripsi/Barang"],
-                  Pengeluaran: `Rp${item.Pengeluaran.toLocaleString('id-ID')}`
-                }))}
+                data={filteredData.map((item, index) => {
+                  const { _type, ...displayItem } = item;
+                  
+                  return {
+                    ...displayItem,
+                    "Deskripsi/Barang": Array.isArray(item["Deskripsi/Barang"]) 
+                      ? item["Deskripsi/Barang"].length > 2 
+                        ? <span>
+                            {item["Deskripsi/Barang"].slice(0, 2).join(", ")}
+                            <span className="text-gray-400"> +{item["Deskripsi/Barang"].length - 2} Lainnya</span>
+                          </span>
+                        : item["Deskripsi/Barang"].join(", ")
+                      : item["Deskripsi/Barang"],
+                    Pengeluaran: formatCurrency(item.Pengeluaran)
+                  };
+                })}
                 hasFilter={true}
                 onFilterClick={handleFilterClick}
-                onRowClick={handleRowClick}
+                onRowClick={(row) => {
+                  const originalItem = filteredData.find(item => item.Nomor === row.Nomor);
+                  if (originalItem) {
+                    handleRowClick(originalItem);
+                  }
+                }}
               />
             )}
           </div>

@@ -48,16 +48,14 @@ export default function IzinCutiKaryawan(){
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get(`/cuti-karyawan/02/2025`);
+            const response = await api.get(`/cuti-by-karyawan/${karyawan_id}`);
             
             if (response.data.success) {
-                const allCutiData = response.data.data.reduce((acc, karyawan) => {
-                    return [...acc, ...karyawan.cuti_karyawan];
-                }, []);
-    
+                const allCutiData = response.data.data;
+        
                 const formattedData = allCutiData.map((item, index) => ({
                     nomor: index + 1,
-                    Tanggal: `${formatDate(item.tanggal_mulai)}`,
+                    Tanggal: `${formatDate(item.tanggal_mulai)} - ${formatDate(item.tanggal_selesai)}`,
                     'Alasan Izin/Cuti': item.alasan,
                     Status: <StatusBadge status={item.status || 'Menunggu'} />,
                     'Jumlah Hari': item.jumlah_cuti

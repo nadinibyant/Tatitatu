@@ -214,6 +214,52 @@ export default function Karyawan(){
             });
         };
 
+        const handleExport = async () => {
+            try {
+                setLoading(true);
+
+                let queryParams = `toko_id=${toko_id}&bulan=${selectedMonth}&tahun=${selectedYear}`;
+
+                if (selectedStore !== "Semua") {
+                    queryParams += `&cabang=${selectedStore}`;
+                }
+
+                if (selectedKategori !== "Semua") {
+                    queryParams += `&divisi=${selectedKategori}`;
+                }
+
+                const response = await api.get(`/absensi-karyawan/export?${queryParams}`, {
+                    responseType: 'blob'
+                });
+
+                const blob = new Blob([response.data], { 
+                    type: response.headers['content-type'] 
+                });
+                const url = window.URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+
+                const contentDisposition = response.headers['content-disposition'];
+                const filename = contentDisposition
+                    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                    : `absensi-gaji-karyawan-${selectedMonth}-${selectedYear}.xlsx`;
+                
+                link.setAttribute('download', filename);
+
+                document.body.appendChild(link);
+                link.click();
+                
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(link);
+                
+            } catch (error) {
+                console.error('Error exporting data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -231,8 +277,9 @@ export default function Karyawan(){
                                     <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
                                 </svg>} 
                                 bgColor="border border-secondary" 
-                                hoverColor="hover:bg-white" 
+                                // hoverColor="hover:bg-white" 
                                 textColor="text-black" 
+                                onClick={handleExport}
                             />
                         </div>
                         {!isHeadGudang && (
@@ -245,14 +292,15 @@ export default function Karyawan(){
                             </div>
                         )}
                         <div className="w-full md:w-auto">
-                                <input 
+                                <input
                                     type="month"
-                                    value={monthValue}
-                                    onChange={handleMonthChange}
-                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    style={{
-                                        maxWidth: '200px',
-                                    }}
+                                        value={`${selectedYear}-${selectedMonth}`}
+                                        onChange={(e) => {
+                                            const date = moment(e.target.value);
+                                            setSelectedMonth(date.format('MM'));
+                                            setSelectedYear(date.format('YYYY'));
+                                        }}
+                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
                                 />
                         </div>
                     </div>

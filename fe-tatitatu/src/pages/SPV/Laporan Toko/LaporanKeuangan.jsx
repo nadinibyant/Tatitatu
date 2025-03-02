@@ -172,7 +172,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.nama_cabang,
                                             toko: item.nama_toko,
                                             kategori: item.kategori_pemasukan,
-                                            total: item.jumlah_pemasukan,
+                                            total: item.total_pemasukan,
                                             jenis: 'pemasukan'
                                         };
                                     } else if (item.penjualan_id) {
@@ -187,7 +187,7 @@ export default function LaporanKeuangan() {
                                                 : '',
                                             toko: item.nama_toko,
                                             kategori: item.kategori_pemasukan,
-                                            total: item.total_pengeluaran, 
+                                            total: item.total_pemasukan, 
                                             jenis: 'penjualan'
                                         };
                                     }
@@ -199,6 +199,12 @@ export default function LaporanKeuangan() {
                                 nama_jenis: 'Pengeluaran',
                                 data: apiData.pengeluaran ? apiData.pengeluaran.map(item => {
                                     if (item.pengeluaran_id) {
+                                        let jenis = 'pengeluaran';
+                                        if (item.pengeluaran_id.startsWith('BGA')) {
+                                            jenis = 'pengeluaran-gaji';
+                                        } else if (item.pengeluaran_id.startsWith('EXP')) {
+                                            jenis = 'pengeluaran-operasional';
+                                        }
 
                                         return {
                                             nomor: item.pengeluaran_id,
@@ -208,7 +214,7 @@ export default function LaporanKeuangan() {
                                             toko: item.nama_toko,
                                             kategori: item.kategori_pengeluaran,
                                             total: item.jumlah_pengeluaran,
-                                            jenis: 'pengeluaran'
+                                            jenis: jenis 
                                         };
                                     } else if (item.pembelian_id) {
                                         return {
@@ -250,7 +256,7 @@ export default function LaporanKeuangan() {
     const headers = [
         { label: "Nomor", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-left" },
-        { label: "Deskripsi", key: "deskripsi", align: "text-left" },
+        { label: "Deskripsi", key: "deskripsi", align: "text-left", width: '400px' },
         { label: isOwner || isFinance || isAdmin ? (isAdmin ? "Cabang" : "Toko") : "Cabang", 
           key: isOwner || isFinance ? "toko" : "cabang", align: "text-left" },
         { label: "Kategori", key: "kategori", align: "text-left" },
@@ -264,6 +270,7 @@ export default function LaporanKeuangan() {
             ?.data || [];
     
     const navigate = useNavigate();
+    
     const handleRowClick = async (row) => {
         if (row.jenis === 'pemasukan') {
             navigate('/laporanKeuangan/pemasukan-non-penjualan/detail', { 
@@ -273,23 +280,28 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'penjualan') {
-            try {
-                setLoading(true);
-                const response = await api.get(`/penjualan/${row.nomor}`);
-                
-                if (response.data.success) {
-                    const penjualanData = response.data.data;
-                    const isCustom = penjualanData.rincian_biaya_custom?.length > 0 || 
-                                     penjualanData.produk?.some(item => item.barang_custom);
+            const isGudang = row.toko === 'Rumah Produksi' || 
+                           (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi');
+
+            console.log(isGudang)
+            
+            if (isGudang || isHeadGudang) {
+                navigate('/laporanKeuangan/penjualan-gudang/detail', {
+                    state: { 
+                        nomor: row.nomor,
+                        fromLaporanKeuangan: true 
+                    }
+                });
+            } else {
+                try {
+                    setLoading(true);
+                    const response = await api.get(`/penjualan/${row.nomor}`);
                     
-                    if (isHeadGudang) {
-                        navigate('/laporanKeuangan/penjualan-gudang/detail', {
-                            state: { 
-                                nomor: row.nomor,
-                                fromLaporanKeuangan: true 
-                            }
-                        });
-                    } else {
+                    if (response.data.success) {
+                        const penjualanData = response.data.data;
+                        const isCustom = penjualanData.rincian_biaya_custom?.length > 0 || 
+                                        penjualanData.produk?.some(item => item.barang_custom);
+                        
                         navigate('/laporanKeuangan/pemasukan/penjualan/detail', {
                             state: { 
                                 nomor: row.nomor,
@@ -297,16 +309,23 @@ export default function LaporanKeuangan() {
                                 fromLaporanKeuangan: true 
                             }
                         });
+                    } else {
+                        console.error('Failed to fetch penjualan details:', response.data.message);
                     }
-                } else {
-                    console.error('Failed to fetch penjualan details:', response.data.message);
+                } catch (error) {
+                    console.error('Error fetching penjualan details:', error);
+                } finally {
+                    setLoading(false);
                 }
-            } catch (error) {
-                console.error('Error fetching penjualan details:', error);
-            } finally {
-                setLoading(false);
             }
-        } else if (row.jenis === 'pengeluaran') {
+        } else if (row.jenis === 'pengeluaran-gaji') {
+            navigate('/laporanKeuangan/pengeluaran/gaji', { 
+                state: { 
+                    nomor: row.nomor,
+                    fromLaporanKeuangan: true 
+                } 
+            });
+        } else if (row.jenis === 'pengeluaran-operasional' || row.jenis === 'pengeluaran') {
             navigate('/laporanKeuangan/pengeluaran/detail', { 
                 state: { 
                     nomor: row.nomor,
@@ -314,10 +333,14 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'pembelian') {
+            const isGudang = row.toko === 'Rumah Produksi' || 
+                            (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi');
+            
             navigate('/pembelianStok/detail', { 
                 state: { 
                     id: row.nomor,
-                    fromLaporanKeuangan: true 
+                    fromLaporanKeuangan: true,
+                    gudang: isGudang
                 } 
             });
         }
@@ -461,82 +484,83 @@ export default function LaporanKeuangan() {
                             <div className="flex border-b border-gray-300 mb-4">
                                 {["Semua","Pemasukan", "Pengeluaran"].map((jenis) => (
                                     <button
-                                        key={jenis}
-                                        onClick={() => setSelectedJenis(jenis)}
-                                        className={`px-4 py-2 text-sm font-semibold ${
-                                            selectedJenis === jenis
-                                                ? "text-primary border-b-2 border-primary"
-                                                : "text-gray-400"
-                                        }`}
-                                    >
-                                        {jenis}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {loading ? (
-                                <div className="flex justify-center items-center py-10">
-                                    <Spinner />
-                                </div>
-                            ) : error ? (
-                                <div className="text-center py-4 text-red-500">{error}</div>
-                            ) : (
-                                <Table
-                                    headers={headers}
-                                    data={filteredData().map((item) => ({
-                                        ...item,
-                                        tanggal: moment(item.tanggal).format('DD MMMM YYYY'),
-                                        total: `Rp${Number(item.total).toLocaleString('id-ID')}`
-                                    }))}
-                                    onRowClick={handleRowClick}
-                                    hasFilter={true}
-                                    onFilterClick={handleFilterClick}
-                                />
-                            )}
-                        </div>
-                    </section>
-                </div>
-
-                {/* Filter Modal */}
-                {isFilterModalOpen && (
-                    <>
-                        <div 
-                            className="fixed inset-0"
-                            onClick={() => setIsFilterModalOpen(false)}
-                        />
-                        <div 
-                            className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
-                            style={{ 
-                                top: filterPosition.top,
-                                left: filterPosition.left 
-                            }}
-                        >
-                            <div className="space-y-4">
-                                {filterFields.map((field) => (
-                                    <InputDropdown
-                                        key={field.key}
-                                        label={field.label}
-                                        options={field.options}
-                                        value={(field.key === "Toko" || field.key === "Cabang") ? selectedStore : selectedKategori}
-                                        onSelect={(value) => 
-                                            (field.key === "Toko" || field.key === "Cabang")
-                                                ? setSelectedStore(value.value)
-                                                : setSelectedKategori(value.value)
-                                        }
-                                        required={true}
-                                    />
-                                ))}
-                                <button
-                                    onClick={handleApplyFilter}
-                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                    key={jenis}
+                                    onClick={() => setSelectedJenis(jenis)}
+                                    className={`px-4 py-2 text-sm font-semibold ${
+                                        selectedJenis === jenis
+                                            ? "text-primary border-b-2 border-primary"
+                                            : "text-gray-400"
+                                    }`}
                                 >
-                                    Simpan
+                                    {jenis}
                                 </button>
-                            </div>
+                            ))}
                         </div>
-                    </>
-                )}
-            </LayoutWithNav>
-        </>
-    );
+
+                        {loading ? (
+                            <div className="flex justify-center items-center py-10">
+                                <Spinner />
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-4 text-red-500">{error}</div>
+                        ) : (
+                            <Table
+                                headers={headers}
+                                data={filteredData().map((item) => ({
+                                    ...item,
+                                    tanggal: moment(item.tanggal).format('DD MMMM YYYY'),
+                                    total: `Rp${Number(item.total).toLocaleString('id-ID')}`,
+                                    toko: typeof item.toko === 'object' ? item.toko.nama_toko : item.toko
+                                }))}
+                                onRowClick={handleRowClick}
+                                hasFilter={true}
+                                onFilterClick={handleFilterClick}
+                            />
+                        )}
+                    </div>
+                </section>
+            </div>
+
+            {/* Filter Modal */}
+            {isFilterModalOpen && (
+                <>
+                    <div 
+                        className="fixed inset-0"
+                        onClick={() => setIsFilterModalOpen(false)}
+                    />
+                    <div 
+                        className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                        style={{ 
+                            top: filterPosition.top,
+                            left: filterPosition.left 
+                        }}
+                    >
+                        <div className="space-y-4">
+                            {filterFields.map((field) => (
+                                <InputDropdown
+                                    key={field.key}
+                                    label={field.label}
+                                    options={field.options}
+                                    value={(field.key === "Toko" || field.key === "Cabang") ? selectedStore : selectedKategori}
+                                    onSelect={(value) => 
+                                        (field.key === "Toko" || field.key === "Cabang")
+                                            ? setSelectedStore(value.value)
+                                            : setSelectedKategori(value.value)
+                                    }
+                                    required={true}
+                                />
+                            ))}
+                            <button
+                                onClick={handleApplyFilter}
+                                className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                            >
+                                Simpan
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+        </LayoutWithNav>
+    </>
+);
 }

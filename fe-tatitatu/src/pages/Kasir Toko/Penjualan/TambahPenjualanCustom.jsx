@@ -661,7 +661,7 @@ const TambahPenjualanCustom = () => {
                 ? { ...baseRequestBody, metode_id: selectedMetode }
                 : baseRequestBody;
 
-            console.log('Full Request Body:', JSON.stringify(requestBody, null, 2));
+            // console.log('Full Request Body:', JSON.stringify(requestBody, null, 2));
 
             const response = await api.post('/penjualan', requestBody);
             

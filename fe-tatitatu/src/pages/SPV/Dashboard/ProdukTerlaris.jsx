@@ -10,6 +10,11 @@ import InputDropdown from "../../../components/InputDropdown";
 import api from "../../../utils/api";
 
 export default function ProdukTerlaris() {
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
   const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
@@ -21,6 +26,7 @@ export default function ProdukTerlaris() {
   const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
   const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
   const [barangTerlaris, setBarangTerlaris] = useState([]);
+  const [topBarangTerlaris, setTopBarangTerlaris] = useState([]);
   const [dashboardData, setDashboardData] = useState({
     barang_handmade: { nama: '-', jumlah: 0 },
     barang_non_handmade: { nama: '-', jumlah: 0 },
@@ -29,10 +35,13 @@ export default function ProdukTerlaris() {
   });
   const [productData, setProductData] = useState([]);
   const [kategoriBarang, setKategoriBarang] = useState([]);
+  const [storeData, setStoreData] = useState([]);
 
   const fetchKategoriBarang = async () => {
     try {
-      const response = await api.get('/kategori-barang-gudang');
+      const endpoint = isManajer ? '/kategori-barang' : '/kategori-barang-gudang';
+      const response = await api.get(endpoint);
+      
       if (response.data.success) {
         setKategoriBarang(response.data.data);
       }
@@ -41,10 +50,78 @@ export default function ProdukTerlaris() {
       setKategoriBarang([]);
     }
   };
+
+  const getFilteredCategories = () => {
+    const baseOptions = [{ label: "Semua", value: "Semua" }];
+
+    if (selectedStore === "Semua") {
+      const uniqueCategories = new Set();
+      const uniqueCategoryOptions = [];
+      
+      kategoriBarang.forEach(kategori => {
+        if (!uniqueCategories.has(kategori.nama_kategori_barang)) {
+          uniqueCategories.add(kategori.nama_kategori_barang);
+          uniqueCategoryOptions.push({
+            label: kategori.nama_kategori_barang,
+            value: kategori.nama_kategori_barang
+          });
+        }
+      });
+      
+      return [...baseOptions, ...uniqueCategoryOptions];
+    } 
+
+    else {
+      const selectedStoreObj = storeData.find(store => store.value === selectedStore);
+      if (!selectedStoreObj || !selectedStoreObj.id) {
+        return baseOptions;
+      }
+      
+      const selectedTokoId = selectedStoreObj.id;
+      
+      const filteredCategories = kategoriBarang
+        .filter(kategori => kategori.toko_id === selectedTokoId)
+        .map(kategori => ({
+          label: kategori.nama_kategori_barang,
+          value: kategori.nama_kategori_barang
+        }));
+      
+      return [...baseOptions, ...filteredCategories];
+    }
+  };
+  const fetchStoreData = async () => {
+    try {
+      if (isManajer) {
+        const response = await api.get('/toko');
+        
+        if (response.data.success) {
+          const stores = [
+            { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: null },
+            ...response.data.data.map(store => ({
+              label: store.nama_toko,
+              value: store.nama_toko,
+              icon: '/icon/toko.svg',
+              id: store.toko_id 
+            }))
+          ];
+          setStoreData(stores);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching store data:', error);
+      setStoreData([
+        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: null }
+      ]);
+    }
+  };
   
   useEffect(() => {
-    if (isAdminGudang || isHeadGudang) {
+    if (isAdminGudang || isHeadGudang || isManajer) {
       fetchKategoriBarang();
+    }
+
+    if (isManajer) {
+      fetchStoreData();
     }
   }, []);
 
@@ -79,13 +156,6 @@ export default function ProdukTerlaris() {
     setIsFilterModalOpen(false);
   };
 
-
-  const userData = JSON.parse(localStorage.getItem('userData'));
-  const isHeadGudang = userData?.role === 'headgudang';
-  const isAdminGudang = userData?.role === 'admingudang'
-  const isOwner = userData?.role === 'owner';
-  const isManajer = userData?.role === 'manajer';
-
   useEffect(() => {
     setSelectedStore("Semua");
   }, []);
@@ -114,28 +184,22 @@ export default function ProdukTerlaris() {
     setIsModalOpen(false);
   };
 
-  // const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-  // const formatDate = (date) =>
-  //   new Date(date).toLocaleDateString("en-US", {
-  //     month: "short",
-  //     day: "2-digit",
-  //     year: "numeric",
-  //   });
   const getImagePath = (kategori) => {
     switch(kategori) {
       case 'Handmade':
-        return 'images-barang-handmade-gudang';
+        return 'images-barang-handmade';
+      case 'Non Handmade':
       case 'NonHandmade':
-        return 'images-barang-non-handmade-gudang';
+        return 'images-barang-non-handmade';
       case 'Packaging':
-        return 'images-packaging-gudang';
+        return 'images-packaging';
       case 'Mentah':
-        return 'images-barang-mentah';
       case 'Bahan Mentah':
-          return 'images-barang-mentah';
+        return 'images-barang-mentah';
+      case 'Custom':
+        return 'images-barang-custom';
       default:
-        return 'images-barang-handmade-gudang';
+        return 'images-barang-handmade';
     }
   };  
 
@@ -223,6 +287,36 @@ export default function ProdukTerlaris() {
       setBarangTerlaris([]);
     }
   };
+  
+  // Function to fetch top 10 products data for manager/owner
+  const fetchTopBarangTerlaris = async () => {
+    try {
+      if (isOwner || isManajer) {
+        const response = await api.get(`/produk-penjualan/terlaris?bulan=${selectedMonth}&tahun=${selectedYear}`);
+        
+        if (response.data.success) {
+          const formattedData = response.data.data.map((item, index) => ({
+            nomor: index + 1,
+            "Foto": (
+              <img 
+                src={`${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}`}
+                className="w-8 h-8 object-cover rounded-lg"
+                onError={(e) => {
+                  e.target.src = "/api/placeholder/64/64";
+                }}
+              />
+            ),
+            "Nama Barang": item.name,
+            "Terjual": `${formatNumberWithDots(item.total_terjual)} Pcs`
+          }));
+          setTopBarangTerlaris(formattedData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching top company products:', error);
+      setTopBarangTerlaris([]);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -267,13 +361,21 @@ export default function ProdukTerlaris() {
       fetchBarangTerlaris();
       fetchProductData();
     }
+    
+    if (isOwner || isManajer) {
+      fetchTopBarangTerlaris();
+    }
   }, [selectedMonth, selectedYear]);
 
-  const dataCabang = [
+  // Default data if API fails
+  const defaultStoreCabang = [
     { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
     { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
     { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
   ];
+
+  // Use storeData if manager and it exists, otherwise use default data
+  const dataCabang = isManajer && storeData.length > 0 ? storeData : defaultStoreCabang;
 
   const data = {
     dashboard: {
@@ -430,6 +532,12 @@ export default function ProdukTerlaris() {
         { label: "Tas", value: "Tas" },
       ]
     }
+  ] : isManajer ? [
+    {
+      label: "Kategori",
+      key: "Kategori",
+      options: getFilteredCategories()
+    }
   ] : (isAdminGudang || isHeadGudang) ? [
     {
       label: "Jenis",
@@ -477,6 +585,12 @@ export default function ProdukTerlaris() {
     }
   ];
 
+  useEffect(() => {
+    if (isManajer) {
+      setSelectedKategori("Semua");
+    }
+  }, [selectedStore]);
+
   const selectedData = filteredData().filter((item) => {
     const isStoreMatch = selectedStore === "Semua" || item.Cabang === selectedStore;
 
@@ -504,7 +618,7 @@ export default function ProdukTerlaris() {
             <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
               {!isAdminGudang && (
                 <div className="w-full md:w-auto">
-                  <Button 
+                  {/* <Button 
                     label="Export" 
                     icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
@@ -512,11 +626,11 @@ export default function ProdukTerlaris() {
                     bgColor="border border-secondary" 
                     hoverColor="hover:bg-white" 
                     textColor="text-black" 
-                  />
+                  /> */}
                 </div>
               )}
-              {/* ButtonDropdown untuk cabang hanya muncul jika bukan headgudang */}
-              {!isHeadGudang && !isAdminGudang && (
+              {/* ButtonDropdown for stores visible for manager or roles that aren't headgudang or admingudang */}
+              {(!isHeadGudang && !isAdminGudang) && (
                 <div className="w-full md:w-auto">
                   <ButtonDropdown 
                     selectedIcon={'/icon/toko.svg'} 
@@ -526,15 +640,16 @@ export default function ProdukTerlaris() {
                 </div>
               )}
               <div className="w-full md:w-auto">
-                <input 
-                  type="month"
-                  value={monthValue}
-                  onChange={handleMonthChange}
-                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  style={{
-                      maxWidth: '200px',
-                  }}
-                />                     
+                              <input
+                                    type="month"
+                                        value={`${selectedYear}-${selectedMonth}`}
+                                        onChange={(e) => {
+                                            const date = moment(e.target.value);
+                                            setSelectedMonth(date.format('MM'));
+                                            setSelectedYear(date.format('YYYY'));
+                                        }}
+                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                />                     
               </div>
           </div>
 
@@ -626,32 +741,44 @@ export default function ProdukTerlaris() {
                         </div>
                     </div>
 
-                    {/* packaging */}
+                    {/* packaging atau custom */}
                     <div className="w-full">
-                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-gray-400 text-sm">Packaging Terlaris</p>
-                                <p className="font-bold text-lg truncate">{dashboardData.packging.nama}</p>
-                                <p>{formatNumberWithDots(dashboardData.packging.jumlah)} Pcs</p>
-                            </div>
-                            <div className="flex-shrink-0 ml-4">
-                                <img src="/Dashboard Produk/packaging.svg" alt="packaging" className="w-12 h-12" />
-                            </div>
+                      <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-400 text-sm">
+                            {isManajer ? 'Barang Custom Terlaris' : 'Packaging Terlaris'}
+                          </p>
+                          <p className="font-bold text-lg truncate">
+                            {isManajer ? dashboardData.barang_custom.nama : dashboardData.packging.nama}
+                          </p>
+                          <p>
+                            {formatNumberWithDots(isManajer ? dashboardData.barang_custom.jumlah : dashboardData.packging.jumlah)} Pcs
+                          </p>
                         </div>
+                        <div className="flex-shrink-0 ml-4">
+                          <img 
+                            src={isManajer ? "/Dashboard Produk/custom.svg" : "/Dashboard Produk/packaging.svg"}
+                            alt={isManajer ? "Custom" : "packaging"} 
+                            className="w-12 h-12" 
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* custom */}
+                    {/* custom mentah */}
                     <div className="w-full">
-                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-gray-400 text-sm">Barang Mentah Terlaris</p>
-                                <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
-                                <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
-                            </div>
-                            <div className="flex-shrink-0 ml-4">
-                                <img src="/Dashboard Produk/custom.svg" alt="Custom" className="w-12 h-12" />
-                            </div>
+                      <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-400 text-sm">
+                            {isManajer ? 'Barang Mentah Terlaris' : 'Barang Mentah Terlaris'}
+                          </p>
+                          <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
+                          <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
                         </div>
+                        <div className="flex-shrink-0 ml-4">
+                          <img src="/Dashboard Produk/custom.svg" alt="Custom" className="w-12 h-12" />
+                        </div>
+                      </div>
                     </div>
                 </div>
             </div>
@@ -673,7 +800,7 @@ export default function ProdukTerlaris() {
                       }))}
                       hasFilter={!isAdminGudang}
                       onFilterClick={handleFilterClick}
-                  />
+                    />
                   </div>
 
                   <div className="bg-white rounded-xl p-5">
@@ -684,7 +811,7 @@ export default function ProdukTerlaris() {
                       </div>
                       <Table
                         headers={headers2}
-                        data={(isAdminGudang || isHeadGudang) ? barangTerlaris : data.barang_terlaris.map((item, index) => ({
+                        data={(isAdminGudang || isHeadGudang) ? barangTerlaris : (isOwner || isManajer) ? topBarangTerlaris : data.barang_terlaris.map((item, index) => ({
                           ...item,
                           "Foto": <img src={item["Foto"]} className="w-8 h-8 object-cover rounded-lg" />,
                           nomor: index + 1,
@@ -738,42 +865,6 @@ export default function ProdukTerlaris() {
                 </div>
             </>
         )}
-        {/* Filter Modal */}
-        {/* {isFilterModalOpen && (
-            <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-              <div className="relative flex flex-col items-start p-6 space-y-4 border w-full bg-white rounded-lg shadow-md max-w-lg">
-                <button
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                <h2 className="text-lg font-bold mb-4">Filter</h2>
-                <form className="w-full" onSubmit={(e) => { e.preventDefault(); handleApplyFilter(); }}>
-                  {filterFields.map((field, index) => (
-                    <div className="mb-4" key={index}>
-                      <label className="block text-gray-700 font-medium mb-2">
-                        {field.label}
-                      </label>
-                      <ButtonDropdown
-                        options={field.options}
-                        selectedStore={field.key === "Jenis" ? selectedJenis : selectedKategori}
-                        onSelect={(value) => field.key === "Jenis" ? setSelectedJenis(value) : setSelectedKategori(value)}
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="submit"
-                    className="py-2 px-4 w-full bg-primary text-white rounded-md hover:bg-white hover:border hover:border-primary hover:text-black focus:outline-none"
-                  >
-                    Terapkan
-                  </button>
-                </form>
-              </div>
-            </div>
-          )} */}
       </LayoutWithNav>
     </>
   );

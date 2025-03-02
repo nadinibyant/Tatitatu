@@ -21,21 +21,28 @@ export default function TambahAkunKaryawan(){
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [formData, setFormData] = useState({
-      photo: null,
-      email: '',
-      password: '12345678',
-      name: '',
-      division: '',
-      store: '',
-      branch: '',        
-      baseSalary: '',
-      bonus: '',
-      workHours: {
-          amount: '',
-          unit: 'Menit'
-      },
-      phone: '' 
-  });
+        photo: null,
+        email: '',
+        password: '12345678',
+        name: '',
+        division: '',
+        store: '',
+        branch: '',        
+        baseSalary: '',
+        bonus: '',
+        workHours: {
+            amount: '',
+            unit: 'Menit'
+        },
+        phone: '',
+        jenis_karyawan: '' 
+      });
+
+      const jenisKaryawanOptions = [
+        { value: 'Umum', label: 'Umum' },
+        { value: 'Produksi', label: 'Produksi' },
+        { value: 'Transportasi', label: 'Transportasi' }
+      ];
 
   const [errors, setErrors] = useState({});
   const userDataLogin = JSON.parse(localStorage.getItem('userData'));
@@ -163,7 +170,7 @@ export default function TambahAkunKaryawan(){
                 formDataToSend.append('nama_karyawan', formData.name);
                 formDataToSend.append('password', '12345678');
                 formDataToSend.append('divisi_karyawan_id', formData.division);
-
+                formDataToSend.append('jenis_karyawan', formData.jenis_karyawan);
                 if (!isHeadGudang) {
                     formDataToSend.append('cabang_id', formData.branch);
                 }
@@ -307,6 +314,14 @@ export default function TambahAkunKaryawan(){
                                 error={!!errors.division}
                                 errorMessage={errors.division}
                                 onSelect={(option) => handleInputChange('division')(option.value)}
+                            />
+
+                            <InputDropdown
+                                label="Jenis Karyawan"
+                                options={jenisKaryawanOptions}
+                                value={formData.jenis_karyawan}
+                                onSelect={(option) => handleInputChange('jenis_karyawan')(option.value)}
+                                required={true}
                             />
 
                             <Input

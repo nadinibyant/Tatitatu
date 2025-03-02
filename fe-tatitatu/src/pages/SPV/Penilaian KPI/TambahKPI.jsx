@@ -237,11 +237,9 @@ export default function TambahKPI(){
             });
     
             if (isCurrentlyChecked && kpiKaryawanId) {
-                // Jika sedang tercentang, kirim DELETE request
                 const response = await api.delete(`/kpi-karyawan/${kpiKaryawanId}`);
                 if (!response.data.success) {
                     console.error('Failed to delete KPI:', response.data.message);
-                    // Kembalikan state jika gagal
                     setData(prev => {
                         const newKPIList = [...prev.kpiList];
                         const newChecks = [...newKPIList[kpiIndex].checks];
@@ -260,7 +258,6 @@ export default function TambahKPI(){
                     return;
                 }
             } else {
-                // Jika belum tercentang, kirim POST request
                 const response = await api.post('/kpi-karyawan', {
                     kpi_id: kpi.kpi_id,
                     karyawan_id: id,
@@ -268,7 +265,6 @@ export default function TambahKPI(){
                 });
                 if (!response.data.success) {
                     console.error('Failed to update KPI:', response.data.message);
-                    // Kembalikan state jika gagal
                     setData(prev => {
                         const newKPIList = [...prev.kpiList];
                         const newChecks = [...newKPIList[kpiIndex].checks];
@@ -291,7 +287,6 @@ export default function TambahKPI(){
             await fetchKPIData();
         } catch (error) {
             console.error('Error handling KPI check:', error);
-            // Kembalikan state jika terjadi error
             setData(prev => {
                 const newKPIList = [...prev.kpiList];
                 const newChecks = [...newKPIList[kpiIndex].checks];

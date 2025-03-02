@@ -27,7 +27,19 @@ export default function IzinCuti() {
 
     const userData = JSON.parse(localStorage.getItem('userData'))
     const toko_id = userData.userId
+    const isAdminGudang = userData?.role === 'admingudang'
+    const [employeeDetail, setEmployeeDetail] = useState(null);
 
+    const fetchEmployeeDetail = async (employeeId) => {
+        try {
+          const response = await api.get(`/karyawan/${employeeId}`);
+          if (response.data.success) {
+            setEmployeeDetail(response.data.data);
+          }
+        } catch (error) {
+          console.error('Error fetching employee details:', error);
+        }
+      };
 
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -91,23 +103,93 @@ const handleConfirmAction = async () => {
     handleStatusUpdate(tempAction.id, tempAction.status);
     
     try {
-        setLoading(true)
-        const response = await api.put(`/cuti-karyawan/${tempAction.id}`, {
-            status: tempAction.status
-        })
-        if(response.data.success){
+        setLoading(true);
+        
+        let endpoint = '';
+        let payload = {};
+        
+        if (isAdminGudang) {
+            endpoint = `/produksi-gudang/${tempAction.id}`;
+            payload = { status: tempAction.status };
+        } else {
+            endpoint = `/cuti-karyawan/${tempAction.id}`;
+            payload = { status: tempAction.status };
+        }
+        
+        const response = await api.put(endpoint, payload);
+        
+        if (response.data.success) {
             setIsAcceptAlert(false);
             setIsRejectAlert(false);
             setIsSuccessAlert(true);
+
+            fetchCutiKaryawan();
         }
     } catch (error) {
-        console.error('Kesalahan Server', error)
+        console.error('Kesalahan Server', error);
     } finally {
-        setLoading(false)
+        setLoading(false);
     }
 };
 
+const handleAcceptProduksi = (id, e) => {
+    e.stopPropagation();
+    setTempAction({ id, status: "diterima" });
+    setIsAcceptAlert(true);
+};
+
+const handleRejectProduksi = (id, e) => {
+    e.stopPropagation();
+    setTempAction({ id, status: "ditolak" });
+    setIsRejectAlert(true);
+};
+
 const ActionButtons = ({ id, status }) => {
+    if (isAdminGudang) {
+        if (status === "proses") {
+            return (
+                <div className="flex justify-center items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                        label="Terima"
+                        onClick={(e) => handleAcceptProduksi(id, e)}
+                        bgColor="bg-hijau"
+                        textColor="text-white"
+                    />
+                    <Button
+                        label="Tolak"
+                        onClick={(e) => handleRejectProduksi(id, e)}
+                        bgColor="bg-merah"
+                        textColor="text-white"
+                    />
+                </div>
+            );
+        }
+
+        let badgeClass = "";
+        let displayStatus = status;
+        
+        switch (status) {
+            case "Diterima":
+                badgeClass = "bg-green-100 text-green-800";
+                displayStatus = "Diterima";
+                break;
+            case "Ditolak":
+                badgeClass = "bg-red-100 text-red-800";
+                displayStatus = "Ditolak";
+                break;
+            default:
+                badgeClass = "bg-gray-100 text-gray-800";
+        }
+        
+        return (
+            <div className="w-full min-w-[120px]">
+                <span className={`${badgeClass} rounded-md px-4 py-1.5 text-sm w-full text-center block`}>
+                    {displayStatus}
+                </span>
+            </div>
+        );
+    }
+
     if (status) {
         return <StatusBadge status={status} />;
     }
@@ -130,15 +212,23 @@ const ActionButtons = ({ id, status }) => {
     );
 };
 
-
-    const headers = [
+    const headers = isAdminGudang 
+    ? [
+        { label: "No", key: "No", align: "text-left" },
+        { label: "Nama", key: "Nama", align: "text-left" },
+        { label: "Tanggal", key: "Rentang Waktu", align: "text-left" },
+        { label: "Jumlah Produksi", key: "Jumlah Produksi", align: "text-left" },
+        { label: "Total Menit", key: "Total Menit", align: "text-left" },
+        { label: "Aksi", key: "Aksi", align: "text-center" },
+      ]
+    : [
         { label: "No", key: "No", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },
         { label: "Divisi", key: "Divisi", align: "text-left" },
         { label: "Rentang Waktu", key: "Rentang Waktu", align: "text-left" },
         { label: "Jumlah Hari", key: "Jumlah Hari", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-center" },
-    ];
+      ];
 
     const [data, setData] = useState([
         // {
@@ -173,23 +263,62 @@ const ActionButtons = ({ id, status }) => {
     const fetchCutiKaryawan = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`); 
             
-            const formattedData = response.data.data.flatMap(karyawan => 
-                karyawan.cuti_karyawan.map(cuti => ({
-                    id: cuti.cuti_karyawan_id,
-                    Nama: karyawan.nama_karyawan,
-                    Divisi: karyawan.divisi.nama_divisi,
-                    "Rentang Waktu": `${moment(cuti.tanggal_mulai).format('DD/MM/YYYY')} - ${moment(cuti.tanggal_selesai).format('DD/MM/YYYY')}`,
-                    "Jumlah Hari": `${cuti.jumlah_cuti} Hari`,
-                    status: cuti.status,
-                    alasan: cuti.alasan
-                }))
-            );
-            
-            setData(formattedData);
+            if (isAdminGudang) {
+                const response = await api.get(`/produksi-gudang?toko_id=${toko_id}`);
+                
+                if (response.data.success) {
+                    const formattedData = response.data.data.map((item) => {
+                        const tanggal = moment(item.tanggal).format('DD/MM/YYYY');
+                        
+                        const totalItems = item.produk.reduce((sum, produk) => sum + produk.jumlah, 0);
+                        
+                        const totalMinutes = item.total_menit;
+                        const hours = Math.floor(totalMinutes / 60);
+                        const minutes = totalMinutes % 60;
+                        const duration = `${hours}h ${minutes}m`;
+                        
+                        const productNames = item.produk.map(p => 
+                            `${p.barang.nama_barang} (${p.jumlah})`
+                        ).join(", ");
+                        
+                        return {
+                            id: item.produksi_gudang_id,
+                            Nama: item.karyawan?.nama_karyawan || "Tidak Tersedia",
+                            Divisi: "Produksi", 
+                            "Rentang Waktu": tanggal, 
+                            "Jumlah Produksi": totalItems + " Produk", 
+                            "Total Menit": totalMinutes.toLocaleString('id-ID') + " Menit", 
+                            "Jumlah Hari": totalItems + " Produk", 
+                            status: item.status, 
+                            alasan: `Produksi: ${productNames}\nDurasi: ${duration}\nLokasi: ${item.gmaps}`,
+                            image: item.image,
+                            gmaps: item.gmaps,
+                            rawData: item
+                        };
+                    });
+                    
+                    setData(formattedData);
+                }
+            } else {
+                const response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`); 
+                
+                const formattedData = response.data.data.flatMap(karyawan => 
+                    karyawan.cuti_karyawan.map(cuti => ({
+                        id: cuti.cuti_karyawan_id,
+                        Nama: karyawan.nama_karyawan,
+                        Divisi: karyawan.divisi.nama_divisi,
+                        "Rentang Waktu": `${moment(cuti.tanggal_mulai).format('DD/MM/YYYY')} - ${moment(cuti.tanggal_selesai).format('DD/MM/YYYY')}`,
+                        "Jumlah Hari": `${cuti.jumlah_cuti} Hari`,
+                        status: cuti.status,
+                        alasan: cuti.alasan
+                    }))
+                );
+                
+                setData(formattedData);
+            }
         } catch (error) {
-            console.error('Error fetching cuti karyawan:', error);
+            console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
@@ -241,8 +370,17 @@ const ActionButtons = ({ id, status }) => {
         return filteredItems;
     };
 
-    const handleRowClick = (row) => {
+    const handleRowClick = async (row) => {
         setSelectedRow(row);
+    
+        if (isAdminGudang && row.rawData?.karyawan_id) {
+            try {
+                await fetchEmployeeDetail(row.rawData.karyawan_id);
+            } catch (error) {
+                console.error('Error fetching employee details:', error);
+            }
+        }
+        
         setModalDetail(true);
     };
 
@@ -254,7 +392,9 @@ const ActionButtons = ({ id, status }) => {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Daftar Pengajuan Cuti/Izin</p>
+                            <p className="text-primary text-base font-bold">
+                                {isAdminGudang ? "Absensi Karyawan" : "Daftar Pengajuan Cuti/Izin"}
+                            </p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -292,83 +432,141 @@ const ActionButtons = ({ id, status }) => {
 
                 {/* Detail Modal */}
                 {isModalDetail && selectedRow && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                     <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
-                      {/* Close Button */}
-                      <button className="absolute right-4 top-4">
-                        <X className="w-6 h-6 text-gray-400" onClick={() => setModalDetail(false)}/>
-                      </button>
-              
-                      {/* Form Content */}
-                      <div className="space-y-6">
-                        {/* Grid for Name, Division, and Date Range */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {/* Name Section */}
-                          <div>
-                            <label className="block text-gray-500 text-sm mb-1">Nama</label>
-                            <div className="font-medium">{selectedRow.Nama}</div>
-                          </div>
-              
-                          {/* Division Section */}
-                          <div>
-                            <label className="block text-gray-500 text-sm mb-1">Divisi</label>
-                            <div className="font-medium">{selectedRow.Divisi}</div>
-                          </div>
-              
-                          {/* Date Range Section */}
-                          <div>
-                            <label className="block text-gray-500 text-sm mb-1">Rentang Waktu</label>
-                            <div className="font-medium">{selectedRow["Rentang Waktu"]}</div>
-                          </div>
-                        </div>
-              
-                        {/* Number of Days */}
-                        <div>
-                          <label className="block text-gray-500 text-sm mb-1">Jumlah Hari</label>
-                          <div className="font-medium">{selectedRow["Jumlah Hari"]}</div>
-                        </div>
-              
-                        {/* Reason Section */}
-                        <div>
-                          <label className="block text-gray-500 text-sm mb-1">
-                            Alasan<span className="text-red-500">*</span>
-                          </label>
-                          <div className="mt-1">
-                            <textarea 
-                              className="w-full border border-gray-300 rounded-lg p-3 min-h-[120px] resize-none"
-                              defaultValue={selectedRow.alasan}
-                              readOnly
-                            />
-                          </div>
-                        </div>
-              
-                        {/* Action Buttons */}
-                        <div className="flex justify-end space-x-6 pt-4">
-                            <button 
-                            className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors" 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleRejectClick(selectedRow.id, e);
-                                setModalDetail(false);
-                            }}
-                            >
-                            Tolak
-                            </button>
-                            <button 
-                            className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptClick(selectedRow.id, e);
-                                setModalDetail(false);
-                            }}
-                            >
-                            Terima
-                            </button>
-                        </div>
-                      </div>
+                        <button className="absolute right-4 top-4">
+                            <X className="w-6 h-6 text-gray-400" onClick={() => setModalDetail(false)}/>
+                        </button>
+    
+                        {isAdminGudang ? (
+                            <div className="space-y-6">
+                                <h2 className="text-xl font-semibold">
+                                    {employeeDetail?.nama_karyawan || selectedRow.Nama || "Karyawan"}
+                                </h2>
+            
+                                <div>
+                                    <label className="block text-gray-500 text-sm mb-1">Tanggal</label>
+                                    <div className="font-medium">{selectedRow["Rentang Waktu"]}</div>
+                                </div>
+        
+                                <div>
+                                    {selectedRow.rawData?.produk && (
+                                        <Table
+                                            headers={[
+                                                { label: "No", key: "No", align: "text-left" },
+                                                { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
+                                                { label: "Jumlah", key: "Jumlah", align: "text-left" },
+                                                { label: "Total Menit", key: "Total Menit", align: "text-left" }
+                                            ]}
+                                            data={selectedRow.rawData.produk.map((item, index) => ({
+                                                No: index + 1,
+                                                "Nama Barang": item.barang.nama_barang,
+                                                "Jumlah": item.jumlah,
+                                                "Total Menit": `${selectedRow.rawData.total_menit.toLocaleString('id-ID')} Menit`
+                                            }))}
+                                            hasSearch={false}
+                                            hasPagination={false}
+                                        />
+                                    )}
+                                </div>
+
+                                {selectedRow.status === "proses" && (
+                                    <div className="flex justify-end space-x-4 pt-4">
+                                        <button 
+                                            className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors" 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRejectProduksi(selectedRow.id, e);
+                                                setModalDetail(false);
+                                            }}
+                                        >
+                                            Tolak
+                                        </button>
+                                        <button 
+                                            className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAcceptProduksi(selectedRow.id, e);
+                                                setModalDetail(false);
+                                            }}
+                                        >
+                                            Terima
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            /* Original Detail View for non-admin gudang */
+                            <div className="space-y-6">
+                                {/* Grid for Name, Division, and Date Range */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Name Section */}
+                                    <div>
+                                        <label className="block text-gray-500 text-sm mb-1">Nama</label>
+                                        <div className="font-medium">{selectedRow.Nama}</div>
+                                    </div>
+                                    
+                                    {/* Division Section */}
+                                    <div>
+                                        <label className="block text-gray-500 text-sm mb-1">Divisi</label>
+                                        <div className="font-medium">{selectedRow.Divisi}</div>
+                                    </div>
+                                    
+                                    {/* Date Range Section */}
+                                    <div>
+                                        <label className="block text-gray-500 text-sm mb-1">Rentang Waktu</label>
+                                        <div className="font-medium">{selectedRow["Rentang Waktu"]}</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Number of Days */}
+                                <div>
+                                    <label className="block text-gray-500 text-sm mb-1">Jumlah Hari</label>
+                                    <div className="font-medium">{selectedRow["Jumlah Hari"]}</div>
+                                </div>
+                                
+                                {/* Reason Section */}
+                                <div>
+                                    <label className="block text-gray-500 text-sm mb-1">
+                                        Alasan<span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="mt-1">
+                                        <textarea 
+                                            className="w-full border border-gray-300 rounded-lg p-3 min-h-[120px] resize-none"
+                                            defaultValue={selectedRow.alasan}
+                                            readOnly
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex justify-end space-x-6 pt-4">
+                                    <button 
+                                        className="px-8 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors" 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRejectClick(selectedRow.id, e);
+                                            setModalDetail(false);
+                                        }}
+                                    >
+                                        Tolak
+                                    </button>
+                                    <button 
+                                        className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAcceptClick(selectedRow.id, e);
+                                            setModalDetail(false);
+                                        }}
+                                    >
+                                        Terima
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                  </div>
-                )}
+                </div>
+            )}
                 {isFilterModalOpen && (
                     <>
                         <div 

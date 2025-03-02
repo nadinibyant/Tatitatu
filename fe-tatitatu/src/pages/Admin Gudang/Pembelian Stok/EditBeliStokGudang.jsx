@@ -453,7 +453,7 @@ export default function EditBeliStokGudang() {
                 sub_total: subtotal,
                 diskon: diskon,
                 pajak: pajak,
-                total_penjualan: totalPenjualan,
+                total_pembelian: totalPenjualan,
                 produk: formattedProducts,
                 catatan: note
             };
@@ -620,7 +620,7 @@ export default function EditBeliStokGudang() {
                                         </div>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
-                                        <p className="font-bold">Total Penjualan</p>
+                                        <p className="font-bold">Total Pembelian</p>
                                         <p className="font-bold">Rp{totalPenjualan.toLocaleString()}</p>
                                     </div>
                                     <div>

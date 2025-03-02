@@ -245,6 +245,44 @@ export default function AkunKaryawan() {
         return dataToDisplay;
     };
 
+    const handleExport = async () => {
+        try {
+            setLoading(true);
+
+            const response = await api.get(`/karyawan/export?toko_id=${toko_id}`, {
+                responseType: 'blob'
+            });
+ 
+            const blob = new Blob([response.data], { 
+                type: response.headers['content-type'] 
+            });
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const contentDisposition = response.headers['content-disposition'];
+            const filename = contentDisposition
+                ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                : `daftar-karyawan-${new Date().toISOString().split('T')[0]}.xlsx`;
+            
+            link.setAttribute('download', filename);
+            
+            document.body.appendChild(link);
+            link.click();
+
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+            
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            setErrorMessage('Gagal mengunduh data. Silakan coba lagi.');
+            setErrorAlert(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <>
             <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -267,8 +305,9 @@ export default function AkunKaryawan() {
                                             fill="#7B0C42" />
                                     </svg>}
                                     bgColor="border border-secondary"
-                                    hoverColor="hover:bg-white"
+                                    // hoverColor="hover:bg-white"
                                     textColor="text-black"
+                                    onClick={handleExport}
                                 />
                             </div>
 

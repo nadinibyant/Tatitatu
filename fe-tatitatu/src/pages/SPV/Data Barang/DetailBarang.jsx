@@ -204,6 +204,33 @@ export default function DetailBarang() {
     };
     const handleBtnEdit = () => navigate(`/dataBarang/handmade/edit/${id}`);
 
+    const getCurrentBranchData = () => {
+        if (isAdminGudang) {
+            return {
+                "Total HPP": data["Total HPP"],
+                "Total Keuntungan": data["Total Keuntungan"],
+                "Harga Jual": data["Harga Jual"]
+            };
+        }
+        
+        const branchData = data.dataCabang.find(cabang => cabang.nama === selectedCabang);
+        
+        if (branchData) {
+            return {
+                "Total HPP": branchData.totalHPP,
+                "Total Keuntungan": branchData.keuntungan,
+                "Harga Jual": branchData.hargaJual
+            };
+        }
+        
+        // Default fallback
+        return {
+            "Total HPP": data["Total HPP"],
+            "Total Keuntungan": data["Total Keuntungan"],
+            "Harga Jual": data["Harga Jual"]
+        };
+    };
+
     if (isLoading) return <Spinner />;
     if (!data) return <div>Data tidak ditemukan</div>;
 
@@ -309,17 +336,17 @@ export default function DetailBarang() {
 
                                 <div>
                                     <p className="text-gray-500">Total HPP</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Total HPP"])}</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Total HPP"])}</p>
                                 </div>
 
                                 <div>
                                     <p className="text-gray-500">Total Keuntungan</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Total Keuntungan"])}</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Total Keuntungan"])}</p>
                                 </div>
 
                                 <div>
                                     <p className="text-gray-500">Harga Jual</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Harga Jual"])}</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Harga Jual"])}</p>
                                 </div>
 
                                 <div>

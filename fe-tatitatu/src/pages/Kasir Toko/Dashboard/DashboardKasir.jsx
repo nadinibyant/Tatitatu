@@ -103,23 +103,31 @@ export default function DashboardKasir(){
     const fetchTargetBulanan = async () => {
         try {
             if (!cabang_id) return;
+            const year = selectedYear;
+
+            const response = await api.get(`/target-bulanan-kasir`, {
+                params: {
+                    cabang: cabang_id,
+                    tahun: year
+                }
+            });
     
-            const response = await api.get(`/target-bulanan-kasrir/${cabang_id}/cabang`);
             if (response.data.success) {
-                const bulanNames = [
-                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                const monthNames = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
                 ];
-                const selectedMonthName = bulanNames[parseInt(selectedMonth) - 1];
-                
+
+                const selectedMonthName = monthNames[parseInt(selectedMonth) - 1];
+
                 const targetData = response.data.data.find(item => 
                     item.bulan === selectedMonthName
                 );
-    
+                
                 if (targetData) {
                     setTargetBulanan({
-                        tersisa: targetData.jumlah_target, 
-                        tercapai: 0
+                        tersisa: targetData.jumlah_target,
+                        tercapai: targetData.tercapai || 0
                     });
                 } else {
                     setTargetBulanan({
@@ -130,6 +138,10 @@ export default function DashboardKasir(){
             }
         } catch (error) {
             console.error('Error fetching target bulanan:', error);
+            setTargetBulanan({
+                tersisa: 0,
+                tercapai: 0
+            });
         }
     };
 

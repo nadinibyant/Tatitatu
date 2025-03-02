@@ -293,21 +293,23 @@ export default function EditPembelianStok() {
     }, [categories]);
 
     const getModalPrice = (item, cabangIndex) => {
+        if (!item || !item.rincian_biaya) return 0;
+        
         const currentCabang = dataCabang[cabangIndex];
-        if (!item.rincian_biaya || !currentCabang) return 0;
-    
+        if (!currentCabang) return 0;
+        
         const rincianBiaya = item.rincian_biaya.find(
             rincian => rincian.cabang?.nama_cabang === currentCabang.nama
         );
-    
-        if (!rincianBiaya?.detail_rincian_biaya) return 0;
-    
+        
+        if (!rincianBiaya || !rincianBiaya.detail_rincian_biaya) return 0;
+        
         const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
             detail => detail.nama_biaya === "Modal"
         );
-    
+        
         return modalBiaya ? modalBiaya.jumlah_biaya : 0;
-    };
+      };
 
     useEffect(() => {
         const fetchMetodePembayaran = async () => {
@@ -727,25 +729,40 @@ export default function EditPembelianStok() {
         const matchesCategory = selectedCategory === "Semua" || 
                               item.kategori === selectedCategory;
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-        if (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") {
-            const currentCabang = dataCabang[activeCabang];
-            if (currentCabang && item.rincian_biaya) {
-                const rincianBiaya = item.rincian_biaya.find(
-                    rincian => rincian.cabang?.nama_cabang === currentCabang.nama
-                );
-                
-                if (rincianBiaya?.detail_rincian_biaya) {
-                    const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
-                        detail => detail.nama_biaya === "Modal"
-                    );
-                    if (modalBiaya) {
-                        item.price = modalBiaya.jumlah_biaya;
+  
+        if (!item.price) {
+            if (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") {
+                if (activeCabang !== null && dataCabang[activeCabang]) {
+                    const currentCabang = dataCabang[activeCabang];
+                    if (currentCabang && item.rincian_biaya) {
+                        const rincianBiaya = item.rincian_biaya.find(
+                            rincian => rincian.cabang?.nama_cabang === currentCabang.nama
+                        );
+                        
+                        if (rincianBiaya?.detail_rincian_biaya) {
+                            const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
+                                detail => detail.nama_biaya === "Modal"
+                            );
+                            if (modalBiaya) {
+                                item.price = modalBiaya.jumlah_biaya;
+                            } else {
+                                item.price = 0;
+                            }
+                        } else {
+                            item.price = 0; 
+                        }
+                    } else {
+                        item.price = 0; 
                     }
+                } else {
+                    item.price = 0;
                 }
+            } else {
+
+                item.price = item.price || 0;
             }
         }
-
+  
         return matchesCategory && matchesSearch;
     }) || [];
 
@@ -755,48 +772,79 @@ export default function EditPembelianStok() {
     };
 
     const handleModalSubmit = () => {
-        if (activeCabang !== null) {
+        if (activeCabang !== null && activeCabang >= 0 && activeCabang < dataCabang.length) {
             const updatedCabang = [...dataCabang];
             const newItems = selectedItems.map(item => {
-                let price = item.price;
-    
-                // Cari jenis barang
+                let price = item.price || 0; // Ensure price is never undefined
+                
+                // Find item type
                 const jenisBarang = dataBarang.find(category => 
                     category.items.some(i => i.id === item.id)
-                )?.jenis;
+                )?.jenis || "Unknown";
     
-                // Jika handmade atau non-handmade, ambil harga modal
+                // If handmade or non-handmade, get modal price
                 if ((jenisBarang === "Barang Handmade" || jenisBarang === "Barang Non-Handmade")) {
                     const selectedItem = dataBarang
                         .find(cat => cat.jenis === jenisBarang)
                         ?.items.find(i => i.id === item.id);
                     
                     if (selectedItem) {
-                        price = getModalPrice(selectedItem, activeCabang);
+                        const modalPrice = getModalPrice(selectedItem, activeCabang);
+                        if (modalPrice !== undefined && modalPrice !== null) {
+                            price = modalPrice;
+                        }
                     }
                 }
     
-                const totalBiaya = price * item.count;
+                // Ensure price is a number
+                price = Number(price) || 0;
+                const count = Number(item.count) || 0;
+                const totalBiaya = price * count;
+    
+                // Determine image path based on item type
+                let imagePath = '';
+                switch (jenisBarang) {
+                    case 'Barang Handmade':
+                        imagePath = 'images-barang-handmade';
+                        break;
+                    case 'Barang Non-Handmade':
+                        imagePath = 'images-barang-non-handmade';
+                        break;
+                    case 'Barang Custom':
+                        imagePath = 'images-barang-custom';
+                        break;
+                    case 'Packaging':
+                        imagePath = 'images-packaging';
+                        break;
+                    default:
+                        imagePath = '';
+                }
+    
+                let imageUrl = item.image;
+                // Extract image filename if it's a full URL
+                if (typeof item.image === 'string' && item.image.includes('/')) {
+                    const parts = item.image.split('/');
+                    imageUrl = parts[parts.length - 1];
+                }
     
                 return {
                     id: item.id,
                     No: updatedCabang[activeCabang].data.length + 1,
                     "Foto Produk": (
-                        <img src={item.image} alt={item.name} className="w-12 h-12" />
+                        <img 
+                            src={item.image}
+                            alt={item.name} 
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = '/placeholder-image.jpg';
+                            }}
+                        />
                     ),
                     "Nama Produk": item.id,
                     "Jenis Barang": jenisBarang,
                     "Harga Satuan": price,
-                    Kuantitas: item.count,
+                    Kuantitas: count,
                     "Total Biaya": totalBiaya,
-                    Aksi: (
-                        <button
-                            className="text-red-500 hover:text-red-700"
-                            onClick={() => handleDeleteItem(activeCabang, item.id, true)}
-                        >
-                            Hapus
-                        </button>
-                    ),
                     isNew: true
                 };
             });

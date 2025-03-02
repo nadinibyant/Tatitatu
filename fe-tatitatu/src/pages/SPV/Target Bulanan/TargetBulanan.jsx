@@ -27,6 +27,7 @@ export default function TargetBulanan() {
   const [newTarget, setNewTarget] = useState('');
   const [id, setId] = useState('')
   const [month, setMonth] = useState('')
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const formatCurrency = (amount) => {
     return `Rp${amount.toLocaleString('id-ID')}`;
@@ -98,33 +99,30 @@ export default function TargetBulanan() {
   };
 
   const fetchTargetBulanan = async () => {
+    if (!selectedBranch) return;
+    
     try {
       setLoading(true);
-      const response = await api.get('/target-bulanan-kasir');
+      const response = await api.get(`/target-bulanan-kasir?cabang=${selectedBranch}&tahun=${currentYear}`);
+      
       if (response.data.success) {
-        const transformedBranches = response.data.data.reduce((acc, item) => {
-          const existingBranch = acc.find(b => b.id === item.cabang_id);
-          
-          const monthData = {
+        // Process data with the new API response structure
+        const transformedBranches = [];
+        
+        // Group by branch
+        const branchData = {
+          id: response.data.data[0]?.cabang_id,
+          name: response.data.data[0]?.cabang?.nama_cabang,
+          months: response.data.data.map(item => ({
             id: item.target_bulanan_kasir_id,
             name: item.bulan,
             target: item.jumlah_target,
-            achieved: 0, 
-            remaining: item.jumlah_target 
-          };
-
-          if (existingBranch) {
-            existingBranch.months.push(monthData);
-          } else {
-            acc.push({
-              id: item.cabang_id,
-              name: item.cabang.nama_cabang,
-              months: [monthData]
-            });
-          }
-
-          return acc;
-        }, []);
+            achieved: item.tercapai || 0,
+            remaining: item.jumlah_target - (item.tercapai || 0)
+          }))
+        };
+        
+        transformedBranches.push(branchData);
         setData({ branches: transformedBranches });
       } else {
         setData({ branches: [] });
@@ -139,8 +137,13 @@ export default function TargetBulanan() {
 
   useEffect(() => {
     fetchBranches();
-    fetchTargetBulanan()
   }, []);
+
+  useEffect(() => {
+    if (selectedBranch) {
+      fetchTargetBulanan();
+    }
+  }, [selectedBranch]);
 
   const handleBranchSelect = (branchName) => {
     if (branchList.length === 0) return;

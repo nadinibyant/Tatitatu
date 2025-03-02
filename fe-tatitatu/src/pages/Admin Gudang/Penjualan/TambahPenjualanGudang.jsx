@@ -11,6 +11,7 @@ import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
 
 export default function TambahPenjualanGudang() {
    const [nomor, setNomor] = useState("");
@@ -22,6 +23,7 @@ export default function TambahPenjualanGudang() {
    const [diskon, setDiskon] = useState(0);
    const [pajak, setPajak] = useState(0);
    const [itemData, setItemData] = useState([]);
+   const [errorMessage, setErrorMessage] = useState("")
 
    const userData = JSON.parse(localStorage.getItem('userData'));
    const isAdminGudang = userData?.role === 'admingudang';
@@ -637,62 +639,78 @@ const handleDeletePackaging = (itemId) => {
    const navigate = useNavigate();
 
    const handleTambahSubmit = async (e) => {
-    e.preventDefault();
-    try {
-        setLoading(true);
+        e.preventDefault();
 
-        const produkData = [
-            ...itemData.map(item => {
-                const idKey = item.id.startsWith('MTH') ? 'barang_mentah_id' :
-                             item.id.startsWith('BHM') ? 'barang_handmade_id' :
-                             item.id.startsWith('BNH') ? 'barang_non_handmade_id' :
-                             item.id.startsWith('PCK') ? 'packaging_id' : null;
+        if (!selectBayar) {
+            setErrorMessage("Silahkan pilih jenis pembayaran (Cash/Non-Cash)");
+            return;
+        }
 
-                return {
-                    [idKey]: item.id,
+        if (selectBayar === 2 && !selectMetode) {
+            setErrorMessage("Silahkan pilih metode pembayaran");
+            return;
+        }
+ 
+        if (itemData.length === 0) {
+            setErrorMessage("Silahkan pilih minimal satu barang");
+            return;
+        }
+        
+        try {
+            setLoading(true);
+
+            const produkData = [
+                ...itemData.map(item => {
+                    const idKey = item.id.startsWith('MTH') ? 'barang_mentah_id' :
+                                item.id.startsWith('BHM') ? 'barang_handmade_id' :
+                                item.id.startsWith('BNH') ? 'barang_non_handmade_id' :
+                                item.id.startsWith('PCK') ? 'packaging_id' : null;
+
+                    return {
+                        [idKey]: item.id,
+                        harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
+                        kuantitas: item.quantity,
+                        total_biaya: item.rawTotalBiaya
+                    };
+                }),
+                ...packagingData.map(item => ({
+                    packaging_id: item.id,
                     harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
                     kuantitas: item.quantity,
                     total_biaya: item.rawTotalBiaya
-                };
-            }),
-            ...packagingData.map(item => ({
-                packaging_id: item.id,
-                harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
-                kuantitas: item.quantity,
-                total_biaya: item.rawTotalBiaya
-            }))
-        ];
+                }))
+            ];
 
-        const payload = {
-            cash_or_non: selectBayar === 1, 
-            nama_pembeli: namaPembeli,
-            sub_total: subtotal,
-            diskon: diskon,
-            pajak: pajak,
-            total_penjualan: totalPenjualan,
-            produk: produkData,
-            tanggal: tanggal,
-            catatan: note
-        };
-        if (selectBayar === 2) {
-            payload.metode_id = selectMetode;
+            const payload = {
+                cash_or_non: selectBayar === 1, 
+                nama_pembeli: namaPembeli,
+                sub_total: subtotal,
+                diskon: diskon,
+                pajak: pajak,
+                total_penjualan: totalPenjualan,
+                produk: produkData,
+                tanggal: tanggal,
+                catatan: note
+            };
+            if (selectBayar === 2) {
+                payload.metode_id = selectMetode;
+            }
+            console.log('Payload:', JSON.stringify(payload, null, 2));
+
+            const response = await api.post('/penjualan-gudang', payload);
+
+            if (response.data.success) {
+                setModalSucc(true);
+            } else {
+                alert(response.data.message || "Gagal menyimpan data");
+            }
+        } catch (error) {
+            console.error("Error submitting data:", error);
+            setErrorMessage(error?.response?.data?.message)
+        } finally {
+            setLoading(false);
         }
-        console.log('Payload:', JSON.stringify(payload, null, 2));
-
-        const response = await api.post('/penjualan-gudang', payload);
-
-        if (response.data.success) {
-            setModalSucc(true);
-        } else {
-            alert(response.data.message || "Gagal menyimpan data");
-        }
-    } catch (error) {
-        console.error("Error submitting data:", error);
-        alert("Terjadi kesalahan saat menyimpan data");
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
    const handleAcc = () => {
        setModalSucc(false);  
@@ -712,7 +730,7 @@ const handleDeletePackaging = (itemId) => {
                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                    <Input label={"Nomor"} type1={"text"} disabled={true} value={nomor} onChange={(e) => setNomor(e)} />
                                    <Input label={"Tanggal"} type1={"date"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                   <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
+                                   <Input label={"Nama Pembeli"} required={false} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
                                    <InputDropdown 
                                         label={"Cash/Non-Cash"} 
                                         options={dataBayar.map(option => ({
@@ -1067,6 +1085,14 @@ const handleDeletePackaging = (itemId) => {
                 )}
      
                 {isLoading && <Spinner/>}
+
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
             </LayoutWithNav>
         </>
       );

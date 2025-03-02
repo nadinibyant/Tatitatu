@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import InputDropdown from "../../../components/InputDropdown";
 import axios from 'axios'; // Make sure to install axios
 import api from "../../../utils/api";
+import AlertError from "../../../components/AlertError";
 
 export default function KaryawanGaji() {
     const navigate = useNavigate();
@@ -20,6 +21,8 @@ export default function KaryawanGaji() {
     const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+    const [errorMessasge, setErrorMessage] = useState("")
+    const [errorAlert, setErrorAlert] = useState(false);
     
     // State for filter options
     const [filterOptions, setFilterOptions] = useState({
@@ -27,14 +30,11 @@ export default function KaryawanGaji() {
         toko: [{ label: "Semua", value: "Semua" }],
         cabang: [{ label: "Semua", value: "Semua" }]
     });
-
-    // State for selected filters
     const [selectedDivisi, setSelectedDivisi] = useState("Semua")
     const [selectedToko, setSelectedToko] = useState("Semua")
     const [selectedCabang, setSelectedCabang] = useState("Semua")
     const [cabangData, setCabangData] = useState([])
-    
-    // State for API data
+
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -42,36 +42,36 @@ export default function KaryawanGaji() {
     useEffect(() => {
         const fetchFilterOptions = async () => {
             try {
-                // Fetch divisi
                 const divisiResponse = await api.get('/divisi-karyawan');
                 const divisiOptions = [
                     { label: "Semua", value: "Semua" },
                     ...divisiResponse.data.data.map(divisi => ({
                         label: divisi.nama_divisi,
-                        value: divisi.nama_divisi
+                        value: divisi.nama_divisi,
+                        divisi_id: divisi.divisi_karyawan_id 
                     }))
                 ];
 
-                // Fetch toko
                 const tokoResponse = await api.get('/toko');
                 const tokoOptions = [
                     { label: "Semua", value: "Semua" },
                     ...tokoResponse.data.data.map(toko => ({
                         label: toko.nama_toko,
-                        value: toko.nama_toko
+                        value: toko.nama_toko,
+                        toko_id: toko.toko_id 
                     }))
                 ];
 
-                // Fetch cabang
                 const cabangResponse = await api.get('/cabang');
                 const cabangOptions = [
                     { label: "Semua", value: "Semua" },
                     ...cabangResponse.data.data.map(cabang => ({
                         label: cabang.nama_cabang,
-                        value: cabang.nama_cabang
+                        value: cabang.nama_cabang,
+                        cabang_id: cabang.cabang_id 
                     }))
                 ];
-
+    
                 setFilterOptions({
                     divisi: divisiOptions,
                     toko: tokoOptions,
@@ -82,7 +82,7 @@ export default function KaryawanGaji() {
                 setError(err.response?.data?.message || 'An error occurred while fetching filter options');
             }
         };
-
+    
         fetchFilterOptions();
     }, []);
 
@@ -97,7 +97,8 @@ export default function KaryawanGaji() {
                         ...response.data.data.map(cabang => ({
                             label: cabang.nama_cabang,
                             value: cabang.nama_cabang,
-                            icon: '/icon/toko.svg'
+                            icon: '/icon/toko.svg',
+                            cabang_id: cabang.cabang_id 
                         }))
                     ];
                     
@@ -110,7 +111,7 @@ export default function KaryawanGaji() {
                 setError(err.response?.data?.message || 'An error occurred while fetching cabang data');
             }
         };
-
+    
         fetchCabangData();
     }, []);
 
@@ -306,6 +307,84 @@ export default function KaryawanGaji() {
         );
     }
 
+    const handleExport = async () => {
+        try {
+
+            let queryParams = {};
+
+            if (selectedToko !== "Semua") {
+                const tokoOption = filterOptions.toko.find(option => option.value === selectedToko);
+                if (tokoOption && tokoOption.toko_id) {
+                    queryParams.toko_id = tokoOption.toko_id;
+                }
+            }
+
+            if (selectedCabang !== "Semua") {
+                const cabangOption = filterOptions.cabang.find(option => option.value === selectedCabang);
+                if (cabangOption && cabangOption.cabang_id) {
+                    queryParams.cabang = cabangOption.cabang_id;
+                }
+            }
+
+            if (selectedDivisi !== "Semua") {
+                const divisiOption = filterOptions.divisi.find(option => option.value === selectedDivisi);
+                if (divisiOption && divisiOption.divisi_id) {
+                    queryParams.divisi = divisiOption.divisi_id;
+                }
+            }
+            
+            if (selectedStore !== "Semua") {
+                const storeOption = cabangData.find(option => option.value === selectedStore);
+                if (storeOption && storeOption.cabang_id && !queryParams.cabang) {
+                    queryParams.cabang = storeOption.cabang_id;
+                }
+            }
+
+            const monthMapping = {
+                'January': '01', 'February': '02', 'March': '03', 'April': '04',
+                'May': '05', 'June': '06', 'July': '07', 'August': '08',
+                'September': '09', 'October': '10', 'November': '11', 'December': '12'
+            };
+            const formattedMonth = monthMapping[selectedMonth] || moment().format('MM');
+            queryParams.bulan = formattedMonth;
+
+            queryParams.tahun = selectedYear;
+
+            setLoading(true);
+            
+            const response = await api.get('/absensi-karyawan/export', {
+                params: queryParams,
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = 'karyawan-absensi-export.xlsx';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                }
+            }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            setErrorMessage(error.response.data.message)
+            setErrorAlert(true)
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
@@ -322,8 +401,9 @@ export default function KaryawanGaji() {
                                     <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
                                 </svg>} 
                                 bgColor="border border-secondary" 
-                                hoverColor="hover:bg-white" 
+                                // hoverColor="hover:bg-white" 
                                 textColor="text-black" 
+                                onClick={handleExport}
                             />
                         </div>
                         <div className="w-44 md:w-44">
@@ -475,6 +555,15 @@ export default function KaryawanGaji() {
                     </>
                 )}
             </div>
+
+            {errorAlert && (
+              <AlertError
+                title="Gagal!!"
+                description={errorMessasge}
+                confirmLabel="Ok"
+                onConfirm={() => setErrorAlert(false)}
+              />
+            )}
         </LayoutWithNav>
     );
 }

@@ -52,7 +52,6 @@ export default function EditBarang() {
           const itemData = detailResponse.data.data;
           const biayaGudangData = biayaGudangResponse.data.success ? biayaGudangResponse.data.data : null;
   
-          // Set rincian biaya dari data biaya gudang sebagai data tidak bisa diedit
           const rincianBiayaList = [
             {
               id: 1,
@@ -123,7 +122,41 @@ export default function EditBarang() {
   
               const biayaList = [];
               const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
-              if (biayaToko) {
+              
+              // Check if Modal exists
+              let hasModal = false;
+              
+              if (rincian.detail_rincian_biaya && rincian.detail_rincian_biaya.length > 0) {
+                rincian.detail_rincian_biaya.forEach(detail => {
+                  if (detail.nama_biaya === "Modal") {
+                    hasModal = true;
+                    biayaList.push({
+                      id: 'modal',
+                      "Nama Biaya": "Modal",
+                      "Jumlah Biaya": detail.jumlah_biaya,
+                      isEditable: true,
+                      isDefault: true
+                    });
+                  } else if (detail.biaya_toko_id) {
+                    biayaList.push({
+                      id: detail.biaya_toko_id,
+                      "Nama Biaya": `Biaya Operasional dan Staff ${cabangData.nama_cabang}`,
+                      "Jumlah Biaya": biayaToko ? biayaToko.total_biaya : 0,
+                      isEditable: false,
+                      biaya_toko_id: detail.biaya_toko_id
+                    });
+                  } else if (!detail.biaya_toko_id) {
+                    biayaList.push({
+                      id: detail.detail_rincian_biaya_id,
+                      "Nama Biaya": detail.nama_biaya,
+                      "Jumlah Biaya": detail.jumlah_biaya,
+                      isEditable: true
+                    });
+                  }
+                });
+              }
+
+              if (biayaToko && !biayaList.some(item => item.biaya_toko_id === biayaToko.biaya_toko_id)) {
                 biayaList.push({
                   id: biayaToko.biaya_toko_id,
                   "Nama Biaya": `Biaya Operasional dan Staff ${cabangData.nama_cabang}`,
@@ -133,16 +166,13 @@ export default function EditBarang() {
                 });
               }
 
-              if (rincian.detail_rincian_biaya && rincian.detail_rincian_biaya.length > 0) {
-                rincian.detail_rincian_biaya.forEach(detail => {
-                  if (!detail.biaya_toko_id) {
-                    biayaList.push({
-                      id: detail.detail_rincian_biaya_id,
-                      "Nama Biaya": detail.nama_biaya,
-                      "Jumlah Biaya": detail.jumlah_biaya,
-                      isEditable: true
-                    });
-                  }
+              if (!hasModal) {
+                biayaList.unshift({
+                  id: 'modal',
+                  "Nama Biaya": "Modal",
+                  "Jumlah Biaya": 0,
+                  isEditable: true,
+                  isDefault: true
                 });
               }
   
@@ -172,6 +202,110 @@ export default function EditBarang() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAdminGudang && selectedCabang) {
+      if (dataCabang.length === 0) return;
+  
+      const selectedCabangData = dataCabang.find(c => c.nama_cabang === selectedCabang);
+      if (!selectedCabangData) return;
+  
+      if (!data.hargaPerCabang || !data.hargaPerCabang[selectedCabang]) {
+        setData(prevData => ({
+          ...prevData,
+          hargaPerCabang: {
+            ...(prevData.hargaPerCabang || {}),
+            [selectedCabang]: {
+              totalHPP: 0,
+              keuntungan: 0,
+              hargaJual: 0
+            }
+          }
+        }));
+      }
+
+      if (!rincianBiayaPerCabang[selectedCabang]) {
+        api.get('/biaya-toko').then(response => {
+          if (response.data.success) {
+            const biayaTokoData = response.data.data;
+            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === selectedCabangData.cabang_id);
+            
+            const biayaList = [
+              {
+                id: 'modal',
+                "Nama Biaya": "Modal",
+                "Jumlah Biaya": 0,
+                isEditable: true,
+                isDefault: true
+              }
+            ];
+
+            if (biayaToko) {
+              biayaList.push({
+                id: biayaToko.biaya_toko_id,
+                "Nama Biaya": `Biaya Operasional dan Staff ${selectedCabang}`,
+                "Jumlah Biaya": biayaToko.total_biaya,
+                isEditable: false,
+                biaya_toko_id: biayaToko.biaya_toko_id
+              });
+            }
+            
+            setRincianBiayaPerCabang(prev => ({
+              ...prev,
+              [selectedCabang]: biayaList
+            }));
+
+            const totalHPP = biayaToko ? biayaToko.total_biaya : 0;
+            
+            setData(prevData => ({
+              ...prevData,
+              hargaPerCabang: {
+                ...prevData.hargaPerCabang,
+                [selectedCabang]: {
+                  ...prevData.hargaPerCabang[selectedCabang],
+                  totalHPP,
+                  keuntungan: calculateKeuntungan(
+                    prevData.hargaPerCabang[selectedCabang]?.hargaJual || 0,
+                    totalHPP
+                  )
+                }
+              }
+            }));
+          }
+        }).catch(error => {
+          console.error('Error fetching biaya toko:', error);
+          setRincianBiayaPerCabang(prev => ({
+            ...prev,
+            [selectedCabang]: [{
+              id: 'modal',
+              "Nama Biaya": "Modal",
+              "Jumlah Biaya": 0,
+              isEditable: true,
+              isDefault: true
+            }]
+          }));
+        });
+      } else {
+        const totalHPP = calculateTotalHPP(selectedCabang);
+        const keuntungan = calculateKeuntungan(
+          data.hargaPerCabang[selectedCabang]?.hargaJual || 0,
+          totalHPP
+        );
+        
+        setData(prevData => ({
+          ...prevData,
+          hargaPerCabang: {
+            ...prevData.hargaPerCabang,
+            [selectedCabang]: {
+              ...prevData.hargaPerCabang[selectedCabang],
+              totalHPP,
+              keuntungan
+            }
+          }
+        }));
+      }
+    }
+  }, [selectedCabang, isAdminGudang, dataCabang]);
 
   useEffect(() => {
     if (id) {
@@ -481,15 +615,16 @@ export default function EditBarang() {
       }));
     } else {
       setRincianBiayaPerCabang(prevData => {
-        const updatedCabangData = [...prevData[type]];
-        const rowIndex = updatedCabangData.findIndex(row => row.id === rowId);
-        
-        if (rowIndex !== -1) {
-          if (updatedCabangData[rowIndex]["Nama Biaya"]?.toLowerCase() === "modal") {
-            return prevData; 
-          }
-          updatedCabangData.splice(rowIndex, 1);
+        if (!prevData[type]) {
+          return prevData;
         }
+        
+        const updatedCabangData = prevData[type].filter(row => {
+          // Never delete Modal or non-editable rows
+          if (!row) return false;
+          if (row.isDefault || !row.isEditable) return true;
+          return row.id !== rowId;
+        });
         
         return {
           ...prevData,
@@ -501,7 +636,7 @@ export default function EditBarang() {
 
   const handleAddRow = (type) => {
     const newRow = {
-      id: Date.now(), 
+      id: Date.now(),
       "Nama Biaya": "",
       "Jumlah Biaya": 0,
       isEditable: true
@@ -510,13 +645,17 @@ export default function EditBarang() {
     if (type === 'gudang') {
       setData((prevData) => ({
         ...prevData,
-        rincianBiaya: [...(prevData.rincianBiaya || []), newRow], 
+        rincianBiaya: [...(prevData.rincianBiaya || []), newRow],
       }));
     } else {
-      setRincianBiayaPerCabang((prevData) => ({
-        ...prevData,
-        [type]: [...(prevData[type] || []), newRow],
-      }));
+      setRincianBiayaPerCabang((prevData) => {
+        const currentArray = prevData[type] || [];
+        
+        return {
+          ...prevData,
+          [type]: [...currentArray, newRow],
+        };
+      });
     }
   };
   
@@ -598,30 +737,6 @@ useEffect(() => {
     { label: "Kuantitas", key: "Kuantitas", align: "text-left", width:'110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
   ];
-
-  // const handleMaterialChange = (index, key, value) => {
-  //   setMaterials(prev => prev.map((item, i) => {
-  //     if (i === index) {
-  //       const newItem = { ...item, [key]: value };
-  //       if (key === "Harga Satuan" || key === "Kuantitas") {
-  //         newItem["Total Biaya"] = newItem["Harga Satuan"] * newItem["Kuantitas"];
-  //       }
-  //       return newItem;
-  //     }
-  //     return item;
-  //   }));
-  // };
-  
-  // const handleAddMaterial = () => {
-  //   setMaterials(prev => [...prev, {
-  //     id: Date.now(),
-  //     value: "",
-  //     "Nama Bahan": "",
-  //     "Harga Satuan": 0,
-  //     "Kuantitas": 1,
-  //     "Total Biaya": 0
-  //   }]);
-  //  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1005,80 +1120,82 @@ useEffect(() => {
                     </div>
                   </section>
 
-                  {selectedCabang && data.hargaPerCabang && data.hargaPerCabang[selectedCabang] && (
+                  {selectedCabang && (
                     <>
-                     <section className="pt-5">
-                    <p className="font-bold">Rincian Biaya</p>
-                    <div className="pt-3">
-                      <Table
-                        headers={headers}
-                        data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => {
-                          const isModal = row["Nama Biaya"]?.toLowerCase() === "modal";
-                          return {
-                            No: index + 1,
-                            "Nama Biaya": row.isEditable && !isModal ? (
-                              <Input
-                                showRequired={false}
-                                className="w-full max-w-xs sm:max-w-sm"
-                                value={row["Nama Biaya"]}
-                                onChange={(value) =>
-                                  handleInputChange(selectedCabang, index, "Nama Biaya", value)
-                                }
-                                disabled={isModal}
+                    <section className="pt-5">
+                      <p className="font-bold">Rincian Biaya</p>
+                      <div className="pt-3">
+                        <Table
+                          headers={headers}
+                          data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => {
+                            if (!row) return null;
+                            
+                            const isModal = row["Nama Biaya"]?.toLowerCase() === "modal";
+                            return {
+                              No: index + 1,
+                              "Nama Biaya": row.isEditable && !isModal ? (
+                                <Input
+                                  showRequired={false}
+                                  className="w-full max-w-xs sm:max-w-sm"
+                                  value={row["Nama Biaya"]}
+                                  onChange={(value) =>
+                                    handleInputChange(selectedCabang, index, "Nama Biaya", value)
+                                  }
+                                  disabled={isModal}
+                                />
+                              ) : (
+                                row["Nama Biaya"]
+                              ),
+                              "Jumlah Biaya": row.isEditable ? (
+                                <Input
+                                  showRequired={false}
+                                  type="number"
+                                  width="w-full"
+                                  value={row["Jumlah Biaya"]}
+                                  onChange={(value) =>
+                                    handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
+                                  }
+                                />
+                              ) : (
+                                `Rp${formatCurrency(row["Jumlah Biaya"])}`
+                              ),
+                              Aksi: row.isEditable && !isModal && (
+                                <Button
+                                  label="Hapus"
+                                  bgColor=""
+                                  textColor="text-red-600"
+                                  hoverColor="hover:text-red-800"
+                                  onClick={() => handleDeleteRow(selectedCabang, row.id)}
+                                />
+                              ),
+                            };
+                          }).filter(Boolean)}
+                        />
+                        <Button
+                          label="Tambah Baris"
+                          icon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              className="w-5 h-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 4v16m8-8H4"
                               />
-                            ) : (
-                              row["Nama Biaya"]
-                            ),
-                            "Jumlah Biaya": row.isEditable ? (
-                              <Input
-                                showRequired={false}
-                                type="number"
-                                width="w-full"
-                                value={row["Jumlah Biaya"]}
-                                onChange={(value) =>
-                                  handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
-                                }
-                              />
-                            ) : (
-                              `Rp${formatCurrency(row["Jumlah Biaya"])}`
-                            ),
-                            Aksi: row.isEditable && !isModal && (
-                              <Button
-                                label="Hapus"
-                                bgColor=""
-                                textColor="text-red-600"
-                                hoverColor="hover:text-red-800"
-                                onClick={() => handleDeleteRow(selectedCabang, row.id)}
-                              />
-                            ),
-                          };
-                        })}
-                      />
-                      <Button
-                        label="Tambah Baris"
-                        icon={
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            className="w-5 h-5"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
-                        }
-                        bgColor="focus:ring-primary"
-                        hoverColor="hover:border-primary hover:border"
-                        textColor="text-primary"
-                        onClick={() => handleAddRow(selectedCabang)}
-                      />
-                    </div>
-                  </section>
+                            </svg>
+                          }
+                          bgColor="focus:ring-primary"
+                          hoverColor="hover:border-primary hover:border"
+                          textColor="text-primary"
+                          onClick={() => handleAddRow(selectedCabang)}
+                        />
+                      </div>
+                    </section>
                     </>
                   )}
                   

@@ -431,7 +431,7 @@ export default function TambahBeliStokGudang() {
                 sub_total: subTotal,
                 diskon: diskon,
                 pajak: pajak,
-                total_penjualan: totalPenjualan,
+                total_pembelian: totalPenjualan,
                 produk: formattedProducts
             };
     

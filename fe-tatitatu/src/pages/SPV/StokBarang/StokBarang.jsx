@@ -408,6 +408,46 @@ export default function StokBarang() {
         }
     ];
 
+    const handleExport = async () => {
+        try {
+            let endpoint = '/stok-barang/export';
+            let params = {};
+            
+            if (isAdminGudang) {
+                endpoint = '/stok-barang-gudang/export';
+            } else if (isKasirToko) {
+                params = { cabang: cabang_id, toko_id: toko_id };
+            } else {
+                params = { toko_id: toko_id };
+                
+                if (selectedStore !== "Semua") {
+                    params.cabang = cabangMapping[selectedStore];
+                }
+            }
+    
+            const response = await api.get(endpoint, {
+                params,
+                responseType: 'blob'
+            });
+    
+            const blob = new Blob([response.data], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            const url = window.URL.createObjectURL(blob);
+    
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Stok_Barang_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+    
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting data:', error);
+        }
+    };
+
     return (
         <>
             <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -430,12 +470,13 @@ export default function StokBarang() {
                                             fill="#7B0C42" />
                                     </svg>}
                                     bgColor="border border-secondary"
-                                    hoverColor="hover:bg-white"
+                                    // hoverColor="hover:bg-white"
                                     textColor="text-black"
+                                    onClick={handleExport}
                                 />
                             </div>
 
-                            {!isAdminGudang || !isKasirToko && (
+                            {(!isKasirToko && !isAdminGudang) && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={'/icon/toko.svg'} 
@@ -444,7 +485,7 @@ export default function StokBarang() {
                                     />
                                 </div>
                             )}
-                            
+                        
                         </div>
                     </section>
 
@@ -565,7 +606,7 @@ export default function StokBarang() {
                                         data={selectedItem.cabang.map((item, index) => ({
                                             No: index + 1,
                                             Cabang: item.nama,
-                                            "Jumlah Stok": item.stok
+                                            "Jumlah Stok": item.stok.toLocaleString('id-ID')
                                         }))}
                                     />
                                 </div>

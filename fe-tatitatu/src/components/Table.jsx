@@ -107,7 +107,7 @@ const Table = ({
                     {header.label}
                   </span>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 break-words">
                   <span className="text-sm text-gray-900">
                     {row[header.key]}
                   </span>
@@ -136,7 +136,7 @@ const Table = ({
                 style={{ width: header.width || 'auto' }}
                 className={`
                   text-sm font-semibold ${text_header} py-3 px-4 
-                  ${header.align || "text-left"} whitespace-nowrap
+                  ${header.align || "text-left"} 
                   ${index === 0 ? "rounded-tl-lg" : ""}
                   ${index === headers.length - 1 ? "rounded-tr-lg" : ""}
                 `}
@@ -155,24 +155,27 @@ const Table = ({
               `}
               onClick={() => onRowClick && onRowClick(row)}
             >
-              {headers.map((header, cellIndex) => (
-                <td
-                  key={cellIndex}
-                  style={{ 
-                    width: header.width || 'auto',
-                    maxWidth: header.width || 'auto',
-                    overflow: header.key === 'Isi' ? 'hidden' : 'visible',
-                    textOverflow: header.key === 'Isi' ? 'ellipsis' : 'clip'
-                  }}
-                  className={`
-                    text-sm text-gray-700 py-4 px-4 
-                    ${header.align || "text-left"} 
-                    ${header.key === 'Isi' ? 'whitespace-normal break-words' : 'whitespace-nowrap'}
-                  `}
-                >
-                  {row[header.key]}
-                </td>
-              ))}
+              {headers.map((header, cellIndex) => {
+                // Determine if this cell should wrap text
+                const shouldWrap = header.wrap !== false; // Default to wrapping unless explicitly set to false
+                
+                return (
+                  <td
+                    key={cellIndex}
+                    style={{ 
+                      width: header.width || 'auto',
+                      maxWidth: header.width || 'auto',
+                    }}
+                    className={`
+                      text-sm text-gray-700 py-4 px-4 
+                      ${header.align || "text-left"} 
+                      ${shouldWrap ? 'whitespace-normal break-words' : 'whitespace-nowrap'}
+                    `}
+                  >
+                    {row[header.key]}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

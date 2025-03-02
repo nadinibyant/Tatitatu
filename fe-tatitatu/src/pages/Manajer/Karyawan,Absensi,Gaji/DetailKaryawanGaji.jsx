@@ -56,103 +56,48 @@ export default function DetailKaryawanGaji(){
         ];
 
         const [data, setData] = useState({
-            "Gaji Pokok": 1000000,
-            "Total Menit Kerja": 10200,
-            "Persentase KPI Tercapai": 80,
-            "Total Bonus": 245000,
-            "Total Gaji Akhir": 1220000,
+            "Gaji Pokok": 0,
+            "Total Menit Kerja": 0,
+            "Persentase KPI Tercapai": 0,
+            "Total Bonus": 0,
+            "Total Gaji Akhir": 0,
             profile: {
-                nama: 'Nadini Annisa Byant',
-                phone: '082283426568',
-                email: 'nadini@gmail.com',
-                toko: 'Tatitatu',
-                cabang: 'Gor Agus',
-                divisi: 'Kasir',
-                total_gaji_pokok: 1000000,
-                total_bonus: 500000,
-                waktu_kerja_sebulan: 11200,
-                kehadiran:11,
-                izin:1,
-                tidak_ada_kejelasan: 10
+                nama: '',
+                phone: '',
+                email: '',
+                toko: '',
+                cabang: '',
+                divisi: '',
+                total_gaji_pokok: 0,
+                total_bonus: 0,
+                waktu_kerja_sebulan: 0,
+                kehadiran:0,
+                izin:0,
+                tidak_ada_kejelasan: 0
             },
             data: [
                 {
                     id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
+                    Tanggal: '',
+                    Foto: '',
+                    "Jam Masuk": '',
+                    "Jam Keluar": '',
+                    "Total Waktu": 0,
+                    "Gaji Pokok Perhari": 0
                 },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                },
-                {
-                    id:1,
-                    Tanggal: '2024-12-11',
-                    Foto: 'https://via.placeholder.com/50',
-                    "Jam Masuk": '13.00',
-                    "Jam Keluar": '19.00',
-                    "Total Waktu": 500,
-                    "Gaji Pokok Perhari": 35000
-                }
             ]
         })
 
-            // Data berbeda untuk setiap divisi
     const dataProduksi = {
         ...data,
         data: [
             {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                "Jumlah Produksi": "13 Pcs",
-                "Total Menit": "20 Menit",
-                "Status": "Diterima",
-                "Gaji Pokok Perhari": 30000
+                Tanggal: '',
+                Foto: '',
+                "Jumlah Produksi": "",
+                "Total Menit": "",
+                "Status": "",
+                "Gaji Pokok Perhari": 0
             },
         ]
     };
@@ -161,16 +106,10 @@ export default function DetailKaryawanGaji(){
         ...data,
         data: [
             {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                Lokasi: "Youth Center Padang",
-                Status: "Antar"
-            },
-            {
-                Tanggal: '2024-12-11',
-                Foto: 'https://via.placeholder.com/50',
-                Lokasi: "Youth Center Padang",
-                Status: "Jemput"
+                Tanggal: '',
+                Foto: '',
+                Lokasi: "",
+                Status: ""
             },
         ]
     };

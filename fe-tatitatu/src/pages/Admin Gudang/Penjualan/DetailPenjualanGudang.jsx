@@ -13,7 +13,7 @@ import Spinner from "../../../components/Spinner";
 
 export default function DetailPenjualanGudang() {
     const location = useLocation();
-    const { nomor, tipe, fromLaporanKeuangan } = location.state || {};
+    const { nomor, tipe, fromLaporanKeuangan, gudang } = location.state || {};
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isModalDel, setModalDel] = useState(false);
