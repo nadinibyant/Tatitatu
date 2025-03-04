@@ -173,7 +173,7 @@ export default function StokBarang() {
                     kategoriBarang = barangData.kategori?.nama_kategori_barang || "-";
                     namaBarang = barangData.nama_barang;
                 } else if (barangData.barang_mentah_id) {
-                    jenisBarang = "Barang Mentah";
+                    jenisBarang = "Mentah";
                     barangId = barangData.barang_mentah_id;
                     namaBarang = barangData.nama_barang;
                 } else if (barangData.packaging_id) {
@@ -202,11 +202,11 @@ export default function StokBarang() {
             setLoading(true);
             
             if (isAdminGudang) {
-            const response = await api.get('/stok-barang-gudang');
-            if (response.data.success) {
-                const transformedData = transformStokGudang(response.data.data);
-                setStokData(transformedData);
-            }
+                const response = await api.get('/stok-barang-gudang');
+                if (response.data.success) {
+                    const transformedData = transformStokGudang(response.data.data);
+                    setStokData(transformedData);
+                }
             } else if (isKasirToko) {
                 const response = await api.get(`/stok-barang?cabang=${cabang_id}`);
                 if (response.data.success) {
@@ -249,15 +249,12 @@ export default function StokBarang() {
         return "-";
     };
 
-
     const filteredData = () => {
         if (isAdminGudang) {
             return stokData.filter(item => {
                 if (selectedJenis !== "Semua") {
-                    const itemJenis = item.Jenis === "Non Handmade" ? "Non Handmade" :
-                                    item.Jenis === "Barang Mentah" ? "Mentah" :
-                                    item.Jenis;
-                    if (itemJenis !== selectedJenis) return false;
+                    // Match the jenis value exactly as it comes from the API
+                    if (item.Jenis !== selectedJenis) return false;
                 }
                 if (selectedKategori !== "Semua" && item.Kategori !== selectedKategori) return false;
                 return true;
@@ -320,47 +317,60 @@ export default function StokBarang() {
     
     useEffect(() => {
         const initializeData = async () => {
-            if (isAdminGudang) {
-                await fetchFilterOptions();
-            } else {
-                await fetchCabangData(); 
+            await fetchFilterOptions();
+            await fetchStokData();
+            
+            if (!isAdminGudang) {
+                await fetchCabangData();
                 await fetchKategoriOptions();
             }
-            await fetchStokData();
         };
 
         initializeData();
     }, [isAdminGudang]);
 
     const fetchFilterOptions = async () => {
-        if (isAdminGudang) {
-          try {
-            const [jenisResponse, kategoriResponse] = await Promise.all([
-              api.get('/jenis-barang-gudang'),
-              api.get('/kategori-barang-gudang')
-            ]);
-       
-            if (jenisResponse.data.success) {
-              const jenisOpts = jenisResponse.data.data.map(item => ({
-                label: item.nama_jenis_barang,
-                value: item.nama_jenis_barang
-              }));
-              setJenisOptions([{ label: "Semua", value: "Semua" }, ...jenisOpts]);
+        try {
+            if (isAdminGudang) {
+                // Fetch jenis options from the API for admin gudang
+                const jenisResponse = await api.get('/jenis-barang-gudang');
+                if (jenisResponse.data.success) {
+                    const jenisOpts = jenisResponse.data.data
+                        .filter(item => !item.is_deleted)
+                        .map(item => ({
+                            label: item.nama_jenis_barang,
+                            value: item.nama_jenis_barang,
+                            id: item.jenis_barang_id // Add ID for export functionality
+                        }));
+                    setJenisOptions([{ label: "Semua", value: "Semua" }, ...jenisOpts]);
+                }
+
+                // Fetch kategori options for admin gudang
+                const kategoriResponse = await api.get('/kategori-barang-gudang');
+                if (kategoriResponse.data.success) {
+                    const kategoriOpts = kategoriResponse.data.data
+                        .filter(item => !item.is_deleted)
+                        .map(item => ({
+                            label: item.nama_kategori_barang,
+                            value: item.nama_kategori_barang,
+                            id: item.kategori_barang_id // Add ID for export functionality
+                        }));
+                    setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
+                }
+            } else {
+                // For non-admin gudang users, set default jenis options
+                setJenisOptions([
+                    { label: "Semua", value: "Semua" },
+                    { label: "Handmade", value: "Handmade" },
+                    { label: "Non Handmade", value: "Non Handmade" },
+                    { label: "Custom", value: "Custom" },
+                    { label: "Packaging", value: "Packaging" },
+                ]);
             }
-       
-            if (kategoriResponse.data.success) {
-              const kategoriOpts = kategoriResponse.data.data.map(item => ({
-                label: item.nama_kategori_barang,
-                value: item.nama_kategori_barang
-              }));
-              setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
-            }
-          } catch (error) {
+        } catch (error) {
             console.error('Error fetching filter options:', error);
-          }
         }
-       };
-       
+    };
 
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -406,13 +416,7 @@ export default function StokBarang() {
         {
             label: "Jenis",
             key: "Jenis", 
-            options: isAdminGudang ? jenisOptions : [
-                { label: "Semua", value: "Semua" },
-                { label: "Handmade", value: "Handmade" },
-                { label: "Non Handmade", value: "Non Handmade" },
-                { label: "Custom", value: "Custom" },
-                { label: "Packaging", value: "Packaging" },
-            ]
+            options: jenisOptions
         },
         {
             label: "Kategori",
@@ -428,6 +432,23 @@ export default function StokBarang() {
             
             if (isAdminGudang) {
                 endpoint = '/stok-barang-gudang/export';
+                
+                // Add query parameters for kategori and jenis if they are selected
+                if (selectedKategori !== "Semua") {
+                    // Find the kategori_barang_id from the kategoriOptions
+                    const selectedKategoriOption = kategoriOptions.find(option => option.value === selectedKategori);
+                    if (selectedKategoriOption && selectedKategoriOption.id) {
+                        params.kategori_barang_id = selectedKategoriOption.id;
+                    }
+                }
+                
+                if (selectedJenis !== "Semua") {
+                    // Find the jenis_barang_id from the jenisOptions
+                    const selectedJenisOption = jenisOptions.find(option => option.value === selectedJenis);
+                    if (selectedJenisOption && selectedJenisOption.id) {
+                        params.jenis_barang_id = selectedJenisOption.id;
+                    }
+                }
             } else if (isKasirToko) {
                 params = { cabang: cabang_id, toko_id: toko_id };
             } else {
@@ -437,6 +458,11 @@ export default function StokBarang() {
                     params.cabang = cabangMapping[selectedStore];
                 }
             }
+            
+            // Build the full URL to display for debugging
+            const queryString = new URLSearchParams(params).toString();
+            const fullUrl = `${import.meta.env.VITE_API_URL}${endpoint}${queryString ? `?${queryString}` : ''}`;
+            console.log('Export URL:', fullUrl);
     
             const response = await api.get(endpoint, {
                 params,
