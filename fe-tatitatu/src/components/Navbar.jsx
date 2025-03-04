@@ -8,11 +8,22 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isManajer = userData?.role === 'manajer';
   const isKasirToko = userData?.role === 'kasirtoko';
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
   const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branchName, setBranchName] = useState('');
   const [logoSrc, setLogoSrc] = useState('');
   const navigate = useNavigate();
+
+      const themeColor = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
   // Function to determine the appropriate logo based on user role
   useEffect(() => {
@@ -169,9 +180,9 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
          {menuItems.map((menu) => (
            <li key={menu.label} className="group">
              <div
-               className={`flex text-sm items-center justify-between px-4 py-2 hover:bg-[#7B0C42] hover:text-white cursor-pointer ${
+               className={`flex text-sm items-center justify-between px-4 py-2 hover:bg-${themeColor} hover:text-white cursor-pointer ${
                  location.pathname === menu.link || menu.submenu?.some(sub => location.pathname === sub.link) 
-                   ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
+                   ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
                    : ""
                }`}
              >
@@ -222,9 +233,9 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                  {menu.submenu.map((sub) => (
                    <li
                      key={sub.label}
-                     className={`px-4 py-2 hover:bg-[#7B0C42] hover:text-white ${
+                     className={`px-4 py-2 hover:bg-${themeColor} hover:text-white ${
                        location.pathname === sub.link
-                         ? "text-[#7B0C42] font-bold border-l-4 border-[#7B0C42]"
+                         ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
                          : ""
                      }`}
                    >

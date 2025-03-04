@@ -26,7 +26,12 @@ export default function KPISeluruhDivisi() {
     const [isErrorAlert, setErrorAlert] = useState(false)
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isManager = userData.role === 'manajer'
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang'
     const toko_id = userData.userId
+
+    
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },
@@ -132,7 +137,7 @@ export default function KPISeluruhDivisi() {
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Daftar KPI Seluruh Divisi</p>
+                            <p className={`text-${themeColor} text-base font-bold`}>Daftar KPI Seluruh Divisi</p>
                         </div>
 
                         {/* Right Section */}
@@ -154,8 +159,8 @@ export default function KPISeluruhDivisi() {
                                             />
                                         </svg>
                                     }
-                                    bgColor="bg-primary"
-                                    hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                    bgColor={`bg-${themeColor}`}
+                                    hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                                     textColor="text-white"
                                     onClick={handleAddBtn}
                                 />

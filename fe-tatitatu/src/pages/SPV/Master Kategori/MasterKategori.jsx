@@ -32,6 +32,19 @@ export default function MasterKategori() {
     const [isAlertSuccDel, setAlertDelSucc] = useState(false)
     const [tableData, setTableData] = useState([]);
     const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userDataLogin?.role === 'admingudang'
+    const isHeadGudang = userDataLogin?.role === 'headgudang'
+    const isOwner = userDataLogin?.role === 'owner';
+    const isManajer = userDataLogin?.role === 'manajer';
+    const isAdmin = userDataLogin?.role === 'admin';
+    const isFinance = userDataLogin?.role === 'finance'
+    
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
     const [toko_id, setTokoId] = useState(null);
 
     useEffect(() => {
@@ -572,7 +585,7 @@ export default function MasterKategori() {
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <div className="">
-                    <h1 className="text-base font-bold text-primary mb-6">
+                    <h1 className={`text-base font-bold text-${themeColor} mb-6`}>
                         Master Kategori
                     </h1>
 
@@ -630,8 +643,8 @@ export default function MasterKategori() {
                                         </svg>
                                     }
                                     onClick={handleAddItem}
-                                    bgColor="bg-primary"
-                                    hoverColor="hover:bg-primary/90"
+                                    bgColor={`bg-${themeColor}`}
+                                    // hoverColor={`hover:bg-${themeColor}`}
                                     textColor="text-white"
                                 />
                             </div>
@@ -686,7 +699,7 @@ export default function MasterKategori() {
                                 className={`px-4 py-2 rounded-md ${
                                     !formData.trim() 
                                         ? 'bg-gray-300 cursor-not-allowed' 
-                                        : 'bg-primary hover:bg-primary/90'
+                                        : `bg-${themeColor} hover:bg-${themeColor}`
                                 } text-white`}
                             >
                                 Simpan

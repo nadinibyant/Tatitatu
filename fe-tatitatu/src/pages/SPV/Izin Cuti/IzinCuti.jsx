@@ -28,6 +28,10 @@ export default function IzinCuti() {
     const userData = JSON.parse(localStorage.getItem('userData'))
     const toko_id = userData.userId
     const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang'
+
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+
     const [employeeDetail, setEmployeeDetail] = useState(null);
 
     const fetchEmployeeDetail = async (employeeId) => {
@@ -392,7 +396,7 @@ const ActionButtons = ({ id, status }) => {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">
+                            <p className={`text-${themeColor} text-base font-bold`}>
                                 {isAdminGudang ? "Absensi Karyawan" : "Daftar Pengajuan Cuti/Izin"}
                             </p>
                         </div>
@@ -407,7 +411,7 @@ const ActionButtons = ({ id, status }) => {
                                             setSelectedMonth(date.format('MM'));
                                             setSelectedYear(date.format('YYYY'));
                                         }}
-                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                        className={`w-full px-4 py-2 border hover:border-${themeColor} border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5`}
                                     />
                             </div>
                         </div>
@@ -593,7 +597,7 @@ const ActionButtons = ({ id, status }) => {
                                 ))}
                                 <button
                                     onClick={handleApplyFilter}
-                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                    className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                                 >
                                     Simpan
                                 </button>

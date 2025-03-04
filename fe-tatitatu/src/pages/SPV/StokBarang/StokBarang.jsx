@@ -28,6 +28,7 @@ export default function StokBarang() {
     const [selectedItem, setSelectedItem] = useState(null);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const isHeadGudang = userData?.role === 'headgudang'
     const isKasirToko = userData?.role === 'kasirtoko'
     const [stokData, setStokData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,6 +37,18 @@ export default function StokBarang() {
     const [selectedItemDetail, setSelectedItemDetail] = useState(null);
     const toko_id = userData.userId
     const cabang_id = userData.userId
+
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+
+    const exportIcon = (isAdminGudang || isHeadGudang) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+        </svg>
+      );
 
     const getDetailEndpoint = (item) => {
         if (item.barang_handmade_id) return `/barang-handmade/${item.barang_handmade_id}`;
@@ -455,7 +468,7 @@ export default function StokBarang() {
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Stok Barang</p>
+                            <p className={`text-${themeColor} text-base font-bold`}>Stok Barang</p>
                         </div>
 
                         {/* Right Section */}
@@ -463,14 +476,9 @@ export default function StokBarang() {
                             <div className="w-full md:w-auto">
                                 <Button
                                     label="Export"
-                                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path
-                                            d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z"
-                                            fill="#7B0C42" />
-                                    </svg>}
+                                    icon={exportIcon}
                                     bgColor="border border-secondary"
-                                    // hoverColor="hover:bg-white"
+                                    hoverColor={`hover:border-${themeColor}`}
                                     textColor="text-black"
                                     onClick={handleExport}
                                 />
@@ -539,7 +547,7 @@ export default function StokBarang() {
                                 ))}
                                 <button
                                     onClick={handleApplyFilter}
-                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                    className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                                 >
                                     Simpan
                                 </button>

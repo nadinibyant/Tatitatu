@@ -10,6 +10,7 @@ import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
 import api from "../../../utils/api";
 import Spinner from "../../../components/Spinner";
+import AlertError from "../../../components/AlertError";
 
 export default function LaporanKeuangan() {
     const [selectedJenis, setSelectedJenis] = useState("Semua");
@@ -21,6 +22,7 @@ export default function LaporanKeuangan() {
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [errorMessage, setErrorMessage] = useState("")
     const [data, setData] = useState({
         keuntungan: 0,
         pemasukan: 0,
@@ -59,11 +61,39 @@ export default function LaporanKeuangan() {
 
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isAdminGudang = userData?.role === 'admingudang'
     const isOwner = userData?.role === 'owner';
     const isFinance = userData?.role === 'finance';
     const isAdmin = userData?.role === 'admin'
+    const isManajer = userData?.role === 'manajer'
     const toko_id = userData?.userId
 
+    const iconToko = (isManajer || isOwner || isFinance) 
+    ? '/Icon Warna/toko_non.svg' 
+    : 'icon/toko.svg';
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
+
+      const exportIcon = (isAdminGudang || isHeadGudang) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+        </svg>
+      ) : (
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+        </svg>
+      );
+
+      
     // Fetch toko data
     useEffect(() => {
         const fetchTokoOrCabang = async () => {
@@ -74,9 +104,9 @@ export default function LaporanKeuangan() {
                         const options = response.data.data.map(item => ({
                             value: item.nama_cabang,
                             label: item.nama_cabang,
-                            icon: '/icon/toko.svg'
+                            icon: iconToko
                         }));
-                        setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                        setTokoOptions([{ label: "Semua", value: "Semua", icon: iconToko }, ...options]);
                     }
                 } 
                 else {
@@ -85,9 +115,9 @@ export default function LaporanKeuangan() {
                         const options = response.data.data.map(item => ({
                             value: item.nama_toko,
                             label: item.nama_toko,
-                            icon: '/icon/toko.svg'
+                            icon: iconToko
                         }));
-                        setTokoOptions([{ label: "Semua", value: "Semua", icon: '/icon/toko.svg' }, ...options]);
+                        setTokoOptions([{ label: "Semua", value: "Semua", icon: iconToko }, ...options]);
                     }
                 }
             } catch (error) {
@@ -172,7 +202,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.nama_cabang,
                                             toko: item.nama_toko,
                                             kategori: item.kategori_pemasukan,
-                                            total: item.total_pemasukan,
+                                            total: item.total_pemasukan || item.jumlah_pemasukan,
                                             jenis: 'pemasukan'
                                         };
                                     } else if (item.penjualan_id) {
@@ -280,10 +310,9 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'penjualan') {
-            const isGudang = row.toko === 'Rumah Produksi' || 
-                           (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi');
-
-            console.log(isGudang)
+            const isGudang = row.toko === 'Rumah Produksi' || row.toko === 'Rumah produksi' ||
+            (typeof row.toko === 'object' && 
+             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi'));
             
             if (isGudang || isHeadGudang) {
                 navigate('/laporanKeuangan/penjualan-gudang/detail', {
@@ -380,13 +409,140 @@ export default function LaporanKeuangan() {
         return filteredData;
     };
 
+    const handleExport = async () => {
+        try {
+          const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+          const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+          
+          const queryParams = new URLSearchParams();
+          queryParams.append('startDate', startDate);
+          queryParams.append('endDate', endDate);
+
+          if (isAdmin) {
+            if (selectedStore !== "Semua") {
+              try {
+                const cabangResponse = await api.get(`/cabang?toko_id=${toko_id}`);
+                if (cabangResponse.data.success) {
+                  const cabang = cabangResponse.data.data.find(c => c.nama_cabang === selectedStore);
+                  if (cabang) {
+                    queryParams.append('cabang_id', cabang.cabang_id);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching cabang ID:', error);
+              }
+            } else {
+              queryParams.append('toko_id', toko_id);
+            }
+          } else if (isHeadGudang) {
+            queryParams.append('toko_id', toko_id);
+          } else if (isOwner || isFinance) {
+            if (selectedStore !== "Semua") {
+              try {
+                const tokoResponse = await api.get('/toko');
+                if (tokoResponse.data.success) {
+                  const toko = tokoResponse.data.data.find(t => t.nama_toko === selectedStore);
+                  if (toko) {
+                    queryParams.append('toko_id', toko.toko_id);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching toko ID:', error);
+              }
+            }
+          }
+
+          if (selectedKategori !== "Semua") {
+            try {
+              const pemasukanKategoriResponse = await api.get('/kategori-pemasukan');
+              if (pemasukanKategoriResponse.data.success) {
+                const isPemasukanKategori = pemasukanKategoriResponse.data.data.some(
+                  k => k.kategori_pemasukan === selectedKategori
+                );
+                
+                if (isPemasukanKategori) {
+                  const kategori = pemasukanKategoriResponse.data.data.find(
+                    k => k.kategori_pemasukan === selectedKategori
+                  );
+                  if (kategori) {
+                    queryParams.append('kategori_pemasukan_id', kategori.kategori_pemasukan_id);
+                  }
+                } else {
+                  const pengeluaranKategoriResponse = await api.get('/kategori-pengeluaran');
+                  if (pengeluaranKategoriResponse.data.success) {
+                    const kategori = pengeluaranKategoriResponse.data.data.find(
+                      k => k.kategori_pengeluaran === selectedKategori
+                    );
+                    if (kategori) {
+                      queryParams.append('kategori_pengeluaran_id', kategori.kategori_pengeluaran_id);
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error identifying kategori type:', error);
+            }
+          }
+
+          if (selectedJenis !== "Semua") {
+            queryParams.append('jenis', selectedJenis.toLowerCase());
+          }
+
+
+          const queryString = queryParams.toString();
+            console.log('Export query parameters:', queryString);
+ 
+          const response = await api.get(`/laporan-keuangan/export?${queryParams.toString()}`, {
+            responseType: 'blob'
+          });
+  
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+ 
+          const link = document.createElement('a');
+          link.href = url;
+
+          const contentDisposition = response.headers['content-disposition'];
+          let filename = `laporan-keuangan-${selectedMonth}-${selectedYear}.xlsx`;
+          
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+            if (filenameMatch && filenameMatch.length === 2) {
+              filename = filenameMatch[1];
+            }
+          }
+          
+          link.setAttribute('download', filename);
+
+          document.body.appendChild(link);
+          link.click();
+          
+          // Clean up
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(link);
+          
+        } catch (error) {
+          console.error('Error exporting data:', error);
+          setErrorMessage(error.response.data.message || 'Data tidak tersedia')
+        }
+      };
+
+      const getDashboardIconPath = (baseIconName) => {
+        if (isAdminGudang || isHeadGudang) {
+          return `/keuangan/${baseIconName}_gudang.svg`;
+        } else if(isManajer || isOwner || isFinance){
+            return `/keuangan/${baseIconName}_non.svg`;
+        }
+        return `/keuangan/${baseIconName}.svg`;
+      };
+
+
     return (
         <>
             <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">
+                            <p className={`text-${themeColor} text-base font-bold`}>
                                 {isOwner ? 'Laporan Keuangan Perusahaan' : 'Laporan Keuangan Toko'}
                             </p>
                         </div>
@@ -395,19 +551,18 @@ export default function LaporanKeuangan() {
                             <div className="w-full md:w-auto">
                                 <Button 
                                     label="Export" 
-                                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                    </svg>} 
+                                    icon={exportIcon}
                                     bgColor="border border-secondary" 
-                                    hoverColor="hover:bg-white" 
+                                    hoverColor={`hover:border-${themeColor}`}
                                     textColor="text-black" 
+                                    onClick={handleExport}
                                 />
                             </div>
                             {/* ButtonDropdown untuk toko hanya muncul jika bukan headgudang */}
                             {!isHeadGudang && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
-                                        selectedIcon={'/icon/toko.svg'} 
+                                        selectedIcon={iconToko} 
                                         options={tokoOptions} 
                                         onSelect={(value) => setSelectedStore(value)} 
                                         label={isAdmin ? "Cabang" : "Toko"}
@@ -424,7 +579,7 @@ export default function LaporanKeuangan() {
                                             setSelectedMonth(date.format('MM'));
                                             setSelectedYear(date.format('YYYY'));
                                         }}
-                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                        className={`w-full px-4 py-2 border hover:border-${themeColor} border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5`}
                                     />
                                 </div>
                             </div>
@@ -440,7 +595,7 @@ export default function LaporanKeuangan() {
                                     <p className="font-bold text-lg">Rp {data.keuntungan.toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center justify-center ml-4">
-                                    <img src="/keuangan/keuntungan.svg" alt="Keuntungan" />
+                                    <img src={getDashboardIconPath("keuntungan")}  alt="Keuntungan" />
                                 </div>
                             </div>
 
@@ -451,7 +606,7 @@ export default function LaporanKeuangan() {
                                     <p className="font-bold text-lg">Rp {data.pemasukan.toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center justify-center ml-4">
-                                    <img src="/keuangan/pemasukan.svg" alt="Pemasukan" />
+                                    <img src={getDashboardIconPath("pemasukan")}  alt="Pemasukan" />
                                 </div>
                             </div>
 
@@ -462,7 +617,7 @@ export default function LaporanKeuangan() {
                                     <p className="font-bold text-lg">Rp {data.pengeluaran.toLocaleString()}</p>
                                 </div>
                                 <div className="flex items-center justify-center ml-4">
-                                    <img src="/keuangan/pengeluaran.svg" alt="Pengeluaran" />
+                                    <img src={getDashboardIconPath("pengeluaran")}  alt="Pengeluaran" />
                                 </div>
                             </div>
 
@@ -473,7 +628,7 @@ export default function LaporanKeuangan() {
                                     <p className="font-bold text-lg">{data.produkTerjual} Pcs</p>
                                 </div>
                                 <div className="flex items-center justify-center ml-4">
-                                    <img src="/keuangan/produkterjual.svg" alt="Produk Terjual" />
+                                    <img src={getDashboardIconPath("produkterjual")}  alt="Produk Terjual" />
                                 </div>
                             </div>
                         </div>
@@ -488,7 +643,7 @@ export default function LaporanKeuangan() {
                                     onClick={() => setSelectedJenis(jenis)}
                                     className={`px-4 py-2 text-sm font-semibold ${
                                         selectedJenis === jenis
-                                            ? "text-primary border-b-2 border-primary"
+                                            ? `text-${themeColor} border-b-2 border-${themeColor}`
                                             : "text-gray-400"
                                     }`}
                                 >
@@ -552,7 +707,7 @@ export default function LaporanKeuangan() {
                             ))}
                             <button
                                 onClick={handleApplyFilter}
-                                className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                             >
                                 Simpan
                             </button>
@@ -560,6 +715,14 @@ export default function LaporanKeuangan() {
                     </div>
                 </>
             )}
+
+                {errorMessage && (
+                    <AlertError
+                        title={'Failed'}
+                        description={errorMessage}
+                        onConfirm={() => setErrorMessage(null)}
+                    />
+                )}
         </LayoutWithNav>
     </>
 );

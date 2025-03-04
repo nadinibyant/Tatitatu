@@ -19,8 +19,13 @@ export default function TambahKPI(){
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isHeadGudang = userData.role === 'headgudang'
+    const isAdminGudang = userData?.role === 'admingudang'
     const [totalCalculatedBonus, setTotalCalculatedBonus] = useState(0);
-    
+
+   const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+
+   const bgBonus = (isAdminGudang || isHeadGudang) ? "coklatMuda" : "pink";
+
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   const formatDate = (date) =>
@@ -412,6 +417,13 @@ export default function TambahKPI(){
           setTotalCalculatedBonus(calculatedTotal);
         }
       }, [data.kpiList]);
+
+      const getDashboardIconPath = (baseIconName) => {
+        if (isAdminGudang || isHeadGudang) {
+          return `/icon/${baseIconName}_gudang.svg`;
+        }
+        return `/icon/${baseIconName}.svg`;
+      };
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
@@ -460,11 +472,11 @@ export default function TambahKPI(){
                     )}
                 </section>
 
-                <section className="mt-5 bg-primary text-white rounded-xl">
+                <section className={`mt-5 bg-${themeColor} text-white rounded-xl`}>
                     <div className="p-5 flex justify-between items-center flex-wrap">
                         {/* Bagian Akumulasi KPI */}
                         <div className="flex items-center space-x-4 w-full sm:w-auto">
-                        <img src="/icon/akumulasi.svg" alt="akumulasi" className="w-10 h-10" />
+                        <img src={getDashboardIconPath('akumulasi')} alt="akumulasi" className="w-10 h-10" />
                         <div className="flex flex-col">
                             <p className="text-sm">Akumulasi Persentase KPI Tercapai</p>
                             <p className="font-bold text-lg">{formatPercentage(data.totalPercentage)}%</p>
@@ -494,11 +506,11 @@ export default function TambahKPI(){
                         <div className="w-full">
                             <div className="flex flex-col sm:flex-row sm:space-x-8 w-full">
                                 <div className="flex items-center space-x-2">
-                                    <img src="/icon/call.svg" alt="call" className="w-5 h-5" />
+                                    <img src={getDashboardIconPath('call')} alt="call" className="w-5 h-5" />
                                     <p className="text-secondary">{data.profile.phone}</p>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <img src="/icon/mail.svg" alt="email" className="w-5 h-5" />
+                                    <img src={getDashboardIconPath('mail')} alt="email" className="w-5 h-5" />
                                     <p className="text-secondary">{data.profile.email}</p>
                                 </div>
                             </div>
@@ -554,7 +566,7 @@ export default function TambahKPI(){
                     <section key={kpi.kpi_id} className="mt-5 bg-white rounded-xl">
                         <div className="p-5">
                             <p className="text-gray-500 text-sm">Persentase: {kpi.percentage}%</p>
-                            <p className="text-primary font-bold">KPI{index + 1} - {kpi.title}</p>
+                            <p className={`text-${themeColor} font-bold`}>KPI{index + 1} - {kpi.title}</p>
                         </div>
 
                         <section>
@@ -607,28 +619,28 @@ export default function TambahKPI(){
                             )}
 
                             <div className="mt-5 p-5">
-                                <div className="flex bg-pink rounded-xl p-5">
+                                <div className={`flex bg-${bgBonus} rounded-xl p-5`}>
                                     <div className="grid grid-cols-1 sm:grid-cols-4 w-full">
                                         <div className="flex flex-col">
-                                            <p className="text-sm text-primary">Tercapai</p>
-                                            <p className="text-primary font-bold text-lg">{kpi.stats.tercapai}</p>
+                                            <p className={`text-sm text-${themeColor}`}>Tercapai</p>
+                                            <p className={`text-${themeColor} font-bold text-lg`}>{kpi.stats.tercapai}</p>
                                         </div>
 
                                         <div className="flex flex-col">
-                                            <p className="text-sm text-primary">Tidak Tercapai</p>
-                                            <p className="text-primary font-bold text-lg">{kpi.stats.tidakTercapai}</p>
+                                            <p className={`text-sm text-${themeColor}`}>Tidak Tercapai</p>
+                                            <p className={`text-${themeColor} font-bold text-lg`}>{kpi.stats.tidakTercapai}</p>
                                         </div>
 
                                         <div className="flex flex-col">
-                                            <p className="text-sm text-primary">Persentase Tercapai</p>
-                                            <p className="text-primary font-bold text-lg">{formatPercentage(kpi.stats.percentage)}%</p>
+                                            <p className={`text-sm text-${themeColor}`}>Persentase Tercapai</p>
+                                            <p className={`text-${themeColor} font-bold text-lg`}>{formatPercentage(kpi.stats.percentage)}%</p>
                                         </div>
                                     </div>
 
                                     <div className="text-end w-1/5">
                                         <div className="">
-                                            <p className="text-sm text-primary text-start">Bonus Yang Diterima</p>
-                                            <p className="text-primary font-bold text-start">
+                                            <p className={`text-sm text-${themeColor} text-start`}>Bonus Yang Diterima</p>
+                                            <p className={`text-${themeColor} font-bold text-start`}>
                                                 Rp{formatNumberWithDots(calculateAdjustedBonus(kpi.stats.bonus, kpi.percentage))}
                                             </p>
                                         </div>

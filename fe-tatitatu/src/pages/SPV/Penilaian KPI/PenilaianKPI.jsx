@@ -21,6 +21,7 @@ export default function PenilaianKPI() {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isAdminGudang = userData?.role == 'admingudang'
     const isManajer = userData?.role === 'manajer';
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
@@ -31,6 +32,18 @@ export default function PenilaianKPI() {
     const [tokoList, setTokoList] = useState([]);
     const toko_id = userData.userId
 
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+
+    const exportIcon = (isAdminGudang || isHeadGudang) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+        </svg>
+      );
+      
     useEffect(() => {
         const newFilterFields = isHeadGudang ? [
             {
@@ -293,14 +306,12 @@ export default function PenilaianKPI() {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Daftar Penilaian KPI</p>
+                            <p className={`text-${themeColor} text-base font-bold`}>Daftar Penilaian KPI</p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                             <div className="w-full md:w-auto">
-                                <Button label="Export" icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                </svg>} bgColor="border border-secondary" textColor="text-black" onClick={handleExport}/>
+                                <Button label="Export" icon={exportIcon} bgColor="border border-secondary" hoverColor={`hover:border-${themeColor}`} textColor="text-black" onClick={handleExport}/>
                             </div>
                             <div className="w-full md:w-auto">
                                 <input
@@ -311,7 +322,7 @@ export default function PenilaianKPI() {
                                             setSelectedMonth(date.format('MM'));
                                             setSelectedYear(date.format('YYYY'));
                                         }}
-                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                        className={`w-full px-4 py-2 border hover:border-${themeColor} border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5`}
                                 />
                             </div>
                         </div>
@@ -367,7 +378,7 @@ export default function PenilaianKPI() {
                             ))}
                                 <button
                                     onClick={handleApplyFilter}
-                                    className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                    className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                                 >
                                     Simpan
                                 </button>

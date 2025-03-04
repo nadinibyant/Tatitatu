@@ -1,5 +1,3 @@
-// 
-
 import React, { useEffect, useState } from "react";
 
 const Input = ({ 
@@ -17,6 +15,20 @@ const Input = ({
 }) => {
   const [rawValue, setRawValue] = useState(value || "");
   const [isTouched, setIsTouched] = useState(false);
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const role = userData?.role
+
+  const getRingColor = () => {
+    if (role === "admingudang" || role === "headgudang") {
+      return "focus:ring-2 focus:ring-coklatTua focus:outline-none";
+    } else if (role === "manajer" || role === "finance" || role === "owner") {
+      return "focus:ring-2 focus:ring-biruTua focus:outline-none";
+    } else {
+      return "focus:ring-2 focus:ring-primary focus:outline-none";
+    }
+  };
+
+  const ringColor = getRingColor();
 
   useEffect(() => {
     setRawValue(value || "");
@@ -25,15 +37,12 @@ const Input = ({
   useEffect(() => {
     if (!value && (type1 === "date" || type1 === "datetime-local")) {
       const now = new Date();
-      
-      // Mendapatkan offset timezone lokal dalam menit
+
       const localOffset = now.getTimezoneOffset();
-      
-      // Menambahkan offset lokal dan WIB (+7)
-      const wibOffset = 7 * 60; // WIB offset dalam menit
+
+      const wibOffset = 7 * 60; 
       const totalOffset = localOffset + wibOffset;
-      
-      // Mengatur waktu sesuai WIB
+
       const wibTime = new Date(now.getTime() + (totalOffset * 60000));
       
       if (type1 === "date") {
@@ -41,7 +50,6 @@ const Input = ({
         setRawValue(formattedDate);
         if (onChange) onChange(formattedDate);
       } else if (type1 === "datetime-local") {
-        // Format datetime untuk input datetime-local
         const year = wibTime.getFullYear();
         const month = String(wibTime.getMonth() + 1).padStart(2, '0');
         const day = String(wibTime.getDate()).padStart(2, '0');
@@ -53,7 +61,6 @@ const Input = ({
         if (onChange) onChange(formattedDateTime);
       }
     } else if (value && type1 === "datetime-local") {
-      // Jika ada value yang diberikan, konversi ke format yang benar
       const date = new Date(value);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -98,10 +105,10 @@ const Input = ({
         value={type === "number" ? formatNumber(rawValue) : rawValue}
         onChange={handleInputChange}
         onBlur={() => setIsTouched(true)}
-        className={`w-full border rounded-md sm:py-1 sm:px-4 py-2 px-3 focus:outline-none focus:ring-2 
+        className={`w-full border rounded-md sm:py-1 sm:px-4 py-2 px-3 focus:outline-none
           ${showError 
             ? 'border-red-500 focus:ring-red-200' 
-            : 'border-gray-300 focus:ring-blue-500'
+            : `border-gray-300 ${ringColor}`
           } text-base`}
         placeholder={placeholder || label}
         required={required}

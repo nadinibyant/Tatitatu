@@ -63,10 +63,19 @@ export default function EditPembelianStok() {
         label: dataMetode.find(opt => opt.value === data.metode)?.label || "-"
     });
     const userData = JSON.parse(localStorage.getItem('userData'))
-    const isFinance = userData?.role === 'finance';
-    const isOwner = userData?.role === 'owner'
-    const isManajer = userData?.role === 'manajer'
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
     const [toko_id, setTokoId] = useState(userData.userId);
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     useEffect(() => {
         const fetchPembelianData = async () => {
@@ -1044,8 +1053,8 @@ export default function EditPembelianStok() {
                                                 }
                                                 onClick={() => btnAddBaris(index)}
                                                 bgColor=""
-                                                hoverColor="hover:border-primary hover:border"
-                                                textColor="text-primary"
+                                                hoverColor={`hover:border-${themeColor} hover:border`}
+                                                textColor={`text-${themeColor}`}
                                             />
                                         </div>
                                     </div>
@@ -1107,8 +1116,8 @@ export default function EditPembelianStok() {
                                     <div>
                                         <Button
                                         label="Simpan"
-                                        bgColor="bg-primary w-full"
-                                        hoverColor="hover:bg-white hover:border-primary hover:text-black hover:border"
+                                        bgColor={`bg-${themeColor} w-full`}
+                                        hoverColor={`hover:bg-white hover:border-${themeColor} hover:text-black hover:border`}
                                         textColor="text-white"
                                         type="submit"
                                         />
@@ -1122,7 +1131,7 @@ export default function EditPembelianStok() {
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                                     {/* Input Search */}
                                     <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
                                         <div className="relative w-full max-w-md flex-shrink-0">
@@ -1165,7 +1174,7 @@ export default function EditPembelianStok() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             </button>
-                                            <p className="text-primary font-semibold">
+                                            <p className={`text-${themeColor} font-semibold`}>
                                                 Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
                                             </p>
                                         </div>
@@ -1184,7 +1193,7 @@ export default function EditPembelianStok() {
                                             />
                                             <Button
                                                 label="Pilih"
-                                                bgColor="bg-primary"
+                                                bgColor={`bg-${themeColor}`}
                                                 hoverColor="hover:bg-opacity-90"
                                                 textColor="text-white"
                                                 onClick={handleModalSubmit}
@@ -1200,7 +1209,7 @@ export default function EditPembelianStok() {
                                                 key={jenis}
                                                 onClick={() => setSelectedJenis(jenis)}
                                                 className={`px-4 py-2 text-sm font-semibold ${
-                                                    selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
+                                                    selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
                                                 }`}
                                             >
                                                 {jenis}
@@ -1218,7 +1227,7 @@ export default function EditPembelianStok() {
                                                     onClick={() => setSelectedCategory(kategori)}
                                                     className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                         selectedCategory === kategori
-                                                            ? "bg-primary text-white"
+                                                            ? `bg-${themeColor} text-white`
                                                             : "border border-gray-300"
                                                     }`}
                                                 >

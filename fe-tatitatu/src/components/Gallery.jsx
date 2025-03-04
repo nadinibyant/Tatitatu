@@ -12,13 +12,18 @@ const Gallery = ({
   onDelete = () => {},
   className = '',
   onItemClick = () => {},
-  url=''
+  url='',
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSubMenu, setActiveSubMenu] = useState('Semua')
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selectedItem, setSelectedItem] = useState(null);
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const role = userData?.role
+  
+  // Determine the color theme based on role
+  const themeColor = (role === "admingudang" || role === "headgudang") ? "coklatTua" : "primary";
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
@@ -120,7 +125,7 @@ const Gallery = ({
                 key={menu}
                 className={`pb-2 px-1 text-sm ${
                   activeSubMenu === menu 
-                    ? 'border-b-2 border-primary text-primary font-medium'
+                    ? `border-b-2 border-${themeColor} text-${themeColor} font-medium`
                     : 'text-gray-500'
                 }`}
                 onClick={() => {
@@ -148,7 +153,7 @@ const Gallery = ({
               />
             </div>
             <div className="p-3">
-              <p className="text-primary text-sm mb-1">{item.type}</p>
+              <p className={`text-${themeColor} text-sm mb-1`}>{item.type}</p>
               <h3 className="text-base font-bold text-gray-900 mb-1">{item.title}</h3>
               <div className="flex items-center justify-between">
                 <p className="text-gray-600 text-sm">{item.price}</p>
@@ -156,7 +161,7 @@ const Gallery = ({
                   onClick={() => setSelectedItem(item)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <MoreHorizontal size={18} color='#7B0C42' />
+                  <MoreHorizontal size={18} color={(role === "admingudang" || role === "headgudang") ? '#5D4037' : '#7B0C42'} />
                 </button>
               </div>
             </div>
@@ -223,7 +228,7 @@ const Gallery = ({
                   onClick={() => setCurrentPage(page)}
                   className={`px-3 py-1 rounded-md min-w-[32px] ${
                     currentPage === page
-                      ? 'bg-primary text-white'
+                      ? `bg-${themeColor} text-white`
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >

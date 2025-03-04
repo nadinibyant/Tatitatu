@@ -17,6 +17,19 @@ function CatatanContent(){
     const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
     const { refreshTrigger } = useRefresh();
     const [isExporting, setIsExporting] = useState(false);
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const fetchData = async () => {
         try {
@@ -79,28 +92,6 @@ function CatatanContent(){
         fetchData();
     }, [selectedMonth, selectedYear, startDate, endDate, refreshTrigger]);
 
-    const handleToday = () => {
-      const today = moment().startOf("day");
-      setStartDate(today.format("YYYY-MM-DD"));
-      setEndDate(today.format("YYYY-MM-DD"));
-      setIsModalOpen(false);
-    };
-  
-    const handleLast7Days = () => {
-      const today = moment().startOf("day");
-      const sevenDaysAgo = today.clone().subtract(7, "days");
-      setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-      setEndDate(today.format("YYYY-MM-DD"));
-      setIsModalOpen(false);
-    };
-  
-    const handleThisMonth = () => {
-      const startMonth = moment().startOf("month");
-      const endMonth = moment().endOf("month");
-      setStartDate(startMonth.format("YYYY-MM-DD"));
-      setEndDate(endMonth.format("YYYY-MM-DD"));
-      setIsModalOpen(false);
-    };
   
     const handleRowClick = (row) => {
         setSelectedData({
@@ -127,24 +118,32 @@ function CatatanContent(){
         return text;
     };
 
+    const exportIcon = (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+        </svg>
+      ) : (
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+        </svg>
+      );
+
     return(
         <>
             <LayoutWithNav>
                 <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Riwayat Catatan</p>
+                            <p className={`text-${themeColor} text-base font-bold`}>Riwayat Catatan</p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                             <div className="w-full md:w-auto">
                                 <Button 
                                     label="Export" 
-                                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                    </svg>} 
+                                    icon={exportIcon} 
                                     bgColor="border border-secondary" 
-                                    // hoverColor="hover:bg-white" 
+                                    hoverColor={`hover:border-${themeColor} border`}
                                     textColor="text-black"
                                     onClick={handleExport}
                                     disabled={isExporting}
@@ -168,61 +167,7 @@ function CatatanContent(){
                             </div>
                     </div>
 
-                        {/* Modal */}
-                        {isModalOpen && (
-                        <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                            <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                            <div className="flex space-x-4 w-full">
-                                <div className="flex flex-col w-full">
-                                <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                />
-                                </div>
-                                <div className="flex flex-col w-full">
-                                <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                />
-                                </div>
-                            </div>
-                            <div className="flex flex-col space-y-3 w-full">
-                                <button
-                                onClick={handleToday}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                Hari Ini
-                                </button>
-                                <button
-                                onClick={handleLast7Days}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                7 Hari Terakhir
-                                </button>
-                                <button
-                                onClick={handleThisMonth}
-                                className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                                >
-                                Bulan Ini
-                                </button>
-                            </div>
-                            </div>
-                        </div>
-                        )}
+                
                     </section>
 
                     <section className="mt-5 bg-white rounded-xl">

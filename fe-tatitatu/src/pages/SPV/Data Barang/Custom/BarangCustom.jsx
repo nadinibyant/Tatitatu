@@ -340,7 +340,7 @@ const handleAddBtn = () => {
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className="text-primary text-base font-bold">{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
+              <p className="text-coklatTua text-base font-bold">{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
             </div>
 
             {/* Right Section */}
@@ -362,8 +362,8 @@ const handleAddBtn = () => {
                       />
                     </svg>
                   }
-                  bgColor="bg-primary"
-                  hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                  bgColor="bg-coklatTua"
+                  hoverColor="hover:bg-opacity-90 hover:border hover:border-coklatTua hover:text-white"
                   textColor="text-white"
                   onClick={handleAddBtn}
                 />
@@ -505,13 +505,13 @@ const handleAddBtn = () => {
                     <button
                       type="button"
                       onClick={() => setModal(false)}
-                      className="px-4 py-2 border rounded-md hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2 border border-coklatTua rounded-md hover:bg-gray-50 transition-colors"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary text-white rounded-md hover:bg-black-800 transition-colors"
+                      className="px-4 py-2 bg-coklatTua text-white rounded-md hover:bg-black-800 transition-colors"
                     >
                       {modalMode === "add" ? "Daftar" : "Simpan"}
                     </button>

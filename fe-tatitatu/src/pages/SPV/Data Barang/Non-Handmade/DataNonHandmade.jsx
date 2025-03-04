@@ -17,10 +17,13 @@ export default function DataBarangNonHandmade() {
     const [subMenus, setSubMenus] = useState([]);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
+    const isHeadGudang = userData?.role === 'headgudang'
+
     const toko_id = userData.userId
     
     const navigate = useNavigate();
 
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
 
     const fetchSubMenus = async () => {
         try {
@@ -134,7 +137,7 @@ export default function DataBarangNonHandmade() {
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                        <p className="text-primary text-base font-bold">Daftar Barang Non Handmade</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Daftar Barang Non Handmade</p>
                     </div>
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                         <div className="w-full md:w-auto">
@@ -145,8 +148,8 @@ export default function DataBarangNonHandmade() {
                                         <path d="M13 8H8V13C8 13.2652 7.89464 13.5196 7.70711 13.7071C7.51957 13.8946 7.26522 14 7 14C6.73478 14 6.48043 13.8946 6.29289 13.7071C6.10536 13.5196 6 13.2652 6 13V8H1C0.734784 8 0.48043 7.89464 0.292893 7.70711C0.105357 7.51957 0 7.26522 0 7C0 6.73478 0.105357 6.48043 0.292893 6.29289C0.48043 6.10536 0.734784 6 1 6H6V1C6 0.734784 6.10536 0.480429 6.29289 0.292893C6.48043 0.105357 6.73478 0 7 0C7.26522 0 7.51957 0.105357 7.70711 0.292893C7.89464 0.480429 8 0.734784 8 1V6H13C13.2652 6 13.5196 6.10536 13.7071 6.29289C13.8946 6.48043 14 6.73478 14 7C14 7.26522 13.8946 7.51957 13.7071 7.70711C13.5196 7.89464 13.2652 8 13 8Z" fill="white"/>
                                     </svg>
                                 }
-                                bgColor="bg-primary"
-                                hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                bgColor={`bg-${themeColor}`}
+                                hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                                 textColor="text-white"
                                 onClick={handleAdd}
                             />

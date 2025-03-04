@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 const Table = ({
-  bg_header = 'bg-pink',
-  text_header = 'text-primary',
+  bg_header,
+  text_header,
   data,
   headers,
   onRowClick,
@@ -21,6 +21,36 @@ const Table = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [activeSubmenu, setActiveSubmenu] = useState(defaultSubmenu);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const userRole = userData?.role;
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang'
+  const isManajer = userData?.role === 'manajer'
+  const isOwner = userData?.role === 'owner'
+  const isFinance = userData?.role === 'finance'
+  // console.log(userRole)
+  
+  const headerBgColor = bg_header || (
+    isAdminGudang || isHeadGudang 
+      ? 'bg-coklatMuda' 
+      : isManajer || isOwner || isFinance
+        ? 'bg-biruTua'
+        : 'bg-pink'
+  );
+  
+  const headerTextColor = text_header || (
+    isAdminGudang || isHeadGudang 
+      ? 'text-coklatTua' 
+      : isManajer || isOwner || isFinance
+        ? 'text-biruMuda'
+        : 'text-primary'
+  );
+  
+  const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
   useEffect(() => {
     const handleResize = () => {
@@ -34,6 +64,13 @@ const Table = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const paginationActiveColor = 
+    isAdminGudang || isHeadGudang 
+      ? 'bg-coklatTua' 
+      : isManajer || isOwner || isFinance
+        ? 'bg-biruTua'
+        : 'bg-primary'; 
 
   const filteredData = data.filter((row) => {
     const matchesSearchTerm = Object.values(row).some((value) =>
@@ -128,14 +165,14 @@ const Table = ({
   const renderDesktopTable = () => (
     <div className="relative overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className={bg_header}>
+        <thead className={headerBgColor}>
           <tr>
             {headers.map((header, index) => (
               <th
                 key={index}
                 style={{ width: header.width || 'auto' }}
                 className={`
-                  text-sm font-semibold ${text_header} py-3 px-4 
+                  text-sm font-semibold ${headerTextColor} py-3 px-4 
                   ${header.align || "text-left"} 
                   ${index === 0 ? "rounded-tl-lg" : ""}
                   ${index === headers.length - 1 ? "rounded-tr-lg" : ""}
@@ -205,14 +242,14 @@ const Table = ({
                 placeholder="Cari..."
                 value={searchTerm}
                 onChange={handleSearch}
-                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className={`w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
               />
             </div>
           )}
           {hasFilter && (
             <div className="flex items-center gap-2">
               <button
-                className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-primary/50 transition-colors"
+                className={`p-2 rounded-md border border-gray-300 hover:bg-gray-50 focus:ring-1 focus:ring-${themeColor} transition-colors`}
                 onClick={onFilterClick}
               >
                 <svg
@@ -237,7 +274,7 @@ const Table = ({
               id="pageSize"
               value={pageSize}
               onChange={handlePageSizeChange}
-              className="border border-gray-300 rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={`border border-gray-300 rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
             >
               {[5, 10, 15, 20].map((size) => (
                 <option key={size} value={size}>
@@ -257,8 +294,8 @@ const Table = ({
             onClick={() => setActiveSubmenu('semua')}
             className={`pb-3 px-1 text-sm font-medium whitespace-nowrap relative ${
               activeSubmenu === 'semua'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-500 hover:text-primary'
+                ? `text-${themeColor} border-b-2 border-${themeColor}`
+                : `text-gray-500 hover:text-${themeColor}`
             }`}
           >
             Semua
@@ -269,8 +306,8 @@ const Table = ({
               onClick={() => setActiveSubmenu(item.value)}
               className={`pb-3 px-1 text-sm font-medium whitespace-nowrap relative ${
                 activeSubmenu === item.value
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-gray-500 hover:text-primary'
+                  ? `text-${themeColor} border-b-2 border-${themeColor}`
+                  : `text-gray-500 hover:text-${themeColor}`
               }`}
             >
               {item.label}
@@ -321,7 +358,7 @@ const Table = ({
                   className={`
                     py-1 px-3 rounded-md text-sm transition-colors
                     ${page === currentPage
-                      ? "bg-primary text-white"
+                      ? `${paginationActiveColor} text-white`
                       : page === "..."
                       ? "bg-white text-gray-700 cursor-default"
                       : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"

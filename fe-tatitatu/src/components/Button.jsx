@@ -1,9 +1,24 @@
 import React from "react";
 
-const Button = ({type = "button", label, icon, onClick, bgColor = "", hoverColor = "", textColor = "text-white" }) => {
+const Button = ({
+  type = "button", 
+  label, 
+  icon, 
+  onClick, 
+  bgColor = "", 
+  hoverColor = "", 
+  textColor = "text-white", 
+}) => {
+  
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const role = userData?.role
+  const ringColor = (role === "admingudang" || role === "headgudang") 
+    ? "focus:ring-2 focus:ring-coklatTua focus:outline-none" 
+    : "focus:ring-2 focus:ring-primary focus:outline-none"; 
+  
   return (
     <button
-      className={`flex items-center text-sm justify-center ${bgColor} ${textColor} py-2 px-${label ? '4' : '2'} rounded-lg ${hoverColor}`}
+      className={`flex items-center text-sm justify-center ${bgColor} ${textColor} py-2 px-${label ? '4' : '2'} rounded-lg ${hoverColor} ${ringColor} transition duration-150`}
       onClick={onClick}
       type={type}
     >

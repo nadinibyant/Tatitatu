@@ -32,6 +32,10 @@ export default function TambahBarangNonHandmade() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const toko_id = userData.userId
+  const isHeadGudang = userData?.role === 'headgudang'
+
+  
+  const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
 
 
   const fetchMaterialData2 = async () => {
@@ -821,9 +825,9 @@ export default function TambahBarangNonHandmade() {
                         />
                       </svg>
                     }
-                    bgColor="focus:ring-primary"
-                    hoverColor="hover:border-primary hover:border"
-                    textColor="text-primary"
+                    bgColor={`focus:ring-${themeColor}`}
+                    hoverColor={`hover:border-${themeColor} hover:border`}
+                    textColor={`text-${themeColor}`}
                     onClick={() => handleAddRow('gudang')}
                   />
                   </div>
@@ -832,7 +836,7 @@ export default function TambahBarangNonHandmade() {
                 <>
                   <section className="mt-8">
                     <div className="flex justify-between items-center mb-4">
-                      <p className="font-bold text-base text-primary">Rincian Berdasarkan Cabang</p>
+                      <p className={`font-bold text-base text-${themeColor}`}>Rincian Berdasarkan Cabang</p>
                       <div className="w-60">
                         <ButtonDropdown
                           label={selectedCabang}
@@ -840,7 +844,7 @@ export default function TambahBarangNonHandmade() {
                           onSelect={setSelectedCabang}
                           selectedStore={selectedCabang}
                           icon={
-                            <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg className={`w-6 h-6 text-${themeColor}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
                             </svg>
                           }
@@ -914,9 +918,9 @@ export default function TambahBarangNonHandmade() {
                             />
                           </svg>
                         }
-                        bgColor="focus:ring-primary"
-                        hoverColor="hover:border-primary hover:border"
-                        textColor="text-primary"
+                        bgColor={`focus:ring-${themeColor}`}
+                        hoverColor={`hover:border-${themeColor} hover:border`}
+                        textColor={`text-${themeColor}`}
                         onClick={() => handleAddRow(selectedCabang)}
                       />
                     </div>
@@ -1070,7 +1074,7 @@ export default function TambahBarangNonHandmade() {
                           key={cabangName} 
                           className="border border-[#7E7E7E] bg-[#F9F9F9] rounded-2xl p-4"
                         >
-                          <h3 className="text-primary mb-4 font-medium">Cabang {cabangName}</h3>
+                          <h3 className={`text-${themeColor} mb-4 font-medium`}>Cabang {cabangName}</h3>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <p className="text-gray-500 text-sm mb-1">Total HPP</p>
@@ -1090,7 +1094,7 @@ export default function TambahBarangNonHandmade() {
 
               {isMaterialModalOpen && (
                 <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                  <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                  <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                     <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
                       {/* Search input */}
                       <div className="relative w-full max-w-md flex-shrink-0">
@@ -1110,7 +1114,7 @@ export default function TambahBarangNonHandmade() {
 
                       {/* Selected count */}
                       <div className="flex items-center space-x-4 flex-shrink-0">
-                        <p className="text-primary font-semibold">
+                        <p className={`text-${themeColor} font-semibold`}>
                           Terpilih {selectedMaterial.reduce((sum, item) => sum + item.count, 0)}
                         </p>
                       </div>
@@ -1125,7 +1129,7 @@ export default function TambahBarangNonHandmade() {
                         />
                         <Button
                           label="Pilih"
-                          bgColor="bg-primary"
+                          bgColor={`bg-${themeColor}`}
                           textColor="text-white"
                           onClick={handleMaterialModalSubmit}
                         />
@@ -1158,7 +1162,7 @@ export default function TambahBarangNonHandmade() {
                   />
                   <Button 
                     label={'Simpan'} 
-                    bgColor="bg-primary" 
+                    bgColor={`bg-${themeColor}`}
                     textColor="text-white" 
                     type="submit"
                   />

@@ -23,6 +23,14 @@ export default function TambahPemasukan() {
         return rupiah ? Number(rupiah.replace(/\./g, '')) : 0;
     };
 
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
     const breadcrumbItems = [
         { label: "Daftar Pemasukan", href: "/pemasukan" },
         { label: "Tambah Pemasukan", href: "" },
@@ -37,6 +45,12 @@ export default function TambahPemasukan() {
         potongan: '',
         potongan_formatted: ''
     });
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const [tableRows, setTableRows] = useState([]);
     const [isLoading, setLoading] = useState(false);
@@ -208,7 +222,7 @@ export default function TambahPemasukan() {
                     type="text"
                     value={row.deskripsi}
                     onChange={(e) => handleRowChange(row.id, 'deskripsi', e.target.value)}
-                    className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:border-primary"
+                    className={`w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:border-${themeColor}`}
                     placeholder="Deskripsi pemasukan"
                 />
             ),
@@ -243,7 +257,7 @@ export default function TambahPemasukan() {
                                 handleRowChange(row.id, 'jumlah_pemasukan', value);
                             }
                         }}
-                        className="w-full p-1 pl-8 border border-gray-300 rounded focus:outline-none focus:border-primary text-right"
+                        className={`w-full p-1 pl-8 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:border-${themeColor} text-right`}
                         placeholder="0"
                     />
                 </div>
@@ -402,7 +416,6 @@ export default function TambahPemasukan() {
                                 onSelect={(option) => handleInputChange('cash_or_non', option.value)}
                                 required
                             />
-                            {/* FIX 2: Make sure metode is disabled for Cash (true) */}
                             <InputDropdown
                                 label="Metode Pembayaran"
                                 options={metodeOptions}
@@ -427,17 +440,16 @@ export default function TambahPemasukan() {
                                     data={tableData}
                                     hasSearch={false}
                                     hasPagination={false}
-                                    text_header="text-gray-700"
                                 />
                             )}
 
                             <div className="mt-4">
                                 <button
                                     onClick={addNewRow}
-                                    className="flex items-center text-primary hover:text-primary-dark"
+                                    className={`flex items-center text-${themeColor}`}
                                 >
                                     <span className="mr-2 text-xl">+</span>
-                                    <span className="text-primary">Tambah Baris</span>
+                                    <span className={`text-${themeColor}`}>Tambah Baris</span>
                                 </button>
                             </div>
 
@@ -460,7 +472,7 @@ export default function TambahPemasukan() {
                                                         handleInputChange('potongan', value);
                                                     }
                                                 }}
-                                                className="w-full p-1 pl-8 border border-gray-300 rounded focus:outline-none focus:border-primary text-right"
+                                                className={`w-full p-1 pl-8 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:border-${themeColor} text-right`}
                                                 placeholder="0"
                                             />
                                         </div>
@@ -473,7 +485,7 @@ export default function TambahPemasukan() {
 
                             <div className="mt-6 flex justify-end">
                                 <button 
-                                    className="w-1/3 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                                    className={`w-1/3 bg-${themeColor} text-white py-2 rounded-lg transition-colors hover:bg-white hover:border-${themeColor} hover:border hover:text-black`}
                                     onClick={handleSubmit}
                                     disabled={isLoading}
                                 >

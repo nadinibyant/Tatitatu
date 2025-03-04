@@ -42,8 +42,48 @@ export default function KaryawanTerbaik() {
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
+    const isAdminGudang = userData?.role === 'adminGudang'
     const isManajer = userData?.role === 'manajer';
     const isOwner = userData?.role === 'owner';
+    const isAdmin = userData?.role === 'admin'
+    const isFinance = userData?.role === 'finance'
+    const toko_id= userData?.userId
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
+      const iconToko = (isManajer || isOwner || isFinance) 
+        ? '/Icon Warna/toko_non.svg' 
+        : '/icon/toko.svg';
+
+    const fetchCabangData = async () => {
+        try {
+          if (isAdmin && toko_id) {
+            const response = await api.get(`/cabang?toko_id=${toko_id}`);
+            
+            if (response.data.success) {
+              const cabangOptions = [
+                { label: 'Semua', value: 'Semua', icon: iconToko, id: '' },
+                ...response.data.data.map(cabang => ({
+                  label: cabang.nama_cabang,
+                  value: cabang.nama_cabang,
+                  icon: iconToko,
+                  id: cabang.cabang_id
+                }))
+              ];
+              setStoreData(cabangOptions);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching cabang data:', error);
+          setStoreData([
+            { label: 'Semua', value: 'Semua', icon: iconToko, id: '' }
+          ]);
+        }
+      };
 
     const fetchStoreData = async () => {
         try {
@@ -51,11 +91,11 @@ export default function KaryawanTerbaik() {
             
             if (response.data.success) {
                 const stores = [
-                    { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: '' },
+                    { label: 'Semua', value: 'Semua', icon: iconToko, id: '' },
                     ...response.data.data.map(store => ({
                         label: store.nama_toko,
                         value: store.nama_toko,
-                        icon: '/icon/toko.svg',
+                        icon: iconToko,
                         id: store.toko_id
                     }))
                 ];
@@ -64,28 +104,42 @@ export default function KaryawanTerbaik() {
         } catch (error) {
             console.error('Error fetching store data:', error);
             setStoreData([
-                { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg', id: '' }
+                { label: 'Semua', value: 'Semua', icon: iconToko, id: '' }
             ]);
         }
     };
 
     const fetchKaryawanData = async () => {
         try {
-            const response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}`);
+            let url;
+            if (isHeadGudang) {
+                url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=1`;
+            } else if (isAdmin) {
+                url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`;
+            } else {
+                url = `/absensi-karyawan/${selectedMonth}/${selectedYear}`;
+            }
+            
+            const response = await api.get(url);
             
             if (response.data.success) {
-                // Process the data for the main table
-                const formattedData = response.data.data.map(item => ({
+                let formattedData = response.data.data.map(item => ({
                     id: item.karyawan.karyawan_id,
                     Nama: item.karyawan.nama_karyawan,
-                    Toko: item.karyawan.toko.nama_toko,
-                    Divisi: item.karyawan.divisi.nama_divisi,
+                    Toko: item.karyawan.toko?.nama_toko || '-',
+                    Divisi: item.karyawan.divisi?.nama_divisi || '-',
                     KPI: item.totalPersentaseTercapai,
-                    cabang: item.karyawan.cabang.nama_cabang,
+                    cabang: item.karyawan.cabang?.nama_cabang || '-',
+                    cabang_id: item.karyawan.cabang_id,
                     toko_id: item.karyawan.toko_id
                 }));
+
+                if (isAdmin && selectedStoreId) {
+                    formattedData = formattedData.filter(item => 
+                        String(item.cabang_id) === String(selectedStoreId)
+                    );
+                }
                 
-                // Extract unique divisions for filter
                 const uniqueDivisions = [...new Set(formattedData.map(item => item.Divisi))];
                 setDivisions(uniqueDivisions);
                 
@@ -99,11 +153,20 @@ export default function KaryawanTerbaik() {
 
     const fetchTopKaryawan = async () => {
         try {
-            let url = `/karyawan/terbaik?bulan=${selectedMonth}&tahun=${selectedYear}`;
-
-            if (selectedStoreId) {
-                url += `&toko_id=${selectedStoreId}`;
+            let url;
+            
+            if (isHeadGudang) {
+                url = `/karyawan/terbaik?toko_id=1&bulan=${selectedMonth}&tahun=${selectedYear}`;
+            } else if(isAdmin){
+                url = `/karyawan/terbaik?toko_id=${toko_id}&bulan=${selectedMonth}&tahun=${selectedYear}`;
+            } else {
+                url = `/karyawan/terbaik?bulan=${selectedMonth}&tahun=${selectedYear}`;
+                if (selectedStoreId) {
+                    url += `&toko_id=${selectedStoreId}`;
+                }
             }
+            
+            console.log("Fetching top karyawan with URL:", url); 
             
             const response = await api.get(url);
             
@@ -130,14 +193,37 @@ export default function KaryawanTerbaik() {
         }
     };
 
-    useEffect(() => {
-        if (!isHeadGudang) {
-            fetchStoreData();
+    const fetchDivisions = async () => {
+        try {
+          const url = isHeadGudang 
+            ? '/divisi-karyawan?toko_id=1' 
+            : '/divisi-karyawan';
+          
+          const response = await api.get(url);
+          
+          if (response.data.success) {
+            const divisionData = response.data.data.map(division => division.nama_divisi);
+            
+            setDivisions(divisionData);
+          }
+        } catch (error) {
+          console.error('Error fetching divisions:', error);
+          setDivisions([]);
         }
-        
-        // Fetch karyawan data when component mounts
+      };
+      useEffect(() => {
+        if (!isHeadGudang) {
+          if (isAdmin && toko_id) {
+            fetchCabangData();
+          } else {
+            fetchStoreData();
+          }
+        }
+      
+        fetchDivisions();
         fetchKaryawanData();
-    }, []);
+        fetchTopKaryawan();
+      }, []);
 
     useEffect(() => {
         fetchTopKaryawan();
@@ -145,15 +231,12 @@ export default function KaryawanTerbaik() {
     }, [selectedStoreId, selectedMonth, selectedYear]);
 
     const handleStoreSelect = (value, options) => {
-        // Find the selected store
-        const selectedStore = options.find(option => option.value === value);
-        
-        // Update the selected store ID
-        setSelectedStoreId(selectedStore?.id || "");
-        
-        // Update the selected store value
+        const selectedOption = options.find(option => option.value === value);
+
+        setSelectedStoreId(selectedOption?.id || "");
+    
         setSelectedStore(value);
-    };
+      };
 
     const handleMonthChange = (e) => {
         const date = moment(e.target.value);
@@ -197,12 +280,9 @@ export default function KaryawanTerbaik() {
             year: "numeric",
         });
 
-    // Use storeData if it's available, otherwise use default data
     const dataCabang = storeData.length > 0 ? storeData : [
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-        { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-        { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    ];
+        { label: 'Semua', value: 'Semua', icon: iconToko, id: '' },
+      ];
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
@@ -238,7 +318,8 @@ export default function KaryawanTerbaik() {
             }))
           ]
         },
-    ];
+      ];
+      
 
     const filteredKaryawanData = () => {
         let filteredData = karyawanData;
@@ -263,14 +344,14 @@ export default function KaryawanTerbaik() {
                 <div className="p-5">
                     <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Karyawan Terbaik</p>
+                            <p className={`text-${themeColor} text-base font-bold`}>Karyawan Terbaik</p>
                         </div>
 
                         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                             {!isHeadGudang && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
-                                        selectedIcon={'/icon/toko.svg'} 
+                                        selectedIcon={iconToko} 
                                         options={dataCabang} 
                                         onSelect={(value) => handleStoreSelect(value, dataCabang)}
                                     />
@@ -281,13 +362,13 @@ export default function KaryawanTerbaik() {
                                     type="month"
                                     value={`${selectedYear}-${selectedMonth}`}
                                     onChange={handleMonthChange}
-                                    className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                                    className={`w-full px-4 py-2 border hover:border-${themeColor} border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5`}
                                 />
                             </div>
                         </div>
 
                         {/* Modal */}
-                    {isModalOpen && (
+                    {/* {isModalOpen && (
                     <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                         <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
                         <button
@@ -340,7 +421,7 @@ export default function KaryawanTerbaik() {
                         </div>
                         </div>
                     </div>
-                    )}
+                    )} */}
                     </section>
 
                     <section className="mt-5">
@@ -368,7 +449,7 @@ export default function KaryawanTerbaik() {
                                     {isHeadGudang 
                                         ? "10 Karyawan Terbaik di Rumah Produksi"
                                         : selectedStore === "Semua" 
-                                            ? "10 Karyawan Terbaik di Perusahaan"
+                                            ? "10 Karyawan Terbaik"
                                             : `10 Karyawan Terbaik di ${selectedStore}`
                                     }
                                 </h3>
@@ -414,7 +495,7 @@ export default function KaryawanTerbaik() {
                             ))}
                             <button
                                 onClick={handleApplyFilter}
-                                className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                             >
                                 Simpan
                             </button>

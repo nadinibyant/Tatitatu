@@ -22,7 +22,9 @@ export default function TambahKPISeluruhDivisi() {
     const userData = JSON.parse(localStorage.getItem('userData'))
     const toko_id = userData.userId
     const isManager = userData.role === 'manajer'
-
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang'
+    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
 
     const fetchDivisi = async () => {
         try {
@@ -251,8 +253,8 @@ export default function TambahKPISeluruhDivisi() {
                                             </svg>
                                         }
                                         bgColor=""
-                                        hoverColor="hover:border-primary hover:border"
-                                        textColor="text-primary"
+                                        hoverColor={`hover:border-${themeColor} hover:border`}
+                                        textColor={`text-${themeColor}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             handleAddRow();
@@ -264,17 +266,17 @@ export default function TambahKPISeluruhDivisi() {
                                     <Button 
                                         onClick={handleBtnCancel}
                                         label={"Batal"} 
-                                        bgColor="bg-none border border-black" 
+                                        bgColor="border border-secondary" 
                                         textColor="text-black" 
                                         type="button" 
-                                        hoverColor="hover:bg-primary hover:text-white" 
+                                        hoverColor={`hover:border-${themeColor}`}
                                     />
                                     <Button 
                                         label={"Simpan"} 
-                                        bgColor="bg-primary" 
+                                        bgColor={`bg-${themeColor}`}
                                         textColor="text-white" 
                                         type="submit" 
-                                        hoverColor="hover:bg-white hover:border hover:border-primary hover:text-black" 
+                                        hoverColor={`hover:bg-white hover:border hover:border-${themeColor} hover:text-black`}
                                     />
                                 </div>
                             </form>

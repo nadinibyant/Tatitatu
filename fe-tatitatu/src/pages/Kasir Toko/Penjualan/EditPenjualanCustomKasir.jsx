@@ -18,7 +18,19 @@ const EditPenjualanCustomKasir = () => {
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const location = useLocation();
-    const isAdminGudang = userData?.role === 'admingudang';
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
     const [errorMessage, setErrorMessage] = useState(null)
     const { toko_id: stateTokoId, cabang_id: stateCabangId, fromLaporanKeuangan } = location.state || {};
 
@@ -647,8 +659,8 @@ const EditPenjualanCustomKasir = () => {
                                             }
                                             onClick={() => handleAddRow(index)}
                                             bgColor=""
-                                            hoverColor="hover:border-primary hover:border"
-                                            textColor="text-primary"
+                                            hoverColor={`hover:border-${themeColor} hover:border`}
+                                            textColor={`text-${themeColor}`}
                                             />
                                     </div>
                                 </div>
@@ -706,8 +718,8 @@ const EditPenjualanCustomKasir = () => {
                                     <div>
                                         <Button
                                             label="Simpan"
-                                            bgColor="bg-primary w-full"
-                                            hoverColor="hover:bg-white hover:border-primary hover:text-black hover:border"
+                                            bgColor={`bg-${themeColor} w-full`}
+                                            hoverColor={`hover:bg-white hover:border-${themeColor} hover:text-black hover:border`}
                                             textColor="text-white"
                                             type="submit"
                                         />
@@ -721,7 +733,7 @@ const EditPenjualanCustomKasir = () => {
                 {/* Product/Packaging Selection Modal */}
                 {modalState.isOpen && (
                     <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                        <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                             <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
                                 <div className="relative w-full max-w-md flex-shrink-0">
                                     <span className="absolute inset-y-0 left-3 flex items-center">
@@ -758,7 +770,7 @@ const EditPenjualanCustomKasir = () => {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                         </svg>
                                     </button>
-                                    <p className="text-primary font-semibold">
+                                    <p className={`text-${themeColor} font-semibold`}>
                                         Terpilih {modalState.selectedItems.reduce((sum, item) => sum + item.count, 0)}
                                     </p>
                                 </div>
@@ -773,7 +785,7 @@ const EditPenjualanCustomKasir = () => {
                                     />
                                     <Button
                                         label="Pilih"
-                                        bgColor="bg-primary"
+                                        bgColor={`bg-${themeColor}`}
                                         hoverColor="hover:bg-opacity-90"
                                         textColor="text-white"
                                         onClick={handleModalSubmit}

@@ -223,7 +223,7 @@ export default function BiayaRumahProduksi() {
     <LayoutWithNav>
       <div className="p-5">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-primary">Rincian Biaya Gudang</h2>
+          <h2 className="text-xl font-bold text-coklatTua">Rincian Biaya Gudang</h2>
           {!isEditing ? (
             <Button
               label="Edit"
@@ -238,13 +238,13 @@ export default function BiayaRumahProduksi() {
             <div className="flex gap-4">
               <Button
                 label="Batal"
-                bgColor="bg-white border border-secondary"
+                bgColor="border border-secondary"
                 textColor="text-black"
                 onClick={() => setIsEditing(false)}
               />
               <Button
                 label="Simpan"
-                bgColor="bg-primary"
+                bgColor="bg-coklatTua"
                 textColor="text-white"
                 onClick={handleSave}
               />
@@ -257,7 +257,7 @@ export default function BiayaRumahProduksi() {
           <div className="bg-white rounded-xl p-6">
             <h3 className="font-bold mb-4 text-black">Biaya Operasional dan Staff<span className="text-red-500">*</span></h3>
             <table className="w-full">
-              <thead className="bg-pink">
+              <thead className="bg-coklatMuda">
                 <tr>
                   <th className="py-2 px-4 text-left">No</th>
                   <th className="py-2 px-4 text-left">Nama Biaya</th>
@@ -305,7 +305,7 @@ export default function BiayaRumahProduksi() {
             {isEditing && (
               <button 
                 onClick={handleAddOperasionalStaffRow}
-                className="mt-4 text-primary flex items-center gap-2"
+                className="mt-4 text-coklatTua flex items-center gap-2"
               >
                 <span>+</span> Tambah Baris
               </button>
@@ -331,8 +331,8 @@ export default function BiayaRumahProduksi() {
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-primary font-bold">Total Biaya</span>
-                <span className="text-primary font-bold">Rp{Math.round(calculateTotalBiaya()).toLocaleString()}</span>
+                <span className="text-coklatTua font-bold">Total Biaya</span>
+                <span className="text-coklatTua font-bold">Rp{Math.round(calculateTotalBiaya()).toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -341,7 +341,7 @@ export default function BiayaRumahProduksi() {
           <div className="bg-white rounded-xl p-6">
             <h3 className="font-bold mb-4">Biaya Operasional Produksi</h3>
             <table className="w-full">
-              <thead className="bg-pink">
+              <thead className="bg-coklatMuda">
                 <tr>
                   <th className="py-2 px-4 text-left">No</th>
                   <th className="py-2 px-4 text-left">Nama Divisi</th>
@@ -389,7 +389,7 @@ export default function BiayaRumahProduksi() {
             {isEditing && (
               <button 
                 onClick={handleAddOperasionalProduksiRow}
-                className="mt-4 text-primary flex items-center gap-2"
+                className="mt-4 text-coklatTua flex items-center gap-2"
               >
                 <span>+</span> Tambah Baris
               </button>
@@ -411,8 +411,8 @@ export default function BiayaRumahProduksi() {
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-primary font-bold">Total Modal Operasional Produksi</span>
-                <span className="text-primary font-bold">Rp{Math.round(calculateTotalModal()).toLocaleString()}</span>
+                <span className="text-coklatTua font-bold">Total Modal Operasional Produksi</span>
+                <span className="text-coklatTua font-bold">Rp{Math.round(calculateTotalModal()).toLocaleString()}</span>
               </div>
             </div>
           </div>

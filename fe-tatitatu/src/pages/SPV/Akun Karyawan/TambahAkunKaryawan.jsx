@@ -48,6 +48,9 @@ export default function TambahAkunKaryawan(){
   const userDataLogin = JSON.parse(localStorage.getItem('userData'));
   const toko_id = userDataLogin.userId
   const isHeadGudang = userDataLogin.role === 'headgudang'
+  const isAdminGudang = userDataLogin?.role === 'admingudang'
+
+  const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
 
   const validateForm = () => {
         const newErrors = {};
@@ -254,7 +257,7 @@ export default function TambahAkunKaryawan(){
                                     {errors.photo}
                                 </p>
                             )}
-                            <div className="relative w-40 h-40 border-2 border-dashed border-primary rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                            <div className={`relative w-40 h-40 border-2 border-dashed border-${themeColor} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors`}>
                                 <input
                                 type="file"
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -275,7 +278,7 @@ export default function TambahAkunKaryawan(){
                                         <path d="M2 29.0833L11.8019 20.0982C12.1323 19.7954 12.5621 19.6241 13.0102 19.6166C13.4583 19.6092 13.8936 19.7662 14.2338 20.0578L25.8333 30M22.1667 25.4167L26.5419 21.0414C26.854 20.7291 27.2683 20.54 27.7086 20.5086C28.149 20.4773 28.5859 20.606 28.939 20.8709L35 25.4167M24 8H35M29.5 2.5V13.5" stroke="#7B0C42" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
                                     </div>
-                                    <p className="mt-2 text-sm text-primary">Masukan Foto</p>
+                                    <p className={`mt-2 text-sm text-${themeColor}`}>Masukan Foto</p>
                                 </div>
                                 )}
                             </div>
@@ -378,13 +381,13 @@ export default function TambahAkunKaryawan(){
                             <button
                                 type="button"
                                 onClick={handleCancel}
-                                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                className={`px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 hover:border-${themeColor} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${themeColor}`}
                             >
                                 Batal
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-primary text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                className={`px-6 py-2 bg-${themeColor} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`}
                             >
                                 Simpan
                             </button>
