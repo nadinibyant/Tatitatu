@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import LayoutWithNav from "../components/LayoutWithNav";
-import api from "../utils/api"; // Assuming you have an api utility
+import api from "../utils/api"; 
 import AlertSuccess from "../components/AlertSuccess";
 
 export default function Profile() {
@@ -42,6 +42,7 @@ export default function Profile() {
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState(null);
+  const [imageFilename, setImageFilename] = useState(null);
 
   const getImageUrl = (imageFilename) => {
     if (!imageFilename) return null;
@@ -138,7 +139,18 @@ export default function Profile() {
         }
 
         if (profileData.image) {
+          setImageFilename(profileData.image);
           setCurrentImageUrl(getImageUrl(profileData.image));
+          
+          // Update userData in localStorage with the image filename
+          if (profileData.image !== userData.image) {
+            const updatedUserData = {
+              ...userData,
+              image: profileData.image
+            };
+            localStorage.setItem('userData', JSON.stringify(updatedUserData));
+            console.log("Updated localStorage with new image filename:", profileData.image);
+          }
         }
       } else {
         setError("Failed to fetch profile data");
@@ -212,7 +224,7 @@ export default function Profile() {
         const response = await api.put(endpoint, jsonPayload);
         
         if (response.data.success) {
-          alert('Profile berhasil diperbarui');
+          setAlertSucc(true);
 
           fetchUserProfile();
 
@@ -291,7 +303,9 @@ export default function Profile() {
       if (response.data.success) {
         setAlertSucc(true);
       
+        // We'll fetch the updated profile which will also update localStorage
         fetchUserProfile();
+        
         setFormData(prev => ({
           ...prev,
           oldPassword: '',

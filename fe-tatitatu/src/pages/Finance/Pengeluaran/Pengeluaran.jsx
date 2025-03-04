@@ -18,6 +18,7 @@ export default function PengeluaranFinance() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isAdminGudang = userData?.role === 'admingudang'
@@ -26,6 +27,8 @@ export default function PengeluaranFinance() {
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance'
+  const [selectedKategoriId, setSelectedKategoriId] = useState(null);
+  const [categoryIdMap, setCategoryIdMap] = useState({});
 
   const themeColor = (isAdminGudang || isHeadGudang) 
   ? "coklatTua" 
@@ -48,45 +51,73 @@ export default function PengeluaranFinance() {
       </svg>
     );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const startDate = moment(`${selectedYear}-${moment().month(selectedMonth).format('MM')}-01`).format('YYYY-MM-DD');
-        const endDate = moment(`${selectedYear}-${moment().month(selectedMonth).format('MM')}-01`).endOf('month').format('YYYY-MM-DD');
-        
-        const response = await api.get(`/pengeluaran?startDate=${startDate}&endDate=${endDate}`);
-        
-        if (response.data.success) {
-          const processedData = response.data.data.map((item, index) => {
-            if (item.pengeluaran_id) return item;
+    // Fetch categories from API
+    useEffect(() => {
+      const fetchCategories = async () => {
+        try {
+          const response = await api.get('/kategori-pengeluaran');
+          if (response.data.success) {
+            setCategories(response.data.data);
+            
+            // Create category mapping
+            const mapping = {};
+            response.data.data.forEach(category => {
+              mapping[category.kategori_pengeluaran] = category.kategori_pengeluaran_id;
+            });
+            setCategoryIdMap(mapping);
+          } else {
+            console.error('Failed to fetch categories:', response.data.message);
+          }
+        } catch (err) {
+          console.error('Error fetching categories:', err);
+        }
+      };
+      
+      fetchCategories();
+    }, []);
 
-            if (item.kategori_pengeluaran === 'Gaji') {
+    useEffect(() => {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const startDate = moment(`${selectedYear}-${moment().month(selectedMonth).format('MM')}-01`).format('YYYY-MM-DD');
+          const endDate = moment(`${selectedYear}-${moment().month(selectedMonth).format('MM')}-01`).endOf('month').format('YYYY-MM-DD');
+          
+          const response = await api.get(`/pengeluaran?startDate=${startDate}&endDate=${endDate}`);
+          
+          // Log the raw response data
+          console.log('Raw API Response Data:', response.data.data);
+          
+          if (response.data.success) {
+            const processedData = response.data.data.map((item, index) => {
+              if (item.pengeluaran_id) return item;
+    
+              if (item.kategori_pengeluaran === 'Gaji') {
+                return {
+                  ...item,
+                  bayar_gaji_id: `BGA_Temp_${index}`
+                };
+              }
+    
               return {
                 ...item,
-                bayar_gaji_id: `BGA_Temp_${index}`
+                pengeluaran_id: `EXP_Temp_${index}`
               };
-            }
-
-            return {
-              ...item,
-              pengeluaran_id: `EXP_Temp_${index}`
-            };
-          });
-          
-          setData(processedData);
-        } else {
-          setError(response.data.message || 'Failed to fetch data');
+            });
+            
+            setData(processedData);
+          } else {
+            setError(response.data.message || 'Failed to fetch data');
+          }
+        } catch (err) {
+          setError(err.message || 'An error occurred while fetching data');
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError(err.message || 'An error occurred while fetching data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [selectedMonth, selectedYear]); 
+      };
+      
+      fetchData();
+    }, [selectedMonth, selectedYear]); 
 
   const handleFilterClick = (event) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -183,15 +214,24 @@ export default function PengeluaranFinance() {
       queryParams.append('startDate', startDate);
       queryParams.append('endDate', endDate);
       
+      // Use the mapping to get the category ID
       if (selectedKategori !== "Semua") {
-        queryParams.append('kategori', selectedKategori);
+        const categoryId = categoryIdMap[selectedKategori];
+        
+        if (categoryId) {
+          queryParams.append('kategori_pengeluaran_id', categoryId);
+        }
       }
-
+  
+      // Set cash_or_non parameter (1 for Cash, 0 for Non-Cash)
       if (selectedJenis !== "Semua") {
-        queryParams.append('cashType', selectedJenis === "Cash" ? true : false);
+        queryParams.append('cash_or_non', selectedJenis === "Cash" ? 1 : 0);
       }
-
-      const response = await api.get(`/pengeluaran/export?${queryParams.toString()}`, {
+  
+      const exportUrl = `/pengeluaran/export?${queryParams.toString()}`;
+      console.log('Export URL:', exportUrl);
+  
+      const response = await api.get(exportUrl, {
         responseType: 'blob' 
       });
       
@@ -212,10 +252,9 @@ export default function PengeluaranFinance() {
       
       link.setAttribute('download', filename);
       
-
       document.body.appendChild(link);
       link.click();
-
+  
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
       
@@ -333,9 +372,10 @@ export default function PengeluaranFinance() {
                 label="Kategori"
                 options={[
                   { label: "Semua", value: "Semua" },
-                  ...Array.from(new Set(transformedData.map(item => item.Kategori)))
-                    .filter(Boolean)
-                    .map(kategori => ({ label: kategori, value: kategori }))
+                  ...categories.map(category => ({
+                    label: category.kategori_pengeluaran,
+                    value: category.kategori_pengeluaran
+                  }))
                 ]}
                 value={selectedKategori}
                 onSelect={(value) => setSelectedKategori(value.value)}

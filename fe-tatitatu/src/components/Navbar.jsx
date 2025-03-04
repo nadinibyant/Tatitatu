@@ -17,18 +17,17 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branchName, setBranchName] = useState('');
   const [logoSrc, setLogoSrc] = useState('');
+  const [profileImage, setProfileImage] = useState('https://via.placeholder.com/50');
   const navigate = useNavigate();
 
-      const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
       : "primary";
 
-  // Function to determine the appropriate logo based on user role
   useEffect(() => {
     const fetchLogoBasedOnRole = async () => {
-      // For roles that directly use a specific logo file
       if (['headgudang', 'admingudang', 'karyawanproduksi'].includes(userData?.role)) {
         setLogoSrc('/logoDansa.svg');
         return;
@@ -39,7 +38,6 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
         return;
       }
       
-      // For roles that need to fetch toko data
       if (['admin', 'kasirtoko', 'karyawanumum', 'karyawantransportasi'].includes(userData?.role)) {
         try {
           const tokoId = userData?.role === 'admin' 
@@ -48,7 +46,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
             
           if (!tokoId) {
             console.error('No toko ID available');
-            setLogoSrc('/logo.png'); // Fallback logo
+            setLogoSrc('/logo.png');
             return;
           }
           
@@ -59,25 +57,45 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
             if (image) {
               setLogoSrc(`${import.meta.env.VITE_API_URL || ''}/images-toko/${image}`);
             } else {
-              // Fallback if toko has no logo
               setLogoSrc('/logo.png');
             }
           } else {
             console.error('Failed to fetch toko data');
-            setLogoSrc('/logo.png'); // Fallback logo
+            setLogoSrc('/logo.png'); 
           }
         } catch (error) {
           console.error('Error fetching toko data:', error);
-          setLogoSrc('/logo.png'); // Fallback logo
+          setLogoSrc('/logo.png')
         }
       } else {
-        // Default fallback
+
         setLogoSrc('/logo.png');
       }
     };
     
     fetchLogoBasedOnRole();
   }, [userData?.role, userData?.userId, userData?.tokoId]);
+
+  useEffect(() => {
+    if (!userData?.image) {
+      setProfileImage('https://via.placeholder.com/50');
+      return;
+    }
+
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+    
+
+    if (['admin', 'admingudang', 'headgudang', 'kasirtoko'].includes(userData?.role)) {
+      setProfileImage(`${apiBaseUrl}/images-toko/${userData.image}`);
+    } else if (['owner', 'manajer', 'finance'].includes(userData?.role)) {
+      setProfileImage(`${apiBaseUrl}/images-authentication/${userData.image}`);
+    } else if (['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userData?.role)) {
+      setProfileImage(`${apiBaseUrl}/images-karyawan/${userData.image}`);
+    } else {
+      // Fallback placeholder
+      setProfileImage('https://via.placeholder.com/50');
+    }
+  }, [userData?.role, userData?.image]);
 
   useEffect(() => {
     const fetchBranchName = async () => {
@@ -168,13 +186,12 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
               className="h-16 object-contain"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "/logo.png"; // Fallback if logo fails to load
+                e.target.src = "/logo.png"; 
               }}
             />
          </a>
        </div>
 
-       {/* Rest of the component remains unchanged */}
        {/* Menu Items */}
        <ul className="mt-4 text-black overflow-y-auto h-[calc(100%-80px)] pr-2 pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
          {menuItems.map((menu) => (
@@ -368,7 +385,15 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                 onClick={toggleDropdown}
                 className="flex items-center gap-2 focus:outline-none"
               >
-                <img src="https://via.placeholder.com/50" alt="Profile" className="w-8 h-8 rounded-full" />
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://via.placeholder.com/50";
+                  }}
+                />
                 <svg
                   className={`w-4 h-4 transition-transform ${
                     dropdownOpen ? "rotate-180" : "rotate-0"

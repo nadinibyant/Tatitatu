@@ -131,13 +131,17 @@ export default function Pemasukan(){
       queryParams.append('endDate', endDate);
       
       if (selectedKategori !== "Semua") {
-        queryParams.append('kategori', selectedKategori);
+        const matchingItem = data.find(item => item.kategori_pemasukan === selectedKategori);
+        if (matchingItem && matchingItem.kategori_pemasukan_id) {
+          queryParams.append('kategori_pemasukan_id', matchingItem.kategori_pemasukan_id);
+        }
       }
-
+  
+      // Set cash_or_non parameter
       if (selectedJenis !== "Semua") {
-        queryParams.append('cashType', selectedJenis === "Cash" ? true : false);
+        queryParams.append('cash_or_non', selectedJenis === "Cash" ? 1 : 0);
       }
-
+  
       const response = await api.get(`/pemasukan/export?${queryParams.toString()}`, {
         responseType: 'blob' 
       });
@@ -159,10 +163,9 @@ export default function Pemasukan(){
       
       link.setAttribute('download', filename);
       
-
       document.body.appendChild(link);
       link.click();
-
+  
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
       

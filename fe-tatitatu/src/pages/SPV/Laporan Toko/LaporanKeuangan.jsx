@@ -113,7 +113,7 @@ export default function LaporanKeuangan() {
                     const response = await api.get('/toko');
                     if (response.data.success) {
                         const options = response.data.data.map(item => ({
-                            value: item.nama_toko,
+                            value: item.toko_id,
                             label: item.nama_toko,
                             icon: iconToko
                         }));
@@ -411,15 +411,21 @@ export default function LaporanKeuangan() {
 
     const handleExport = async () => {
         try {
+          setLoading(true);
+          
+          // Format dates consistently
           const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
           const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
           
+          // Initialize query parameters
           const queryParams = new URLSearchParams();
           queryParams.append('startDate', startDate);
           queryParams.append('endDate', endDate);
-
+      
+          // Handle toko_id/cabang based on user role
           if (isAdmin) {
             if (selectedStore !== "Semua") {
+              // Find cabang_id for the selected cabang name
               try {
                 const cabangResponse = await api.get(`/cabang?toko_id=${toko_id}`);
                 if (cabangResponse.data.success) {
@@ -432,42 +438,43 @@ export default function LaporanKeuangan() {
                 console.error('Error fetching cabang ID:', error);
               }
             } else {
+              // If no specific cabang is selected, use the admin's toko_id
               queryParams.append('toko_id', toko_id);
             }
-          } else if (isHeadGudang) {
+          } else if (isHeadGudang || isAdminGudang) {
+            // Head Gudang always uses their toko_id
             queryParams.append('toko_id', toko_id);
-          } else if (isOwner || isFinance) {
+          } else if (isOwner || isFinance || isManajer) {
+            // Owner or Finance can select any toko
             if (selectedStore !== "Semua") {
-              try {
-                const tokoResponse = await api.get('/toko');
-                if (tokoResponse.data.success) {
-                  const toko = tokoResponse.data.data.find(t => t.nama_toko === selectedStore);
-                  if (toko) {
-                    queryParams.append('toko_id', toko.toko_id);
-                  }
-                }
-              } catch (error) {
-                console.error('Error fetching toko ID:', error);
-              }
+              // For these roles, the selectedStore value actually contains the toko_id, not the name
+              // So we need to use that value directly
+              const tokoId = selectedStore;
+              console.log('Using toko_id for export:', tokoId);
+              queryParams.append('toko_id', tokoId);
+              
+              // Debugging - log options and selected value
+              console.log('Available toko options:', tokoOptions);
+              console.log('Selected store value:', selectedStore);
+              console.log('Selected store type:', typeof selectedStore);
             }
           }
-
+      
+          // Handle kategori filtering
           if (selectedKategori !== "Semua") {
+            // We need to determine if this is a pemasukan or pengeluaran kategori
             try {
+              // First check if it's a pemasukan kategori
               const pemasukanKategoriResponse = await api.get('/kategori-pemasukan');
               if (pemasukanKategoriResponse.data.success) {
-                const isPemasukanKategori = pemasukanKategoriResponse.data.data.some(
+                const kategori = pemasukanKategoriResponse.data.data.find(
                   k => k.kategori_pemasukan === selectedKategori
                 );
                 
-                if (isPemasukanKategori) {
-                  const kategori = pemasukanKategoriResponse.data.data.find(
-                    k => k.kategori_pemasukan === selectedKategori
-                  );
-                  if (kategori) {
-                    queryParams.append('kategori_pemasukan_id', kategori.kategori_pemasukan_id);
-                  }
+                if (kategori) {
+                  queryParams.append('kategori_pemasukan_id', kategori.kategori_pemasukan_id);
                 } else {
+                  // If not found in pemasukan, check pengeluaran
                   const pengeluaranKategoriResponse = await api.get('/kategori-pengeluaran');
                   if (pengeluaranKategoriResponse.data.success) {
                     const kategori = pengeluaranKategoriResponse.data.data.find(
@@ -480,49 +487,65 @@ export default function LaporanKeuangan() {
                 }
               }
             } catch (error) {
-              console.error('Error identifying kategori type:', error);
+              console.error('Error fetching kategori data:', error);
             }
           }
-
+      
+          // Handle jenis filtering (Pemasukan/Pengeluaran)
           if (selectedJenis !== "Semua") {
             queryParams.append('jenis', selectedJenis.toLowerCase());
           }
-
-
-          const queryString = queryParams.toString();
-            console.log('Export query parameters:', queryString);
- 
-          const response = await api.get(`/laporan-keuangan/export?${queryParams.toString()}`, {
+      
+          // Log the complete URL for debugging
+          const exportUrl = `/laporan-keuangan/export?${queryParams.toString()}`;
+          console.log('Export URL:', exportUrl);
+          
+          // Execute the export request
+          const response = await api.get(exportUrl, {
             responseType: 'blob'
           });
-  
-          const url = window.URL.createObjectURL(new Blob([response.data]));
- 
-          const link = document.createElement('a');
-          link.href = url;
-
-          const contentDisposition = response.headers['content-disposition'];
-          let filename = `laporan-keuangan-${selectedMonth}-${selectedYear}.xlsx`;
-          
-          if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-            if (filenameMatch && filenameMatch.length === 2) {
-              filename = filenameMatch[1];
+      
+          // Check if we got a valid response
+          if (response.status === 200) {
+            // Create a blob URL
+            const blob = new Blob([response.data], { 
+              type: response.headers['content-type'] 
+            });
+            const url = window.URL.createObjectURL(blob);
+      
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+      
+            // Try to get filename from headers, otherwise use default
+            const contentDisposition = response.headers['content-disposition'];
+            let filename = `laporan-keuangan-${selectedMonth}-${selectedYear}.xlsx`;
+            
+            if (contentDisposition) {
+              const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+              if (filenameMatch && filenameMatch.length === 2) {
+                filename = filenameMatch[1];
+              }
             }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+          } else {
+            throw new Error('Failed to download export file');
           }
-          
-          link.setAttribute('download', filename);
-
-          document.body.appendChild(link);
-          link.click();
-          
-          // Clean up
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(link);
-          
         } catch (error) {
           console.error('Error exporting data:', error);
-          setErrorMessage(error.response.data.message || 'Data tidak tersedia')
+          setErrorMessage(
+            error.response?.data?.message || 
+            'Terjadi kesalahan saat mengeksport data. Data mungkin tidak tersedia.'
+          );
+        } finally {
+          setLoading(false);
         }
       };
 

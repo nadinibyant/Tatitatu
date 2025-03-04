@@ -25,7 +25,7 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
         <img
           src={branch.logo}
           alt="Store Logo"
-          className="px-2 border-r-2 object-contain"
+          className="px-2 border-r-2 object-contain w-24 h-20"
         />
         <div>
           <div className="text-gray-500 text-sm">Nama Cabang</div>
@@ -97,6 +97,7 @@ export default function Cabang(){
     const [isAlertSuccDel, setAlertDelSucc] = useState(false)
     const userDataLogin = JSON.parse(localStorage.getItem('userData'));
     const toko_id = userDataLogin.userId
+    const image = userDataLogin?.image
     const [id,setId] = useState('')
     const [formData, setFormData] = useState({
       branchName: '',
@@ -134,7 +135,7 @@ export default function Cabang(){
               nama: branch.nama_cabang,
               email: branch.email,
               password: branch.password,
-              logo: "logo.png"
+              logo: `${import.meta.env.VITE_API_URL}/images-toko/${image}`
             }));
             setBranchData(transformedData);
           }

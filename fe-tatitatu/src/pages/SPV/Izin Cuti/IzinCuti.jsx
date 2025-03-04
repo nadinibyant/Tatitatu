@@ -269,7 +269,10 @@ const ActionButtons = ({ id, status }) => {
             setLoading(true);
             
             if (isAdminGudang) {
-                const response = await api.get(`/produksi-gudang?toko_id=${toko_id}`);
+                const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+                const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+
+                const response = await api.get(`/produksi-gudang?startDate=${startDate}&endDate=${endDate}&toko_id=${toko_id}`);
                 
                 if (response.data.success) {
                     const formattedData = response.data.data.map((item) => {
