@@ -20,20 +20,23 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const [profileImage, setProfileImage] = useState('https://via.placeholder.com/50');
   const navigate = useNavigate();
   
-  // Notification Modal State
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : "primary";
+    
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const notifButtonRef = useRef(null);
   const [notifModalPosition, setNotifModalPosition] = useState({ top: 0, left: 0 });
   
-  // Get current month and year for API request
   const getCurrentMonthYear = () => {
     const date = new Date();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return { month, year };
   };
 
-  // Fetch manager messages from API
   const fetchManagerMessages = async () => {
     try {
       const { month, year } = getCurrentMonthYear();
@@ -41,16 +44,12 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
       
       if (response.data.success) {
         const formattedMessages = response.data.data.map(item => {
-          // Truncate the message text at a word boundary
           let truncatedText = item.isi;
           if (item.isi.length > 30) {
-            // Find the last space within the first 30 characters
             const lastSpaceIndex = item.isi.substring(0, 30).lastIndexOf(' ');
             if (lastSpaceIndex > 0) {
-              // Truncate at word boundary
               truncatedText = item.isi.substring(0, lastSpaceIndex) + '...';
             } else {
-              // If no space found, truncate at character
               truncatedText = item.isi.substring(0, 30) + '...';
             }
           }
@@ -70,49 +69,85 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
       console.error('Error fetching manager messages:', error);
     }
   };
-
-  // Fetch notifications when component mounts and role is owner
-  useEffect(() => {
-    if (isOwner) {
-      fetchManagerMessages();
-    }
-  }, [isOwner]);
-
-  // Sample stock notifications data
-  const stockNotifications = [
-    {
-      type: 'stok',
-      name: 'Gelang Barbie',
-      minimumValue: '150'
-    },
-    {
-      type: 'stok',
-      name: 'Cincin Perak',
-      minimumValue: '50'
-    },
-    {
-      type: 'stok',
-      name: 'Kalung Mutiara',
-      minimumValue: '75'
-    }
-  ];
   
-  // Initialize state
-  const [notifications, setNotifications] = useState(stockNotifications);
+  const [notifications, setNotifications] = useState([]);
   const [managerMessages, setManagerMessages] = useState([]);
 
-  const themeColor = (isAdminGudang || isHeadGudang) 
-    ? 'coklatTua' 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : "primary";
+  const fetchNotifications = async () => {
+    try {
+      if (isOwner) {
+        const { month, year } = getCurrentMonthYear();
+        const response = await api.get(`/catatan?bulan=${month}&tahun=${year}`);
+        
+        if (response.data.success) {
+          const formattedMessages = response.data.data.map(item => {
+            let truncatedText = item.isi;
+            if (item.isi.length > 30) {
+              const lastSpaceIndex = item.isi.substring(0, 30).lastIndexOf(' ');
+              if (lastSpaceIndex > 0) {
+                truncatedText = item.isi.substring(0, lastSpaceIndex) + '...';
+              } else {
+                truncatedText = item.isi.substring(0, 30) + '...';
+              }
+            }
+              
+            return {
+              id: item.catatan_id,
+              name: 'Pesan dari manajer',
+              pesan_teks: truncatedText,
+              tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
+              judul: item.judul
+            };
+          });
+          
+          setManagerMessages(formattedMessages);
+        }
+      } 
+      else if (isAdminGudang || isHeadGudang || isAdmin || isKasirToko) {
+        let endpoint;
+        
+        if (isAdminGudang || isHeadGudang) {
+          endpoint = '/notification-stok-gudang';
+        } else if (isAdmin) {
+          const tokoId = userData?.userId;
+          endpoint = `/notification-stok?toko_id=${tokoId}`;
+        } else if (isKasirToko) {
+          const cabangId = userData?.userId;
+          endpoint = `/notification-stok?cabang=${cabangId}`;
+        }
+        
+        if (endpoint) {
+          const response = await api.get(endpoint);
+          
+          if (response.data.success && response.data.data) {
+            const stockNotifications = response.data.data.map(item => {
+              const message = item.message;
+            
+              return {
+                type: 'stok',
+                name: 'Stok Menipis',
+                isi: message
+              };
+            });
+            
+            setNotifications(stockNotifications);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+    useEffect(() => {
+      fetchNotifications();
+    }, [isOwner, isAdminGudang, isHeadGudang, isAdmin, isKasirToko, userData?.userId, userData?.tokoId]);
 
 
   const getNotificationIcon = () => {
     if (isAdminGudang || isHeadGudang) {
       return "/Icon Warna/dataBarang_gudang.svg";
     }
-    // For owner role
     else if (isOwner) {
       return "/Icon Warna/email_non.svg";
     }
@@ -211,7 +246,6 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
     } else if (['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userData?.role)) {
       setProfileImage(`${apiBaseUrl}/images-karyawan/${userData.image}`);
     } else {
-      // Fallback placeholder
       setProfileImage('https://via.placeholder.com/50');
     }
   }, [userData?.role, userData?.image]);
@@ -288,7 +322,6 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
    return () => window.removeEventListener("resize", handleResize);
  }, []);
 
- // Custom notification modal component
  const NotificationModal = () => {
   return (
     <div 
@@ -296,11 +329,10 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
       style={{ 
         maxHeight: '400px',
         overflow: 'auto',
-        scrollbarWidth: 'none', // Firefox
-        msOverflowStyle: 'none' // IE/Edge
+        scrollbarWidth: 'none', 
+        msOverflowStyle: 'none' 
       }}
     >
-      {/* Hide scrollbar for Chrome, Safari and Opera */}
       <style jsx global>{`
         .notification-modal::-webkit-scrollbar {
           display: none;
@@ -311,7 +343,6 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
         <h3 className={`font-bold text-lg text-${themeColor} mb-6`}>Notifikasi</h3>
         
         {isOwner ? (
-          // Owner notifications
           <div className="divide-y divide-gray-200">
             {managerMessages.map((notif, index) => (
               <div key={index} className="py-4 first:pt-0">
@@ -326,7 +357,6 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
             ))}
           </div>
         ) : (
-          // Admin/Kasir/Gudang notifications (stock alerts)
           <div className="divide-y divide-gray-200">
             {notifications.map((notif, index) => (
               <div key={index} className="py-4 first:pt-0">
@@ -343,8 +373,8 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">Stok {notif.name}</p>
-                    <p className="text-sm text-gray-600">telah mencapai batas minimum sebesar {notif.minimumValue}</p>
+                  <p className="font-semibold text-sm">{notif.name}</p>
+                  <p className="text-sm text-gray-600">{notif.isi}</p>
                   </div>
                 </div>
               </div>
@@ -487,38 +517,39 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
               type="button"
               label="Kirim Catatan"
               icon={
-                <svg width="20" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11.06 14L13.3 11.76V13.6H14.1V10.4H10.9V11.2H12.74L10.5 13.44L11.06 14ZM12.5 16C11.3933 16 10.4501 15.6099 9.6704 14.8296C8.89067 14.0493 8.50053 13.1061 8.5 12C8.49947 10.8939 8.8896 9.95067 9.6704 9.1704C10.4512 8.39013 11.3944 8 12.5 8C13.6056 8 14.5491 8.39013 15.3304 9.1704C16.1117 9.95067 16.5016 10.8939 16.5 12C16.4984 13.1061 16.1083 14.0496 15.3296 14.8304C14.5509 15.6112 13.6077 16.0011 12.5 16ZM3.7 4.8H11.7V3.2H3.7V4.8ZM7.44 14.4H2.1C1.66 14.4 1.28347 14.2435 0.9704 13.9304C0.657333 13.6173 0.500533 13.2405 0.5 12.8V1.6C0.5 1.16 0.6568 0.783467 0.9704 0.4704C1.284 0.157333 1.66053 0.000533333 2.1 0H13.3C13.74 0 14.1168 0.1568 14.4304 0.4704C14.744 0.784 14.9005 1.16053 14.9 1.6V6.96C14.5133 6.77333 14.1232 6.63333 13.7296 6.54C13.336 6.44667 12.9261 6.4 12.5 6.4C12.3533 6.4 12.2165 6.4032 12.0896 6.4096C11.9627 6.416 11.8328 6.4328 11.7 6.46V6.4H3.7V8H8.6C8.36 8.22667 8.14347 8.47333 7.9504 8.74C7.75733 9.00667 7.5872 9.29333 7.44 9.6H3.7V11.2H6.96C6.93333 11.3333 6.9168 11.4635 6.9104 11.5904C6.904 11.7173 6.90053 11.8539 6.9 12C6.9 12.44 6.94 12.8501 7.02 13.2304C7.1 13.6107 7.24 14.0005 7.44 14.4Z" fill="#7B0C42"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10.56 14L12.8 11.76V13.6H13.6V10.4H10.4V11.2H12.24L10 13.44L10.56 14ZM12 16C10.8933 16 9.95013 15.6099 9.1704 14.8296C8.39067 14.0493 8.00053 13.1061 8 12C7.99947 10.8939 8.3896 9.95067 9.1704 9.1704C9.9512 8.39013 10.8944 8 12 8C13.1056 8 14.0491 8.39013 14.8304 9.1704C15.6117 9.95067 16.0016 10.8939 16 12C15.9984 13.1061 15.6083 14.0496 14.8296 14.8304C14.0509 15.6112 13.1077 16.0011 12 16ZM3.2 4.8H11.2V3.2H3.2V4.8ZM6.94 14.4H1.6C1.16 14.4 0.783467 14.2435 0.4704 13.9304C0.157333 13.6173 0.000533333 13.2405 0 12.8V1.6C0 1.16 0.1568 0.783467 0.4704 0.4704C0.784 0.157333 1.16053 0.000533333 1.6 0H12.8C13.24 0 13.6168 0.1568 13.9304 0.4704C14.244 0.784 14.4005 1.16053 14.4 1.6V6.96C14.0133 6.77333 13.6232 6.63333 13.2296 6.54C12.836 6.44667 12.4261 6.4 12 6.4C11.8533 6.4 11.7165 6.4032 11.5896 6.4096C11.4627 6.416 11.3328 6.4328 11.2 6.46V6.4H3.2V8H8.1C7.86 8.22667 7.64347 8.47333 7.4504 8.74C7.25733 9.00667 7.0872 9.29333 6.94 9.6H3.2V11.2H6.46C6.43333 11.3333 6.4168 11.4635 6.4104 11.5904C6.404 11.7173 6.40053 11.8539 6.4 12C6.4 12.44 6.44 12.8501 6.52 13.2304C6.6 13.6107 6.74 14.0005 6.94 14.4Z" fill="#023F80"/>
                 </svg>
               }
               bgColor="border border-secondary"
-              textColor="text-primary"
+              textColor="text-biruTua"
               hoverColor="hover:bg-gray-100"
               onClick={toggleModal}
             />
           )}
           
-          {/* Notification Button */}
-          <div className="relative">
-            <button
-              ref={notifButtonRef}
-              onClick={toggleNotifModal}
-              className="flex items-center justify-center w-10 h-10 border border-secondary rounded-md hover:bg-gray-100 focus:outline-none"
-            >
-              <img 
-                src={getNotificationIcon()} 
-                alt="Notifications" 
-                className="w-5 h-5"
-              />
-              {/* Red dot indicator */}
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            
-            {/* Notification Modal */}
-            {isNotifModalOpen && <NotificationModal />}
-          </div>
+          {(isOwner || isAdmin || isKasirToko || isHeadGudang || isAdminGudang) && (
+            <div className="relative">
+              <button
+                ref={notifButtonRef}
+                onClick={toggleNotifModal}
+                className="flex items-center justify-center w-10 h-10 border border-secondary rounded-md hover:bg-gray-100 focus:outline-none"
+              >
+                <img 
+                  src={getNotificationIcon()} 
+                  alt="Notifications" 
+                  className="w-5 h-5"
+                />
+                {((isOwner && managerMessages.length > 0) || 
+                  ((isAdmin || isKasirToko || isHeadGudang || isAdminGudang) && notifications.length > 0)) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+              
+              {isNotifModalOpen && <NotificationModal />}
+            </div>
+          )}
           
-          {/* User Profile */}
           <div className="relative">
             <button
               onClick={toggleDropdown}

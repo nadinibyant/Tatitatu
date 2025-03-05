@@ -308,21 +308,31 @@ export default function DetailPenjualanKasir() {
     const handlePrint = async () => {
         try {
             setIsLoading(true);
-
+    
             const response = await api.get(`/penjualan/${data.nomor}/invoice`, {
                 responseType: 'text'
             });
-    
 
             const printWindow = window.open('', '_blank');
             printWindow.document.write(response.data);
             printWindow.document.close();
-    
-            printWindow.print();
+
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                    setIsLoading(false);
+                }, 100);
+            };
+            
+            setTimeout(() => {
+                if (isLoading) {
+                    printWindow.print();
+                    setIsLoading(false);
+                }
+            }, 100);
         } catch (error) {
             console.error('Error generating invoice:', error);
             setErrorMessage(error.response?.data?.message || "Gagal mencetak invoice");
-        } finally {
             setIsLoading(false);
         }
     };

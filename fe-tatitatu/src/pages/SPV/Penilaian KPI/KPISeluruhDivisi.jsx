@@ -28,10 +28,17 @@ export default function KPISeluruhDivisi() {
     const isManager = userData.role === 'manajer'
     const isAdminGudang = userData?.role === 'admingudang'
     const isHeadGudang = userData?.role === 'headgudang'
+    const isOwner = userData?.role === 'owner'
+    const isFinance = userData?.role === 'finance'
+    const isManajer = userData?.role === 'manajer'
     const toko_id = userData.userId
 
     
-    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },

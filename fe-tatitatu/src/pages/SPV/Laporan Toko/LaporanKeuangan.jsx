@@ -390,7 +390,7 @@ export default function LaporanKeuangan() {
     
     const filteredData = () => {
         let filteredData = selectedData;
-
+    
         if (selectedKategori !== "Semua") {
             filteredData = filteredData.filter(item => item.kategori === selectedKategori);
         }
@@ -400,9 +400,22 @@ export default function LaporanKeuangan() {
                 filteredData = filteredData.filter(item => item.cabang === selectedStore);
                 console.log('Filtering by cabang:', selectedStore, filteredData.length);
             } else {
-                filteredData = filteredData.filter(item => 
-                    item.toko === selectedStore || item.cabang === selectedStore
-                );
+                filteredData = filteredData.filter(item => {
+                    if (typeof item.toko === 'object' && item.toko !== null) {
+                        const matchingToko = tokoOptions.find(
+                            option => option.label === item.toko.nama_toko
+                        );
+                        return matchingToko && matchingToko.value.toString() === selectedStore.toString();
+                    } 
+                    else if (typeof item.toko === 'string') {
+                        const matchingToko = tokoOptions.find(
+                            option => option.label === item.toko
+                        );
+                        return matchingToko && matchingToko.value.toString() === selectedStore.toString();
+                    }
+                    // Also check cabang
+                    return item.cabang === selectedStore;
+                });
             }
         }
     

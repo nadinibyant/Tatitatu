@@ -11,6 +11,7 @@ import api from "../../../utils/api";
 import AlertError from "../../../components/AlertError";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
+import LayoutWithNav from "../../../components/LayoutWithNav";
 
 export default function EditKPISeluruhDivisi() {
     const location = useLocation();
@@ -35,6 +36,18 @@ export default function EditKPISeluruhDivisi() {
     const userData = JSON.parse(localStorage.getItem('userData'))
     const toko_id = userData.userId
     const isManager = userData.role === 'manajer';
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const fetchDivisi = async () => {
         try {
@@ -208,7 +221,7 @@ export default function EditKPISeluruhDivisi() {
 
     return (
         <>
-            <Navbar menuItems={menuItems} userOptions={userOptions}>
+            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
                 <div className="p-5">
                     <Breadcrumbs items={breadcrumbItems} />
 
@@ -290,8 +303,8 @@ export default function EditKPISeluruhDivisi() {
                                             </svg>
                                         }
                                         bgColor=""
-                                        hoverColor="hover:border-primary hover:border"
-                                        textColor="text-primary"
+                                        hoverColor={`hover:border-${themeColor} hover:border`}
+                                        textColor={`text-${themeColor}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             handleAddRow();
@@ -305,15 +318,14 @@ export default function EditKPISeluruhDivisi() {
                                         bgColor="bg-none border border-black" 
                                         textColor="text-black" 
                                         type="button" 
-                                        hoverColor="hover:bg-primary hover:text-white" 
                                         onClick={handleCancel}
                                     />
                                     <Button 
                                         label={"Simpan"} 
-                                        bgColor="bg-primary" 
+                                        bgColor={`bg-${themeColor}`}
                                         textColor="text-white" 
                                         type="submit" 
-                                        hoverColor="hover:bg-white hover:border hover:border-primary hover:text-black" 
+                                        hoverColor={`hover:bg-white hover:border hover:border-${themeColor} hover:text-black`}
                                     />
                                 </div>
                             </form>
@@ -341,7 +353,7 @@ export default function EditKPISeluruhDivisi() {
                     onConfirm={() => setErrorAlert(false)}
                 />
                 )}
-            </Navbar>
+            </LayoutWithNav>
         </>
     );
 }

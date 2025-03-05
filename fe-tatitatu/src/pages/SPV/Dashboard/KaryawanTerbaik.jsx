@@ -115,14 +115,28 @@ export default function KaryawanTerbaik() {
             if (isHeadGudang) {
                 url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=1`;
             } else if (isAdmin) {
-                url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`;
+                if (selectedStore === "Semua" || !selectedStoreId) {
+                    url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`;
+                } else {
+                    const cabangId = selectedStoreId;
+                    console.log(cabangId)
+                    if (cabangId) {
+                        url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?cabang=${cabangId}`;
+                    } else {
+                        url = `/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`;
+                    }
+                }
             } else {
                 url = `/absensi-karyawan/${selectedMonth}/${selectedYear}`;
             }
             
+            console.log("Fetching karyawan data with URL:", url);
+            
             const response = await api.get(url);
             
             if (response.data.success) {
+                console.log("API response:", response.data);
+                
                 let formattedData = response.data.data.map(item => ({
                     id: item.karyawan.karyawan_id,
                     Nama: item.karyawan.nama_karyawan,
@@ -133,12 +147,6 @@ export default function KaryawanTerbaik() {
                     cabang_id: item.karyawan.cabang_id,
                     toko_id: item.karyawan.toko_id
                 }));
-
-                if (isAdmin && selectedStoreId) {
-                    formattedData = formattedData.filter(item => 
-                        String(item.cabang_id) === String(selectedStoreId)
-                    );
-                }
                 
                 const uniqueDivisions = [...new Set(formattedData.map(item => item.Divisi))];
                 setDivisions(uniqueDivisions);
@@ -157,8 +165,12 @@ export default function KaryawanTerbaik() {
             
             if (isHeadGudang) {
                 url = `/karyawan/terbaik?toko_id=1&bulan=${selectedMonth}&tahun=${selectedYear}`;
-            } else if(isAdmin){
-                url = `/karyawan/terbaik?toko_id=${toko_id}&bulan=${selectedMonth}&tahun=${selectedYear}`;
+            } else if(isAdmin) {
+                if (selectedStore === "Semua" || !selectedStoreId) {
+                    url = `/karyawan/terbaik?toko_id=${toko_id}&bulan=${selectedMonth}&tahun=${selectedYear}`;
+                } else {
+                    url = `/karyawan/terbaik?bulan=${selectedMonth}&tahun=${selectedYear}&cabang=${selectedStoreId}`;
+                }
             } else {
                 url = `/karyawan/terbaik?bulan=${selectedMonth}&tahun=${selectedYear}`;
                 if (selectedStoreId) {
@@ -321,18 +333,20 @@ export default function KaryawanTerbaik() {
       ];
       
 
-    const filteredKaryawanData = () => {
+      const filteredKaryawanData = () => {
         let filteredData = karyawanData;
-   
-        // Filter by division
+
         if (selectedKategori !== "Semua") {
             filteredData = filteredData.filter(item => item.Divisi === selectedKategori);
         }
-
-        // Filter by store
+    
         if (!isHeadGudang && selectedStore !== "Semua") {
-            // If a store is selected in dropdown, filter by Toko field
-            filteredData = filteredData.filter(item => item.Toko === selectedStore);
+
+            if (isAdmin) {
+                filteredData = filteredData.filter(item => item.cabang === selectedStore);
+            } else {
+                filteredData = filteredData.filter(item => item.Toko === selectedStore);
+            }
         }
     
         return filteredData;
@@ -367,61 +381,6 @@ export default function KaryawanTerbaik() {
                             </div>
                         </div>
 
-                        {/* Modal */}
-                    {/* {isModalOpen && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                        <button
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <div className="flex space-x-4 w-full">
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            </div>
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            </div>
-                        </div>
-                        <div className="flex flex-col space-y-3 w-full">
-                            <button
-                            onClick={handleToday}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Hari Ini
-                            </button>
-                            <button
-                            onClick={handleLast7Days}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            7 Hari Terakhir
-                            </button>
-                            <button
-                            onClick={handleThisMonth}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Bulan Ini
-                            </button>
-                        </div>
-                        </div>
-                    </div>
-                    )} */}
                     </section>
 
                     <section className="mt-5">

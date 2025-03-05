@@ -1,22 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import moment from "moment";
 import Table from "../../../components/Table";
+import api from "../../../utils/api";
+import ButtonDropdown from "../../../components/ButtonDropdown";
 
 export default function HariTerlaris(){
-      const [isModalOpen, setIsModalOpen] = useState(false);
-      const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-      const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-      const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
-      const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
-      const userData = JSON.parse(localStorage.getItem('userData'))
-      const isHeadGudang = userData?.role === 'headgudang';
-    const isAdminGudang = userData?.role === 'adminGudang'
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+    const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [tokoData, setTokoData] = useState([]);
+    const [storeSelections, setStoreSelections] = useState({});
+    
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isAdminGudang = userData?.role === 'adminGudang';
     const isManajer = userData?.role === 'manajer';
     const isOwner = userData?.role === 'owner';
-    const isAdmin = userData?.role === 'admin'
-    const isFinance = userData?.role === 'finance'
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance';
+    
+    // Set toko_id to null for owner and finance roles
+    const toko_id = isOwner || isFinance 
+        ? null 
+        : userData?.userId || userData?.tokoId;
 
     const themeColor = (isAdminGudang || isHeadGudang) 
     ? "coklatTua" 
@@ -24,131 +32,220 @@ export default function HariTerlaris(){
       ? "biruTua" 
       : "primary";
 
-  
-      const monthValue = `${selectedYear}-${selectedMonth}`;
-  
-      const handleMonthChange = (e) => {
-        const value = e.target.value; 
-        const [year, month] = value.split('-');
-        setSelectedMonth(month);
-        setSelectedYear(year);
-      };
-    //   const handleToday = () => {
-    //     const today = moment().startOf("day");
-    //     setStartDate(today.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    //   };
-    
-    //   const handleLast7Days = () => {
-    //     const today = moment().startOf("day");
-    //     const sevenDaysAgo = today.clone().subtract(7, "days");
-    //     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-    //     setEndDate(today.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    //   };
-    
-    //   const handleThisMonth = () => {
-    //     const startMonth = moment().startOf("month");
-    //     const endMonth = moment().endOf("month");
-    //     setStartDate(startMonth.format("YYYY-MM-DD"));
-    //     setEndDate(endMonth.format("YYYY-MM-DD"));
-    //     setIsModalOpen(false);
-    //   };
-    
-    //   const toggleModal = () => setIsModalOpen(!isModalOpen);
-    
-    //   const formatDate = (date) =>
-    //     new Date(date).toLocaleDateString("en-US", {
-    //       month: "short",
-    //       day: "2-digit",
-    //       year: "numeric",
-    //     });
+    // Sample branch options for each store
+    const getBranchOptions = (storeName) => {
+        // In a real application, you would fetch branches for each store from the API
+        return [
+            { value: "all", label: "Semua" },
+            { value: "1", label: "Cabang UPI" },
+            { value: "2", label: "Cabang Dago" },
+            { value: "3", label: "Cabang Cihampelas" },
+            { value: "4", label: "Cabang Antapani" }
+        ];
+    };
 
-    const [data,setData] = useState([
+    // Dummy data for gudang roles to preview
+    const dummyGudangData = [
         {
-            nama_toko: 'Tatitatu',
+            nama_toko: 'Gudang Pusat',
+            cabang_id: 1,
             data: {
                 dashboard: {
-                    hari_terlaris:{
-                        waktu: 'Senin',
-                        jumlah: 100001
+                    hari_terlaris: {
+                        waktu: 'Rabu',
+                        jumlah: 7560000
                     },
                     jam_terpanas: {
-                        waktu: '15.00 - 17.00',
-                        jumlah: 20
+                        waktu: '13:00 - 14:00',
+                        jumlah: 12
                     }
                 },
                 data_hari: [
                     {
                         Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        'Produk Terjual': 45,
+                        'Jam Terpanas': '10:00 - 11:00',
+                        'Total Transaksi': 3500000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Selasa',
+                        'Produk Terjual': 63,
+                        'Jam Terpanas': '11:00 - 12:00',
+                        'Total Transaksi': 5280000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Rabu',
+                        'Produk Terjual': 78,
+                        'Jam Terpanas': '13:00 - 14:00',
+                        'Total Transaksi': 7560000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Kamis',
+                        'Produk Terjual': 52,
+                        'Jam Terpanas': '14:00 - 15:00',
+                        'Total Transaksi': 4750000
+                    },
+                    {
+                        Hari: 'Jumat',
+                        'Produk Terjual': 60,
+                        'Jam Terpanas': '15:00 - 16:00',
+                        'Total Transaksi': 5400000
                     }
                 ]
             }
         },
         {
-            nama_toko: 'Rorotoli',
+            nama_toko: 'Gudang Cabang',
+            cabang_id: 2,
             data: {
                 dashboard: {
-                    hari_terlaris:{
-                        waktu: 'Senin',
-                        jumlah: 100001
+                    hari_terlaris: {
+                        waktu: 'Jumat',
+                        jumlah: 6300000
                     },
                     jam_terpanas: {
-                        waktu: '15.00 - 17.00',
-                        jumlah: 20
+                        waktu: '14:00 - 15:00',
+                        jumlah: 9
                     }
                 },
                 data_hari: [
                     {
                         Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        'Produk Terjual': 35,
+                        'Jam Terpanas': '09:00 - 10:00',
+                        'Total Transaksi': 2450000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Selasa',
+                        'Produk Terjual': 47,
+                        'Jam Terpanas': '10:00 - 11:00',
+                        'Total Transaksi': 3750000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Rabu',
+                        'Produk Terjual': 42,
+                        'Jam Terpanas': '11:00 - 12:00',
+                        'Total Transaksi': 3230000
                     },
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 1300,
-                        'Jam Terpanas': '15.00 - 16.00',
-                        'Total Transaksi':180000000
+                        Hari: 'Kamis',
+                        'Produk Terjual': 55,
+                        'Jam Terpanas': '13:00 - 14:00',
+                        'Total Transaksi': 4600000
+                    },
+                    {
+                        Hari: 'Jumat',
+                        'Produk Terjual': 70,
+                        'Jam Terpanas': '14:00 - 15:00',
+                        'Total Transaksi': 6300000
                     }
                 ]
             }
         }
-    ])
+    ];
+
+    useEffect(() => {
+        if (isAdmin || isOwner || isFinance) {
+            fetchHariTerlarisData();
+        }
+    }, [selectedMonth, selectedYear, isAdmin, isOwner, isFinance]);
+
+    const fetchHariTerlarisData = async () => {
+        try {
+            setIsLoading(true);
+            
+            // Calculate the start and end dates for the selected month and year
+            const startDate = `${selectedYear}-${selectedMonth}-01`;
+            const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
+            
+            // Construct URL based on user role
+            const url = isOwner || isFinance 
+                ? `/penjualan/toko?toko_id=null&startDate=${startDate}&endDate=${endDate}` 
+                : `/penjualan/toko?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
+                
+            const response = await api.get(url);
+            
+            if (response.data.success) {
+                // Transform the API data into our component format
+                const transformedData = processApiData(response.data.data);
+                setTokoData(transformedData);
+                
+                // Initialize store selections
+                const initialSelections = {};
+                transformedData.forEach(toko => {
+                    initialSelections[toko.nama_toko] = "Semua";
+                });
+                setStoreSelections(initialSelections);
+            } else {
+                console.error("Failed to fetch data:", response.data.message);
+            }
+        } catch (error) {
+            console.error("Error fetching hari terlaris data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Process API data into the format needed by our component
+    const processApiData = (apiData) => {
+        return apiData.map(branch => {
+            // Find the day with highest total sales
+            const bestSellingDay = findBestSellingDay(branch.daily_stats);
+            
+            // Find the hour with highest transactions across all days
+            const peakHour = findPeakHour(branch.daily_stats);
+
+            return {
+                nama_toko: branch.cabang_name,
+                cabang_id: branch.cabang_id,
+                data: {
+                    dashboard: {
+                        hari_terlaris: {
+                            waktu: bestSellingDay?.day || '-',
+                            jumlah: bestSellingDay?.total_sales || 0
+                        },
+                        jam_terpanas: {
+                            waktu: peakHour ? `${peakHour.start} - ${peakHour.end}` : '-',
+                            jumlah: peakHour?.transactions || 0
+                        }
+                    },
+                    data_hari: branch.daily_stats.map(day => ({
+                        Hari: day.day,
+                        'Produk Terjual': day.total_quantity,
+                        'Jam Terpanas': `${day.peak_hour.start} - ${day.peak_hour.end}`,
+                        'Total Transaksi': day.total_sales
+                    }))
+                }
+            };
+        });
+    };
+
+    // Function to find the day with highest total sales
+    const findBestSellingDay = (dailyStats) => {
+        if (!dailyStats || dailyStats.length === 0) return null;
+        
+        return dailyStats.reduce((best, current) => {
+            return (current.total_sales > best.total_sales) ? current : best;
+        }, dailyStats[0]);
+    };
+
+    // Function to find the peak hour across all days
+    const findPeakHour = (dailyStats) => {
+        if (!dailyStats || dailyStats.length === 0) return null;
+        
+        // Find the peak hour with the highest transaction count
+        let highestTransactions = 0;
+        let peakHourData = null;
+        
+        dailyStats.forEach(day => {
+            if (day.peak_hour && day.peak_hour.transactions > highestTransactions) {
+                highestTransactions = day.peak_hour.transactions;
+                peakHourData = day.peak_hour;
+            }
+        });
+        
+        return peakHourData;
+    };
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
@@ -162,6 +259,14 @@ export default function HariTerlaris(){
         return number.toLocaleString('id-ID');
     }
 
+    // Handler for branch selection in each store section
+    const handleBranchSelect = (storeName, branchName) => {
+        setStoreSelections(prev => ({
+            ...prev,
+            [storeName]: branchName
+        }));
+    };
+
     const tokoIcon = (isManajer || isOwner || isFinance) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="22" viewBox="0 0 20 22" fill="none">
         <path d="M1.18951 1.77346C0.995552 2.15922 0.900181 2.63715 0.709441 3.59085L0.068639 6.79486C-0.0221781 7.23171 -0.0228815 7.68251 0.0665719 8.11964C0.156025 8.55678 0.333753 8.97106 0.588876 9.33712C0.843998 9.70318 1.17115 10.0133 1.55029 10.2486C1.92944 10.4838 2.35261 10.6392 2.79389 10.7052C3.23518 10.7712 3.68529 10.7465 4.11668 10.6325C4.54807 10.5185 4.95166 10.3177 5.30274 10.0423C5.65382 9.76691 5.945 9.42278 6.15846 9.03096C6.37192 8.63914 6.50317 8.20787 6.54417 7.76356L6.61918 7.02418C6.57857 7.49443 6.6365 7.96797 6.78927 8.41457C6.94203 8.86116 7.18628 9.27097 7.5064 9.61783C7.82652 9.96468 8.21547 10.2409 8.6484 10.429C9.08134 10.617 9.54873 10.7126 10.0207 10.7098C10.4927 10.7069 10.9589 10.6057 11.3896 10.4124C11.8202 10.2192 12.2058 9.93829 12.5217 9.58761C12.8376 9.23692 13.0769 8.8242 13.2243 8.3758C13.3717 7.92739 13.4239 7.45318 13.3776 6.98346L13.4558 7.76356C13.4968 8.20787 13.6281 8.63914 13.8415 9.03096C14.055 9.42278 14.3462 9.76691 14.6973 10.0423C15.0483 10.3177 15.4519 10.5185 15.8833 10.6325C16.3147 10.7465 16.7648 10.7712 17.2061 10.7052C17.6474 10.6392 18.0706 10.4838 18.4497 10.2486C18.8289 10.0133 19.156 9.70318 19.4111 9.33712C19.6662 8.97106 19.844 8.55678 19.9334 8.11964C20.0229 7.68251 20.0222 7.23171 19.9314 6.79486L19.2906 3.59085C19.0998 2.63715 19.0044 2.1603 18.8105 1.77346C18.6084 1.37059 18.3238 1.01471 17.9753 0.72894C17.6268 0.443166 17.222 0.233877 16.7874 0.114659C16.3694 1.19758e-07 15.8829 0 14.91 0H5.09004C4.11705 0 3.63056 1.19758e-07 3.21264 0.114659C2.77798 0.233877 2.37324 0.443166 2.0247 0.72894C1.67615 1.01471 1.3916 1.37059 1.18951 1.77346ZM16.7177 12.3231C17.555 12.3252 18.3785 12.1108 19.1084 11.7005V12.8589C19.1084 16.8998 19.1084 18.9208 17.8525 20.1756C16.842 21.1872 15.3364 21.3833 12.6789 21.4219V17.681C12.6789 16.6791 12.6789 16.1786 12.4636 15.8057C12.3225 15.5614 12.1196 15.3585 11.8753 15.2174C11.5023 15.0021 11.0019 15.0021 10 15.0021C8.99808 15.0021 8.49765 15.0021 8.12474 15.2174C7.88041 15.3585 7.67752 15.5614 7.53645 15.8057C7.32106 16.1786 7.32106 16.6791 7.32106 17.681V21.4219C4.66355 21.3833 3.15799 21.1861 2.1475 20.1756C0.891609 18.9208 0.891609 16.8998 0.891609 12.8589V11.7005C1.62179 12.1109 2.44575 12.3254 3.28337 12.3231C4.52172 12.3239 5.71397 11.8534 6.61811 11.0072C7.53936 11.8563 8.74718 12.3262 10 12.3231C11.2528 12.3262 12.4606 11.8563 13.3819 11.0072C14.286 11.8534 15.4793 12.3239 16.7177 12.3231Z" fill="#023F80"/>
@@ -172,98 +277,146 @@ export default function HariTerlaris(){
           </svg>                            
       );
 
-      const getDashboardIconPath = (baseIconName) => {
+    const getDashboardIconPath = (baseIconName) => {
         if (isManajer || isOwner || isFinance) {
-          return `/Dashboard Produk/${baseIconName}_non.svg`;
+            return `/Dashboard Produk/${baseIconName}_non.svg`;
         }
         return `/Dashboard Produk/${baseIconName}.svg`;
-      };
+    };
+
+    let displayData = [];
+    
+    if (isAdmin) {
+        displayData = tokoData;
+    } else if (isManajer || isOwner) {
+        displayData = dummyGudangData;
+    }
+
+    const locationIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 12L12 12.01M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18C15.31 18 18 15.31 18 12C18 8.69 15.31 6 12 6Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+    );
 
     return(
         <>
         <LayoutWithNav>
             <div className="p-5">
-            <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
+                <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
                         <p className={`text-${themeColor} text-base font-bold`}>Hari Terlaris</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                    <div className="w-full md:w-auto">
-                                <input
-                                    type="month"
-                                        value={`${selectedYear}-${selectedMonth}`}
-                                        onChange={(e) => {
-                                            const date = moment(e.target.value);
-                                            setSelectedMonth(date.format('MM'));
-                                            setSelectedYear(date.format('YYYY'));
-                                        }}
-                                        className={`w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5 hover:border-${themeColor}`}
-                                />             
+                        <div className="w-full md:w-auto">
+                            <input
+                                type="month"
+                                value={`${selectedYear}-${selectedMonth}`}
+                                onChange={(e) => {
+                                    const date = moment(e.target.value);
+                                    setSelectedMonth(date.format('MM'));
+                                    setSelectedYear(date.format('YYYY'));
+                                }}
+                                className={`w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5 hover:border-${themeColor}`}
+                            />             
+                        </div>
                     </div>
-                </div>
-
-                
                 </section>
 
-                {data.map((toko, index) => (
-                    <section key={index} className="mt-5 bg-white rounded-xl">
-                        <div className="p-2 pb-0">
-                            <div className="w-full p-4 rounded-lg flex items-center gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-lg">
-                                    {tokoIcon}
-                                </div>
-                                <h2 className={`text-lg font-bold text-${themeColor}`}>{toko.nama_toko}</h2>
-                            </div>
-                        </div>
-
-                        <div className="px-5 pb-5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="w-full">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Hari Terlaris</p>
-                                            <p className="font-bold text-lg">{toko.data.dashboard.hari_terlaris.waktu}</p>
-                                            <p className="">Rp{formatNumberWithDots(toko.data.dashboard.hari_terlaris.jumlah)}</p>
+                {(isAdmin || isOwner || isFinance) && isLoading ? (
+                    <div className="flex justify-center items-center p-10">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                    </div>
+                ) : displayData.length > 0 ? (
+                    displayData.map((toko, index) => (
+                        <section key={index} className="mt-5 bg-white rounded-xl">
+                            <div className="p-4 pb-0">
+                                <div className="w-full flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg">
+                                            {tokoIcon}
                                         </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src={getDashboardIconPath('hariterlaris')} alt="hariterlaris" />
+                                        <h2 className={`text-lg font-bold text-${themeColor}`}>{toko.nama_toko}</h2>
+                                    </div>
+                                    
+                                    {/* Branch dropdown for each store */}
+                                    {(isOwner || isManajer) && (
+                                        <div className="w-48">
+                                            <ButtonDropdown
+                                                options={getBranchOptions(toko.nama_toko)}
+                                                selectedIcon={null}
+                                                label="Semua"
+                                                selectedStore={storeSelections[toko.nama_toko] || "Semua"}
+                                                onSelect={(branchName) => handleBranchSelect(toko.nama_toko, branchName)}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="px-5 pb-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="w-full">
+                                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                            <div className="flex-1">
+                                                <p className="text-gray-400 text-sm">Hari Terlaris</p>
+                                                <p className="font-bold text-lg">{toko.data.dashboard.hari_terlaris.waktu}</p>
+                                                <p className="">Rp{formatNumberWithDots(toko.data.dashboard.hari_terlaris.jumlah)}</p>
+                                            </div>
+                                            <div className="flex items-center justify-center ml-4">
+                                                <img src={getDashboardIconPath('hariterlaris')} alt="hariterlaris" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full">
+                                        <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                                            <div className="flex-1">
+                                                <p className="text-gray-400 text-sm">Jam Terpanas</p>
+                                                <p className="font-bold text-lg">{toko.data.dashboard.jam_terpanas.waktu}</p>
+                                                <p className="">
+                                                    {/* Display different format based on whether it's API or dummy data */}
+                                                    {(isAdmin || isOwner || isFinance) 
+                                                        ? `${toko.data.dashboard.jam_terpanas.jumlah} transaksi`
+                                                        : `Rp${formatNumberWithDots(toko.data.dashboard.jam_terpanas.jumlah)}`
+                                                    }
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center justify-center ml-4">
+                                                <img src={getDashboardIconPath('hariterlaris')} alt="hariterlaris" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="w-full">
-                                    <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-sm">Jam Terpanas</p>
-                                            <p className="font-bold text-lg">{toko.data.dashboard.jam_terpanas.waktu}</p>
-                                            <p className="">Rp{formatNumberWithDots(toko.data.dashboard.jam_terpanas.jumlah)}</p>
-                                        </div>
-                                        <div className="flex items-center justify-center ml-4">
-                                            <img src={getDashboardIconPath('hariterlaris')} alt="hariterlaris" />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        </div>
 
-                        <div className="p-5 pt-0">
-                            <Table
-                                headers={headers}
-                                data={toko.data.data_hari.map((item, index) => ({
-                                    ...item,
-                                    nomor: index + 1,
-                                    "Produk Terjual": `${item["Produk Terjual"]} Pcs`,
-                                    "Total Transaksi": `Rp${formatNumberWithDots(item["Total Transaksi"])}`,
-                                }))}
-                                hasSearch={false}
-                                hasPagination={false}
-                            />      
+                            <div className="p-5 pt-0">
+                                {toko.data.data_hari.length > 0 ? (
+                                    <Table
+                                        headers={headers}
+                                        data={toko.data.data_hari.map((item, index) => ({
+                                            ...item,
+                                            nomor: index + 1,
+                                            "Produk Terjual": `${item["Produk Terjual"]} Pcs`,
+                                            "Total Transaksi": `Rp${formatNumberWithDots(item["Total Transaksi"])}`,
+                                        }))}
+                                        hasSearch={false}
+                                        hasPagination={false}
+                                    />
+                                ) : ( <div className="text-center py-5 text-gray-500">
+                                    Tidak ada data transaksi untuk bulan ini
+                                </div>
+                            )}
                         </div>
                     </section>
-                ))}
-            </div>
-        </LayoutWithNav>
-        </>
-    )
+                ))
+            ) : (
+                <div className="mt-5 bg-white rounded-xl p-10 text-center text-gray-500">
+                    Tidak ada data untuk ditampilkan
+                </div>
+            )}
+        </div>
+    </LayoutWithNav>
+    </>
+)
 }

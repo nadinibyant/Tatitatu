@@ -18,13 +18,12 @@ export default function TambahPenjualanKasir() {
     const [nomor, setNomor] = useState("");
     const getCurrentDateTime = () => {
         const now = new Date();
-        const utc7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
         
-        const year = utc7Time.getFullYear();
-        const month = String(utc7Time.getMonth() + 1).padStart(2, '0');
-        const day = String(utc7Time.getDate()).padStart(2, '0');
-        const hours = String(utc7Time.getHours()).padStart(2, '0');
-        const minutes = String(utc7Time.getMinutes()).padStart(2, '0');
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
         
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
@@ -811,7 +810,7 @@ export default function TambahPenjualanKasir() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <Input label={"Nomor"} type1={"text"} disabled={true} value={nomor} onChange={(e) => setNomor(e)} />
                                     <Input label={"Tanggal dan Waktu"} type1={"datetime-local"} value={tanggal} onChange={(e) => setTanggal(e)} />
-                                    <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
+                                    <Input label={"Nama Pembeli"} required={false} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
                                     <InputDropdown 
                                         label="Cash/Non-Cash"
                                         options={dataBayar.map(item => ({

@@ -23,14 +23,12 @@ const TambahPenjualanCustom = () => {
     const [nomor, setNomor] = useState('');
     const [tanggal, setTanggal] = useState(() => {
         const now = new Date();
-        const offset = 7 * 60; 
-        const localTime = new Date(now.getTime() + (offset * 60 * 1000));
         
-        const year = localTime.getFullYear();
-        const month = String(localTime.getMonth() + 1).padStart(2, '0');
-        const day = String(localTime.getDate()).padStart(2, '0');
-        const hours = String(localTime.getHours()).padStart(2, '0');
-        const minutes = String(localTime.getMinutes()).padStart(2, '0');
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
         
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     });
@@ -570,6 +568,23 @@ const TambahPenjualanCustom = () => {
             });
             return;
         }
+
+        if (dataProduk[0].data.length === 0) {
+            setErrorMessage({
+                title: 'Rincian Jumlah dan Bahan Kosong',
+                description: 'Silakan tambahkan minimal satu item di Rincian Jumlah dan Bahan.'
+            });
+            return;
+        }
+    
+        // Validasi Rincian Biaya (Tabel 1)
+        if (dataProduk[1].data.length === 0) {
+            setErrorMessage({
+                title: 'Rincian Biaya Kosong',
+                description: 'Silakan tambahkan minimal satu item di Rincian Biaya.'
+            });
+            return;
+        }
     
         // Validasi Rincian Jumlah dan Bahan (Tabel 0)
         if (dataProduk[0].data.length === 0) {
@@ -705,7 +720,7 @@ const TambahPenjualanCustom = () => {
                                 value={tanggal}
                                 onChange={(e) => setTanggal(e)}
                             />
-                            <Input label={'Nama Pembeli'} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
+                            <Input label={'Nama Pembeli'} required={false} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
                             <InputDropdown 
                                 label="Cash/Non-Cash"
                                 options={dataBayar}

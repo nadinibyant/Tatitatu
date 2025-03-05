@@ -22,8 +22,25 @@ export default function DetailKaryawan(){
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isHeadGudang = userData?.role === 'headgudang'
     const isManager = userData?.role === 'manajer'
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedAbsensi, setSelectedAbsensi] = useState(null);
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
+      const textColor = (isAdminGudang || isHeadGudang) 
+      ? "coklatMuda" 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruMuda" 
+        : "primary"; 
 
     const [isAlert, setIsAlert] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
@@ -85,6 +102,7 @@ export default function DetailKaryawan(){
         { label: "Jam Masuk", key: "Jam Masuk", align: "text-left" },
         { label: "Jam Keluar", key: "Jam Keluar", align: "text-left" },
         { label: "Total Waktu", key: "Total Waktu", align: "text-left" },
+        { label: "Lokasi", key: "Lokasi", align: "text-left" },
         { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-left" },
         ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
     ];
@@ -94,6 +112,7 @@ export default function DetailKaryawan(){
         { label: "Foto", key: "Foto", align: "text-left" },
         { label: "Jumlah Produksi", key: "Jumlah Produksi", align: "text-left" },
         { label: "Total Menit", key: "Total Menit", align: "text-left" },
+        { label: "Lokasi", key: "Lokasi", align: "text-left" },
         { label: "Status", key: "Status", align: "text-left" },
         { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-left" },
     ];
@@ -199,6 +218,16 @@ export default function DetailKaryawan(){
                     "Total Menit": `${item.total_menit.toLocaleString('id-ID') || 0} Menit`,
                     Status: item.status,
                     "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0,
+                    "Lokasi": item.gmaps ? (
+                        <a
+                            href={item.gmaps}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                            Lokasi
+                        </a>
+                    ) : '-',
                     produkInfo: item.produk && item.produk.length > 0 
                         ? item.produk.map(p => `${p.jumlah}x ${p.barang.nama_barang}`).join(', ')
                         : '-'
@@ -232,7 +261,16 @@ export default function DetailKaryawan(){
                         id: item.absensi_karyawan_id,
                         Tanggal: item.tanggal,
                         Foto: `${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
-                        Lokasi: item.lokasi,
+                        Lokasi: item.gmaps ? (
+                            <a
+                                href={item.gmaps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                                {item.lokasi}
+                            </a>
+                        ) : '-',
                         Status: item.status
                     }))
                 }));
@@ -249,7 +287,17 @@ export default function DetailKaryawan(){
                         "Jumlah Produksi": item.jumlah_produksi.toLocaleString('id-ID') || "0 Pcs",
                         "Total Menit": item.total_menit ? `${item.total_menit} Menit` : "0 Menit",
                         "Status": item.status || "Pending",
-                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0
+                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0,
+                        "Lokasi": item.gmaps ? (
+                            <a
+                                href={item.gmaps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                                Lokasi
+                            </a>
+                        ) : '-',
                     }))
                 }));
             } 
@@ -265,7 +313,17 @@ export default function DetailKaryawan(){
                         "Jam Masuk": item.jam_masuk || '-',
                         "Jam Keluar": item.jam_keluar || '-',
                         "Total Waktu": item.total_menit || 0,
-                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0
+                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0,
+                        "Lokasi": item.gmaps ? (
+                            <a
+                                href={item.gmaps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                                Lokasi
+                            </a>
+                        ) : '-',
                     }))
                 }));
             }
@@ -300,9 +358,10 @@ export default function DetailKaryawan(){
                         Tanggal: formatDate2(item.Tanggal),
                         Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
                         Status: <span className={`px-3 py-1 rounded-lg ${
-                            item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : '',
-                            item.Status === 'Ditolak' ? 'bg-red-100 text-red-800' : '',
-                            item.Status === 'proses' ? 'bg-yellow-100 text-yellow-800' : ''
+                            item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : 
+                            item.Status === 'Ditolak' ? 'bg-red-100 text-red-800' : 
+                            item.Status === 'proses' ? 'bg-yellow-100 text-yellow-800' : 
+                            ''
                         }`}>{item.Status}</span>,
                         "Gaji Pokok Perhari": `Rp${formatNumberWithDots(item["Gaji Pokok Perhari"])}`,
                     }))}
@@ -317,7 +376,7 @@ export default function DetailKaryawan(){
                         Tanggal: formatDate2(item.Tanggal),
                         Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
                         Status: <span className={`px-3 py-1 rounded-lg ${
-                            item.Status === 'Antar' ? 'bg-pink text-primary' : 'bg-primary text-white'
+                            item.Status === 'Antar' ? `bg-${themeColor} text-${textColor}` : `bg-${textColor} text-${themeColor}`
                         }`}>{item.Status}</span>,
                         ...(isManager && {
                             Aksi: (
@@ -410,7 +469,7 @@ export default function DetailKaryawan(){
                                     type="month"
                                     value={monthValue}
                                     onChange={handleMonthChange}
-                                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    className={`border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-${themeColor}`}
                                     style={{
                                         maxWidth: '200px',
                                     }}
@@ -474,7 +533,7 @@ export default function DetailKaryawan(){
                                         setSelectedYear(moment().format("YYYY"));
                                         setIsModalOpen(false);
                                     }}
-                                    className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                    className={`px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-${themeColor} hover:text-white`}
                                 >
                                     Bulan Ini
                                 </button>
@@ -485,7 +544,7 @@ export default function DetailKaryawan(){
                                         setSelectedYear(lastMonth.format("YYYY"));
                                         setIsModalOpen(false);
                                     }}
-                                    className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
+                                    className={`px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-${themeColor} hover:text-white`}
                                 >
                                     Bulan Lalu
                                 </button>
@@ -495,7 +554,7 @@ export default function DetailKaryawan(){
                 )}
                 </section>
 
-                <section className="mt-5 bg-primary rounded-xl p-5">
+                <section className={`mt-5 bg-${themeColor} rounded-xl p-5`}>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-5 items-center text-white">
                         <div className="flex flex-col">
                             <p className="text-sm">Gaji Pokok</p>

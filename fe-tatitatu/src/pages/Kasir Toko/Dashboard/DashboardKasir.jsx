@@ -20,41 +20,54 @@ export default function DashboardKasir(){
     const userData = JSON.parse(localStorage.getItem('userData'))
     const cabang_id = userData.userId
 
-    const getProductImagePath = (product) => {
-        switch (product.kategori) {
-            case 'Handmade':
-                return `${import.meta.env.VITE_API_URL}/images-barang-handmade/${product.image}`;
-            case 'Non Handmade':
-                return `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${product.image}`;
-            case 'Custom':
-                return `${import.meta.env.VITE_API_URL}/images-barang-custom/${product.image}`;
-            case 'Packaging':
-                return `${import.meta.env.VITE_API_URL}/images-packaging/${product.image}`;
-            default:
-                return '/icon/produk.svg';
+    const getImagePath = (kategori) => {
+        if (!kategori) return '';
+        
+        const normalizedCategory = kategori.toLowerCase();
+        
+        if (normalizedCategory.includes('handmade') && !normalizedCategory.includes('non')) {
+            return 'images-barang-handmade';
+        } else if (
+            (normalizedCategory.includes('non') && normalizedCategory.includes('handmade')) || 
+            normalizedCategory.includes('non-handmade')
+        ) {
+            return 'images-barang-non-handmade';
+        } else if (normalizedCategory.includes('custom')) {
+            return 'images-barang-custom';
+        } else if (normalizedCategory.includes('packaging')) {
+            return 'images-packaging';
+        } else if (normalizedCategory.includes('mentah') || normalizedCategory.includes('bahan')) {
+            return 'images-barang-mentah';
+        } else {
+            return 'images-barang-handmade'; 
         }
     };
 
     const fetchTopProducts = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/produk-penjualan/terlaris', {
+            const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
+            const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+     
+            const response = await api.get(`/produk-penjualan/cabang/topten`, {
                 params: {
-                    bulan: selectedMonth,
-                    tahun: selectedYear,
-                    cabang: cabang_id
+                    cabang_id: cabang_id,
+                    startDate: startDate,
+                    endDate: endDate
                 }
             });
-
+    
             if (response.data.success) {
                 const transformedTopProducts = response.data.data.map((product, index) => ({
                     No: index + 1,
-                    Foto: product.image ? getProductImagePath(product) : '/icon/produk.svg',
-                    "Nama Barang": product.name,
+                    Foto: product.image ? 
+                        `${import.meta.env.VITE_API_URL}/${getImagePath(product.kategori)}/${product.image}` : 
+                        '/icon/produk.svg',
+                    "Nama Barang": product.nama || product.name || '-', 
                     Terjual: product.total_terjual,
                     Kategori: product.kategori
                 }));
-
+    
                 setTopProducts(transformedTopProducts);
             }
         } catch (error) {
@@ -77,7 +90,6 @@ export default function DashboardKasir(){
             });
 
             if (response.data.success) {
-                // Transform the data to match the existing table structure
                 const transformedTransactions = response.data.data.map(transaction => ({
                     Nomor: transaction.penjualan_id,
                     Tanggal: moment(transaction.tanggal).format('DD/MM/YYYY'),
@@ -99,40 +111,45 @@ export default function DashboardKasir(){
         }
     };
 
-    // Existing methods...
     const fetchTargetBulanan = async () => {
         try {
             if (!cabang_id) return;
             const year = selectedYear;
-
+    
             const response = await api.get(`/target-bulanan-kasir`, {
                 params: {
                     cabang: cabang_id,
                     tahun: year
                 }
             });
-    
+        
             if (response.data.success) {
                 const monthNames = [
                     "January", "February", "March", "April", "May", "June",
                     "July", "August", "September", "October", "November", "December"
                 ];
-
+    
                 const selectedMonthName = monthNames[parseInt(selectedMonth) - 1];
-
+    
                 const targetData = response.data.data.find(item => 
                     item.bulan === selectedMonthName
                 );
                 
                 if (targetData) {
+                    const totalTarget = targetData.jumlah_target || 0;
+                    const achieved = targetData.tercapai || 0;
+                    const remaining = Math.max(0, totalTarget - achieved);
+                    
                     setTargetBulanan({
-                        tersisa: targetData.jumlah_target,
-                        tercapai: targetData.tercapai || 0
+                        tersisa: remaining,  
+                        tercapai: achieved,
+                        total: totalTarget  
                     });
                 } else {
                     setTargetBulanan({
                         tersisa: 0,
-                        tercapai: 0
+                        tercapai: 0,
+                        total: 0
                     });
                 }
             }
@@ -140,7 +157,8 @@ export default function DashboardKasir(){
             console.error('Error fetching target bulanan:', error);
             setTargetBulanan({
                 tersisa: 0,
-                tercapai: 0
+                tercapai: 0,
+                total: 0
             });
         }
     };
@@ -223,9 +241,11 @@ export default function DashboardKasir(){
                                 <div 
                                     className="h-full bg-primary rounded-full"
                                     style={{ 
-                                        width: `${(targetBulanan?.tersisa > 0 && targetBulanan?.tercapai >= 0) 
-                                            ? Math.min((targetBulanan.tercapai / targetBulanan.tersisa) * 100, 100) 
-                                            : 0}%`
+                                        width: `${
+                                            (targetBulanan?.total > 0) 
+                                                ? Math.min((targetBulanan.tercapai / targetBulanan.total) * 100, 100) 
+                                                : 0
+                                        }%`
                                     }}
                                 ></div>
                             </div>

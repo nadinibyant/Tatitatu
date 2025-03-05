@@ -276,26 +276,130 @@ export default function ProdukTerlaris() {
     }
   };  
 
-  const fetchAdminProductData = async () => {
+  const fetchAdminDashboardData = async () => {
     try {
-      let endpoint = `/produk-penjualan/terlaris?bulan=${selectedMonth}&tahun=${selectedYear}`;
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const tokoId = userData?.userId;
 
-      if (selectedStore !== "Semua") {
+      let endpoint;
+      if (selectedStore === "Semua") {
+        endpoint = `/produk-penjualan/toko/kategori?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`;
+      } else {
         const selectedCabang = storeData.find(store => store.value === selectedStore);
         if (selectedCabang && selectedCabang.id) {
-          endpoint += `&cabang=${selectedCabang.id}`;
+          endpoint = `/produk-penjualan/cabang/kategori?cabang_id=${selectedCabang.id}&startDate=${startDate}&endDate=${endDate}`;
+        } else {
+          console.error('Invalid cabang selection');
+          return;
+        }
+      }
+  
+      console.log("Fetching admin dashboard data with endpoint:", endpoint);
+      const response = await api.get(endpoint);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+
+        const dashboardObj = {
+          barang_handmade: { 
+            nama: data.handmade?.nama || '-', 
+            jumlah: data.handmade?.total_terjual || 0,
+            image: data.handmade?.image || null
+          },
+          barang_non_handmade: { 
+            nama: data.nonhandmade?.nama || '-', 
+            jumlah: data.nonhandmade?.total_terjual || 0,
+            image: data.nonhandmade?.image || null
+          },
+          packging: { 
+            nama: data.packaging?.nama || '-', 
+            jumlah: data.packaging?.total_terjual || 0,
+            image: data.packaging?.image || null
+          },
+          barang_custom: { 
+            nama: data.custom?.nama || '-', 
+            jumlah: data.custom?.total_terjual || 0,
+            image: data.custom?.image || null
+          }
+        };
+        
+        setDashboardData(dashboardObj);
+      }
+    } catch (error) {
+      console.error('Error fetching admin dashboard data:', error);
+      setDashboardData({
+        barang_handmade: { nama: '-', jumlah: 0 },
+        barang_non_handmade: { nama: '-', jumlah: 0 },
+        packging: { nama: '-', jumlah: 0 },
+        barang_custom: { nama: '-', jumlah: 0 }
+      });
+    }
+  };
+
+  const mapKategoriToJenis = (kategori) => {
+    if (!kategori) return '-';
+    
+    const normalizedKategori = kategori.toLowerCase();
+    
+    if (isHeadGudang || isAdminGudang) {
+      if (normalizedKategori.includes('handmade')) {
+        return "Barang Handmade";
+      } else if (normalizedKategori.includes('non') && normalizedKategori.includes('handmade')) {
+        return "Barang Non-Handmade";
+      } else if (normalizedKategori.includes('mentah') || normalizedKategori.includes('bahan')) {
+        return "Barang Mentah"; 
+      } else if (normalizedKategori.includes('packaging')) {
+        return "Packaging";
+      } else {
+        return kategori; // Return as is if no match
+      }
+    } else {
+      if (normalizedKategori.includes('handmade')) {
+        return "Barang Handmade";
+      } else if (normalizedKategori.includes('non') && normalizedKategori.includes('handmade')) {
+        return "Barang Non-Handmade";
+      } else if (normalizedKategori.includes('custom')) {
+        return "Barang Custom"; 
+      } else if (normalizedKategori.includes('packaging')) {
+        return "Packaging";
+      } else if (normalizedKategori.includes('mentah') || normalizedKategori.includes('bahan')) {
+        return "Barang Mentah"; 
+      } else {
+        return kategori; // Return as is if no match
+      }
+    }
+  };
+
+  const fetchAdminProductData = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      const tokoId = userData?.userId;
+
+      let endpoint;
+      if (selectedStore === "Semua") {
+        endpoint = `/produk-penjualan/toko/terlaris?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`;
+      } else {
+        const selectedCabang = storeData.find(store => store.value === selectedStore);
+        if (selectedCabang && selectedCabang.id) {
+          endpoint = `/produk-penjualan/cabang/terlaris?cabang_id=${selectedCabang.id}&startDate=${startDate}&endDate=${endDate}`;
+        } else {
+          console.error('Invalid cabang selection');
+          return;
         }
       }
       
+      console.log("Fetching admin product data with endpoint:", endpoint);
       const response = await api.get(endpoint);
       
       if (response.data.success) {
         const tableData = response.data.data.map((item, index) => ({
           nomor: index + 1,
-          Nama: item.name,
+          id: item.id,
+          Nama: item.nama || item.name || '-',
           Kategori: item.kategori,
-          Jenis: item.kategori, 
-          Terjual: item.total_terjual
+          Jenis: mapKategoriToJenis ? mapKategoriToJenis(item.kategori) : item.kategori,
+          Terjual: item.total_terjual,
+          image: item.image ? `${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}` : null
         }));
         
         setProductData(tableData);
@@ -309,15 +413,11 @@ export default function ProdukTerlaris() {
   const fetchProductData = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-
-      let endpoint = '';
       
-      if (isAdminGudang) {
-        endpoint = `/produk-penjualan/toko/terlaris?toko_id=1&startDate=${startDate}&endDate=${endDate}`;
-      } 
-      else if (isHeadGudang) {
-        endpoint = `/produk-penjualan/toko/terlaris?toko_id=1&startDate=${startDate}&endDate=${endDate}`;
-
+      if (isAdminGudang || isHeadGudang) {
+        const tokoId = userData?.userId;
+        let endpoint = `/produk-penjualan/toko/terlaris?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`;
+        
         if (selectedJenis !== "Semua") {
           endpoint += `&jenis=${encodeURIComponent(selectedJenis)}`;
         }
@@ -326,28 +426,21 @@ export default function ProdukTerlaris() {
           endpoint += `&kategori=${encodeURIComponent(selectedKategori)}`;
         }
         
-        console.log("Fetching with endpoint:", endpoint); 
-      }
-      else {
-        endpoint = `/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`;
-      }
-      
-      const response = await api.get(endpoint);
-      
-      if (response.data.success) {
-        if (isAdminGudang || isHeadGudang) {
+        console.log("Fetching with endpoint:", endpoint);
+        
+        const response = await api.get(endpoint);
+        
+        if (response.data.success) {
           let filteredData = response.data.data;
-      
-          if (isHeadGudang) {
-            if (selectedJenis !== "Semua") {
-              filteredData = filteredData.filter(item => 
-                item.kategori.toLowerCase() === selectedJenis.toLowerCase());
-            }
-            
-            if (selectedKategori !== "Semua") {
-              filteredData = filteredData.filter(item => 
-                item.kategori.toLowerCase() === selectedKategori.toLowerCase());
-            }
+
+          if (selectedJenis !== "Semua") {
+            filteredData = filteredData.filter(item => 
+              item.kategori.toLowerCase() === selectedJenis.toLowerCase());
+          }
+          
+          if (selectedKategori !== "Semua") {
+            filteredData = filteredData.filter(item => 
+              item.kategori.toLowerCase() === selectedKategori.toLowerCase());
           }
           
           const tableData = filteredData.map((item, index) => ({
@@ -359,9 +452,14 @@ export default function ProdukTerlaris() {
           }));
           
           setProductData(tableData);
-          console.log("Updated product data:", tableData); 
-        } 
-        else {
+          console.log("Updated product data:", tableData);
+        }
+      } else {
+        const endpoint = `/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`;
+        
+        const response = await api.get(endpoint);
+        
+        if (response.data.success) {
           const { data } = response.data;
           const tableData = [];
   
@@ -417,7 +515,8 @@ export default function ProdukTerlaris() {
   const fetchBarangTerlaris = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-      const response = await api.get(`/produk-penjualan-gudang/topten?startDate=${startDate}&endDate=${endDate}`);
+      const tokoId = userData?.userId;
+      const response = await api.get(`/produk-penjualan/toko/topten?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`);
       
       if (response.data.success) {
         const formattedData = response.data.data.map((item, index) => ({
@@ -474,36 +573,35 @@ export default function ProdukTerlaris() {
   const fetchDashboardData = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-      const response = await api.get(`/produk-penjualan-gudang/terlaris?startDate=${startDate}&endDate=${endDate}`);
+      const tokoId = userData?.userId;
+      const response = await api.get(`/produk-penjualan/toko/kategori?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`);
       
       if (response.data.success) {
+        const data = response.data.data;
+        
         const dashboardObj = {
-          barang_handmade: { nama: '-', jumlah: 0 },
-          barang_non_handmade: { nama: '-', jumlah: 0 },
-          packging: { nama: '-', jumlah: 0 },
-          barang_custom: { nama: '-', jumlah: 0 }
-        };
-  
-        response.data.data.forEach(item => {
-          switch (item.kategori) {
-            case 'Handmade':
-              dashboardObj.barang_handmade = { nama: item.name, jumlah: item.total_terjual };
-              break;
-            case 'Non Handmade':
-              dashboardObj.barang_non_handmade = { nama: item.name, jumlah: item.total_terjual };
-              break;
-            case 'Packaging':
-              dashboardObj.packging = { nama: item.name, jumlah: item.total_terjual };
-              break;
-            case 'Bahan Mentah':
-            case 'Mentah':
-              dashboardObj.barang_custom = { nama: item.name, jumlah: item.total_terjual };
-              break;
-            default:
-              break;
+          barang_handmade: { 
+            nama: data.handmade?.nama || '-', 
+            jumlah: data.handmade?.total_terjual || 0,
+            image: data.handmade?.image || null
+          },
+          barang_non_handmade: { 
+            nama: data.nonhandmade?.nama || '-', 
+            jumlah: data.nonhandmade?.total_terjual || 0,
+            image: data.nonhandmade?.image || null
+          },
+          packging: { 
+            nama: data.packaging?.nama || '-', 
+            jumlah: data.packaging?.total_terjual || 0,
+            image: data.packaging?.image || null
+          },
+          barang_custom: { 
+            nama: data.mentah?.nama || '-', 
+            jumlah: data.mentah?.total_terjual || 0,
+            image: data.mentah?.image || null
           }
-        });
-  
+        };
+        
         setDashboardData(dashboardObj);
       }
     } catch (error) {
@@ -517,14 +615,30 @@ export default function ProdukTerlaris() {
     }
   };
 
+
   const fetchAdminTopProducts = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-      const response = await api.get(`/produk-penjualan/toko/terlaris?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`);
+      const tokoId = userData?.userId;
+      let endpoint;
+      if (selectedStore === "Semua") {
+        endpoint = `/produk-penjualan/toko/topten?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`;
+      } else {
+        const selectedCabang = storeData.find(store => store.value === selectedStore);
+        if (selectedCabang && selectedCabang.id) {
+          endpoint = `/produk-penjualan/cabang/topten?cabang_id=${selectedCabang.id}&startDate=${startDate}&endDate=${endDate}`;
+        } else {
+          console.error('Invalid cabang selection');
+          return;
+        }
+      }
+      
+      console.log("Fetching admin top products with endpoint:", endpoint);
+      const response = await api.get(endpoint);
       
       if (response.data.success) {
-        // Ambil 10 item pertama
         const top10Products = response.data.data.slice(0, 10);
+        
         const formattedData = top10Products.map((item, index) => ({
           nomor: index + 1,
           "Foto": (
@@ -532,13 +646,21 @@ export default function ProdukTerlaris() {
               src={`${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}`}
               className="w-8 h-8 object-cover rounded-lg"
               onError={(e) => {
-                e.target.src = "/api/placeholder/64/64";
+
+                const alternativePath = `${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}-gudang/${item.image}`;
+                e.target.src = alternativePath;
+                
+                e.target.onerror = () => {
+                  e.target.src = "/api/placeholder/64/64";
+                  e.target.onerror = null;
+                };
               }}
             />
           ),
-          "Nama Barang": item.name,
+          "Nama Barang": item.nama,
           "Terjual": `${formatNumberWithDots(item.total_terjual)} Pcs`
         }));
+        
         setBarangTerlaris(formattedData);
       }
     } catch (error) {
@@ -547,17 +669,79 @@ export default function ProdukTerlaris() {
     }
   };
 
+  const fetchOwnerDashboardData = async () => {
+    try {
+      const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
+      
+      let endpoint = `/produk-penjualan/toko/kategori?startDate=${startDate}&endDate=${endDate}`;
+      let isRumahProduksi = false;
+
+      if (selectedStore !== "Semua") {
+        const selectedStoreObj = storeData.find(store => store.value === selectedStore);
+        if (selectedStoreObj && selectedStoreObj.id) {
+          endpoint += `&toko_id=${selectedStoreObj.id}`;
+          isRumahProduksi = selectedStoreObj.id === 1;
+        }
+      } else {
+        endpoint += `&toko_id=null`;
+      }
+      
+      console.log("Fetching owner dashboard data with endpoint:", endpoint);
+      const response = await api.get(endpoint);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+
+        const dashboardObj = {
+          barang_handmade: { 
+            nama: data.handmade?.nama || '-', 
+            jumlah: data.handmade?.total_terjual || 0,
+            image: data.handmade?.image || null
+          },
+          barang_non_handmade: { 
+            nama: data.nonhandmade?.nama || '-', 
+            jumlah: data.nonhandmade?.total_terjual || 0,
+            image: data.nonhandmade?.image || null
+          },
+          packging: { 
+            nama: data.packaging?.nama || '-', 
+            jumlah: data.packaging?.total_terjual || 0,
+            image: data.packaging?.image || null
+          },
+          barang_custom: { 
+            nama: isRumahProduksi ? (data.mentah?.nama || '-') : (data.custom?.nama || '-'), 
+            jumlah: isRumahProduksi ? (data.mentah?.total_terjual || 0) : (data.custom?.total_terjual || 0),
+            image: isRumahProduksi ? (data.mentah?.image || null) : (data.custom?.image || null),
+            isMentah: isRumahProduksi
+          }
+        };
+        
+        setDashboardData(dashboardObj);
+      }
+    } catch (error) {
+      console.error('Error fetching owner dashboard data:', error);
+      setDashboardData({
+        barang_handmade: { nama: '-', jumlah: 0 },
+        barang_non_handmade: { nama: '-', jumlah: 0 },
+        packging: { nama: '-', jumlah: 0 },
+        barang_custom: { nama: '-', jumlah: 0, isMentah: false }
+      });
+    }
+  };
+
   const fetchOwnerProductData = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
 
       let endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
-      
+
       if (selectedStore !== "Semua") {
         const selectedStoreObj = storeData.find(store => store.value === selectedStore);
         if (selectedStoreObj && selectedStoreObj.id) {
           endpoint += `&toko_id=${selectedStoreObj.id}`;
         }
+      } else {
+        endpoint += `&toko_id=null`;
       }
       
       console.log("Fetching owner product data with endpoint:", endpoint);
@@ -566,10 +750,12 @@ export default function ProdukTerlaris() {
       if (response.data.success) {
         const tableData = response.data.data.map((item, index) => ({
           nomor: index + 1,
-          Nama: item.name,
+          id: item.id,
+          Nama: item.nama || item.name || '-',
           Kategori: item.kategori,
-          Jenis: item.kategori,
-          Terjual: item.total_terjual
+          Jenis: mapKategoriToJenis(item.kategori),
+          Terjual: item.total_terjual,
+          image: item.image ? `${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}` : null
         }));
         
         setProductData(tableData);
@@ -595,14 +781,16 @@ export default function ProdukTerlaris() {
   const fetchOwnerTopProducts = async () => {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-      
-      let endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
+
+      let endpoint = `/produk-penjualan/toko/topten?startDate=${startDate}&endDate=${endDate}`;
 
       if (selectedStore !== "Semua") {
         const selectedStoreObj = storeData.find(store => store.value === selectedStore);
         if (selectedStoreObj && selectedStoreObj.id) {
           endpoint += `&toko_id=${selectedStoreObj.id}`;
         }
+      } else {
+        endpoint += `&toko_id=null`;
       }
       
       console.log("Fetching owner top products with endpoint:", endpoint);
@@ -618,17 +806,17 @@ export default function ProdukTerlaris() {
               src={`${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}/${item.image}`}
               className="w-8 h-8 object-cover rounded-lg"
               onError={(e) => {
-                const imagePath = `${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}-gudang/${item.image}`;
-                e.target.src = imagePath;
+                const alternatePath = `${import.meta.env.VITE_API_URL}/${getImagePath(item.kategori)}-gudang/${item.image}`;
+                e.target.src = alternatePath;
                 
                 e.target.onerror = () => {
                   e.target.src = "/api/placeholder/64/64";
-                  e.target.onerror = null; 
+                  e.target.onerror = null;
                 };
               }}
             />
           ),
-          "Nama Barang": item.name,
+          "Nama Barang": item.nama || item.name,
           "Terjual": `${formatNumberWithDots(item.total_terjual)} Pcs`
         }));
         
@@ -649,11 +837,13 @@ export default function ProdukTerlaris() {
     }
     
     if (isOwner || isManajer) {
+      fetchOwnerDashboardData();
       fetchOwnerProductData(); 
       fetchOwnerTopProducts(); 
     }
     
     if (isAdmin) {
+      fetchAdminDashboardData();
       fetchAdminProductData();
       fetchAdminTopProducts();
     }
@@ -826,7 +1016,7 @@ export default function ProdukTerlaris() {
         { label: "Semua", value: "Semua" },
         { label: "Handmade", value: "Handmade" },
         { label: "Non Handmade", value: "Non Handmade" },
-        { label: "Mentah", value: "Mentah" },
+        { label: "Bahan Mentah", value: "Bahan Mentah" },
         { label: "Packaging", value: "Packaging" },
       ]
     },
@@ -885,12 +1075,14 @@ export default function ProdukTerlaris() {
   }
 
   const getDashboardIconPath = (baseIconName) => {
+    const iconName = baseIconName === "mentah" ? "custom" : baseIconName;
+    
     if (isAdminGudang || isHeadGudang) {
-      return `/Dashboard Produk/${baseIconName}_gudang.svg`;
+      return `/Dashboard Produk/${iconName}_gudang.svg`;
     } else if(isManajer || isOwner || isFinance){
-      return `/Dashboard Produk/${baseIconName}_non.svg`;
+      return `/Dashboard Produk/${iconName}_non.svg`;
     }
-    return `/Dashboard Produk/${baseIconName}.svg`;
+    return `/Dashboard Produk/${iconName}.svg`;
   };
 
   return (
@@ -905,19 +1097,6 @@ export default function ProdukTerlaris() {
             </div>
 
             <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-              {!isAdminGudang && (
-                <div className="w-full md:w-auto">
-                  {/* <Button 
-                    label="Export" 
-                    icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                    </svg>} 
-                    bgColor="border border-secondary" 
-                    hoverColor="hover:bg-white" 
-                    textColor="text-black" 
-                  /> */}
-                </div>
-              )}
               {/* ButtonDropdown for stores visible for manager or roles that aren't headgudang or admingudang */}
               {(isOwner || isManajer || isAdmin) && (
                 <div className="w-full md:w-auto">
@@ -1001,75 +1180,72 @@ export default function ProdukTerlaris() {
 
           <section className="mt-5 bg-white rounded-xl">
             <div className="p-5">
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* handmade */}
-                <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
-                      <p className="font-bold text-lg truncate">{dashboardData.barang_handmade.nama}</p>
-                      <p>{formatNumberWithDots(dashboardData.barang_handmade.jumlah)} Pcs</p>
-                    </div>
-                    <div className="flex-shrink-0 ml-4">
-                      <img src={getDashboardIconPath("handmade")} alt="handmade" className="w-12 h-12" />
-                    </div>
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* handmade */}
+              <div className="w-full">
+                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-400 text-sm">Barang Handmade Terlaris</p>
+                    <p className="font-bold text-lg truncate">{dashboardData.barang_handmade.nama}</p>
+                    <p>{formatNumberWithDots(dashboardData.barang_handmade.jumlah)} Pcs</p>
                   </div>
-                </div>
-
-                {/* non handmade */}
-                <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
-                      <p className="font-bold text-lg truncate">{dashboardData.barang_non_handmade.nama}</p>
-                      <p>{formatNumberWithDots(dashboardData.barang_non_handmade.jumlah)} Pcs</p>
-                    </div>
-                    <div className="flex-shrink-0 ml-4">
-                      <img src={getDashboardIconPath("nonhandmade")} alt="nonhandmade" className="w-12 h-12" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* packaging atau custom */}
-                <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-400 text-sm">
-                        {isManajer ? 'Barang Custom Terlaris' : 'Packaging Terlaris'}
-                      </p>
-                      <p className="font-bold text-lg truncate">
-                        {isManajer ? dashboardData.barang_custom.nama : dashboardData.packging.nama}
-                      </p>
-                      <p>
-                        {formatNumberWithDots(isManajer ? dashboardData.barang_custom.jumlah : dashboardData.packging.jumlah)} Pcs
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 ml-4">
-                      <img 
-                        src={getDashboardIconPath(isManajer ? "custom" : "packaging")}
-                        alt={isManajer ? "Custom" : "packaging"} 
-                        className="w-12 h-12" 
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* custom mentah */}
-                <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-400 text-sm">
-                        {isAdmin ? 'Barang Custom Terlaris' : (isManajer ? 'Barang Mentah Terlaris' : 'Barang Mentah Terlaris')}
-                      </p>
-                      <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
-                      <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
-                    </div>
-                    <div className="flex-shrink-0 ml-4">
-                      <img src={getDashboardIconPath("custom")} alt="Custom" className="w-12 h-12" />
-                    </div>
+                  <div className="flex-shrink-0 ml-4">
+                    <img src={getDashboardIconPath("handmade")} alt="handmade" className="w-12 h-12" />
                   </div>
                 </div>
               </div>
+
+              {/* non handmade */}
+              <div className="w-full">
+                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-400 text-sm">Barang Non-Handmade Terlaris</p>
+                    <p className="font-bold text-lg truncate">{dashboardData.barang_non_handmade.nama}</p>
+                    <p>{formatNumberWithDots(dashboardData.barang_non_handmade.jumlah)} Pcs</p>
+                  </div>
+                  <div className="flex-shrink-0 ml-4">
+                    <img src={getDashboardIconPath("nonhandmade")} alt="nonhandmade" className="w-12 h-12" />
+                  </div>
+                </div>
+              </div>
+
+              {/* packaging */}
+              <div className="w-full">
+                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-400 text-sm">Packaging Terlaris</p>
+                    <p className="font-bold text-lg truncate">{dashboardData.packging.nama}</p>
+                    <p>{formatNumberWithDots(dashboardData.packging.jumlah)} Pcs</p>
+                  </div>
+                  <div className="flex-shrink-0 ml-4">
+                    <img src={getDashboardIconPath("packaging")} alt="packaging" className="w-12 h-12" />
+                  </div>
+                </div>
+              </div>
+
+              {/* mentah or custom - the fourth item */}
+              <div className="w-full">
+                <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-400 text-sm">
+                      {/* Dynamic title based on the store type */}
+                      {(isOwner || isManajer) && dashboardData.barang_custom.isMentah
+                        ? 'Barang Mentah Terlaris'
+                        : 'Barang Custom Terlaris'}
+                    </p>
+                    <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
+                    <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>
+                  </div>
+                  <div className="flex-shrink-0 ml-4">
+                    <img 
+                      src={getDashboardIconPath((isOwner || isManajer) && dashboardData.barang_custom.isMentah ? "mentah" : "custom")} 
+                      alt={(isOwner || isManajer) && dashboardData.barang_custom.isMentah ? "Mentah" : "Custom"} 
+                      className="w-12 h-12" 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             </div>
           </section>
 
@@ -1077,39 +1253,72 @@ export default function ProdukTerlaris() {
         <section className="mt-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white rounded-xl p-5">
-              <Table
-                headers={headers}
-                data={(() => {
-                  if (isAdminGudang || isHeadGudang || isOwner || isManajer) {
-                    return productData.map(item => ({
-                      ...item,
-                      Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
-                    }));
-                  } 
-                  else if (isAdmin) {
-                    return productData.map(item => ({
-                      ...item,
-                      Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
-                    }));
-                  } 
-                  else {
-                    return selectedData.map((item, index) => ({
-                      ...item,
-                      nomor: index + 1,
-                      Terjual: `${item.Terjual} Pcs`,
-                    }));
-                  }
-                })()}
-                hasFilter={!isAdminGudang && !isOwner}
-                onFilterClick={handleFilterClick}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-base">
+                  {isAdmin ? `Produk Terlaris ${selectedStore === 'Semua' ? 'di Semua Cabang' : `di ${selectedStore}`}` : 
+                  'Produk Terlaris'}
+                </h3>
+              </div>
+                <Table
+                  headers={headers}
+                  data={(() => {
+                    if (isAdminGudang || isHeadGudang || isOwner || isManajer) {
+                      return productData.map(item => ({
+                        ...item,
+                        Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
+                      }));
+                    } 
+                    else if (isAdmin) {
+                      // Admin-specific rendering
+                      return productData.map(item => {
+                        return {
+                          ...item,
+                          image: item.image ? (
+                            <div className="w-12 h-12 flex items-center justify-center">
+                              <img 
+                                src={item.image}
+                                alt={item.Nama}
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  // Try alternative paths if main one fails
+                                  const alternatePath = `${import.meta.env.VITE_API_URL}/${getImagePath(item.Kategori)}-gudang/${item.image.split('/').pop()}`;
+                                  e.target.src = alternatePath;
+                                  
+                                  e.target.onerror = () => {
+                                    e.target.src = '/api/placeholder/64/64';
+                                    e.target.onerror = null;
+                                  };
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded">
+                              <span className="text-gray-400 text-xs">No image</span>
+                            </div>
+                          ),
+                          Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
+                        };
+                      });
+                    } 
+                    else {
+                      // Regular user rendering
+                      return selectedData.map((item, index) => ({
+                        ...item,
+                        nomor: index + 1,
+                        Terjual: `${item.Terjual} Pcs`,
+                      }));
+                    }
+                  })()}
+                />
             </div>
 
             <div className="bg-white rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-base">
                   {isOwner || isManajer ? '10 Barang Terlaris di Perusahaan' : 
-                  isAdminGudang ? '10 Barang Terlaris' : '10 Barang Terlaris di Toko'}
+                  isAdminGudang ? '10 Barang Terlaris' : 
+                  isAdmin ? `10 Barang Terlaris ${selectedStore === 'Semua' ? 'di Semua Cabang' : `di ${selectedStore}`}` :
+                  '10 Barang Terlaris di Toko'}
                 </h3>
               </div>
               <Table

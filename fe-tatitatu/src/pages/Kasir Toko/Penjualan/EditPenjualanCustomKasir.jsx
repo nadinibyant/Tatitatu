@@ -612,6 +612,7 @@ const EditPenjualanCustomKasir = () => {
                                 <Input 
                                     label="Nama Pembeli" 
                                     value={formData.namaPembeli} 
+                                    required={false}
                                     onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
                                 />
                                 <InputDropdown 

@@ -14,6 +14,18 @@ import AlertError from "../../../components/AlertError";
 export default function KaryawanGaji() {
     const navigate = useNavigate();
     const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const [searchText, setSearchText] = useState("");
     const [selectedStore, setSelectedStore] = useState("Semua");
@@ -390,7 +402,7 @@ export default function KaryawanGaji() {
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                        <p className="text-primary text-base font-bold">Data Karyawan Absensi dan Gaji</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Data Karyawan Absensi dan Gaji</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -426,7 +438,7 @@ export default function KaryawanGaji() {
                                         }}
                                         className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
                                     />
-                                </div>
+                                </div>  
                             </div>
                         </div>
                         <div className="w-full md:w-auto">
@@ -438,7 +450,7 @@ export default function KaryawanGaji() {
                                     </svg>
                                 }
                                 onClick={handleAddBayar}
-                                bgColor="bg-primary" 
+                                bgColor={`bg-${themeColor}`} 
                                 textColor="text-white"
                             />
                         </div>

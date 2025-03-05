@@ -98,7 +98,7 @@ const AuthPages = () => {
           </div>
 
           <div className="text-sm text-[#FFE0ED]">
-            © 2025 Tatitatu. Hak Cipta Dilindungi.
+            © 2025 DBI. Hak Cipta Dilindungi.
           </div>
         </div>
 
@@ -106,7 +106,6 @@ const AuthPages = () => {
         <div className="w-full md:w-1/2 p-8 md:p-12">
           <div className="md:hidden flex items-center gap-3 mb-8">
             <ShoppingBag className="w-8 h-8 text-[#7B0C42]" />
-            <span className="text-xl font-bold text-[#7B0C42]">Tatitatu</span>
           </div>
 
           <div className="space-y-6">

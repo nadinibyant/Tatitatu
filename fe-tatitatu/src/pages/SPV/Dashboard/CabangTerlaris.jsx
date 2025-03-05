@@ -1,161 +1,94 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
 import LayoutWithNav from "../../../components/LayoutWithNav";
+import api from "../../../utils/api";
 
 export default function CabangTerlaris(){
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [startDate, setStartDate] = useState(moment().format("YYYY-MM-DD"));
-    // const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
-
-//   const handleToday = () => {
-//     const today = moment().startOf("day");
-//     setStartDate(today.format("YYYY-MM-DD"));
-//     setEndDate(today.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
-
-//   const handleLast7Days = () => {
-//     const today = moment().startOf("day");
-//     const sevenDaysAgo = today.clone().subtract(7, "days");
-//     setStartDate(sevenDaysAgo.format("YYYY-MM-DD"));
-//     setEndDate(today.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
-
-//   const handleThisMonth = () => {
-//     const startMonth = moment().startOf("month");
-//     const endMonth = moment().endOf("month");
-//     setStartDate(startMonth.format("YYYY-MM-DD"));
-//     setEndDate(endMonth.format("YYYY-MM-DD"));
-//     setIsModalOpen(false);
-//   };
-
-//   const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-//   const formatDate = (date) =>
-//     new Date(date).toLocaleDateString("en-US", {
-//       month: "short",
-//       day: "2-digit",
-//       year: "numeric",
-//     });
-
-    const data = {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState({
         keuntungan: {
-            nama_toko: 'Tatitatu',
-            jumlah: 10000000
+            nama_toko: '',
+            jumlah: 0
         },
         pemasukan: {
-            nama_toko: 'Rumah Produksi',
-            jumlah: 65000000
+            nama_toko: '',
+            jumlah: 0
         },
         pengeluaran: {
-            nama_toko: 'Tatitatu',
-            jumlah: 100000000
+            nama_toko: '',
+            jumlah: 0
         },
         barang: {
-            nama_barang:'Bonifade',
-            jumlah: 1200
+            nama_barang: '',
+            jumlah: 0
         },
-        data: [
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-            {
-                Nama: 'Tatitatu',
-                "Barang Terjual": 1300,
-                Pemasukan: 180000000,
-                Pengeluaran: 80000000,
-                Keuntungan: 100000000
-            },
-        ]
-    }
+        data: []
+    });
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            
+            // Calculate start and end date based on selected month and year
+            const startDate = moment(`${selectedYear}-${selectedMonth}-01`).startOf('month').format('YYYY-MM-DD');
+            const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+            
+            // Get toko_id from userData
+            const tokoId = userData?.userId;
+            
+            // Make API request
+            const response = await api.get(`/toko/terlaris?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`);
+            
+            if (response.data.success) {
+                const apiData = response.data.data;
+                
+                // Transform API data to match component data structure
+                const transformedData = {
+                    keuntungan: {
+                        nama_toko: apiData.cabang_terlaris.keuntungan_tertinggi.nama_cabang,
+                        jumlah: apiData.cabang_terlaris.keuntungan_tertinggi.keuntungan
+                    },
+                    pemasukan: {
+                        nama_toko: apiData.cabang_terlaris.pemasukan_tertinggi.nama_cabang,
+                        jumlah: apiData.cabang_terlaris.pemasukan_tertinggi.total_pemasukan
+                    },
+                    pengeluaran: {
+                        nama_toko: apiData.cabang_terlaris.pengeluaran_tertinggi.nama_cabang,
+                        jumlah: apiData.cabang_terlaris.pengeluaran_tertinggi.total_pengeluaran
+                    },
+                    barang: {
+                        nama_barang: apiData.cabang_terlaris.penjualan_terbanyak.nama_cabang,
+                        jumlah: apiData.cabang_terlaris.penjualan_terbanyak.produk_terjual
+                    },
+                    data: apiData.toko.cabang.map(cabang => ({
+                        Nama: cabang.nama_cabang,
+                        "Barang Terjual": cabang.produk_terjual,
+                        Pemasukan: cabang.total_pemasukan,
+                        Pengeluaran: cabang.total_pengeluaran,
+                        Keuntungan: cabang.keuntungan
+                    }))
+                };
+                
+                setData(transformedData);
+            }
+        } catch (error) {
+            console.error('Error fetching cabang terlaris data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch data when the component mounts or when month/year selection changes
+    useEffect(() => {
+        fetchData();
+    }, [selectedMonth, selectedYear, userData?.userId]);
 
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
@@ -181,79 +114,21 @@ export default function CabangTerlaris(){
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                     <div className="w-full md:w-auto">
-                        {/* <Button label="Export" icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                        </svg>} bgColor="border border-secondary" hoverColor="hover:bg-white" textColor="text-black" /> */}
+                        {/* Button component was here, commented out in original code */}
                     </div>
                     <div className="w-full md:w-auto">
-                                <input
-                                    type="month"
-                                        value={`${selectedYear}-${selectedMonth}`}
-                                        onChange={(e) => {
-                                            const date = moment(e.target.value);
-                                            setSelectedMonth(date.format('MM'));
-                                            setSelectedYear(date.format('YYYY'));
-                                        }}
-                                        className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
-                                />
+                        <input
+                            type="month"
+                            value={`${selectedYear}-${selectedMonth}`}
+                            onChange={(e) => {
+                                const date = moment(e.target.value);
+                                setSelectedMonth(date.format('MM'));
+                                setSelectedYear(date.format('YYYY'));
+                            }}
+                            className="w-full px-4 py-2 border border-secondary rounded-lg bg-gray-100 cursor-pointer pr-5"
+                        />
                     </div>
                     </div>
-
-                    {/* Modal
-                    {isModalOpen && (
-                    <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="relative flex flex-col items-start p-6 space-y-4 bg-white rounded-lg shadow-md max-w-lg">
-                        <button
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <div className="flex space-x-4 w-full">
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Dari</label>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            </div>
-                            <div className="flex flex-col w-full">
-                            <label className="text-sm font-medium text-gray-600 pb-3">Ke</label>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            </div>
-                        </div>
-                        <div className="flex flex-col space-y-3 w-full">
-                            <button
-                            onClick={handleToday}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Hari Ini
-                            </button>
-                            <button
-                            onClick={handleLast7Days}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            7 Hari Terakhir
-                            </button>
-                            <button
-                            onClick={handleThisMonth}
-                            className="px-4 py-2 border border-gray-300 text-black rounded-md hover:bg-primary hover:text-white"
-                            >
-                            Bulan Ini
-                            </button>
-                        </div>
-                        </div>
-                    </div>
-                    )} */}
                 </section>
 
                 <section className="mt-5 bg-white rounded-xl">
@@ -265,8 +140,8 @@ export default function CabangTerlaris(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
-                                        <p className="font-bold text-lg">{data.keuntungan.nama_toko}</p>
-                                        <p className="">Rp{formatNumberWithDots(data.keuntungan.jumlah)}</p>
+                                        <p className="font-bold text-lg">{loading ? 'Loading...' : data.keuntungan.nama_toko}</p>
+                                        <p className="">Rp{loading ? '0' : formatNumberWithDots(data.keuntungan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
                                         <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
@@ -279,8 +154,8 @@ export default function CabangTerlaris(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
-                                        <p className="font-bold text-lg">{data.pemasukan.nama_toko}</p>
-                                        <p className="">Rp{formatNumberWithDots(data.pemasukan.jumlah)}</p>
+                                        <p className="font-bold text-lg">{loading ? 'Loading...' : data.pemasukan.nama_toko}</p>
+                                        <p className="">Rp{loading ? '0' : formatNumberWithDots(data.pemasukan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
                                         <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
@@ -293,8 +168,8 @@ export default function CabangTerlaris(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
-                                        <p className="font-bold text-lg">{data.pengeluaran.nama_toko}</p>
-                                        <p className="">Rp{formatNumberWithDots(data.pengeluaran.jumlah)}</p>
+                                        <p className="font-bold text-lg">{loading ? 'Loading...' : data.pengeluaran.nama_toko}</p>
+                                        <p className="">Rp{loading ? '0' : formatNumberWithDots(data.pengeluaran.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
                                         <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
@@ -306,9 +181,9 @@ export default function CabangTerlaris(){
                             <div className="w-full">
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
-                                        <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                                        <p className="font-bold text-lg">{data.barang.nama_barang}</p>
-                                        <p className="">{formatNumberWithDots(data.barang.jumlah)}</p>
+                                        <p className="text-gray-400 text-sm">Produk Terjual Terlaris</p>
+                                        <p className="font-bold text-lg">{loading ? 'Loading...' : data.barang.nama_barang}</p>
+                                        <p className="">{loading ? '0' : formatNumberWithDots(data.barang.jumlah)} Pcs</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
                                         <img src="/keuangan/produkterjual.svg" alt="produk" />
@@ -321,20 +196,23 @@ export default function CabangTerlaris(){
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
-                        <Table
-                            headers={headers}
-                            data={data.data.map((item, index) => ({
-                                ...item,
-                                nomor: index + 1,
-                                "Barang Terjual": `${formatNumberWithDots(item["Barang Terjual"])}`,
-                                Pemasukan: `Rp${formatNumberWithDots(item.Pemasukan)}`,
-                                Pengeluaran: `Rp${formatNumberWithDots(item.Pengeluaran)}`,
-                                Keuntungan: `Rp${formatNumberWithDots(item.Keuntungan)}`,
-                            }))}
-                        />
+                        {loading ? (
+                            <div className="text-center py-8">Loading data...</div>
+                        ) : (
+                            <Table
+                                headers={headers}
+                                data={data.data.map((item, index) => ({
+                                    ...item,
+                                    nomor: index + 1,
+                                    "Barang Terjual": `${formatNumberWithDots(item["Barang Terjual"])} Pcs`,
+                                    Pemasukan: `Rp${formatNumberWithDots(item.Pemasukan)}`,
+                                    Pengeluaran: `Rp${formatNumberWithDots(item.Pengeluaran)}`,
+                                    Keuntungan: `Rp${formatNumberWithDots(item.Keuntungan)}`,
+                                }))}
+                            />
+                        )}
                     </div>
                 </section>
-
             </div>
         </LayoutWithNav>
         </>

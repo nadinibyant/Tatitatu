@@ -20,11 +20,22 @@ export default function TambahKPI(){
     const userData = JSON.parse(localStorage.getItem('userData'))
     const isHeadGudang = userData.role === 'headgudang'
     const isAdminGudang = userData?.role === 'admingudang'
+    const isOwner = userData?.role === 'owner'
+    const isManajer = userData?.role === 'manajer'
+    const isFinance = userData?.role === 'finance'
     const [totalCalculatedBonus, setTotalCalculatedBonus] = useState(0);
 
-   const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
-   const bgBonus = (isAdminGudang || isHeadGudang) ? "coklatMuda" : "pink";
+      const bgBonus = (isAdminGudang || isHeadGudang) 
+      ? "coklatMuda" 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruMuda"
+        : "pink";
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
@@ -101,12 +112,10 @@ export default function TambahKPI(){
     
             const response = await api.get(`/kpi`);
             if (response.data.success) {
-                // Filter KPIs based on employee's division ID
                 const filteredKPIs = response.data.data.filter(kpi => 
                     kpi.divisi_karyawan_id === data.profile.id_divisi
                 );
     
-                // Format the filtered KPIs
                 const formattedKPIs = filteredKPIs.map(kpi => ({
                     kpi_id: kpi.kpi_id,
                     title: kpi.nama_kpi,
@@ -114,7 +123,7 @@ export default function TambahKPI(){
                     waktu: kpi.waktu,
                     checks: kpi.waktu === 'Harian' ? Array(daysInMonth).fill(false) 
                           : kpi.waktu === 'Mingguan' ? Array(4).fill(false)
-                          : [false], // Bulanan
+                          : [false], 
                     stats: {
                         tercapai: 0,
                         tidakTercapai: 0,
@@ -224,7 +233,6 @@ export default function TambahKPI(){
         const kpiKaryawanId = kpi.checkIds?.[checkIndex];
     
         try {
-            // Update UI secara optomatis
             setData(prev => {
                 const newKPIList = [...prev.kpiList];
                 const newChecks = [...newKPIList[kpiIndex].checks];
@@ -338,11 +346,9 @@ export default function TambahKPI(){
         setSelectedYear(year);
         setStartDate(value);
         
-        // Tutup modal setelah memilih bulan
         setIsModalOpen(false);
         
         try {
-            // Fetch data baru setelah bulan berubah
             const response = await api.get(`/kpi-karyawan/${id}/${month}/${year}/karyawan`);
             
             if (response.data.success) {
@@ -405,7 +411,7 @@ export default function TambahKPI(){
 
       const calculateAdjustedBonus = (kpiBonus, kpiPercentage) => {
         const adjustedBonus = kpiBonus * (kpiPercentage / 100);
-        return Math.round(adjustedBonus);
+        return Math.round(adjustedBonus)
       };
 
       useEffect(() => {
@@ -421,6 +427,8 @@ export default function TambahKPI(){
       const getDashboardIconPath = (baseIconName) => {
         if (isAdminGudang || isHeadGudang) {
           return `/icon/${baseIconName}_gudang.svg`;
+        } else if (isOwner || isManajer || isFinance) {
+          return `/icon/${baseIconName}_non.svg`;
         }
         return `/icon/${baseIconName}.svg`;
       };

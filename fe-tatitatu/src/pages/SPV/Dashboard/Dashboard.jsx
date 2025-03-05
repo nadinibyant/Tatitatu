@@ -178,7 +178,7 @@ export default function Dashboard(){
       } else if (isAdmin) {
         endpoint = `/produk-penjualan/toko/terlaris?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
       } else if (isOwner || isManajer) {
-        endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
+        endpoint = `/produk-penjualan/toko/terlaris?toko_id=null&startDate=${startDate}&endDate=${endDate}`;
       } else {
         endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
       }
@@ -191,7 +191,7 @@ export default function Dashboard(){
         const tableData = response.data.data.map((item, index) => ({
           nomor: index + 1,
           id: item.id,
-          Nama: item.name,
+          Nama: item.name || item.nama || '-',
           Kategori: item.kategori,
           Jenis: mapKategoriToJenis(item.kategori),
           Terjual: item.total_terjual,
@@ -435,32 +435,64 @@ export default function Dashboard(){
     try {
       setLoading(true);
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-      const response = await api.get(`/toko/terlaris?startDate=${startDate}&endDate=${endDate}`);
+
+      let endpoint = `/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
+      if (isAdmin) {
+        endpoint = `/toko/terlaris?toko_id=${userData?.userId}&startDate=${startDate}&endDate=${endDate}`;
+      }
+      
+      const response = await api.get(endpoint);
       
       if (response.data.success) {
-        const { toko_terlaris } = response.data.data;
-        
-        setData(prevData => ({
-          ...prevData,
-          cabang_terlaris: {
-            keuntungan: {
-              nama_toko: toko_terlaris.keuntungan_tertinggi.nama_toko,
-              jumlah: toko_terlaris.keuntungan_tertinggi.keuntungan
-            },
-            pemasukan: {
-              nama_toko: toko_terlaris.pemasukan_tertinggi.nama_toko,
-              jumlah: toko_terlaris.pemasukan_tertinggi.total_pemasukan
-            },
-            pengeluaran: {
-              nama_toko: toko_terlaris.pengeluaran_tertinggi.nama_toko,
-              jumlah: toko_terlaris.pengeluaran_tertinggi.total_pengeluaran
-            },
-            barang: {
-              nama_barang: toko_terlaris.penjualan_terbanyak.nama_toko,
-              jumlah: toko_terlaris.penjualan_terbanyak.produk_terjual
+        if (isAdmin) {
+          const { cabang_terlaris } = response.data.data;
+          
+          setData(prevData => ({
+            ...prevData,
+            cabang_terlaris: {
+              keuntungan: {
+                nama_toko: cabang_terlaris.keuntungan_tertinggi.nama_cabang,
+                jumlah: cabang_terlaris.keuntungan_tertinggi.keuntungan
+              },
+              pemasukan: {
+                nama_toko: cabang_terlaris.pemasukan_tertinggi.nama_cabang,
+                jumlah: cabang_terlaris.pemasukan_tertinggi.total_pemasukan
+              },
+              pengeluaran: {
+                nama_toko: cabang_terlaris.pengeluaran_tertinggi.nama_cabang,
+                jumlah: cabang_terlaris.pengeluaran_tertinggi.total_pengeluaran
+              },
+              barang: {
+                nama_barang: cabang_terlaris.penjualan_terbanyak.nama_cabang,
+                jumlah: cabang_terlaris.penjualan_terbanyak.produk_terjual
+              }
             }
-          }
-        }));
+          }));
+        } else {
+          const { toko_terlaris } = response.data.data;
+          
+          setData(prevData => ({
+            ...prevData,
+            cabang_terlaris: {
+              keuntungan: {
+                nama_toko: toko_terlaris.keuntungan_tertinggi.nama_toko,
+                jumlah: toko_terlaris.keuntungan_tertinggi.keuntungan
+              },
+              pemasukan: {
+                nama_toko: toko_terlaris.pemasukan_tertinggi.nama_toko,
+                jumlah: toko_terlaris.pemasukan_tertinggi.total_pemasukan
+              },
+              pengeluaran: {
+                nama_toko: toko_terlaris.pengeluaran_tertinggi.nama_toko,
+                jumlah: toko_terlaris.pengeluaran_tertinggi.total_pengeluaran
+              },
+              barang: {
+                nama_barang: toko_terlaris.penjualan_terbanyak.nama_toko,
+                jumlah: toko_terlaris.penjualan_terbanyak.produk_terjual
+              }
+            }
+          }));
+        }
       }
     } catch (error) {
       console.error('Error fetching toko terlaris:', error);
@@ -486,7 +518,8 @@ export default function Dashboard(){
       if (isHeadGudang) {
         fetchHeadGudangEmployees();
       } else if (isAdmin) {
-        fetchHeadGudangEmployees(); 
+        fetchHeadGudangEmployees();
+        fetchTokoTerlaris();
       }
       
       fetchKategoriBarang();
@@ -668,7 +701,7 @@ export default function Dashboard(){
     );
 
     const renderOverviewSection = () => {
-      if (isHeadGudang ) {
+      if (isHeadGudang) {
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Handmade Card */}
@@ -729,69 +762,71 @@ export default function Dashboard(){
           </div>
         );
       }
-
+    
       return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Keuntungan Card */}
-              <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                      <div className="flex-1">
-                          <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
-                          <p className="font-bold text-lg">{data.cabang_terlaris?.keuntungan?.nama_toko || '-'}</p>
-                          <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.keuntungan?.jumlah)}</p>
-                      </div>
-                      <div className="flex items-center justify-center ml-4">
-                          <img src={getDashboardIconPath2("keuntungan")} alt="keuntungan" />
-                      </div>
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Keuntungan Card */}
+          <div className="w-full">
+            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+              <div className="flex-1">
+                <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
+                <p className="font-bold text-lg">{data.cabang_terlaris?.keuntungan?.nama_toko || '-'}</p>
+                <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.keuntungan?.jumlah)}</p>
               </div>
-  
-              {/* Pemasukan Card */}
-              <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                      <div className="flex-1">
-                          <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
-                          <p className="font-bold text-lg">{data.cabang_terlaris?.pemasukan?.nama_toko || '-'}</p>
-                          <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.pemasukan?.jumlah)}</p>
-                      </div>
-                      <div className="flex items-center justify-center ml-4">
-                          <img src={getDashboardIconPath2("pemasukan")} alt="pemasukan" />
-                      </div>
-                  </div>
+              <div className="flex items-center justify-center ml-4">
+                <img src={getDashboardIconPath2("keuntungan")} alt="keuntungan" />
               </div>
-  
-              {/* Pengeluaran Card */}
-              <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                      <div className="flex-1">
-                          <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
-                          <p className="font-bold text-lg">{data.cabang_terlaris?.pengeluaran?.nama_toko || '-'}</p>
-                          <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.pengeluaran?.jumlah)}</p>
-                      </div>
-                      <div className="flex items-center justify-center ml-4">
-                          <img src={getDashboardIconPath2("pengeluaran")} alt="pengeluaran" />
-                      </div>
-                  </div>
-              </div>
-  
-              {/* Barang Custom Card */}
-              <div className="w-full">
-                  <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
-                      <div className="flex-1">
-                          <p className="text-gray-400 text-sm">
-                            {(isOwner || isManajer) ? "Barang Terjual Terbanyak" : "Barang Custom Terlaris"}
-                          </p>
-                          <p className="font-bold text-lg">{data.cabang_terlaris?.barang?.nama_barang || '-'}</p>
-                          <p className="">{formatNumberWithDots(data.cabang_terlaris?.barang?.jumlah)}</p>
-                      </div>
-                      <div className="flex items-center justify-center ml-4">
-                          <img src={getDashboardIconPath2("produkterjual")} alt="produk" />
-                      </div>
-                  </div>
-              </div>
+            </div>
           </div>
+    
+          {/* Pemasukan Card */}
+          <div className="w-full">
+            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+              <div className="flex-1">
+                <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
+                <p className="font-bold text-lg">{data.cabang_terlaris?.pemasukan?.nama_toko || '-'}</p>
+                <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.pemasukan?.jumlah)}</p>
+              </div>
+              <div className="flex items-center justify-center ml-4">
+                <img src={getDashboardIconPath2("pemasukan")} alt="pemasukan" />
+              </div>
+            </div>
+          </div>
+    
+          {/* Pengeluaran Card */}
+          <div className="w-full">
+            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+              <div className="flex-1">
+                <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
+                <p className="font-bold text-lg">{data.cabang_terlaris?.pengeluaran?.nama_toko || '-'}</p>
+                <p className="">Rp{formatNumberWithDots(data.cabang_terlaris?.pengeluaran?.jumlah)}</p>
+              </div>
+              <div className="flex items-center justify-center ml-4">
+                <img src={getDashboardIconPath2("pengeluaran")} alt="pengeluaran" />
+              </div>
+            </div>
+          </div>
+    
+          {/* Barang Custom Card */}
+          <div className="w-full">
+            <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
+              <div className="flex-1">
+                <p className="text-gray-400 text-sm">
+                  {isAdmin ? "Barang Terjual Terbanyak" : 
+                   (isOwner || isManajer) ? "Barang Terjual Terbanyak" : 
+                   "Barang Custom Terlaris"}
+                </p>
+                <p className="font-bold text-lg">{data.cabang_terlaris?.barang?.nama_barang || '-'}</p>
+                <p className="">{formatNumberWithDots(data.cabang_terlaris?.barang?.jumlah)} Pcs</p>
+              </div>
+              <div className="flex items-center justify-center ml-4">
+                <img src={getDashboardIconPath2("produkterjual")} alt="produk" />
+              </div>
+            </div>
+          </div>
+        </div>
       );
-  };
+    };
 
   
 
