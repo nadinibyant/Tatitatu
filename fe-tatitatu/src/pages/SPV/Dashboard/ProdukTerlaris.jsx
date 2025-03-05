@@ -280,7 +280,7 @@ export default function ProdukTerlaris() {
     try {
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
       const tokoId = userData?.userId;
-
+      console.log(selectedStore)
       let endpoint;
       if (selectedStore === "Semua") {
         endpoint = `/produk-penjualan/toko/kategori?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`;
@@ -740,8 +740,6 @@ export default function ProdukTerlaris() {
         if (selectedStoreObj && selectedStoreObj.id) {
           endpoint += `&toko_id=${selectedStoreObj.id}`;
         }
-      } else {
-        endpoint += `&toko_id=null`;
       }
       
       console.log("Fetching owner product data with endpoint:", endpoint);

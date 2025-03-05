@@ -12,6 +12,7 @@ export default function HariTerlaris(){
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const [tokoData, setTokoData] = useState([]);
     const [storeSelections, setStoreSelections] = useState({});
+    const [branchOptions, setBranchOptions] = useState({});
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isHeadGudang = userData?.role === 'headgudang';
@@ -32,16 +33,30 @@ export default function HariTerlaris(){
       ? "biruTua" 
       : "primary";
 
-    // Sample branch options for each store
-    const getBranchOptions = (storeName) => {
-        // In a real application, you would fetch branches for each store from the API
-        return [
-            { value: "all", label: "Semua" },
-            { value: "1", label: "Cabang UPI" },
-            { value: "2", label: "Cabang Dago" },
-            { value: "3", label: "Cabang Cihampelas" },
-            { value: "4", label: "Cabang Antapani" }
-        ];
+    // Fetch branch options for a store from API
+    const fetchBranchOptions = async (tokoId) => {
+        try {
+            const response = await api.get(`/cabang?toko_id=${tokoId}`);
+            
+            if (response.data.success) {
+                // Transform API data into dropdown options
+                const options = [
+                    { value: "all", label: "Semua" },
+                    ...response.data.data.map(branch => ({
+                        value: branch.cabang_id.toString(),
+                        label: branch.nama_cabang
+                    }))
+                ];
+                
+                return options;
+            } else {
+                console.error("Failed to fetch branch options:", response.data.message);
+                return [{ value: "all", label: "Semua" }];
+            }
+        } catch (error) {
+            console.error("Error fetching branch options:", error);
+            return [{ value: "all", label: "Semua" }];
+        }
     };
 
     // Dummy data for gudang roles to preview
@@ -49,6 +64,7 @@ export default function HariTerlaris(){
         {
             nama_toko: 'Gudang Pusat',
             cabang_id: 1,
+            toko_id: 1,
             data: {
                 dashboard: {
                     hari_terlaris: {
@@ -97,6 +113,7 @@ export default function HariTerlaris(){
         {
             nama_toko: 'Gudang Cabang',
             cabang_id: 2,
+            toko_id: 2,
             data: {
                 dashboard: {
                     hari_terlaris: {
@@ -145,10 +162,10 @@ export default function HariTerlaris(){
     ];
 
     useEffect(() => {
-        if (isAdmin || isOwner || isFinance) {
+        if (isAdmin || isOwner || isFinance || isManajer) {
             fetchHariTerlarisData();
         }
-    }, [selectedMonth, selectedYear, isAdmin, isOwner, isFinance]);
+    }, [selectedMonth, selectedYear, isAdmin, isOwner, isFinance, isManajer]);
 
     const fetchHariTerlarisData = async () => {
         try {
@@ -159,9 +176,12 @@ export default function HariTerlaris(){
             const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
             
             // Construct URL based on user role
-            const url = isOwner || isFinance 
-                ? `/penjualan/toko?toko_id=null&startDate=${startDate}&endDate=${endDate}` 
-                : `/penjualan/toko?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
+            let url;
+            if (isAdmin) {
+                url = `/penjualan/toko?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
+            } else if (isOwner || isFinance || isManajer) {
+                url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}`;
+            }
                 
             const response = await api.get(url);
             
@@ -170,12 +190,20 @@ export default function HariTerlaris(){
                 const transformedData = processApiData(response.data.data);
                 setTokoData(transformedData);
                 
-                // Initialize store selections
+                // Initialize store selections and fetch branch options for each store
                 const initialSelections = {};
-                transformedData.forEach(toko => {
+                const options = {};
+                
+                for (const toko of transformedData) {
                     initialSelections[toko.nama_toko] = "Semua";
-                });
+                    
+                    // Fetch branch options for each store
+                    const branchOpts = await fetchBranchOptions(toko.toko_id);
+                    options[toko.toko_id] = branchOpts;
+                }
+                
                 setStoreSelections(initialSelections);
+                setBranchOptions(options);
             } else {
                 console.error("Failed to fetch data:", response.data.message);
             }
@@ -188,16 +216,16 @@ export default function HariTerlaris(){
 
     // Process API data into the format needed by our component
     const processApiData = (apiData) => {
-        return apiData.map(branch => {
+        return apiData.map(store => {
             // Find the day with highest total sales
-            const bestSellingDay = findBestSellingDay(branch.daily_stats);
+            const bestSellingDay = findBestSellingDay(store.daily_stats);
             
             // Find the hour with highest transactions across all days
-            const peakHour = findPeakHour(branch.daily_stats);
+            const peakHour = findPeakHour(store.daily_stats);
 
             return {
-                nama_toko: branch.cabang_name,
-                cabang_id: branch.cabang_id,
+                nama_toko: store.toko_name,
+                toko_id: store.toko_id,
                 data: {
                     dashboard: {
                         hari_terlaris: {
@@ -209,7 +237,7 @@ export default function HariTerlaris(){
                             jumlah: peakHour?.transactions || 0
                         }
                     },
-                    data_hari: branch.daily_stats.map(day => ({
+                    data_hari: store.daily_stats.map(day => ({
                         Hari: day.day,
                         'Produk Terjual': day.total_quantity,
                         'Jam Terpanas': `${day.peak_hour.start} - ${day.peak_hour.end}`,
@@ -247,6 +275,65 @@ export default function HariTerlaris(){
         return peakHourData;
     };
 
+    // Handler for branch selection in each store section
+    const handleBranchSelect = async (storeName, branchValue, tokoId) => {
+        try {
+            setIsLoading(true);
+            
+            // Update store selection state
+            setStoreSelections(prev => ({
+                ...prev,
+                [storeName]: branchValue
+            }));
+            
+            // Calculate the start and end dates for the selected month and year
+            const startDate = `${selectedYear}-${selectedMonth}-01`;
+            const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
+            
+            // Create URL based on selected branch
+            let url;
+            
+            if (branchValue === "all") {
+                // If "Semua" is selected, get all data for the toko
+                url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&toko_id=${tokoId}`;
+            } else {
+                // Get data for specific branch
+                url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&cabang_id=${branchValue}`;
+            }
+            
+            const response = await api.get(url);
+            
+            if (response.data.success) {
+                // Process the API data
+                const transformedData = processApiData(response.data.data);
+                
+                // Find and update only the selected store's data
+                setTokoData(prevData => 
+                    prevData.map(store => {
+                        if (store.nama_toko === storeName) {
+                            // Only update if data exists for this store
+                            if (transformedData.length > 0) {
+                                // We might get multiple stores back, but we only want to update this particular store
+                                const matchingStore = transformedData.find(t => String(t.toko_id) === String(tokoId)) || transformedData[0];
+                                return {
+                                    ...store,
+                                    data: matchingStore.data
+                                };
+                            }
+                        }
+                        return store;
+                    })
+                );
+            } else {
+                console.error("Failed to fetch branch data:", response.data.message);
+            }
+        } catch (error) {
+            console.error("Error fetching branch data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
         { label: "Hari", key: "Hari", align: "text-left" },
@@ -258,14 +345,6 @@ export default function HariTerlaris(){
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
     }
-
-    // Handler for branch selection in each store section
-    const handleBranchSelect = (storeName, branchName) => {
-        setStoreSelections(prev => ({
-            ...prev,
-            [storeName]: branchName
-        }));
-    };
 
     const tokoIcon = (isManajer || isOwner || isFinance) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="22" viewBox="0 0 20 22" fill="none">
@@ -284,12 +363,14 @@ export default function HariTerlaris(){
         return `/Dashboard Produk/${baseIconName}.svg`;
     };
 
+    // Determine which data to display
     let displayData = [];
     
     if (isAdmin) {
         displayData = tokoData;
-    } else if (isManajer || isOwner) {
-        displayData = dummyGudangData;
+    } else if (isManajer || isOwner || isFinance) {
+        // If API data is available, use it. Otherwise fallback to dummy data
+        displayData = tokoData.length > 0 ? tokoData : dummyGudangData;
     }
 
     const locationIcon = (
@@ -323,7 +404,7 @@ export default function HariTerlaris(){
                     </div>
                 </section>
 
-                {(isAdmin || isOwner || isFinance) && isLoading ? (
+                {(isAdmin || isOwner || isFinance || isManajer) && isLoading ? (
                     <div className="flex justify-center items-center p-10">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                     </div>
@@ -343,11 +424,11 @@ export default function HariTerlaris(){
                                     {(isOwner || isManajer) && (
                                         <div className="w-48">
                                             <ButtonDropdown
-                                                options={getBranchOptions(toko.nama_toko)}
+                                                options={branchOptions[toko.toko_id] || [{ value: "all", label: "Semua" }]}
                                                 selectedIcon={null}
                                                 label="Semua"
                                                 selectedStore={storeSelections[toko.nama_toko] || "Semua"}
-                                                onSelect={(branchName) => handleBranchSelect(toko.nama_toko, branchName)}
+                                                onSelect={(branchValue) => handleBranchSelect(toko.nama_toko, branchValue, toko.toko_id)}
                                             />
                                         </div>
                                     )}
@@ -376,7 +457,7 @@ export default function HariTerlaris(){
                                                 <p className="font-bold text-lg">{toko.data.dashboard.jam_terpanas.waktu}</p>
                                                 <p className="">
                                                     {/* Display different format based on whether it's API or dummy data */}
-                                                    {(isAdmin || isOwner || isFinance) 
+                                                    {(isAdmin || isOwner || isFinance || isManajer) && tokoData.length > 0
                                                         ? `${toko.data.dashboard.jam_terpanas.jumlah} transaksi`
                                                         : `Rp${formatNumberWithDots(toko.data.dashboard.jam_terpanas.jumlah)}`
                                                     }

@@ -178,7 +178,7 @@ export default function Dashboard(){
       } else if (isAdmin) {
         endpoint = `/produk-penjualan/toko/terlaris?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
       } else if (isOwner || isManajer) {
-        endpoint = `/produk-penjualan/toko/terlaris?toko_id=null&startDate=${startDate}&endDate=${endDate}`;
+        endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
       } else {
         endpoint = `/produk-penjualan/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
       }
