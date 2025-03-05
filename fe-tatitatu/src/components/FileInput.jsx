@@ -10,10 +10,26 @@ const FileInput = ({
   const [preview, setPreview] = useState(defaultValue || null);
 
   const userData = JSON.parse(localStorage.getItem('userData'))
-  const role = userData?.role
-  const themeColor = (role === "admingudang" || role === "headgudang") ? "coklatTua" : "primary";
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
 
-  const svgColor = (role === "admingudang" || role === "headgudang") ? "#5D4037" : "#7B0C42";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
+
+      const svgColor = (isAdminGudang || isHeadGudang) 
+      ? "#71503D" 
+      : (isManajer || isOwner || isFinance) 
+        ? "#023F80" 
+        : "#7B0C42";
+
+  // const svgColor = (role === "admingudang" || role === "headgudang") ? "#5D4037" : "#7B0C42";
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];

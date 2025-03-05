@@ -63,22 +63,17 @@ export default function Toko(){
         return password.slice(0, 10) + '...';
     };
 
-    // Fetch data function
-    // Update the fetchTokoData function to handle specific logos for shops with IDs 1 and 2
-
 const fetchTokoData = async () => {
     try {
         setLoading(true);
         const response = await api.get('/toko');
         
         if (response.data.success) {
-            // Filter out deleted items and transform the data
             const transformedData = response.data.data
                 .filter(toko => !toko.is_deleted)
                 .map(toko => {
                     let imageUrl;
                     
-                    // Assign specific logos for shops with IDs 1 and 2
                     if (toko.toko_id === 1) {
                         imageUrl = "/logoDansa.svg";
                     } else {
@@ -296,7 +291,7 @@ const fetchTokoData = async () => {
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                         {/* Left Section */}
                         <div className="left w-full md:w-auto">
-                            <p className="text-primary text-base font-bold">Daftar Toko</p>
+                            <p className="text-biruTua text-base font-bold">Daftar Toko</p>
                         </div>
 
                         {/* Right Section */}
@@ -318,8 +313,8 @@ const fetchTokoData = async () => {
                                             />
                                         </svg>
                                     }
-                                    bgColor="bg-primary"
-                                    hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                    bgColor="bg-biruTua"
+                                    hoverColor="hover:bg-opacity-90 hover:border hover:border-biruTua hover:text-white"
                                     textColor="text-white"
                                     onClick={handleAdd}
                                 />
@@ -336,10 +331,10 @@ const fetchTokoData = async () => {
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_toko}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
+                                        <p className="text-biruTua">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
+                                        <img src="/keuangan/keuntungan_non.svg" alt="keuntungan" />
                                     </div>
                                 </div>
                             </div>
@@ -350,10 +345,10 @@ const fetchTokoData = async () => {
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_toko}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
+                                        <p className="text-biruTua">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
+                                        <img src="/keuangan/pemasukan_non.svg" alt="pemasukan" />
                                     </div>
                                 </div>
                             </div>
@@ -364,10 +359,10 @@ const fetchTokoData = async () => {
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_toko}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
+                                        <p className="text-biruTua">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
+                                        <img src="/keuangan/pengeluaran_non.svg" alt="pengeluaran" />
                                     </div>
                                 </div>
                             </div>
@@ -378,10 +373,10 @@ const fetchTokoData = async () => {
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.barang.nama_barang}</p>
-                                        <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
+                                        <p className="text-biruTua">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/produkterjual.svg" alt="produk" />
+                                        <img src="/keuangan/produkterjual_non.svg" alt="produk" />
                                     </div>
                                 </div>
                             </div>
@@ -408,15 +403,15 @@ const fetchTokoData = async () => {
 
                                 <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-pink rounded-full flex items-center justify-center">
-                                    <div className="text-pink-600">👤</div>
+                                    <div className="w-8 h-8 bg-biruMuda rounded-full flex items-center justify-center">
+                                    <div className="text-biruMuda-600">👤</div>
                                     </div>
                                     <div className="text-sm">{branch.email}</div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-pink rounded-full flex items-center justify-center">
-                                    <div className="text-pink-600">***</div>
+                                    <div className="w-8 h-8 bg-biruMuda rounded-full flex items-center justify-center">
+                                    <div className="text-biruMuda-600">***</div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                     <div className="text-sm font-mono">
@@ -486,12 +481,12 @@ const fetchTokoData = async () => {
                             {/* Add Branch Card */}
                                 <div 
                                 onClick={handleAdd}
-                                className="border-2 border-dashed border-primary rounded-lg p-4 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-pink-400 transition-colors" 
+                                className="border-2 border-dashed border-biruTua rounded-lg p-4 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-biruMuda-400 transition-colors" 
                                 >
-                                <div className="w-12 h-12 bg-pink flex items-center justify-center mb-2">
-                                    <Plus className="text-pink-600" size={24} />
+                                <div className="w-12 h-12 bg-biruMuda flex items-center justify-center mb-2">
+                                    <Plus className="text-biruMuda-600" size={24} />
                                 </div>
-                                <div className="text-pink-600 font-medium">Tambah Toko</div>
+                                <div className="text-biruMuda-600 font-medium">Tambah Toko</div>
                             </div>
                         </div>
                     </div>
@@ -541,7 +536,7 @@ const fetchTokoData = async () => {
                                             value={formData.branchName}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Nama Toko"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-biruTua"
                                             required
                                         />
                                     </div>
@@ -560,7 +555,7 @@ const fetchTokoData = async () => {
                                             className={`px-4 py-2 rounded-md ${
                                                 modalMode === 'add' && !formData.logo 
                                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                                : 'bg-primary text-white hover:bg-opacity-90'
+                                                : 'bg-biruTua text-white hover:bg-opacity-90'
                                             }`}
                                         >
                                             Lanjut
@@ -596,7 +591,7 @@ const fetchTokoData = async () => {
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Email"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-biruTua"
                                             required
                                         />
                                     </div>
@@ -611,7 +606,7 @@ const fetchTokoData = async () => {
                                             value={formData.password}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Password"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-biruTua"
                                             required={modalMode === 'add'}
                                         />
                                     </div>
@@ -626,7 +621,7 @@ const fetchTokoData = async () => {
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Ulang Password"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-biruTua"
                                             required={modalMode === 'add'}
                                         />
                                         {passwordError && (
@@ -646,7 +641,7 @@ const fetchTokoData = async () => {
                                         </button>
                                         <button
                                             type="submit"
-                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90"
+                                            className="px-4 py-2 bg-biruTua text-white rounded-md hover:bg-opacity-90"
                                             disabled={
                                                 formData.password !== formData.confirmPassword || 
                                                 !formData.password || 

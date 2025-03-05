@@ -452,6 +452,22 @@ export default function DetailKaryawan(){
             );
         }
     };
+
+    const handleIconCall = (isAdminGudang || isHeadGudang) ? (
+        '/icon/call_gudang.svg'
+      ) : (isManajer || isOwner || isFinance) ? (
+        '/icon/call_non.svg'
+      ) : (
+        '/icon/call.svg'
+    );
+
+    const handleIconMail = (isAdminGudang || isHeadGudang) ? (
+        '/icon/mail_gudang.svg'
+      ) : (isManajer || isOwner || isFinance) ? (
+        '/icon/mail_non.svg'
+      ) : (
+        '/icon/mail.svg'
+    );
     
 
     return(
@@ -597,11 +613,11 @@ export default function DetailKaryawan(){
                         <div className="w-full">
                             <div className="flex flex-col sm:flex-row sm:space-x-8 w-full">
                                 <div className="flex items-center space-x-2">
-                                    <img src="/icon/call.svg" alt="call" className="w-5 h-5" />
+                                    <img src={handleIconCall} alt="call" className="w-5 h-5" />
                                     <p className="text-secondary">{data.profile.phone}</p>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <img src="/icon/mail.svg" alt="email" className="w-5 h-5" />
+                                    <img src={handleIconMail} alt="email" className="w-5 h-5" />
                                     <p className="text-secondary">{data.profile.email}</p>
                                 </div>
                             </div>

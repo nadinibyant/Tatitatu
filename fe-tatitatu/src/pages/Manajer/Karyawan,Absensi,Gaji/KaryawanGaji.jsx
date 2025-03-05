@@ -397,6 +397,48 @@ export default function KaryawanGaji() {
         }
     };
 
+    const exportIcon = (isAdminGudang || isHeadGudang) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+        </svg>
+      ) : (
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+        </svg>
+      );
+
+      const gajiIcon = (isAdminGudang || isHeadGudang) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      );
+
+      const tokoIcon = (isAdminGudang || isHeadGudang) ? (
+        '/icon/toko_gudang.svg'
+      ) : (isManajer || isOwner || isFinance) ? (
+        '/icon/toko_non.svg'
+      ) : (
+        '/icon/toko.svg'
+      );
+
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
@@ -409,18 +451,15 @@ export default function KaryawanGaji() {
                         <div className="w-full md:w-auto">
                             <Button 
                                 label="Export" 
-                                icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                </svg>} 
-                                bgColor="border border-secondary" 
-                                // hoverColor="hover:bg-white" 
+                                icon={exportIcon}
+                                bgColor="border border-secondary"  
                                 textColor="text-black" 
                                 onClick={handleExport}
                             />
                         </div>
                         <div className="w-44 md:w-44">
                             <ButtonDropdown 
-                                selectedIcon={'/icon/toko.svg'} 
+                                selectedIcon={tokoIcon} 
                                 options={cabangData} 
                                 onSelect={(value) => setSelectedStore(value)} 
                             />
@@ -489,7 +528,7 @@ export default function KaryawanGaji() {
                                             <Button
                                                 label="Selesai"
                                                 onClick={handleSelesai}
-                                                bgColor="bg-primary"
+                                                bgColor={`bg-${themeColor}`}
                                                 textColor="text-white"
                                             />
                                             <Button
@@ -502,11 +541,7 @@ export default function KaryawanGaji() {
                                     ) : (
                                         <Button
                                             label="Potong Gaji"
-                                            icon={<svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>}
+                                            icon={gajiIcon}
                                             onClick={() => setIsEditing(true)}
                                             bgColor="border border-secondary"
                                             textColor="text-black"
@@ -558,7 +593,7 @@ export default function KaryawanGaji() {
                             />
                             <button
                             onClick={handleApplyFilter}
-                            className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                            className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                             >
                             Simpan
                             </button>
