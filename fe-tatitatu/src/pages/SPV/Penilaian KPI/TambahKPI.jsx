@@ -70,6 +70,7 @@ export default function TambahKPI(){
         kpiList: []
     });
 
+    console.log(data)
      const fetchProfileData = async () => {
         try {
             const response = await api.get(`/data-absensi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
@@ -410,8 +411,8 @@ export default function TambahKPI(){
       }, [startDate]);
 
       const calculateAdjustedBonus = (kpiBonus, kpiPercentage) => {
-        const adjustedBonus = kpiBonus * (kpiPercentage / 100);
-        return Math.round(adjustedBonus)
+        const adjustedBonus = kpiBonus / (kpiPercentage / 100);
+        return adjustedBonus
       };
 
       useEffect(() => {
