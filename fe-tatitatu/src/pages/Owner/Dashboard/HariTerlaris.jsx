@@ -22,7 +22,6 @@ export default function HariTerlaris(){
     const isAdmin = userData?.role === 'admin';
     const isFinance = userData?.role === 'finance';
     
-    // Set toko_id to null for owner and finance roles
     const toko_id = isOwner || isFinance 
         ? null 
         : userData?.userId || userData?.tokoId;
@@ -32,14 +31,11 @@ export default function HariTerlaris(){
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
       : "primary";
-
-    // Fetch branch options for a store from API
     const fetchBranchOptions = async (tokoId) => {
         try {
             const response = await api.get(`/cabang?toko_id=${tokoId}`);
             
             if (response.data.success) {
-                // Transform API data into dropdown options
                 const options = [
                     { value: "all", label: "Semua" },
                     ...response.data.data.map(branch => ({
@@ -59,106 +55,32 @@ export default function HariTerlaris(){
         }
     };
 
-    // Dummy data for gudang roles to preview
     const dummyGudangData = [
         {
-            nama_toko: 'Gudang Pusat',
-            cabang_id: 1,
-            toko_id: 1,
+            nama_toko: '',
+            cabang_id: '',
+            toko_id: '',
             data: {
                 dashboard: {
                     hari_terlaris: {
-                        waktu: 'Rabu',
-                        jumlah: 7560000
+                        waktu: '',
+                        jumlah: ''
                     },
                     jam_terpanas: {
-                        waktu: '13:00 - 14:00',
-                        jumlah: 12
+                        waktu: '',
+                        jumlah: ''
                     }
                 },
                 data_hari: [
                     {
-                        Hari: 'Senin',
-                        'Produk Terjual': 45,
-                        'Jam Terpanas': '10:00 - 11:00',
-                        'Total Transaksi': 3500000
+                        Hari: '',
+                        'Produk Terjual': '',
+                        'Jam Terpanas': '',
+                        'Total Transaksi': ''
                     },
-                    {
-                        Hari: 'Selasa',
-                        'Produk Terjual': 63,
-                        'Jam Terpanas': '11:00 - 12:00',
-                        'Total Transaksi': 5280000
-                    },
-                    {
-                        Hari: 'Rabu',
-                        'Produk Terjual': 78,
-                        'Jam Terpanas': '13:00 - 14:00',
-                        'Total Transaksi': 7560000
-                    },
-                    {
-                        Hari: 'Kamis',
-                        'Produk Terjual': 52,
-                        'Jam Terpanas': '14:00 - 15:00',
-                        'Total Transaksi': 4750000
-                    },
-                    {
-                        Hari: 'Jumat',
-                        'Produk Terjual': 60,
-                        'Jam Terpanas': '15:00 - 16:00',
-                        'Total Transaksi': 5400000
-                    }
                 ]
             }
         },
-        {
-            nama_toko: 'Gudang Cabang',
-            cabang_id: 2,
-            toko_id: 2,
-            data: {
-                dashboard: {
-                    hari_terlaris: {
-                        waktu: 'Jumat',
-                        jumlah: 6300000
-                    },
-                    jam_terpanas: {
-                        waktu: '14:00 - 15:00',
-                        jumlah: 9
-                    }
-                },
-                data_hari: [
-                    {
-                        Hari: 'Senin',
-                        'Produk Terjual': 35,
-                        'Jam Terpanas': '09:00 - 10:00',
-                        'Total Transaksi': 2450000
-                    },
-                    {
-                        Hari: 'Selasa',
-                        'Produk Terjual': 47,
-                        'Jam Terpanas': '10:00 - 11:00',
-                        'Total Transaksi': 3750000
-                    },
-                    {
-                        Hari: 'Rabu',
-                        'Produk Terjual': 42,
-                        'Jam Terpanas': '11:00 - 12:00',
-                        'Total Transaksi': 3230000
-                    },
-                    {
-                        Hari: 'Kamis',
-                        'Produk Terjual': 55,
-                        'Jam Terpanas': '13:00 - 14:00',
-                        'Total Transaksi': 4600000
-                    },
-                    {
-                        Hari: 'Jumat',
-                        'Produk Terjual': 70,
-                        'Jam Terpanas': '14:00 - 15:00',
-                        'Total Transaksi': 6300000
-                    }
-                ]
-            }
-        }
     ];
 
     useEffect(() => {
@@ -171,11 +93,9 @@ export default function HariTerlaris(){
         try {
             setIsLoading(true);
             
-            // Calculate the start and end dates for the selected month and year
             const startDate = `${selectedYear}-${selectedMonth}-01`;
             const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
             
-            // Construct URL based on user role
             let url;
             if (isAdmin) {
                 url = `/penjualan/toko?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
@@ -186,18 +106,15 @@ export default function HariTerlaris(){
             const response = await api.get(url);
             
             if (response.data.success) {
-                // Transform the API data into our component format
                 const transformedData = processApiData(response.data.data);
                 setTokoData(transformedData);
                 
-                // Initialize store selections and fetch branch options for each store
                 const initialSelections = {};
                 const options = {};
                 
                 for (const toko of transformedData) {
                     initialSelections[toko.nama_toko] = "Semua";
                     
-                    // Fetch branch options for each store
                     const branchOpts = await fetchBranchOptions(toko.toko_id);
                     options[toko.toko_id] = branchOpts;
                 }
@@ -214,13 +131,10 @@ export default function HariTerlaris(){
         }
     };
 
-    // Process API data into the format needed by our component
     const processApiData = (apiData) => {
         return apiData.map(store => {
-            // Find the day with highest total sales
             const bestSellingDay = findBestSellingDay(store.daily_stats);
             
-            // Find the hour with highest transactions across all days
             const peakHour = findPeakHour(store.daily_stats);
 
             return {
@@ -248,7 +162,6 @@ export default function HariTerlaris(){
         });
     };
 
-    // Function to find the day with highest total sales
     const findBestSellingDay = (dailyStats) => {
         if (!dailyStats || dailyStats.length === 0) return null;
         
@@ -257,11 +170,9 @@ export default function HariTerlaris(){
         }, dailyStats[0]);
     };
 
-    // Function to find the peak hour across all days
     const findPeakHour = (dailyStats) => {
         if (!dailyStats || dailyStats.length === 0) return null;
         
-        // Find the peak hour with the highest transaction count
         let highestTransactions = 0;
         let peakHourData = null;
         
@@ -275,7 +186,6 @@ export default function HariTerlaris(){
         return peakHourData;
     };
 
-    // Handler for branch selection in each store section
     const handleBranchSelect = async (storeName, branchValue, tokoId) => {
         try {
             setIsLoading(true);
@@ -285,45 +195,107 @@ export default function HariTerlaris(){
                 ...prev,
                 [storeName]: branchValue
             }));
-            
-            // Calculate the start and end dates for the selected month and year
+        
             const startDate = `${selectedYear}-${selectedMonth}-01`;
             const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
-            
-            // Create URL based on selected branch
+    
             let url;
             
             if (branchValue === "all") {
-                // If "Semua" is selected, get all data for the toko
+                // Untuk "Semua" cabang, gunakan toko_id saja
                 url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&toko_id=${tokoId}`;
             } else {
-                // Get data for specific branch
-                url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&cabang_id=${branchValue}`;
+                // Untuk cabang spesifik, gunakan cabang_id dan toko_id
+                url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&cabang_id=${branchValue}&toko_id=${tokoId}`;
             }
             
             const response = await api.get(url);
             
             if (response.data.success) {
-                // Process the API data
-                const transformedData = processApiData(response.data.data);
-                
-                // Find and update only the selected store's data
-                setTokoData(prevData => 
-                    prevData.map(store => {
-                        if (store.nama_toko === storeName) {
-                            // Only update if data exists for this store
-                            if (transformedData.length > 0) {
-                                // We might get multiple stores back, but we only want to update this particular store
-                                const matchingStore = transformedData.find(t => String(t.toko_id) === String(tokoId)) || transformedData[0];
+                if (branchValue === "all") {
+                    // Format respons untuk semua cabang
+                    const transformedData = processApiData(response.data.data);
+                    
+                    setTokoData(prevData => 
+                        prevData.map(store => {
+                            if (store.nama_toko === storeName) {
+                                if (transformedData.length > 0) {
+                                    const matchingStore = transformedData.find(t => String(t.toko_id) === String(tokoId)) || transformedData[0];
+                                    return {
+                                        ...store,
+                                        data: matchingStore.data
+                                    };
+                                }
+                            }
+                            return store;
+                        })
+                    );
+                } else {
+                    // Respons untuk cabang spesifik sudah berupa array daily_stats
+                    const dailyStats = response.data.data;
+                    
+                    // Jika tidak ada data, tampilkan array kosong
+                    if (!dailyStats || dailyStats.length === 0) {
+                        setTokoData(prevData => 
+                            prevData.map(store => {
+                                if (store.nama_toko === storeName) {
+                                    return {
+                                        ...store,
+                                        data: {
+                                            dashboard: {
+                                                hari_terlaris: {
+                                                    waktu: '-',
+                                                    jumlah: 0
+                                                },
+                                                jam_terpanas: {
+                                                    waktu: '-',
+                                                    jumlah: 0
+                                                }
+                                            },
+                                            data_hari: []
+                                        }
+                                    };
+                                }
+                                return store;
+                            })
+                        );
+                        return;
+                    }
+                    
+                    // Temukan hari terlaris dan jam terpanas
+                    const bestSellingDay = findBestSellingDay(dailyStats);
+                    const peakHour = findPeakHour(dailyStats);
+                    
+                    // Perbarui data toko dalam tokoData
+                    setTokoData(prevData => {
+                        return prevData.map(store => {
+                            if (store.nama_toko === storeName) {
                                 return {
                                     ...store,
-                                    data: matchingStore.data
+                                    data: {
+                                        dashboard: {
+                                            hari_terlaris: {
+                                                waktu: bestSellingDay?.day || '-',
+                                                jumlah: bestSellingDay?.total_sales || 0
+                                            },
+                                            jam_terpanas: {
+                                                waktu: peakHour ? `${peakHour.start} - ${peakHour.end}` : '-',
+                                                jumlah: peakHour?.transactions || 0
+                                            }
+                                        },
+                                        data_hari: dailyStats.map(day => ({
+                                            Hari: day.day,
+                                            'Produk Terjual': day.total_quantity,
+                                            'Jam Terpanas': `${day.peak_hour.start} - ${day.peak_hour.end}`,
+                                            'Total Transaksi': day.total_sales
+                                        }))
+                                    }
                                 };
                             }
-                        }
-                        return store;
-                    })
-                );
+                            return store;
+                        });
+                    });
+                }
             } else {
                 console.error("Failed to fetch branch data:", response.data.message);
             }
@@ -363,13 +335,11 @@ export default function HariTerlaris(){
         return `/Dashboard Produk/${baseIconName}.svg`;
     };
 
-    // Determine which data to display
     let displayData = [];
     
     if (isAdmin) {
         displayData = tokoData;
     } else if (isManajer || isOwner || isFinance) {
-        // If API data is available, use it. Otherwise fallback to dummy data
         displayData = tokoData.length > 0 ? tokoData : dummyGudangData;
     }
 
@@ -422,16 +392,16 @@ export default function HariTerlaris(){
                                     
                                     {/* Branch dropdown for each store */}
                                     {(isOwner || isManajer) && (
-                                        <div className="w-48">
-                                            <ButtonDropdown
-                                                options={branchOptions[toko.toko_id] || [{ value: "all", label: "Semua" }]}
-                                                selectedIcon={null}
-                                                label="Semua"
-                                                selectedStore={storeSelections[toko.nama_toko] || "Semua"}
-                                                onSelect={(branchValue) => handleBranchSelect(toko.nama_toko, branchValue, toko.toko_id)}
-                                            />
-                                        </div>
-                                    )}
+                                    <div className="w-48">
+                                        <ButtonDropdown
+                                            options={branchOptions[toko.toko_id] || [{ value: "all", label: "Semua" }]}
+                                            selectedIcon={null}
+                                            label="Semua"
+                                            selectedStore={storeSelections[toko.toko_id] || "Semua"}
+                                            onSelect={(branchValue) => handleBranchSelect(toko.toko_id, branchValue, toko.toko_id)}
+                                        />
+                                    </div>
+                                )}
                                 </div>
                             </div>
 

@@ -682,8 +682,6 @@ export default function ProdukTerlaris() {
           endpoint += `&toko_id=${selectedStoreObj.id}`;
           isRumahProduksi = selectedStoreObj.id === 1;
         }
-      } else {
-        endpoint += `&toko_id=null`;
       }
       
       console.log("Fetching owner dashboard data with endpoint:", endpoint);
@@ -787,8 +785,6 @@ export default function ProdukTerlaris() {
         if (selectedStoreObj && selectedStoreObj.id) {
           endpoint += `&toko_id=${selectedStoreObj.id}`;
         }
-      } else {
-        endpoint += `&toko_id=null`;
       }
       
       console.log("Fetching owner top products with endpoint:", endpoint);
