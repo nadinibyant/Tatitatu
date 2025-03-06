@@ -55,6 +55,7 @@ export default function DetailPenjualanGudang() {
         { label: "Nama Produk", key: "Nama Produk", align: "text-left" },
         { label: "Jenis Barang", key: "Jenis Barang", align: "text-left" },
         { label: "Harga Satuan", key: "Harga Satuan", align: "text-left"},
+        { label: "Harga Jual", key: "Harga Jual", align: "text-left"},
         { label: "Kuantitas", key: "kuantitas", align: "text-left"},
         { label: "Total Biaya", key: "Total Biaya", align: "text-left"},
     ];
@@ -196,6 +197,7 @@ export default function DetailPenjualanGudang() {
                                         "Nama Produk": item.nama_barang,
                                         "Jenis Barang": item.jenis,
                                         "Harga Satuan": formatRupiah(item.harga_satuan),
+                                        "Harga Jual": formatRupiah(item.harga_jual || 0),
                                         "kuantitas": item.kuantitas.toLocaleString(),
                                         "Total Biaya": formatRupiah(item.total_biaya)
                                     };

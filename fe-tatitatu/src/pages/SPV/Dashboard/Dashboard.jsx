@@ -435,7 +435,7 @@ export default function Dashboard(){
     try {
       setLoading(true);
       const { startDate, endDate } = getDateRange(selectedYear, selectedMonth);
-
+  
       let endpoint = `/toko/terlaris?startDate=${startDate}&endDate=${endDate}`;
       if (isAdmin) {
         endpoint = `/toko/terlaris?toko_id=${userData?.userId}&startDate=${startDate}&endDate=${endDate}`;
@@ -445,50 +445,74 @@ export default function Dashboard(){
       
       if (response.data.success) {
         if (isAdmin) {
-          const { cabang_terlaris } = response.data.data;
+          // Handle Admin role - use cabang_terlaris data
+          const { cabang_terlaris } = response.data.data || {};
+          
+          // Create a safe fallback object with default values
+          const safeCabangData = {
+            keuntungan_tertinggi: { nama_cabang: '-', keuntungan: 0 },
+            pemasukan_tertinggi: { nama_cabang: '-', total_pemasukan: 0 },
+            pengeluaran_tertinggi: { nama_cabang: '-', total_pengeluaran: 0 },
+            penjualan_terbanyak: { nama_cabang: '-', produk_terjual: 0 }
+          };
+          
+          // Safely merge the actual data with default values
+          const safeData = cabang_terlaris || safeCabangData;
           
           setData(prevData => ({
             ...prevData,
             cabang_terlaris: {
               keuntungan: {
-                nama_toko: cabang_terlaris.keuntungan_tertinggi.nama_cabang,
-                jumlah: cabang_terlaris.keuntungan_tertinggi.keuntungan
+                nama_toko: safeData.keuntungan_tertinggi?.nama_cabang || '-',
+                jumlah: safeData.keuntungan_tertinggi?.keuntungan || 0
               },
               pemasukan: {
-                nama_toko: cabang_terlaris.pemasukan_tertinggi.nama_cabang,
-                jumlah: cabang_terlaris.pemasukan_tertinggi.total_pemasukan
+                nama_toko: safeData.pemasukan_tertinggi?.nama_cabang || '-',
+                jumlah: safeData.pemasukan_tertinggi?.total_pemasukan || 0
               },
               pengeluaran: {
-                nama_toko: cabang_terlaris.pengeluaran_tertinggi.nama_cabang,
-                jumlah: cabang_terlaris.pengeluaran_tertinggi.total_pengeluaran
+                nama_toko: safeData.pengeluaran_tertinggi?.nama_cabang || '-',
+                jumlah: safeData.pengeluaran_tertinggi?.total_pengeluaran || 0
               },
               barang: {
-                nama_barang: cabang_terlaris.penjualan_terbanyak.nama_cabang,
-                jumlah: cabang_terlaris.penjualan_terbanyak.produk_terjual
+                nama_barang: safeData.penjualan_terbanyak?.nama_cabang || '-',
+                jumlah: safeData.penjualan_terbanyak?.produk_terjual || 0
               }
             }
           }));
         } else {
-          const { toko_terlaris } = response.data.data;
+          // Handle other roles - use toko_terlaris data
+          const { toko_terlaris } = response.data.data || {};
+          
+          // Create a safe fallback object with default values
+          const safeTokoData = {
+            keuntungan_tertinggi: { nama_toko: '-', keuntungan: 0 },
+            pemasukan_tertinggi: { nama_toko: '-', total_pemasukan: 0 },
+            pengeluaran_tertinggi: { nama_toko: '-', total_pengeluaran: 0 },
+            penjualan_terbanyak: { nama_toko: '-', produk_terjual: 0 }
+          };
+          
+          // Safely merge the actual data with default values
+          const safeData = toko_terlaris || safeTokoData;
           
           setData(prevData => ({
             ...prevData,
             cabang_terlaris: {
               keuntungan: {
-                nama_toko: toko_terlaris.keuntungan_tertinggi.nama_toko,
-                jumlah: toko_terlaris.keuntungan_tertinggi.keuntungan
+                nama_toko: safeData.keuntungan_tertinggi?.nama_toko || '-',
+                jumlah: safeData.keuntungan_tertinggi?.keuntungan || 0
               },
               pemasukan: {
-                nama_toko: toko_terlaris.pemasukan_tertinggi.nama_toko,
-                jumlah: toko_terlaris.pemasukan_tertinggi.total_pemasukan
+                nama_toko: safeData.pemasukan_tertinggi?.nama_toko || '-',
+                jumlah: safeData.pemasukan_tertinggi?.total_pemasukan || 0
               },
               pengeluaran: {
-                nama_toko: toko_terlaris.pengeluaran_tertinggi.nama_toko,
-                jumlah: toko_terlaris.pengeluaran_tertinggi.total_pengeluaran
+                nama_toko: safeData.pengeluaran_tertinggi?.nama_toko || '-',
+                jumlah: safeData.pengeluaran_tertinggi?.total_pengeluaran || 0
               },
               barang: {
-                nama_barang: toko_terlaris.penjualan_terbanyak.nama_toko,
-                jumlah: toko_terlaris.penjualan_terbanyak.produk_terjual
+                nama_barang: safeData.penjualan_terbanyak?.nama_toko || '-',
+                jumlah: safeData.penjualan_terbanyak?.produk_terjual || 0
               }
             }
           }));
@@ -496,6 +520,7 @@ export default function Dashboard(){
       }
     } catch (error) {
       console.error('Error fetching toko terlaris:', error);
+      // Set default fallback data when there's an error
       setData(prevData => ({
         ...prevData,
         cabang_terlaris: {
