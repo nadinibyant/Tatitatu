@@ -561,7 +561,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                 className="w-8 h-8 rounded-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "https://via.placeholder.com/50";
+                  e.target.src = "";
                 }}
               />
               <svg

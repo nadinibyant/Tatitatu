@@ -177,7 +177,11 @@ export default function LaporanKeuangan() {
                 let url = `/laporan-keuangan?startDate=${startDate}&endDate=${endDate}`;
                 if (isAdmin || isHeadGudang) {
                     url += `&toko_id=${toko_id}`;
+                } 
+                else if ((isManajer || isOwner || isFinance) && selectedStore !== "Semua") {
+                    url += `&toko_id=${selectedStore}`;
                 }
+                console.log(selectedStore)
 
                 const response = await api.get(url);
                 
@@ -425,20 +429,16 @@ export default function LaporanKeuangan() {
     const handleExport = async () => {
         try {
           setLoading(true);
-          
-          // Format dates consistently
+
           const startDate = moment(`${selectedYear}-${selectedMonth}-01`).format('YYYY-MM-DD');
           const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
           
-          // Initialize query parameters
           const queryParams = new URLSearchParams();
           queryParams.append('startDate', startDate);
           queryParams.append('endDate', endDate);
-      
-          // Handle toko_id/cabang based on user role
+
           if (isAdmin) {
             if (selectedStore !== "Semua") {
-              // Find cabang_id for the selected cabang name
               try {
                 const cabangResponse = await api.get(`/cabang?toko_id=${toko_id}`);
                 if (cabangResponse.data.success) {
@@ -451,33 +451,24 @@ export default function LaporanKeuangan() {
                 console.error('Error fetching cabang ID:', error);
               }
             } else {
-              // If no specific cabang is selected, use the admin's toko_id
               queryParams.append('toko_id', toko_id);
             }
           } else if (isHeadGudang || isAdminGudang) {
-            // Head Gudang always uses their toko_id
             queryParams.append('toko_id', toko_id);
           } else if (isOwner || isFinance || isManajer) {
-            // Owner or Finance can select any toko
             if (selectedStore !== "Semua") {
-              // For these roles, the selectedStore value actually contains the toko_id, not the name
-              // So we need to use that value directly
               const tokoId = selectedStore;
               console.log('Using toko_id for export:', tokoId);
               queryParams.append('toko_id', tokoId);
-              
-              // Debugging - log options and selected value
+
               console.log('Available toko options:', tokoOptions);
               console.log('Selected store value:', selectedStore);
               console.log('Selected store type:', typeof selectedStore);
             }
           }
-      
-          // Handle kategori filtering
+
           if (selectedKategori !== "Semua") {
-            // We need to determine if this is a pemasukan or pengeluaran kategori
             try {
-              // First check if it's a pemasukan kategori
               const pemasukanKategoriResponse = await api.get('/kategori-pemasukan');
               if (pemasukanKategoriResponse.data.success) {
                 const kategori = pemasukanKategoriResponse.data.data.find(
@@ -487,7 +478,6 @@ export default function LaporanKeuangan() {
                 if (kategori) {
                   queryParams.append('kategori_pemasukan_id', kategori.kategori_pemasukan_id);
                 } else {
-                  // If not found in pemasukan, check pengeluaran
                   const pengeluaranKategoriResponse = await api.get('/kategori-pengeluaran');
                   if (pengeluaranKategoriResponse.data.success) {
                     const kategori = pengeluaranKategoriResponse.data.data.find(
@@ -504,33 +494,26 @@ export default function LaporanKeuangan() {
             }
           }
       
-          // Handle jenis filtering (Pemasukan/Pengeluaran)
           if (selectedJenis !== "Semua") {
             queryParams.append('jenis', selectedJenis.toLowerCase());
           }
-      
-          // Log the complete URL for debugging
+
           const exportUrl = `/laporan-keuangan/export?${queryParams.toString()}`;
           console.log('Export URL:', exportUrl);
           
-          // Execute the export request
           const response = await api.get(exportUrl, {
             responseType: 'blob'
           });
       
-          // Check if we got a valid response
           if (response.status === 200) {
-            // Create a blob URL
             const blob = new Blob([response.data], { 
               type: response.headers['content-type'] 
             });
             const url = window.URL.createObjectURL(blob);
-      
-            // Create download link
+       
             const link = document.createElement('a');
             link.href = url;
-      
-            // Try to get filename from headers, otherwise use default
+
             const contentDisposition = response.headers['content-disposition'];
             let filename = `laporan-keuangan-${selectedMonth}-${selectedYear}.xlsx`;
             
@@ -544,8 +527,7 @@ export default function LaporanKeuangan() {
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
-            
-            // Clean up
+
             window.URL.revokeObjectURL(url);
             document.body.removeChild(link);
           } else {
@@ -594,13 +576,15 @@ export default function LaporanKeuangan() {
                                     onClick={handleExport}
                                 />
                             </div>
-                            {/* ButtonDropdown untuk toko hanya muncul jika bukan headgudang */}
                             {!isHeadGudang && (
                                 <div className="w-full md:w-auto">
                                     <ButtonDropdown 
                                         selectedIcon={iconToko} 
                                         options={tokoOptions} 
-                                        onSelect={(value) => setSelectedStore(value)} 
+                                        onSelect={(label) => {
+                                            const selectedOption = tokoOptions.find(option => option.label === label);
+                                            setSelectedStore(selectedOption ? selectedOption.value : "Semua");
+                                        }} 
                                         label={isAdmin ? "Cabang" : "Toko"}
                                     />
                                 </div>

@@ -57,7 +57,8 @@ export default function Packaging() {
                   type: item.packaging_id,
                   jumlah_minimum_stok: item.jumlah_minimum_stok,
                   isi: item.isi,
-                  harga_satuan: item.harga_satuan
+                  harga_satuan: item.harga_satuan,
+                  harga_jual: item.harga_jual
                 };
               }
               return {
@@ -100,7 +101,7 @@ const [data2, setData2] = useState({
       Harga: "",
       Isi: "",
       HargaSatuan: "",
-      // HargaJual: ""
+      HargaJual: ""
     },
   ],
 });
@@ -142,7 +143,7 @@ const handleAddBtn = () => {
         Harga: "",
         Isi: "",
         HargaSatuan: "",
-        // HargaJual: ""
+        HargaJual: ""
       },
     ],
   });
@@ -170,7 +171,7 @@ const handleEdit = (itemId) => {
         Harga: priceNumber,
         Isi: itemToEdit.isi,
         HargaSatuan: itemToEdit.harga_satuan,
-        // HargaJual: itemToEdit.harga_jual
+        HargaJual: isAdminGudang ? itemToEdit.harga_jual : ""
       },
     ],
   });
@@ -209,7 +210,7 @@ const handleEdit = (itemId) => {
     { label: "Harga", key: "Harga", align: "text-left" },
     { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
     { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
-    // { label: "Harga Jual", key: "HargaJual", align: "text-left" },
+    { label: "Harga Jual", key: "HargaJual", align: "text-left" },
   ];
 
   const formatCurrency = (amount) => {
@@ -255,6 +256,10 @@ const handleEdit = (itemId) => {
       formData.append('toko_id', toko_id)
       // formData.append('harga_jual', data2.rincian_biaya[0].HargaJual)
 
+      if (isAdminGudang) {
+        formData.append('harga_jual', data2.rincian_biaya[0].HargaJual);
+      }
+      
       if (!isAdminGudang) {
         formData.append('kategori_barang_id', data2.info_barang.Kategori);
       }
@@ -344,7 +349,7 @@ const handleEdit = (itemId) => {
           Harga: priceNumber,
           Isi: itemToShow.isi,
           HargaSatuan: itemToShow.harga_satuan,
-          // HargaJual: itemToShow.harga_jual
+          HargaJual: isAdminGudang ? itemToShow.harga_jual : ""
         },
       ],
     });
@@ -514,15 +519,15 @@ const handleEdit = (itemId) => {
                                 />
                               ),
                               HargaSatuan: `Rp${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
-                              // HargaJual: (
-                              //   <Input
-                              //   showRequired={false}
-                              //     type={'number'}
-                              //     width="w-full"
-                              //     value={data2.rincian_biaya[0].HargaJual}
-                              //     onChange={(value) => handleInputChange("HargaJual", value)}
-                              //   />
-                              // ),
+                              HargaJual: isAdminGudang ? (
+                                <Input
+                                  showRequired={false}
+                                  type={'number'}
+                                  width="w-full"
+                                  value={data2.rincian_biaya[0].HargaJual}
+                                  onChange={(value) => handleInputChange("HargaJual", value)}
+                                />
+                              ) : null,
                             },
                           ]}
                         />
@@ -609,7 +614,7 @@ const handleEdit = (itemId) => {
                         Harga: `Rp${formatCurrency(item.Harga)}`,
                         Isi: formatCurrency(item.Isi),
                         HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`,
-                        // HargaJual: `Rp${formatCurrency(item.HargaJual)}`,
+                        HargaJual: `Rp${formatCurrency(item.HargaJual.toLocaleString('id-ID') || 0)}`,
                     }))}
                     hasPagination={false}
                     hasSearch={false}
@@ -630,7 +635,7 @@ const handleEdit = (itemId) => {
                     </svg>
                   } 
                   hoverColor="hover:bg-gray-100"
-                  onClick={handleEdit}
+                  onClick={() => handleEdit({id: id})}
                 />
               </div>
             </div>

@@ -19,6 +19,11 @@ export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isAdminGudang = userData?.role === 'admingudang';
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
   const [isModalDelete, setModalDelete] = useState(false)
   const [isModalSucc, setModalSucc] = useState(false)
   const [modalMode, setModalMode] = useState("add");
@@ -30,6 +35,12 @@ export default function BarangCustom() {
     const [isErrorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const toko_id = userData.userId
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
     const fetchDataBarang = async () => {
       try {
@@ -340,7 +351,7 @@ const handleAddBtn = () => {
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className="text-coklatTua text-base font-bold">{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
+              <p className={`text-${themeColor} text-base font-bold`}>{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
             </div>
 
             {/* Right Section */}
@@ -362,8 +373,8 @@ const handleAddBtn = () => {
                       />
                     </svg>
                   }
-                  bgColor="bg-coklatTua"
-                  hoverColor="hover:bg-opacity-90 hover:border hover:border-coklatTua hover:text-white"
+                  bgColor={`bg-${themeColor}`}
+                  hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                   textColor="text-white"
                   onClick={handleAddBtn}
                 />
@@ -505,13 +516,13 @@ const handleAddBtn = () => {
                     <button
                       type="button"
                       onClick={() => setModal(false)}
-                      className="px-4 py-2 border border-coklatTua rounded-md hover:bg-gray-50 transition-colors"
+                      className={`px-4 py-2 border border-${themeColor} rounded-md hover:bg-gray-50 transition-colors`}
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-coklatTua text-white rounded-md hover:bg-black-800 transition-colors"
+                      className={`px-4 py-2 bg-${themeColor} text-white rounded-md hover:bg-black-800 transition-colors`}
                     >
                       {modalMode === "add" ? "Daftar" : "Simpan"}
                     </button>

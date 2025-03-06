@@ -78,11 +78,14 @@ const resetPackagingSelection = () => {
 const handlePackagingModalSubmit = () => {
     const newItems = selectedPackagingItems.map((item) => {
         const totalBiaya = parseInt(item.price) * item.count;
-        const dropdownValue = {
-            label: item.name,
-            value: item.id,
-            price: item.price
-        };
+
+        const dropdownOptions = dataPackaging.map(pack => ({
+            label: pack.name,
+            value: pack.id,
+            price: pack.price
+        }));
+    
+        const selectedOption = dropdownOptions.find(option => option.value === item.id);
         
         return {
             id: item.id,
@@ -93,12 +96,8 @@ const handlePackagingModalSubmit = () => {
             "Nama Packaging": (
                 <InputDropdown
                     showRequired={false}
-                    options={dataPackaging.map(pack => ({
-                        label: pack.name,
-                        value: pack.id,
-                        price: pack.price
-                    }))}
-                    value={dropdownValue.value}
+                    options={dropdownOptions}
+                    value={item.id} // Gunakan item.id bukan dropdownValue
                     onSelect={(newSelection) => handlePackagingDropdownChange(item.id, newSelection)}
                 />
             ),
@@ -114,7 +113,8 @@ const handlePackagingModalSubmit = () => {
             quantity: item.count,
             "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
             rawTotalBiaya: totalBiaya,
-            currentPrice: item.price
+            currentPrice: item.price,
+            isPackaging: true
         };
     });
 
@@ -124,89 +124,107 @@ const handlePackagingModalSubmit = () => {
     setSelectedPackagingItems([]);
 };
 
-const handlePackagingDropdownChange = (itemId, nextSelection) => {
-    const updatedData = [...packagingData];
-    const rowIndex = updatedData.findIndex((row) => row.id === itemId);
+const handlePackagingDropdownChange = (itemId, newSelection) => {
+    console.log('handlePackagingDropdownChange called:', {
+        itemId, 
+        newSelection, 
+        existingPackagingData: [...packagingData]
+    });
+
+    const selectedPackage = dataPackaging.find(pkg => pkg.id === newSelection.value);
     
-    if (rowIndex !== -1) {
-        const selectedItem = dataPackaging.find(item => item.id === nextSelection.value);
-        
-        if (selectedItem) {
-            const currentQuantity = updatedData[rowIndex].quantity || 0;
-            const newPrice = selectedItem.price;
-            const newTotalBiaya = newPrice * currentQuantity;
+    if (selectedPackage) {
+        const dropdownOptions = dataPackaging.map(pack => ({
+            label: pack.name,
+            value: pack.id,
+            price: pack.price
+        }));
+
+        setPackagingData(prevData => {
+            const updatedData = [...prevData];
+            const rowIndex = updatedData.findIndex(row => row.id === itemId);
             
-            updatedData[rowIndex] = {
-                ...updatedData[rowIndex],
-                id: selectedItem.id,
-                quantity: currentQuantity,
-                "Foto Packaging": (
-                    <img 
-                        src={getImageUrl({
-                            id: selectedItem.id, 
-                            image: selectedItem.image
-                        })} 
-                        alt={selectedItem.name} 
-                        className="w-12 h-12" 
-                    />
-                ),
-                "Nama Packaging": (
-                    <InputDropdown
-                        showRequired={false}
-                        options={dataPackaging.map(pack => ({
-                            label: pack.name,
-                            value: pack.id,
-                            price: pack.price
-                        }))}
-                        value={nextSelection.value}
-                        onSelect={(newSelection) => handlePackagingDropdownChange(itemId, newSelection)}
-                    />
-                ),
-                "Harga Satuan": `Rp${newPrice.toLocaleString()}`,
-                "Kuantitas": (
-                    <Input
-                        showRequired={false}
-                        type="number"
-                        value={currentQuantity}
-                        onChange={(newCount) => handlePackagingQuantityChange(itemId, newCount)}
-                    />
-                ),
-                "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                rawTotalBiaya: newTotalBiaya,
-                currentPrice: newPrice
-            };
+            if (rowIndex !== -1) {
+                const currentQuantity = updatedData[rowIndex].quantity || 0;
+                const newTotalBiaya = selectedPackage.price * currentQuantity;
+ 
+                updatedData[rowIndex] = {
+                    id: selectedPackage.id,
+                    No: 1,
+                    "Foto Packaging": (
+                        <img 
+                            src={selectedPackage.image} 
+                            alt={selectedPackage.name} 
+                            className="w-12 h-12" 
+                        />
+                    ),
+                    "Nama Packaging": (
+                        <InputDropdown
+                            showRequired={false}
+                            options={dropdownOptions}
+                            value={selectedPackage.id}
+                            onSelect={(nextSelection) => handlePackagingDropdownChange(selectedPackage.id, nextSelection)}
+                        />
+                    ),
+                    "Harga Satuan": `Rp${selectedPackage.price.toLocaleString()}`,
+                    "Kuantitas": (
+                        <Input
+                            showRequired={false}
+                            type="number"
+                            value={currentQuantity}
+                            onChange={(newCount) => handlePackagingQuantityChange(selectedPackage.id, newCount)}
+                        />
+                    ),
+                    quantity: currentQuantity,
+                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                    rawTotalBiaya: newTotalBiaya,
+                    currentPrice: selectedPackage.price,
+                    isPackaging: true
+                };
+            }
             
-            setPackagingData(updatedData);
-        }
+            return updatedData;
+        });
     }
 };
 
 const handlePackagingQuantityChange = (itemId, newCount) => {
-    const updatedData = [...packagingData];
-    const rowIndex = updatedData.findIndex((row) => row.id === itemId);
+    console.log('handlePackagingQuantityChange called:', {
+        itemId, 
+        newCount, 
+        existingPackagingData: [...packagingData]
+    });
 
-    if (rowIndex !== -1) {
-        const currentItem = updatedData[rowIndex];
-        const numericCount = Number(newCount);
-        const currentPrice = currentItem.currentPrice;
-        const newTotal = currentPrice * numericCount;
-            
-        updatedData[rowIndex] = {
-            ...currentItem,
-            quantity: numericCount,
-            rawTotalBiaya: newTotal,
-            "Total Biaya": `Rp${newTotal.toLocaleString()}`,
-            "Kuantitas": (
+    setPackagingData(prevData => {
+        const updatedData = [...prevData];
+        const rowIndex = updatedData.findIndex(row => row.id === itemId);
+
+        if (rowIndex !== -1) {
+            const currentItem = updatedData[rowIndex];
+            const numericCount = Number(newCount);
+            const currentPrice = currentItem.currentPrice;
+            const newTotalBiaya = currentPrice * numericCount;
+
+            const quantityInput = (
                 <Input
                     showRequired={false}
                     type="number"
                     value={numericCount}
                     onChange={(newValue) => handlePackagingQuantityChange(itemId, newValue)}
                 />
-            )
-        };
-        setPackagingData(updatedData);
-    }
+            );
+
+            updatedData[rowIndex] = {
+                ...currentItem,
+                quantity: numericCount,
+                "Kuantitas": quantityInput,
+                "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                rawTotalBiaya: newTotalBiaya
+            };
+        }
+        
+        return updatedData;
+    });
 };
 
 const handleDeletePackaging = (itemId) => {
@@ -350,7 +368,7 @@ const handleDeletePackaging = (itemId) => {
                     }),
                     name: item.nama_packaging,
                     ukuran: item.ukuran,
-                    price: item.harga_satuan,
+                    price: item.harga_jual,
                     stok: item.jumlum_minimum_stok
                 }));
                 setDataPackaging(packagingItems);
@@ -654,7 +672,7 @@ const handleDeletePackaging = (itemId) => {
             setErrorMessage("Silahkan pilih metode pembayaran");
             return;
         }
- 
+
         if (itemData.length === 0) {
             setErrorMessage("Silahkan pilih minimal satu barang");
             return;
@@ -672,14 +690,14 @@ const handleDeletePackaging = (itemId) => {
 
                     return {
                         [idKey]: item.id,
-                        harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
+                        harga_satuan: parseInt(item.currentPrice),
                         kuantitas: item.quantity,
                         total_biaya: item.rawTotalBiaya
                     };
                 }),
                 ...packagingData.map(item => ({
                     packaging_id: item.id,
-                    harga_satuan: parseInt(item["Harga Satuan"].replace('Rp', '').replace(/\./g, '').replace(',', '')),
+                    harga_satuan: parseInt(item.currentPrice),
                     kuantitas: item.quantity,
                     total_biaya: item.rawTotalBiaya
                 }))

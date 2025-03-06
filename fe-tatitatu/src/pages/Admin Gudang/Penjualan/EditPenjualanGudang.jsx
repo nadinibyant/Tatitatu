@@ -58,7 +58,7 @@ export default function EditPenjualanGudang() {
                         id: item.packaging_id,
                         label: item.nama_packaging, 
                         value: item.packaging_id,  
-                        price: item.harga_satuan,
+                        price: item.harga_jual,
                         image: getImageUrl({
                             barang_id: item.packaging_id,
                             image: item.image
