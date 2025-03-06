@@ -31,6 +31,7 @@ export default function HariTerlaris(){
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
       : "primary";
+
     const fetchBranchOptions = async (tokoId) => {
         try {
             const response = await api.get(`/cabang?toko_id=${tokoId}`);
@@ -186,26 +187,31 @@ export default function HariTerlaris(){
         return peakHourData;
     };
 
-    const handleBranchSelect = async (storeName, branchValue, tokoId) => {
+    const handleBranchSelect = async (storeName, branchLabel, tokoId) => {
         try {
             setIsLoading(true);
-            
             // Update store selection state
             setStoreSelections(prev => ({
                 ...prev,
-                [storeName]: branchValue
+                [storeName]: branchLabel
             }));
         
+            let branchValue = "all";
+            if (branchLabel !== "Semua") {
+                const options = branchOptions[tokoId] || [];
+                const selectedOption = options.find(opt => opt.label === branchLabel);
+                branchValue = selectedOption ? selectedOption.value : "all";
+            }
+        
+            
             const startDate = `${selectedYear}-${selectedMonth}-01`;
             const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
     
             let url;
             
             if (branchValue === "all") {
-                // Untuk "Semua" cabang, gunakan toko_id saja
                 url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&toko_id=${tokoId}`;
             } else {
-                // Untuk cabang spesifik, gunakan cabang_id dan toko_id
                 url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}&cabang_id=${branchValue}&toko_id=${tokoId}`;
             }
             
@@ -213,7 +219,6 @@ export default function HariTerlaris(){
             
             if (response.data.success) {
                 if (branchValue === "all") {
-                    // Format respons untuk semua cabang
                     const transformedData = processApiData(response.data.data);
                     
                     setTokoData(prevData => 
@@ -231,10 +236,8 @@ export default function HariTerlaris(){
                         })
                     );
                 } else {
-                    // Respons untuk cabang spesifik sudah berupa array daily_stats
                     const dailyStats = response.data.data;
                     
-                    // Jika tidak ada data, tampilkan array kosong
                     if (!dailyStats || dailyStats.length === 0) {
                         setTokoData(prevData => 
                             prevData.map(store => {
@@ -261,12 +264,10 @@ export default function HariTerlaris(){
                         );
                         return;
                     }
-                    
-                    // Temukan hari terlaris dan jam terpanas
+
                     const bestSellingDay = findBestSellingDay(dailyStats);
                     const peakHour = findPeakHour(dailyStats);
-                    
-                    // Perbarui data toko dalam tokoData
+
                     setTokoData(prevData => {
                         return prevData.map(store => {
                             if (store.nama_toko === storeName) {
@@ -397,8 +398,8 @@ export default function HariTerlaris(){
                                             options={branchOptions[toko.toko_id] || [{ value: "all", label: "Semua" }]}
                                             selectedIcon={null}
                                             label="Semua"
-                                            selectedStore={storeSelections[toko.toko_id] || "Semua"}
-                                            onSelect={(branchValue) => handleBranchSelect(toko.toko_id, branchValue, toko.toko_id)}
+                                            selectedStore={storeSelections[toko.nama_toko] || "Semua"}
+                                            onSelect={(branchLabel) => handleBranchSelect(toko.nama_toko, branchLabel, toko.toko_id)}
                                         />
                                     </div>
                                 )}
@@ -455,7 +456,7 @@ export default function HariTerlaris(){
                                         hasPagination={false}
                                     />
                                 ) : ( <div className="text-center py-5 text-gray-500">
-                                    Tidak ada data transaksi untuk bulan ini
+                                    Tidak ada data transaksi 
                                 </div>
                             )}
                         </div>
