@@ -492,7 +492,6 @@ export default function Dashboard(){
             penjualan_terbanyak: { nama_toko: '-', produk_terjual: 0 }
           };
           
-          // Safely merge the actual data with default values
           const safeData = toko_terlaris || safeTokoData;
           
           setData(prevData => ({
@@ -520,7 +519,6 @@ export default function Dashboard(){
       }
     } catch (error) {
       console.error('Error fetching toko terlaris:', error);
-      // Set default fallback data when there's an error
       setData(prevData => ({
         ...prevData,
         cabang_terlaris: {

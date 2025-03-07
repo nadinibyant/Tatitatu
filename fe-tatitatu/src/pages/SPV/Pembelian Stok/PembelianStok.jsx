@@ -74,6 +74,7 @@ export default function PembelianStok() {
             const response = await api.get(url);
             
             const formattedData = response.data.data.map((item) => {
+                
                 let namaBarang;
                 let totalKuantitas;
                 
@@ -123,7 +124,9 @@ export default function PembelianStok() {
                     metodePembayaran: item.metode_pembayaran?.nama_metode
                 };
             });
-    
+            formattedData.sort((a, b) => {
+                return b.Nomor.localeCompare(a.Nomor);
+            });
             setData(formattedData);
         } catch (error) {
             console.error('Error fetching data:', error);
