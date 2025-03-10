@@ -18,6 +18,7 @@ export default function TambahBeliStokGudang() {
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("");
+    const [namaPembeli, setNamaPembeli] = useState(""); // Added nama pembeli state
     const [selectBayar, setSelectedBayar] = useState("");
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0);
@@ -428,7 +429,6 @@ export default function TambahBeliStokGudang() {
             const subTotal = calculateSubtotal();
             const totalPenjualan = calculateTotalPenjualan(subTotal);
     
-            // Base form data
             const baseFormData = {
                 cash_or_non: selectBayar === 1,
                 sub_total: subTotal,
@@ -437,6 +437,12 @@ export default function TambahBeliStokGudang() {
                 total_pembelian: totalPenjualan,
                 produk: formattedProducts
             };
+
+            if (namaPembeli) {
+                baseFormData.nama_pembeli = namaPembeli;
+            } else {
+                baseFormData.nama_pembeli = ''
+            }
     
             const formData = selectBayar === 2 
                 ? { ...baseFormData, metode_id: selectMetode }
@@ -503,13 +509,20 @@ export default function TambahBeliStokGudang() {
                                     value={tanggal} 
                                     onChange={(e) => setTanggal(e)} 
                                 />
+                                {/* Added Nama Pembeli field */}
+                                <Input 
+                                    label="Nama Pembeli" 
+                                    type1="text" 
+                                    required={false} 
+                                    value={namaPembeli} 
+                                    onChange={(e) => setNamaPembeli(e)} 
+                                />
                                 <InputDropdown 
                                     label="Cash/Non-Cash" 
                                     options={dataBayar} 
                                     value={selectBayar}
                                     onSelect={handleSelectBayar}
                                 />
-
                                 <div>
                                     <InputDropdown 
                                         label="Metode Pembayaran" 
@@ -723,7 +736,7 @@ export default function TambahBeliStokGudang() {
                     description="Data berhasil disimpan"
                     confirmLabel="Ok"
                     onConfirm={handleAcc}
-                />
+                    />
             )}
 
             {isLoading && <Spinner />}

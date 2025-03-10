@@ -287,6 +287,8 @@ export default function LaporanKeuangan() {
         fetchLaporanKeuangan();
     }, [selectedMonth, selectedYear, isAdmin, toko_id, selectedStore]);
 
+    console.log(data)
+
     const headers = [
         { label: "Nomor", key: "nomor", align: "text-left" },
         { label: "Tanggal", key: "tanggal", align: "text-left" },
@@ -316,7 +318,7 @@ export default function LaporanKeuangan() {
         } else if (row.jenis === 'penjualan') {
             const isGudang = row.toko === 'Rumah Produksi' || row.toko === 'Rumah produksi' ||
             (typeof row.toko === 'object' && 
-             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi'));
+             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi' || row.toko.nama_toko_lama === 'Rumah Produksi' || row.toko.nama_toko === 'Dansa' || row.toko.nama_toko === 'dansa'));
             
             if (isGudang || isHeadGudang) {
                 navigate('/laporanKeuangan/penjualan-gudang/detail', {
@@ -366,8 +368,9 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'pembelian') {
-            const isGudang = row.toko === 'Rumah Produksi' || 
-                            (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi');
+            console.log(toko_id)
+            const isGudang = toko_id === 1 || row.toko === 'Rumah Produksi' || 
+                            (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko_lama === 'Rumah produksi' || row.toko.nama_toko === 'Dansa' || row.toko.nama_toko === 'dansa');
             
             navigate('/pembelianStok/detail', { 
                 state: { 

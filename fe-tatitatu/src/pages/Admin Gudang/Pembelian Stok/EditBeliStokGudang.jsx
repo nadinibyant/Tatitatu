@@ -20,6 +20,7 @@ export default function EditBeliStokGudang() {
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("");
+    const [namaPembeli, setNamaPembeli] = useState(""); // Added nama pembeli state
     const [selectBayar, setSelectedBayar] = useState("");
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0);
@@ -149,6 +150,7 @@ export default function EditBeliStokGudang() {
                 setNomor(data.pembelian_id);
                 setTanggal(new Date(data.tanggal).toISOString().split('T')[0]);
                 setNote(data.catatan || "");
+                setNamaPembeli(data.nama_pembeli || ""); // Set nama pembeli from data
                 setSelectedBayar(data.cash_or_non ? 1 : 2);
                 setSelectMetode(data.cash_or_non ? 0 : data.metode_id);
                 setDiskon(data.diskon);
@@ -460,6 +462,12 @@ export default function EditBeliStokGudang() {
                 catatan: note
             };
 
+            if (namaPembeli) {
+                baseFormData.nama_pembeli = namaPembeli;
+            } else {
+                baseFormData.nama_pembeli = ''
+            }
+
             const formData = selectBayar === 2 
                 ? { ...baseFormData, metode_id: selectMetode }
                 : baseFormData;
@@ -542,6 +550,14 @@ export default function EditBeliStokGudang() {
                                     type1="date" 
                                     value={tanggal} 
                                     onChange={(e) => setTanggal(e)} 
+                                />
+                                {/* Added Nama Pembeli field */}
+                                <Input 
+                                    label="Nama Pembeli" 
+                                    type1="text" 
+                                    required={false}
+                                    value={namaPembeli} 
+                                    onChange={(e) => setNamaPembeli(e)} 
                                 />
                                 <InputDropdown 
                                     label="Cash/Non-Cash" 
@@ -725,7 +741,7 @@ export default function EditBeliStokGudang() {
                                     {jenis}
                                 </button>
                             ))}
-                        </div>
+                            </div>
 
                         <div className="flex flex-wrap gap-2 mt-4">
                             {(selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") && 

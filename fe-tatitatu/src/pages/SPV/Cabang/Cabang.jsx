@@ -81,7 +81,7 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
 
 export default function Cabang(){
     function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+        return number ? number.toLocaleString('id-ID') : '0';
     }
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,22 +108,56 @@ export default function Cabang(){
 
     const [dataTerbanyak, setDataTerbanyak] = useState({
         keuntungan: {
-            nama_toko: 'Tatitatu',
-            jumlah: 10000000
+            nama_cabang: '',
+            jumlah: 0
         },
         pemasukan: {
-            nama_toko: 'Rumah Produksi',
-            jumlah: 65000000
+            nama_cabang: '',
+            jumlah: 0
         },
         pengeluaran: {
-            nama_toko: 'Tatitatu',
-            jumlah: 100000000
+            nama_cabang: '',
+            jumlah: 0
         },
         barang: {
-            nama_barang:'Bonifade',
-            jumlah: 1200
+            nama_cabang: '',
+            jumlah: 0
         },
-    })
+    });
+
+    const fetchStatsData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/toko/terlaris?toko_id=${toko_id}`);
+            
+            if (response.data.success && response.data.data.cabang_terlaris) {
+                const { cabang_terlaris } = response.data.data;
+                
+                setDataTerbanyak({
+                    keuntungan: {
+                        nama_cabang: cabang_terlaris.keuntungan_tertinggi.nama_cabang,
+                        jumlah: cabang_terlaris.keuntungan_tertinggi.keuntungan
+                    },
+                    pemasukan: {
+                        nama_cabang: cabang_terlaris.pemasukan_tertinggi.nama_cabang,
+                        jumlah: cabang_terlaris.pemasukan_tertinggi.total_pemasukan
+                    },
+                    pengeluaran: {
+                        nama_cabang: cabang_terlaris.pengeluaran_tertinggi.nama_cabang,
+                        jumlah: cabang_terlaris.pengeluaran_tertinggi.total_pengeluaran
+                    },
+                    barang: {
+                        nama_cabang: cabang_terlaris.penjualan_terbanyak.nama_cabang,
+                        jumlah: cabang_terlaris.penjualan_terbanyak.produk_terjual
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching stats data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchBranchData = async () => {
         try {
@@ -148,6 +182,7 @@ export default function Cabang(){
 
     useEffect(() => {
         fetchBranchData();
+        fetchStatsData();
     }, []);
 
     const handleInputChange = (e) => {
@@ -322,7 +357,7 @@ export default function Cabang(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
-                                        <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_toko}</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_cabang || 'Belum ada data'}</p>
                                         <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
@@ -336,7 +371,7 @@ export default function Cabang(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
-                                        <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_toko}</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_cabang || 'Belum ada data'}</p>
                                         <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
@@ -350,7 +385,7 @@ export default function Cabang(){
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
-                                        <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_toko}</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_cabang || 'Belum ada data'}</p>
                                         <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
@@ -359,13 +394,13 @@ export default function Cabang(){
                                 </div>
                             </div>
 
-                            {/* Barang Terbanyak */}
+                            {/* Barang Terjual Terbanyak */}
                             <div className="w-full">
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
-                                        <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
-                                        <p className="font-bold text-lg">{dataTerbanyak.barang.nama_barang}</p>
-                                        <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
+                                        <p className="text-gray-400 text-sm">Barang Terjual Terbanyak</p>
+                                        <p className="font-bold text-lg">{dataTerbanyak.barang.nama_cabang || 'Belum ada data'}</p>
+                                        <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)} Pcs</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
                                         <img src="/keuangan/produkterjual.svg" alt="produk" />
