@@ -95,7 +95,7 @@ export default function TambahKPI(){
                             kehadiran: profileData.kehadiran || 0,
                             izin: profileData.totalCutiDays || 0,
                             tanpakejelasan: profileData.tidakHadir || 0,
-                            totalBonus: profileData.totalBonus || 0
+                            totalBonus: karyawanData.bonus || 0
                         }
                     }
                 }));
@@ -416,14 +416,17 @@ export default function TambahKPI(){
       };
 
       useEffect(() => {
-        if (data.kpiList.length > 0) {
+        if (data.kpiList.length > 0 && data.profile.stats.totalBonus) {
+          const employeeTotalBonus = data.profile.stats.totalBonus;
+   
           const calculatedTotal = data.kpiList.reduce((total, kpi) => {
-            return total + calculateAdjustedBonus(kpi.stats.bonus, kpi.percentage);
+            const kpiBonus = calculateKPIBonus(kpi, employeeTotalBonus);
+            return total + kpiBonus;
           }, 0);
           
           setTotalCalculatedBonus(calculatedTotal);
         }
-      }, [data.kpiList]);
+      }, [data.kpiList, data.profile.stats.totalBonus, daysInMonth]);
 
       const getDashboardIconPath = (baseIconName) => {
         if (isAdminGudang || isHeadGudang) {
@@ -433,6 +436,63 @@ export default function TambahKPI(){
         }
         return `/icon/${baseIconName}.svg`;
       };
+
+      const calculateKPIBonus = (kpi, employeeTotalBonus) => {
+        const kpiTotalBonus = employeeTotalBonus * (kpi.percentage / 100);
+
+        let totalCheckboxes = 0;
+        if (kpi.waktu === 'Harian') {
+          totalCheckboxes = daysInMonth;
+        } else if (kpi.waktu === 'Mingguan') {
+          totalCheckboxes = 4;
+        } else if (kpi.waktu === 'Bulanan') {
+          totalCheckboxes = 1;
+        }
+        
+        const checkboxValue = totalCheckboxes > 0 ? kpiTotalBonus / totalCheckboxes : 0;
+        const checkedCount = kpi.checks.filter(checked => checked).length;
+
+        return checkboxValue * checkedCount;
+      };
+
+      const calculateKPITotalBonus = (totalBonus, kpiPercentage) => {
+        return totalBonus * (kpiPercentage / 100);
+      };
+
+      const calculateCheckboxValue = (kpiTotalBonus, totalCheckboxes) => {
+        return kpiTotalBonus / totalCheckboxes;
+      };
+
+
+      const calculateEarnedBonus = (checkboxValue, checkedCount) => {
+        return checkboxValue * checkedCount;
+      };
+
+
+      const renderKPIBonus = (kpi, profile) => {
+        const totalBonus = profile.stats.totalBonus;
+ 
+        const kpiTotalBonus = calculateKPITotalBonus(totalBonus, kpi.percentage);
+        
+        let totalCheckboxes = 0;
+        if (kpi.waktu === 'Harian') {
+          totalCheckboxes = daysInMonth;
+        } else if (kpi.waktu === 'Mingguan') {
+          totalCheckboxes = 4;
+        } else if (kpi.waktu === 'Bulanan') {
+          totalCheckboxes = 1;
+        }
+        
+        const checkboxValue = calculateCheckboxValue(kpiTotalBonus, totalCheckboxes);
+  
+        const checkedCount = kpi.checks.filter(checked => checked).length;
+
+        const earnedBonus = calculateEarnedBonus(checkboxValue, checkedCount);
+        
+        return earnedBonus;
+      };
+
+      
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions} showAddNoteButton={true}>
@@ -650,7 +710,7 @@ export default function TambahKPI(){
                                         <div className="">
                                             <p className={`text-sm text-${themeColor} text-start`}>Bonus Yang Diterima</p>
                                             <p className={`text-${themeColor} font-bold text-start`}>
-                                                Rp{formatNumberWithDots(calculateAdjustedBonus(kpi.stats.bonus, kpi.percentage))}
+                                                Rp{formatNumberWithDots(renderKPIBonus(kpi, data.profile))}
                                             </p>
                                         </div>
                                     </div>
