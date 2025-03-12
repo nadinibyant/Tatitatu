@@ -24,12 +24,16 @@ export default function StokBarang() {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
     const [selectedStore, setSelectedStore] = useState("Semua");
+    const [selectedToko, setSelectedToko] = useState("Semua");
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
     const isHeadGudang = userData?.role === 'headgudang'
     const isKasirToko = userData?.role === 'kasirtoko'
+    const isManajer = userData?.role === 'manajer'
+    const isOwner = userData?.role === 'owner'
+    const isFinance = userData?.role === 'finance'
     const [stokData, setStokData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cabangData, setCabangData] = useState([]);
@@ -37,18 +41,35 @@ export default function StokBarang() {
     const [selectedItemDetail, setSelectedItemDetail] = useState(null);
     const toko_id = userData.userId
     const cabang_id = userData.userId
+    const [tokoData, setTokoData] = useState([]);
+    const [tokoMapping, setTokoMapping] = useState({});
 
-    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
-    const exportIcon = (isAdminGudang || isHeadGudang) ? (
+      const exportIcon = (isAdminGudang || isHeadGudang) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
         </svg>
       ) : (
         <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
         </svg>
       );
+
+      const getTokoIconPath = (baseIconName) => {
+        if (isManajer || isOwner || isFinance) {
+            return `/icon/${baseIconName}_non.svg`;
+        }
+        return `/icon/${baseIconName}.svg`;
+    };
 
     const getDetailEndpoint = (item) => {
         if (item.barang_handmade_id) return `/barang-handmade/${item.barang_handmade_id}`;
@@ -73,7 +94,11 @@ export default function StokBarang() {
     };    
     
     const [cabangOptions, setCabangOptions] = useState([
-        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' }
+        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') }
+    ]);
+
+    const [tokoOptions, setTokoOptions] = useState([
+        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') }
     ]);
 
     const [kategoriOptions, setKategoriOptions] = useState([
@@ -83,10 +108,54 @@ export default function StokBarang() {
         { label: "Semua", value: "Semua" }
     ]);
 
+    const isWarehouseSelected = () => {
+        if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+            const selectedTokoId = tokoMapping[selectedToko];
+            return selectedTokoId === 1;
+        }
+        return false;
+    };
+
+    const fetchTokoData = async () => {
+        if (isManajer || isOwner || isFinance) {
+            try {
+                const response = await api.get('/toko');
+                if (response.data.success) {
+                    setTokoData(response.data.data);
+                    
+                    const tokoMap = response.data.data.reduce((acc, toko) => {
+                        acc[toko.nama_toko] = toko.toko_id;
+                        return acc;
+                    }, {});
+    
+                    setTokoMapping(tokoMap);
+    
+                    const tokoOpts = response.data.data.map(toko => ({
+                        label: toko.nama_toko,
+                        value: toko.nama_toko,
+                        icon: getTokoIconPath('toko')
+                    }));
+    
+                    setTokoOptions(tokoOpts);
+
+                    if (tokoOpts.length > 0) {
+                        setSelectedToko(tokoOpts[0].value);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching toko data:', error);
+            }
+        }
+    };
+
     const fetchCabangData = async () => {
         if (!isAdminGudang) {
             try {
-                const response = await api.get(`/cabang?toko_id=${toko_id}`);
+                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "Semua" 
+                    ? tokoMapping[selectedToko] 
+                    : toko_id;
+
+                const response = await api.get(`/cabang?toko_id=${selectedTokoId}`);
                 if (response.data.success) {
                     const cabangMap = response.data.data.reduce((acc, cabang) => {
                         acc[cabang.nama_cabang] = cabang.cabang_id;
@@ -98,13 +167,15 @@ export default function StokBarang() {
                     const cabangOpts = response.data.data.map(cabang => ({
                         label: cabang.nama_cabang,  
                         value: cabang.nama_cabang, 
-                        icon: '/icon/toko.svg'
+                        icon: getTokoIconPath('toko')
                     }));
                     
                     setCabangOptions([
-                        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+                        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') },
                         ...cabangOpts
                     ]);
+
+                    setSelectedStore("Semua");
                 }
             } catch (error) {
                 console.error('Error fetching cabang data:', error);
@@ -120,7 +191,11 @@ export default function StokBarang() {
     const fetchKategoriOptions = async () => {
         if (!isAdminGudang) {
             try {
-                const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
+                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "Semua" 
+                    ? tokoMapping[selectedToko] 
+                    : toko_id;
+
+                const response = await api.get(`/kategori-barang?toko_id=${selectedTokoId}`);
                 if (response.data.success) {
                     const kategoriOpts = response.data.data
                         .filter(item => !item.is_deleted)
@@ -129,6 +204,8 @@ export default function StokBarang() {
                             value: item.nama_kategori_barang
                         }));
                     setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
+
+                    setSelectedKategori("Semua");
                 }
             } catch (error) {
                 console.error('Error fetching kategori options:', error);
@@ -161,7 +238,7 @@ export default function StokBarang() {
                 let kategoriBarang = "-";
                 let barangId = "-";
                 let namaBarang = "-";
-
+    
                 if (barangData.barang_handmade_id) {
                     jenisBarang = barangData.jenis?.nama_jenis_barang || "Handmade";
                     barangId = barangData.barang_handmade_id;
@@ -181,13 +258,13 @@ export default function StokBarang() {
                     barangId = barangData.packaging_id;
                     namaBarang = barangData.nama_packaging;
                 }
-
+    
                 return {
                     Nomor: barangId,
                     "Nama Barang": namaBarang,
                     Jenis: jenisBarang,
                     Kategori: kategoriBarang,
-                    "Jumlah Stok": item.jumlah_stok,
+                    "Jumlah Stok": item.jumlah_stok || 0, 
                     image: barangData.image,
                     barang_handmade_id: barangData.barang_handmade_id,
                     barang_nonhandmade_id: barangData.barang_nonhandmade_id,
@@ -213,9 +290,59 @@ export default function StokBarang() {
                     setStokData(response.data.data.filter(item => !item.is_deleted));
                 }
             } else {
-                const response = await api.get('/stok-barang');
-                if (response.data.success) {
-                    setStokData(response.data.data.filter(item => !item.is_deleted));
+                if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+                    const selectedTokoId = tokoMapping[selectedToko];
+                    
+                    if (selectedTokoId === 1) {
+
+                        const response = await api.get('/stok-barang-gudang');
+                        if (response.data.success) {
+                            const safeData = response.data.data.map(item => {
+                                // Pastikan barang ada
+                                const barang = item.barang || {};
+
+                                return {
+                                    Nomor: barang.barang_handmade_id || 
+                                           barang.barang_nonhandmade_id || 
+                                           barang.barang_mentah_id || 
+                                           barang.packaging_id || "-",
+                                    "Nama Barang": barang.nama_barang || barang.nama_packaging || "-",
+                                    Jenis: (barang.jenis?.nama_jenis_barang) || 
+                                           (barang.barang_handmade_id ? "Handmade" : 
+                                            barang.barang_nonhandmade_id ? "Non Handmade" : 
+                                            barang.barang_mentah_id ? "Mentah" : 
+                                            barang.packaging_id ? "Packaging" : "-"),
+                                    Kategori: (barang.kategori?.nama_kategori_barang) || "-",
+                                    "Jumlah Stok": item.jumlah_stok || 0,
+                                    // Simpan semua ID untuk referensi
+                                    barang_handmade_id: barang.barang_handmade_id,
+                                    barang_nonhandmade_id: barang.barang_nonhandmade_id,
+                                    barang_mentah_id: barang.barang_mentah_id,
+                                    packaging_id: barang.packaging_id,
+                                    image: barang.image
+                                };
+                            });
+                            
+                            setStokData(safeData.filter(item => !item.is_deleted));
+                        }
+                    } else {
+                        if (selectedStore !== "Semua") {
+                            const response = await api.get(`/stok-barang?cabang=${cabangMapping[selectedStore]}`);
+                            if (response.data.success) {
+                                setStokData(response.data.data.filter(item => !item.is_deleted));
+                            }
+                        } else {
+                            const response = await api.get(`/stok-barang?toko_id=${selectedTokoId}`);
+                            if (response.data.success) {
+                                setStokData(response.data.data.filter(item => !item.is_deleted));
+                            }
+                        }
+                    }
+                } else {
+                    const response = await api.get('/stok-barang');
+                    if (response.data.success) {
+                        setStokData(response.data.data.filter(item => !item.is_deleted));
+                    }
                 }
             }
         } catch (error) {
@@ -250,22 +377,31 @@ export default function StokBarang() {
     };
 
     const filteredData = () => {
-        if (isAdminGudang) {
+        if (!stokData || stokData.length === 0) {
+            return [];
+        }
+        
+        const isWarehouseSelected = ((isManajer || isOwner || isFinance) && 
+                                   selectedToko !== "Semua" && 
+                                   tokoMapping[selectedToko] === 1);
+        
+        if (isAdminGudang || isWarehouseSelected) {
             return stokData.filter(item => {
-                if (selectedJenis !== "Semua") {
-                    // Match the jenis value exactly as it comes from the API
-                    if (item.Jenis !== selectedJenis) return false;
-                }
+                if (selectedJenis !== "Semua" && item.Jenis !== selectedJenis) return false;
                 if (selectedKategori !== "Semua" && item.Kategori !== selectedKategori) return false;
                 return true;
             });
         } else {
             let filteredData = [...stokData];
+            
             if (selectedStore !== "Semua") {
                 filteredData = filteredData.filter(item => 
                     item.cabang?.nama_cabang === selectedStore
                 );
             }
+  
+            if (filteredData.length === 0) return [];
+
             const groupedData = filteredData.reduce((acc, item) => {
                 const barangId = getBarangId(item);
                 const existingItem = acc.find(i => getBarangId(i) === barangId);
@@ -275,7 +411,7 @@ export default function StokBarang() {
                     "Nama Barang": getBarangName(item),
                     Jenis: getBarangJenis(item),
                     Kategori: getBarangKategori(item),
-                    "Jumlah Stok": item.jumlah_stok,
+                    "Jumlah Stok": item.jumlah_stok || 0,
                     stok_barang_id: item.stok_barang_id,
                     cabang_id: item.cabang_id,
                     barang_handmade_id: item.barang_handmade_id,
@@ -287,17 +423,17 @@ export default function StokBarang() {
                         item.barang_custom?.image || 
                         item.packaging?.image,
                     cabang: [{
-                        nama: item.cabang?.nama_cabang,
-                        stok: item.jumlah_stok,
+                        nama: item.cabang?.nama_cabang || "Main",
+                        stok: item.jumlah_stok || 0,
                         cabang_id: item.cabang_id
                     }]
                 };
         
                 if (existingItem) {
-                    existingItem["Jumlah Stok"] += item.jumlah_stok;
+                    existingItem["Jumlah Stok"] += (item.jumlah_stok || 0);
                     existingItem.cabang.push({
-                        nama: item.cabang?.nama_cabang,
-                        stok: item.jumlah_stok,
+                        nama: item.cabang?.nama_cabang || "Main",
+                        stok: item.jumlah_stok || 0,
                         cabang_id: item.cabang_id
                     });
                 } else {
@@ -318,21 +454,46 @@ export default function StokBarang() {
     useEffect(() => {
         const initializeData = async () => {
             await fetchFilterOptions();
-            await fetchStokData();
             
-            if (!isAdminGudang) {
-                await fetchCabangData();
-                await fetchKategoriOptions();
+            if (isManajer || isOwner || isFinance) {
+                await fetchTokoData();
+            } else {
+                if (!isAdminGudang) {
+                    await fetchCabangData();
+                    await fetchKategoriOptions();
+                }
+                
+                await fetchStokData();
             }
         };
 
         initializeData();
     }, [isAdminGudang]);
 
+    useEffect(() => {
+        if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+            const selectedTokoId = tokoMapping[selectedToko];
+            
+            if (selectedTokoId === 1) {
+                setSelectedStore("Semua");
+            } else {
+                fetchCabangData();
+                fetchKategoriOptions();
+            }
+            
+            fetchStokData();
+        }
+    }, [selectedToko]);
+
+    useEffect(() => {
+        if (!isAdminGudang && selectedStore !== "Semua") {
+            fetchStokData();
+        }
+    }, [selectedStore]);
+
     const fetchFilterOptions = async () => {
         try {
             if (isAdminGudang) {
-                // Fetch jenis options from the API for admin gudang
                 const jenisResponse = await api.get('/jenis-barang-gudang');
                 if (jenisResponse.data.success) {
                     const jenisOpts = jenisResponse.data.data
@@ -340,7 +501,7 @@ export default function StokBarang() {
                         .map(item => ({
                             label: item.nama_jenis_barang,
                             value: item.nama_jenis_barang,
-                            id: item.jenis_barang_id // Add ID for export functionality
+                            id: item.jenis_barang_id 
                         }));
                     setJenisOptions([{ label: "Semua", value: "Semua" }, ...jenisOpts]);
                 }
@@ -353,12 +514,11 @@ export default function StokBarang() {
                         .map(item => ({
                             label: item.nama_kategori_barang,
                             value: item.nama_kategori_barang,
-                            id: item.kategori_barang_id // Add ID for export functionality
+                            id: item.kategori_barang_id 
                         }));
                     setKategoriOptions([{ label: "Semua", value: "Semua" }, ...kategoriOpts]);
                 }
             } else {
-                // For non-admin gudang users, set default jenis options
                 setJenisOptions([
                     { label: "Semua", value: "Semua" },
                     { label: "Handmade", value: "Handmade" },
@@ -433,9 +593,7 @@ export default function StokBarang() {
             if (isAdminGudang) {
                 endpoint = '/stok-barang-gudang/export';
                 
-                // Add query parameters for kategori and jenis if they are selected
                 if (selectedKategori !== "Semua") {
-                    // Find the kategori_barang_id from the kategoriOptions
                     const selectedKategoriOption = kategoriOptions.find(option => option.value === selectedKategori);
                     if (selectedKategoriOption && selectedKategoriOption.id) {
                         params.kategori_barang_id = selectedKategoriOption.id;
@@ -443,7 +601,6 @@ export default function StokBarang() {
                 }
                 
                 if (selectedJenis !== "Semua") {
-                    // Find the jenis_barang_id from the jenisOptions
                     const selectedJenisOption = jenisOptions.find(option => option.value === selectedJenis);
                     if (selectedJenisOption && selectedJenisOption.id) {
                         params.jenis_barang_id = selectedJenisOption.id;
@@ -452,14 +609,23 @@ export default function StokBarang() {
             } else if (isKasirToko) {
                 params = { cabang: cabang_id, toko_id: toko_id };
             } else {
-                params = { toko_id: toko_id };
-                
-                if (selectedStore !== "Semua") {
-                    params.cabang = cabangMapping[selectedStore];
+                if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+                    const selectedTokoId = tokoMapping[selectedToko];
+                    
+                    if (selectedTokoId === 1) {
+                        endpoint = '/stok-barang-gudang/export';
+                    } else {
+                        params.toko_id = selectedTokoId;
+                        
+                        if (selectedStore !== "Semua") {
+                            params.cabang = cabangMapping[selectedStore];
+                        }
+                    }
+                } else {
+                    params.toko_id = toko_id;
                 }
             }
-            
-            // Build the full URL to display for debugging
+
             const queryString = new URLSearchParams(params).toString();
             const fullUrl = `${import.meta.env.VITE_API_URL}${endpoint}${queryString ? `?${queryString}` : ''}`;
             console.log('Export URL:', fullUrl);
@@ -487,169 +653,180 @@ export default function StokBarang() {
         }
     };
 
+const renderRightSection = () => {
     return (
-        <>
-            <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
+        <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
+            <div className="w-full md:w-auto">
+                {!isManajer && (
+                        <Button
+                        label="Export"
+                        icon={exportIcon}
+                        bgColor="border border-secondary"
+                        hoverColor={`hover:border-${themeColor}`}
+                        textColor="text-black"
+                        onClick={handleExport}
+                    />
+                )}
+            </div>
+
+            {(isManajer || isOwner || isFinance) && tokoOptions.length > 0 && (
+                <div className="w-full md:w-auto">
+                    <ButtonDropdown 
+                        selectedIcon={getTokoIconPath('toko')}
+                        options={tokoOptions}
+                        onSelect={(value) => setSelectedToko(value)}
+                        label="Toko"
+                        selectedValue={selectedToko}
+                    />
+                </div>
+            )}
+            {(!isKasirToko && !isAdminGudang && !isWarehouseSelected()) && (
+                <div className="w-full md:w-auto">
+                    <ButtonDropdown 
+                        selectedIcon={getTokoIconPath('toko')} 
+                        options={cabangOptions} 
+                        onSelect={(value) => setSelectedStore(value)} 
+                        label="Cabang"
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+return (
+    <>
+        <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
+            <div className="p-5">
+                <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
+                    <div className="left w-full md:w-auto">
+                        <p className={`text-${themeColor} text-base font-bold`}>Stok Barang</p>
+                    </div>
+
+                    {renderRightSection()}
+                </section>
+
+                <section className="mt-5 bg-white rounded-xl">
                 <div className="p-5">
-                    <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
-                        {/* Left Section */}
-                        <div className="left w-full md:w-auto">
-                            <p className={`text-${themeColor} text-base font-bold`}>Stok Barang</p>
+                    {loading ? (
+                        <Spinner/>
+                    ) : (
+                        <Table
+                            headers={headers}
+                            data={(filteredData() || []).map(item => ({
+                                ...item,
+                                "Jumlah Stok": `${(item["Jumlah Stok"] || 0).toLocaleString('id-ID')} Pcs`
+                            }))}
+                            hasFilter={true}
+                            onFilterClick={handleFilterClick}
+                            onRowClick={(isAdminGudang || isWarehouseSelected()) ? undefined : handleRowClick}
+                        />
+                    )}
+                </div>
+                </section>
+
+                {isFilterModalOpen && (
+                <>
+                    <div 
+                        className="fixed inset-0"
+                        onClick={() => setIsFilterModalOpen(false)}
+                    />
+                    <div 
+                        className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                        style={{ 
+                            top: filterPosition.top,
+                            left: filterPosition.left 
+                        }}
+                    >
+                        <div className="space-y-4">
+                            {filterFields.map((field) => (
+                                <InputDropdown
+                                    key={field.key}
+                                    label={field.label}
+                                    options={field.options}
+                                    value={field.key === "Jenis" ? selectedJenis : selectedKategori}
+                                    onSelect={(value) => 
+                                        field.key === "Jenis" 
+                                            ? setSelectedJenis(value.value)
+                                            : setSelectedKategori(value.value)
+                                    }
+                                    required={true}
+                                />
+                            ))}
+                            <button
+                                onClick={handleApplyFilter}
+                                className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
+                            >
+                                Simpan
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {isDetailModalOpen && selectedItem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg w-full max-w-3xl mx-4">
+                        <div className="flex justify-between items-center p-6">
+                            <h2 className="text-xl font-semibold">{selectedItem["Nama Barang"]}</h2>
+                            <button
+                                onClick={() => {
+                                    setIsDetailModalOpen(false);
+                                    setSelectedItemDetail(null); 
+                                }}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={24} />
+                            </button>
                         </div>
 
-                        {/* Right Section */}
-                        <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                            <div className="w-full md:w-auto">
-                                <Button
-                                    label="Export"
-                                    icon={exportIcon}
-                                    bgColor="border border-secondary"
-                                    hoverColor={`hover:border-${themeColor}`}
-                                    textColor="text-black"
-                                    onClick={handleExport}
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <img
+                                        src={selectedItemDetail ? getImageUrl(selectedItemDetail.image, selectedItem) : "/placeholder-image.jpg"}
+                                        alt={selectedItem["Nama Barang"]}
+                                        className="w-full h-auto rounded-lg object-cover"
+                                    />
+                                </div>
+
+                                <div className="col-span-2 grid grid-cols-2 gap-y-4">
+                                    <div>
+                                        <p className="text-gray-500">Nomor</p>
+                                        <p className="font-medium">{selectedItem.Nomor}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Nama Barang</p>
+                                        <p className="font-medium">{selectedItem["Nama Barang"]}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Jenis</p>
+                                        <p className="font-medium">{selectedItem.Jenis}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Total Stok Keseluruhan</p>
+                                        <p className="font-medium">{selectedItem["Jumlah Stok"]}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8">
+                                <h3 className="font-bold mb-4">Rincian Stok</h3>
+                                <Table
+                                    headers={rincianStokHeaders}
+                                    data={selectedItem.cabang.map((item, index) => ({
+                                        No: index + 1,
+                                        Cabang: item.nama,
+                                        "Jumlah Stok": item.stok.toLocaleString('id-ID')
+                                    }))}
                                 />
                             </div>
-
-                            {(!isKasirToko && !isAdminGudang) && (
-                                <div className="w-full md:w-auto">
-                                    <ButtonDropdown 
-                                        selectedIcon={'/icon/toko.svg'} 
-                                        options={cabangOptions} 
-                                        onSelect={(value) => setSelectedStore(value)} 
-                                    />
-                                </div>
-                            )}
-                        
-                        </div>
-                    </section>
-
-                    <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
-                        {loading ? (
-                            <Spinner/>
-                        ) : (
-                            <Table
-                                headers={headers}
-                                data={filteredData().map(item => ({
-                                    ...item,
-                                    "Jumlah Stok": `${item["Jumlah Stok"].toLocaleString('id-ID')} Pcs`
-                                }))}
-                                hasFilter={true}
-                                onFilterClick={handleFilterClick}
-                                onRowClick={isAdminGudang ? undefined : handleRowClick}
-                            />
-                        )}
-                    </div>
-                    </section>
-
-                    {/* Filter Modal */}
-                    {isFilterModalOpen && (
-                    <>
-                        <div 
-                            className="fixed inset-0"
-                            onClick={() => setIsFilterModalOpen(false)}
-                        />
-                        <div 
-                            className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
-                            style={{ 
-                                top: filterPosition.top,
-                                left: filterPosition.left 
-                            }}
-                        >
-                            <div className="space-y-4">
-                                {filterFields.map((field) => (
-                                    <InputDropdown
-                                        key={field.key}
-                                        label={field.label}
-                                        options={field.options}
-                                        value={field.key === "Jenis" ? selectedJenis : selectedKategori}
-                                        onSelect={(value) => 
-                                            field.key === "Jenis" 
-                                                ? setSelectedJenis(value.value)
-                                                : setSelectedKategori(value.value)
-                                        }
-                                        required={true}
-                                    />
-                                ))}
-                                <button
-                                    onClick={handleApplyFilter}
-                                    className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
-                                >
-                                    Simpan
-                                </button>
-                            </div>
-                        </div>
-                    </>
-                )}
-
-{isDetailModalOpen && selectedItem && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg w-full max-w-3xl mx-4">
-                            {/* Header with close button */}
-                            <div className="flex justify-between items-center p-6">
-                                <h2 className="text-xl font-semibold">{selectedItem["Nama Barang"]}</h2>
-                                <button
-                                    onClick={() => {
-                                        setIsDetailModalOpen(false);
-                                        setSelectedItemDetail(null); 
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Image Column */}
-                                    <div>
-                                        <img
-                                            src={selectedItemDetail ? getImageUrl(selectedItemDetail.image, selectedItem) : "/placeholder-image.jpg"}
-                                            alt={selectedItem["Nama Barang"]}
-                                            className="w-full h-auto rounded-lg object-cover"
-                                        />
-                                    </div>
-
-                                    {/* Details Columns */}
-                                    <div className="col-span-2 grid grid-cols-2 gap-y-4">
-                                        <div>
-                                            <p className="text-gray-500">Nomor</p>
-                                            <p className="font-medium">{selectedItem.Nomor}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Nama Barang</p>
-                                            <p className="font-medium">{selectedItem["Nama Barang"]}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Jenis</p>
-                                            <p className="font-medium">{selectedItem.Jenis}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Total Stok Keseluruhan</p>
-                                            <p className="font-medium">{selectedItem["Jumlah Stok"]}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Rincian Stok Table */}
-                                <div className="mt-8">
-                                    <h3 className="font-bold mb-4">Rincian Stok</h3>
-                                    <Table
-                                        headers={rincianStokHeaders}
-                                        data={selectedItem.cabang.map((item, index) => ({
-                                            No: index + 1,
-                                            Cabang: item.nama,
-                                            "Jumlah Stok": item.stok.toLocaleString('id-ID')
-                                        }))}
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </div>
-                )}
                 </div>
-            </LayoutWithNav>
-        </>
-    );
+            )}
+            </div>
+        </LayoutWithNav>
+    </>
+);
 }

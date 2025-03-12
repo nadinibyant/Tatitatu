@@ -393,6 +393,12 @@ export const menuItems = [
       iconWarna: '/Icon Warna/toko_non.svg',
     },
     {
+      label: "Stok Barang",
+      link: "/stokBarang",
+      icon: "/Menu/stokBarang.svg",
+      iconWarna: '/Icon Warna/stokBarang_non.svg',
+    },
+    {
       label: "Catatan",
       link: "/catatan",
       icon: "/Menu/catatan.svg",

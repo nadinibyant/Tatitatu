@@ -72,6 +72,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   
   const [notifications, setNotifications] = useState([]);
   const [managerMessages, setManagerMessages] = useState([]);
+  const [combinedStockNotifications, setCombinedStockNotifications] = useState([]);
 
   const fetchNotifications = async () => {
     try {
@@ -102,7 +103,33 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
           
           setManagerMessages(formattedMessages);
         }
-      } 
+      }
+      else if (isManajer) {
+        try {
+          const tokoResponse = await api.get('/notification-stok');
+          const tokoNotifications = tokoResponse.data.success && tokoResponse.data.data 
+            ? tokoResponse.data.data.map(item => ({
+                type: 'stok',
+                name: 'Stok Toko Menipis',
+                isi: item.message
+              }))
+            : [];
+          const gudangResponse = await api.get('/notification-stok-gudang');
+          const gudangNotifications = gudangResponse.data.success && gudangResponse.data.data 
+            ? gudangResponse.data.data.map(item => ({
+                type: 'stok',
+                name: 'Stok Gudang Menipis',
+                isi: item.message
+              }))
+            : [];
+
+          const combined = [...tokoNotifications, ...gudangNotifications];
+          setCombinedStockNotifications(combined);
+        } catch (error) {
+          console.error('Error fetching stock notifications for manager:', error);
+          setCombinedStockNotifications([]);
+        }
+      }
       else if (isAdminGudang || isHeadGudang || isAdmin || isKasirToko) {
         let endpoint;
         
@@ -144,17 +171,20 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
     }, [isOwner, isAdminGudang, isHeadGudang, isAdmin, isKasirToko, userData?.userId, userData?.tokoId]);
 
 
-  const getNotificationIcon = () => {
-    if (isAdminGudang || isHeadGudang) {
-      return "/Icon Warna/dataBarang_gudang.svg";
-    }
-    else if (isOwner) {
-      return "/Icon Warna/email_non.svg";
-    }
-    else {
-      return "/Icon Warna/dataBarang.svg";
-    }
-  };
+const getNotificationIcon = () => {
+  if (isAdminGudang || isHeadGudang) {
+    return "/Icon Warna/dataBarang_gudang.svg";
+  }
+  else if (isOwner) {
+    return "/Icon Warna/email_non.svg";
+  }
+  else if (isManajer) {
+    return "/Icon Warna/dataBarang_non.svg";
+  }
+  else {
+    return "/Icon Warna/dataBarang.svg";
+  }
+};
 
   const toggleNotifModal = () => {
     setNotifModalPosition({
@@ -356,6 +386,34 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
               </div>
             ))}
           </div>
+        ) : isManajer ? (
+          // Tampilan khusus untuk manager
+          <div className="divide-y divide-gray-200">
+            {combinedStockNotifications.map((notif, index) => (
+              <div key={index} className="py-4 first:pt-0">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="bg-biruTua bg-opacity-10 w-6 h-6 rounded-full flex items-center justify-center">
+                      <img 
+                        src="/Icon Warna/dataBarang_non.svg" 
+                        alt="Stock Alert" 
+                        className="w-4 h-4" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{notif.name}</p>
+                    <p className="text-sm text-gray-600">{notif.isi}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {combinedStockNotifications.length === 0 && (
+              <div className="py-4 text-center text-gray-500">
+                Tidak ada notifikasi
+              </div>
+            )}
+          </div>
         ) : (
           <div className="divide-y divide-gray-200">
             {notifications.map((notif, index) => (
@@ -373,8 +431,8 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                     </div>
                   </div>
                   <div>
-                  <p className="font-semibold text-sm">{notif.name}</p>
-                  <p className="text-sm text-gray-600">{notif.isi}</p>
+                    <p className="font-semibold text-sm">{notif.name}</p>
+                    <p className="text-sm text-gray-600">{notif.isi}</p>
                   </div>
                 </div>
               </div>
@@ -528,7 +586,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
             />
           )}
           
-          {(isOwner || isAdmin || isKasirToko || isHeadGudang || isAdminGudang) && (
+          {(isOwner || isAdmin || isKasirToko || isHeadGudang || isAdminGudang || isManajer) && (
             <div className="relative">
               <button
                 ref={notifButtonRef}
@@ -541,7 +599,8 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
                   className="w-5 h-5"
                 />
                 {((isOwner && managerMessages.length > 0) || 
-                  ((isAdmin || isKasirToko || isHeadGudang || isAdminGudang) && notifications.length > 0)) && (
+                  ((isAdmin || isKasirToko || isHeadGudang || isAdminGudang) && notifications.length > 0) ||
+                  (isManajer && combinedStockNotifications.length > 0)) && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
               </button>
