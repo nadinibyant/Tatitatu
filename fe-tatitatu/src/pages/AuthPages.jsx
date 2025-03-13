@@ -80,10 +80,10 @@ const AuthPages = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#FFE0ED] flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-4xl min-h-[600px] bg-white rounded-2xl shadow-2xl flex overflow-hidden">
         {/* Left Side - Image/Brand Section */}
-        <div className="hidden md:flex md:w-1/2 bg-[#7B0C42] flex-col justify-between p-12">
+        <div className="hidden md:flex md:w-1/2 bg-[#2D2D2D] flex-col justify-between p-12">
           <div className="flex items-center gap-3">
             <ShoppingBag className="w-10 h-10 text-white" />
           </div>
@@ -92,12 +92,12 @@ const AuthPages = () => {
             <h2 className="text-4xl font-bold text-white">
               Selamat Datang Kembali!
             </h2>
-            <p className="text-[#FFE0ED]">
+            <p className="text-white">
               Temukan koleksi aksesoris eksklusif kami yang mendefinisikan keanggunan dan gaya.
             </p>
           </div>
 
-          <div className="text-sm text-[#FFE0ED]">
+          <div className="text-sm text-white">
             © 2025 DBI. Hak Cipta Dilindungi.
           </div>
         </div>
@@ -109,7 +109,7 @@ const AuthPages = () => {
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-2xl md:text-3xl font-bold text-[#7B0C42]">
+            <h3 className="text-2xl md:text-3xl font-bold text-[#2D2D2D]">
               Masuk
             </h3>
             
@@ -161,7 +161,7 @@ const AuthPages = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 bg-[#7B0C42] hover:bg-[#C21747] text-white font-medium rounded-lg transition-colors duration-200"
+                className="w-full py-3 px-4 bg-[#2D2D2D] hover:bg-white hover:border hover:border-[#2D2D2D] hover:text-[#2D2D2D] text-white font-medium rounded-lg transition-colors duration-200"
               >
                 Masuk
               </button>
