@@ -106,11 +106,11 @@ export default function PenjualanKasir() {
         { label: "Nomor", key: "Nomor", align: "text-left" },
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
-        { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-center" },
-        { label: "Diskon", key: "Diskon", align: "text-center" },
-        { label: "Pajak", key: "Pajak", align: "text-center" },
-        { label: "Total Transaksi", key: "Total Transaksi", align: "text-right" },
-        { label: "Aksi", key: "aksi", align: "text-right" },
+        { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-left" },
+        { label: "Diskon", key: "Diskon", align: "text-left" },
+        { label: "Pajak", key: "Pajak", align: "text-left" },
+        { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
+        // { label: "Aksi", key: "aksi", align: "text-right" },
     ];
 
     // Format nama barang
@@ -197,15 +197,15 @@ export default function PenjualanKasir() {
                             data={data.map(item => ({
                                 ...item,
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
-                                aksi: <ActionMenu 
-                                    onEdit={() => handleEdit(item)} 
-                                    onDelete={() => {
-                                        setSelectedItem({
-                                            id: item.Nomor
-                                        });
-                                        handleDelete();
-                                    }} 
-                                />
+                                // aksi: <ActionMenu 
+                                //     onEdit={() => handleEdit(item)} 
+                                //     onDelete={() => {
+                                //         setSelectedItem({
+                                //             id: item.Nomor
+                                //         });
+                                //         handleDelete();
+                                //     }} 
+                                // />
                             }))}
                             hasSearch={true}
                             hasPagination={true}

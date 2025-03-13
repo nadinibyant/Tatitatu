@@ -404,5 +404,11 @@ export const menuItems = [
       icon: "/Menu/catatan.svg",
       iconWarna: '/Icon Warna/catatan_non.svg',
     },
+    {
+      label: "Kelola Akun kerja",
+      link: "/kelola-akun-kerja",
+      icon: "/Menu/akunKerja.svg",
+      iconWarna: '/Icon Warna/akunKerja_non.svg',
+    },
   ]
   
