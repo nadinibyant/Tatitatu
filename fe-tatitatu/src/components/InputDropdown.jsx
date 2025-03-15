@@ -24,6 +24,19 @@ const InputDropdown = ({
   const [showError, setShowError] = useState(false);
   const [touched, setTouched] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
+  
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? "coklatTua" 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : "primary";
 
   useEffect(() => {
     const matchedOption = options.find(option => 
@@ -114,7 +127,7 @@ const InputDropdown = ({
           className={`w-full border rounded-md py-1 px-4 focus:outline-none text-ellipsis overflow-hidden whitespace-nowrap
             ${disabled 
               ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
-              : 'border-gray-300 cursor-pointer hover:border-primary focus:border-primary'
+              : `border-gray-300 cursor-pointer hover:border-${themeColor} focus:border-${themeColor}`
             }
             ${shouldShowError ? 'border-red-500' : ''}
             ${selectedValue ? 'text-gray-900' : 'text-gray-500'}
@@ -169,7 +182,7 @@ const InputDropdown = ({
                 <li
                   key={index}
                   className={`py-2 px-4 hover:bg-gray-100 cursor-pointer transition-colors duration-200
-                    ${selectedOption?.value === option.value ? 'bg-gray-50 text-primary' : ''}
+                    ${selectedOption?.value === option.value ? `bg-gray-50 text-${themeColor}` : ''}
                   `}
                   onClick={() => handleSelect(option)}
                 >

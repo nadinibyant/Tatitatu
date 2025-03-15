@@ -158,6 +158,12 @@ export const menuItems = [
         iconWarna: '/Icon Warna/izinCuti_gudang.svg',
     },
     {
+      label: "Target Kasir",
+      link: "/target-bulanan",
+      icon: "/Menu/targetKasir.svg",
+      iconWarna: '/Icon Warna/targetKasir_gudang.svg',
+    },
+    {
       label: "Master Kategori",
       link: "/master-kategori",
       icon: "/Menu/masterKategori.svg",
@@ -241,6 +247,12 @@ export const menuItems = [
       link: "/pengajuanAbsensi",
       icon: "/Menu/absensi.svg",
       iconWarna: '/Icon Warna/absensi_gudang.svg',
+    },
+    {
+      label: "Target Kasir",
+      link: "/target-bulanan",
+      icon: "/Menu/targetKasir.svg",
+      iconWarna: '/Icon Warna/targetKasir_gudang.svg',
     },
     {
       label: "Master Kategori",
@@ -403,6 +415,12 @@ export const menuItems = [
       link: "/catatan",
       icon: "/Menu/catatan.svg",
       iconWarna: '/Icon Warna/catatan_non.svg',
+    },
+    {
+      label: "Target Kasir",
+      link: "/target-bulanan",
+      icon: "/Menu/targetKasir.svg",
+      iconWarna: '/Icon Warna/targetKasir_non.svg',
     },
     {
       label: "Kelola Akun kerja",

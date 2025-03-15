@@ -14,6 +14,10 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance';
   const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
+  
+  // Menentukan role yang hanya mendapatkan menu logout
+  const isLogoutOnly = ['admingudang', 'headgudang', 'manajer', 'finance', 'admin', 'owner'].includes(userData?.role);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branchName, setBranchName] = useState('');
   const [logoSrc, setLogoSrc] = useState('');
@@ -301,11 +305,10 @@ const getNotificationIcon = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  const modifiedUserOptions = userOptions.map(option => 
-    option.label === 'Logout' 
-      ? { ...option, onClick: handleLogout } 
-      : option
-  );
+  // Filter menu options berdasarkan role
+  const filteredUserOptions = isLogoutOnly 
+    ? userOptions.filter(option => option.label === 'Logout') 
+    : userOptions;
 
   async function handleLogout() {
     try {
@@ -643,7 +646,7 @@ const getNotificationIcon = () => {
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50">
                 <ul>
-                  {userOptions.map((option) => (
+                  {filteredUserOptions.map((option) => (
                     <li
                       key={option.label}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
@@ -694,7 +697,7 @@ const getNotificationIcon = () => {
       content={
         <div>
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2" htmlFor="name">
+          <label className="block text-gray-700 font-medium mb-2" htmlFor="name">
               Nama
             </label>
             <input

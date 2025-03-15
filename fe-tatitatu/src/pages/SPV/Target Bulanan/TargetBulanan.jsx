@@ -3,6 +3,7 @@ import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import Input from "../../../components/Input";
+import InputDropdown from "../../../components/InputDropdown";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
 import AlertSuccess from "../../../components/AlertSuccess";
@@ -12,6 +13,7 @@ import AlertError from "../../../components/AlertError";
 export default function TargetBulanan() {
   const [isLoading, setLoading] = useState(false)
   const [branchList, setBranchList] = useState([]);
+  const [storeList, setStoreList] = useState([]);
   const [isAlertSuccess, setAlertSucc] = useState(false)
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -19,8 +21,15 @@ export default function TargetBulanan() {
     branches: [] 
   });
   const userDataLogin = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userDataLogin?.role === 'admingudang'
+  const isHeadGudang = userDataLogin?.role === 'headgudang';
+  const isOwner = userDataLogin?.role === 'owner';
+  const isManajer = userDataLogin?.role === 'manajer';
+  const isAdmin = userDataLogin?.role === 'admin';
+  const isFinance = userDataLogin?.role === 'finance'
   const toko_id = userDataLogin.userId
-
+  
+  const [selectedStore, setSelectedStore] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null); 
   const [showModal, setShowModal] = useState(false);
   const [editingMonth, setEditingMonth] = useState(null);
@@ -28,6 +37,18 @@ export default function TargetBulanan() {
   const [id, setId] = useState('')
   const [month, setMonth] = useState('')
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? "coklatTua" 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : "primary";
+
+  const themeColor2 = (isAdminGudang || isHeadGudang) 
+  ? "coklatMuda" 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruMuda" 
+    : "pink";
 
   const formatCurrency = (amount) => {
     return `Rp${amount.toLocaleString('id-ID')}`;
@@ -72,10 +93,52 @@ export default function TargetBulanan() {
     }
   };
 
+  const fetchStores = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/toko');
+      
+      if (response.data.success) {
+        const options = response.data.data.map(store => ({
+          value: store.toko_id,
+          label: store.nama_toko
+        }));
+
+        setStoreList(options);
+        
+        if (options.length > 0 && isManajer) {
+          setSelectedStore(options[0].value);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+      setErrorMessage('Gagal mengambil data toko');
+      setErrorAlert(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchBranches = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/cabang?toko_id=${toko_id}`);
+      // If manager and "All" is selected, don't fetch branches
+      if (isManajer && selectedStore === 'Semua') {
+        setBranchList([]);
+        setSelectedBranch(null);
+        return;
+      }
+      
+      // If manager, use selected store ID, otherwise use logged in user's store ID
+      const storeIdToUse = isManajer ? selectedStore : toko_id;
+      
+      if (!storeIdToUse) {
+        setBranchList([]);
+        setSelectedBranch(null);
+        return;
+      }
+      
+      const response = await api.get(`/cabang?toko_id=${storeIdToUse}`);
       
       if (response.data.success) {
         const options = response.data.data.map(branch => ({
@@ -87,12 +150,16 @@ export default function TargetBulanan() {
         
         if (options.length > 0) {
           setSelectedBranch(options[0].value);
+        } else {
+          setSelectedBranch(null);
         }
       }
     } catch (error) {
       console.error('Error fetching branches:', error);
       setErrorMessage('Gagal mengambil data cabang');
       setErrorAlert(true);
+      setBranchList([]);
+      setSelectedBranch(null);
     } finally {
       setLoading(false);
     }
@@ -136,8 +203,18 @@ export default function TargetBulanan() {
   };
 
   useEffect(() => {
-    fetchBranches();
+    if (isManajer) {
+      fetchStores();
+    } else {
+      fetchBranches();
+    }
   }, []);
+
+  useEffect(() => {
+    if (isManajer && selectedStore) {
+      fetchBranches();
+    }
+  }, [selectedStore]);
 
   useEffect(() => {
     if (selectedBranch) {
@@ -145,12 +222,31 @@ export default function TargetBulanan() {
     }
   }, [selectedBranch]);
 
+  const handleStoreSelect = (storeName) => {
+    if (storeName === 'Semua') {
+      setSelectedStore('Semua');
+      setSelectedBranch(null);
+      setData({ branches: [] });
+      setBranchList([]);
+    } else {
+      const store = storeList.find(s => s.label === storeName);
+      if (store) {
+        setSelectedStore(store.value);
+        setSelectedBranch(null);
+        setData({ branches: [] });
+      }
+    }
+  };
+
   const handleBranchSelect = (branchName) => {
-    if (branchList.length === 0) return;
-    
-    const branch = branchList.find(b => b.label === branchName);
-    if (branch) {
-      setSelectedBranch(branch.value);
+    if (branchName === 'Semua') {
+      setSelectedBranch('Semua');
+      setData({ branches: [] });
+    } else {
+      const branch = branchList.find(b => b.label === branchName);
+      if (branch) {
+        setSelectedBranch(branch.value);
+      }
     }
   };
 
@@ -181,18 +277,42 @@ export default function TargetBulanan() {
       <div className="p-5">
         <div className="">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-base font-bold text-primary">Target Bulanan Kasir</h2>
-            <div className="w-48">
-              <ButtonDropdown
-                options={branchList}
-                selectedStore={
-                  branchList.find(b => b.value === selectedBranch)?.label || 
-                  (branchList.length > 0 ? branchList[0].label : 'Cabang')
-                }
-                label="Cabang"
-                onSelect={handleBranchSelect}
-                selectedIcon={`/icon/toko.svg`}
-              />
+            <h2 className={`text-base font-bold text-${themeColor}`}>Target Bulanan Kasir</h2>
+            <div className="flex space-x-4">
+              {isManajer && (
+                <div className="w-48">
+                  <ButtonDropdown
+                    options={storeList}
+                    selectedStore={
+                      selectedStore === 'Semua' 
+                        ? 'Semua' 
+                        : storeList.find(s => s.value === selectedStore)?.label || 'Pilih Toko'
+                    }
+                    label="Toko"
+                    onSelect={handleStoreSelect}
+                    selectedIcon="/icon/toko.svg"
+                    showAllOption={true}
+                    allOptionLabel="Semua"
+                  />
+                </div>
+              )}
+              <div className="w-48">
+                <ButtonDropdown
+                  options={branchList}
+                  selectedStore={
+                    selectedBranch === 'Semua'
+                      ? 'Semua'
+                      : branchList.find(b => b.value === selectedBranch)?.label || 
+                        (branchList.length > 0 ? branchList[0].label : 'Cabang')
+                  }
+                  label="Cabang"
+                  onSelect={handleBranchSelect}
+                  selectedIcon="/icon/toko.svg"
+                  showAllOption={true}
+                  allOptionLabel="Semua"
+                  disabled={isManajer && !selectedStore}
+                />
+              </div>
             </div>
           </div>
 
@@ -213,31 +333,33 @@ export default function TargetBulanan() {
                           <div className="font-bold text-black">{formatCurrency(month.target)}</div>
                         </div>
                         <div className="flex-grow"></div>
-                        <button 
-                          onClick={() => handleEdit(month)}
-                          className="text-orange-500 border border-orange-500 rounded-md px-4 py-1.5 hover:bg-orange-50 flex items-center gap-2"
-                        >
-                          <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M8.32 3.17554H2C0.895 3.17554 0 4.12454 0 5.29354V15.8815C0 17.0515 0.895 17.9995 2 17.9995H13C14.105 17.9995 15 17.0515 15 15.8815V8.13154L11.086 12.2755C10.7442 12.641 10.2991 12.8936 9.81 12.9995L7.129 13.5675C5.379 13.9375 3.837 12.3045 4.187 10.4525L4.723 7.61354C4.82 7.10154 5.058 6.63054 5.407 6.26154L8.32 3.17554Z" fill="#DA5903"/>
-                            <path fillRule="evenodd" clipRule="evenodd" d="M16.8457 1.31753C16.7446 1.06156 16.5964 0.826833 16.4087 0.62553C16.2242 0.428659 16.0017 0.271165 15.7547 0.16253C15.5114 0.0556667 15.2485 0.000488281 14.9827 0.000488281C14.7169 0.000488281 14.454 0.0556667 14.2107 0.16253C13.9637 0.271165 13.7412 0.428659 13.5567 0.62553L13.0107 1.20353L15.8627 4.22353L16.4087 3.64453C16.5983 3.44476 16.7468 3.20962 16.8457 2.95253C17.0517 2.427 17.0517 1.84306 16.8457 1.31753ZM14.4497 5.72053L11.5967 2.69953L6.8197 7.75953C6.74922 7.83462 6.70169 7.92831 6.6827 8.02953L6.1467 10.8695C6.0767 11.2395 6.3857 11.5655 6.7347 11.4915L9.4167 10.9245C9.51429 10.9028 9.60311 10.8523 9.6717 10.7795L14.4497 5.72053Z" fill="#DA5903"/>
-                          </svg>
-                          Edit
-                        </button>
+                        {!isAdminGudang && (
+                          <button 
+                            onClick={() => handleEdit(month)}
+                            className="text-orange-500 border border-orange-500 rounded-md px-4 py-1.5 hover:bg-orange-50 flex items-center gap-2"
+                          >
+                            <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path fillRule="evenodd" clipRule="evenodd" d="M8.32 3.17554H2C0.895 3.17554 0 4.12454 0 5.29354V15.8815C0 17.0515 0.895 17.9995 2 17.9995H13C14.105 17.9995 15 17.0515 15 15.8815V8.13154L11.086 12.2755C10.7442 12.641 10.2991 12.8936 9.81 12.9995L7.129 13.5675C5.379 13.9375 3.837 12.3045 4.187 10.4525L4.723 7.61354C4.82 7.10154 5.058 6.63054 5.407 6.26154L8.32 3.17554Z" fill="#DA5903"/>
+                              <path fillRule="evenodd" clipRule="evenodd" d="M16.8457 1.31753C16.7446 1.06156 16.5964 0.826833 16.4087 0.62553C16.2242 0.428659 16.0017 0.271165 15.7547 0.16253C15.5114 0.0556667 15.2485 0.000488281 14.9827 0.000488281C14.7169 0.000488281 14.454 0.0556667 14.2107 0.16253C13.9637 0.271165 13.7412 0.428659 13.5567 0.62553L13.0107 1.20353L15.8627 4.22353L16.4087 3.64453C16.5983 3.44476 16.7468 3.20962 16.8457 2.95253C17.0517 2.427 17.0517 1.84306 16.8457 1.31753ZM14.4497 5.72053L11.5967 2.69953L6.8197 7.75953C6.74922 7.83462 6.70169 7.92831 6.6827 8.02953L6.1467 10.8695C6.0767 11.2395 6.3857 11.5655 6.7347 11.4915L9.4167 10.9245C9.51429 10.9028 9.60311 10.8523 9.6717 10.7795L14.4497 5.72053Z" fill="#DA5903"/>
+                            </svg>
+                            Edit
+                          </button>
+                        )}
                       </div>
 
                       <div className="mt-4 px-4">
                         <div className="flex justify-between text-sm mb-2">
-                          <div className="text-primary font-medium">
+                          <div className={`text-${themeColor} font-medium`}>
                             {formatCurrency(month.achieved)} Tercapai
                           </div>
-                          <div className="text-primary font-bold">
+                          <div className={`text-${themeColor} font-bold`}>
                             {formatCurrency(month.remaining)} Tersisa
                           </div>
                         </div>
 
-                        <div className="h-3 w-full bg-pink rounded-full overflow-hidden">
+                        <div className={`h-3 w-full bg-${themeColor2} rounded-full overflow-hidden`}>
                           <div
-                            className="h-full bg-primary rounded-full transition-all duration-300"
+                            className={`h-full bg-${themeColor} rounded-full transition-all duration-300`}
                             style={{ width: calculateProgressWidth(month.achieved, month.target) }}
                           />
                         </div>
@@ -247,7 +369,11 @@ export default function TargetBulanan() {
               ) : renderEmptyState()
             ) : (
               <div className="bg-white rounded-lg p-8 text-center">
-                <p className="text-gray-500">Silakan pilih cabang terlebih dahulu</p>
+                <p className="text-gray-500">
+                  {isManajer && !selectedStore 
+                    ? "Silakan pilih toko terlebih dahulu" 
+                    : "Silakan pilih cabang terlebih dahulu"}
+                </p>
               </div>
             )}
           </div>
@@ -282,7 +408,7 @@ export default function TargetBulanan() {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                  className={`px-4 py-2 bg-${themeColor} text-white rounded-md hover:bg-${themeColor}/90`}
                 >
                   Simpan
                 </button>

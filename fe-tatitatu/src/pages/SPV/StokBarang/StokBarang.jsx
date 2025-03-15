@@ -23,8 +23,8 @@ export default function StokBarang() {
     const [selectedKategori, setSelectedKategori] = useState("Semua");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
-    const [selectedStore, setSelectedStore] = useState("Semua");
-    const [selectedToko, setSelectedToko] = useState("Semua");
+    const [selectedStore, setSelectedStore] = useState("");
+    const [selectedToko, setSelectedToko] = useState("");
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -93,14 +93,8 @@ export default function StokBarang() {
         }
     };    
     
-    const [cabangOptions, setCabangOptions] = useState([
-        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') }
-    ]);
-
-    const [tokoOptions, setTokoOptions] = useState([
-        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') }
-    ]);
-
+    const [cabangOptions, setCabangOptions] = useState([]);
+    const [tokoOptions, setTokoOptions] = useState([]);
     const [kategoriOptions, setKategoriOptions] = useState([
         { label: "Semua", value: "Semua" }
     ]);
@@ -109,7 +103,7 @@ export default function StokBarang() {
     ]);
 
     const isWarehouseSelected = () => {
-        if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+        if ((isManajer || isOwner || isFinance) && selectedToko !== "") {
             const selectedTokoId = tokoMapping[selectedToko];
             return selectedTokoId === 1;
         }
@@ -151,12 +145,14 @@ export default function StokBarang() {
     const fetchCabangData = async () => {
         if (!isAdminGudang) {
             try {
-                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "Semua" 
+                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "" 
                     ? tokoMapping[selectedToko] 
                     : toko_id;
 
                 const response = await api.get(`/cabang?toko_id=${selectedTokoId}`);
                 if (response.data.success) {
+                    setCabangData(response.data.data);
+                    
                     const cabangMap = response.data.data.reduce((acc, cabang) => {
                         acc[cabang.nama_cabang] = cabang.cabang_id;
                         return acc;
@@ -170,12 +166,13 @@ export default function StokBarang() {
                         icon: getTokoIconPath('toko')
                     }));
                     
-                    setCabangOptions([
-                        { label: 'Semua', value: 'Semua', icon: getTokoIconPath('toko') },
-                        ...cabangOpts
-                    ]);
+                    setCabangOptions(cabangOpts);
 
-                    setSelectedStore("Semua");
+                    if (cabangOpts.length > 0) {
+                        setSelectedStore(cabangOpts[0].value);
+                    } else {
+                        setSelectedStore("");
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching cabang data:', error);
@@ -191,7 +188,7 @@ export default function StokBarang() {
     const fetchKategoriOptions = async () => {
         if (!isAdminGudang) {
             try {
-                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "Semua" 
+                const selectedTokoId = (isManajer || isOwner || isFinance) && selectedToko !== "" 
                     ? tokoMapping[selectedToko] 
                     : toko_id;
 
@@ -290,15 +287,15 @@ export default function StokBarang() {
                     setStokData(response.data.data.filter(item => !item.is_deleted));
                 }
             } else {
-                if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+                if ((isManajer || isOwner || isFinance) && selectedToko !== "") {
                     const selectedTokoId = tokoMapping[selectedToko];
                     
                     if (selectedTokoId === 1) {
-
+                        // If warehouse (Toko ID 1) is selected
                         const response = await api.get('/stok-barang-gudang');
                         if (response.data.success) {
                             const safeData = response.data.data.map(item => {
-                                // Pastikan barang ada
+                                // Ensure barang exists
                                 const barang = item.barang || {};
 
                                 return {
@@ -314,7 +311,7 @@ export default function StokBarang() {
                                             barang.packaging_id ? "Packaging" : "-"),
                                     Kategori: (barang.kategori?.nama_kategori_barang) || "-",
                                     "Jumlah Stok": item.jumlah_stok || 0,
-                                    // Simpan semua ID untuk referensi
+                                    // Store all IDs for reference
                                     barang_handmade_id: barang.barang_handmade_id,
                                     barang_nonhandmade_id: barang.barang_nonhandmade_id,
                                     barang_mentah_id: barang.barang_mentah_id,
@@ -326,7 +323,7 @@ export default function StokBarang() {
                             setStokData(safeData.filter(item => !item.is_deleted));
                         }
                     } else {
-                        if (selectedStore !== "Semua") {
+                        if (selectedStore !== "") {
                             const response = await api.get(`/stok-barang?cabang=${cabangMapping[selectedStore]}`);
                             if (response.data.success) {
                                 setStokData(response.data.data.filter(item => !item.is_deleted));
@@ -382,7 +379,7 @@ export default function StokBarang() {
         }
         
         const isWarehouseSelected = ((isManajer || isOwner || isFinance) && 
-                                   selectedToko !== "Semua" && 
+                                   selectedToko !== "" && 
                                    tokoMapping[selectedToko] === 1);
         
         if (isAdminGudang || isWarehouseSelected) {
@@ -394,7 +391,7 @@ export default function StokBarang() {
         } else {
             let filteredData = [...stokData];
             
-            if (selectedStore !== "Semua") {
+            if (selectedStore !== "") {
                 filteredData = filteredData.filter(item => 
                     item.cabang?.nama_cabang === selectedStore
                 );
@@ -471,11 +468,11 @@ export default function StokBarang() {
     }, [isAdminGudang]);
 
     useEffect(() => {
-        if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+        if ((isManajer || isOwner || isFinance) && selectedToko !== "") {
             const selectedTokoId = tokoMapping[selectedToko];
             
             if (selectedTokoId === 1) {
-                setSelectedStore("Semua");
+                setSelectedStore("");
             } else {
                 fetchCabangData();
                 fetchKategoriOptions();
@@ -486,7 +483,7 @@ export default function StokBarang() {
     }, [selectedToko]);
 
     useEffect(() => {
-        if (!isAdminGudang && selectedStore !== "Semua") {
+        if (!isAdminGudang && selectedStore !== "") {
             fetchStokData();
         }
     }, [selectedStore]);
@@ -545,7 +542,6 @@ export default function StokBarang() {
       setIsFilterModalOpen(false);
     };
 
-
     const handleRowClick = async (row) => {
         setSelectedItem(row);
         await fetchItemDetail(row);
@@ -590,7 +586,13 @@ export default function StokBarang() {
             let endpoint = '/stok-barang/export';
             let params = {};
             
-            if (isAdminGudang) {
+            // Check if the user is admin gudang or manager with warehouse selected
+            const isWarehouseExport = isAdminGudang || 
+                ((isManajer || isOwner || isFinance) && 
+                 selectedToko !== "" && 
+                 tokoMapping[selectedToko] === 1);
+            
+            if (isWarehouseExport) {
                 endpoint = '/stok-barang-gudang/export';
                 
                 if (selectedKategori !== "Semua") {
@@ -609,17 +611,12 @@ export default function StokBarang() {
             } else if (isKasirToko) {
                 params = { cabang: cabang_id, toko_id: toko_id };
             } else {
-                if ((isManajer || isOwner || isFinance) && selectedToko !== "Semua") {
+                if ((isManajer || isOwner || isFinance) && selectedToko !== "") {
                     const selectedTokoId = tokoMapping[selectedToko];
+                    params.toko_id = selectedTokoId;
                     
-                    if (selectedTokoId === 1) {
-                        endpoint = '/stok-barang-gudang/export';
-                    } else {
-                        params.toko_id = selectedTokoId;
-                        
-                        if (selectedStore !== "Semua") {
-                            params.cabang = cabangMapping[selectedStore];
-                        }
+                    if (selectedStore !== "") {
+                        params.cabang = cabangMapping[selectedStore];
                     }
                 } else {
                     params.toko_id = toko_id;
@@ -657,8 +654,7 @@ const renderRightSection = () => {
     return (
         <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
             <div className="w-full md:w-auto">
-                {!isManajer && (
-                        <Button
+                    <Button
                         label="Export"
                         icon={exportIcon}
                         bgColor="border border-secondary"
@@ -666,7 +662,6 @@ const renderRightSection = () => {
                         textColor="text-black"
                         onClick={handleExport}
                     />
-                )}
             </div>
 
             {(isManajer || isOwner || isFinance) && tokoOptions.length > 0 && (
@@ -680,7 +675,7 @@ const renderRightSection = () => {
                     />
                 </div>
             )}
-            {(!isKasirToko && !isAdminGudang && !isWarehouseSelected()) && (
+            {(!isKasirToko && !isAdminGudang && !isWarehouseSelected()) && cabangOptions.length > 0 && (
                 <div className="w-full md:w-auto">
                     <ButtonDropdown 
                         selectedIcon={getTokoIconPath('toko')} 

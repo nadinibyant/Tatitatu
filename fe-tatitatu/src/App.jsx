@@ -87,6 +87,7 @@ import TambahPenjualanGudang from './pages/Admin Gudang/Penjualan/TambahPenjuala
 import EditPenjualanGudangAdmin from './pages/Admin Gudang/Penjualan/EditPenjualanGudang';
 import TambahBarangNonHandmade from './pages/SPV/Data Barang/Non-Handmade/TambahNonHandmade';
 import Profile from './pages/Profile';
+import AkunKerja from './pages/Manajer/Kelola Akun Kerja/AkunKerja';
 
 
 function App() {
@@ -263,7 +264,7 @@ function App() {
         <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
         <Route path='/pengajuanAbsensi' element={getProtectedRoute(IzinCuti, ['admingudang'])} />
         <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko', 'finance', 'admingudang', 'headgudang'])} />
-        <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan)} />
+        <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan, ['admin', 'headgudang', 'admingudang', 'manajer'])} />
 
         {/* karyawan */}
         <Route path='/izin-cuti-karyawan' element={getProtectedRoute(IzinCutiKaryawan, ['karyawanumum', 'karyawanproduksi', 'karyawanlogistik', 'karyawantransportasi'])} />
@@ -295,8 +296,11 @@ function App() {
         <Route path='/toko' element={getProtectedRoute(Toko, ['manajer'])} />
 
 
-        <Route path='/profile' element={getProtectedRoute(Profile, ['admin', 'owner', 'finance', 'manajer', 'headgudang', 'admingudang', 'kasirtoko', 'karyawanumum', 'karyawanproduksi', 'karyawantransportasi'])} />
+        <Route path='/profile' element={getProtectedRoute(Profile, ['kasirtoko', 'karyawanumum', 'karyawanproduksi', 'karyawantransportasi'])} />
+        <Route path='/profile/:id' element={getProtectedRoute(Profile, ['admin', 'owner', 'finance', 'manajer', 'headgudang', 'admingudang',])} />
         
+        {/* kelola akun kerja */}
+        <Route path='/kelola-akun-kerja' element={getProtectedRoute(AkunKerja, ['manajer'])} />
       </Routes>
     </Router>
   );
