@@ -36,8 +36,10 @@ export default function AkunKerja() {
     }, []);
 
     const navigate = useNavigate()
-    const handleClickEdit = (id) => {
-        navigate(`/profile/${id}`)
+    const handleClickEdit = (item) => {
+        navigate(`/profile/${item.user_id}`)
+        localStorage.setItem('role_name', item.role_name)
+        // localStorage.setItem('user_id', item.id)
     }
 
     // Fetch data from API
@@ -52,10 +54,11 @@ export default function AkunKerja() {
                     Email: item.email,
                     id: item.user_id,
                     role_id: item.role_id,
+                    role_name: item.role_name,
                     karyawan_id: item.karyawan_id,
                     Aksi: (
                         <a 
-                            onClick={() => handleClickEdit(item.user_id)}
+                            onClick={() => handleClickEdit(item)}
                             className="flex items-center px-3 py-1 text-oren border border-secondary rounded-md hover:bg-black/5"
                         >
                             <svg width="17" height="18" viewBox="0 0 17 18" className="mr-2" fill="none" xmlns="http://www.w3.org/2000/svg">

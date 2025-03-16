@@ -4,12 +4,13 @@ import Button from "../components/Button";
 import LayoutWithNav from "../components/LayoutWithNav";
 import api from "../utils/api"; 
 import AlertSuccess from "../components/AlertSuccess";
+import { useParams } from "react-router-dom";
 
 export default function Profile() {
   const userData = JSON.parse(localStorage.getItem('userData'));
   const userId = userData?.userId;
   const userRole = userData?.role;
-  
+
   const isAdmin = userRole === 'admin';
   const isHeadGudang = userRole === 'headgudang';
   const isKasirToko = userRole === 'kasirtoko';
@@ -17,6 +18,10 @@ export default function Profile() {
   const isOwner = userRole === 'owner';
   const isFinance = userRole === 'finance';
   const isManajer = userRole === 'manajer';
+
+  const role_name = localStorage.getItem('role_name')
+  const { id } = useParams();
+  const user_id = id
 
   const isKaryawan = ['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userRole);
   const [isAlertSucc, setAlertSucc] = useState(false);
@@ -49,18 +54,17 @@ export default function Profile() {
     
     const baseUrl = import.meta.env.VITE_API_URL;
 
-    if (isAdmin || isHeadGudang || isAdminGudang || isKasirToko) {
+    if (isKasirToko){
       return `${baseUrl}/images-toko/${imageFilename}`;
-    }
-
-    if (isOwner || isFinance || isManajer) {
-      return `${baseUrl}/images-authentication/${imageFilename}`;
-    }
-
-    if (isKaryawan) {
+    } else if(isKaryawan){
       return `${baseUrl}/images-karyawan/${imageFilename}`;
-    }
-    
+    } else if(isManajer){
+      if(role_name == 'Owner' || role_name == 'Finance' || role_name == 'Manager'){
+        return `${baseUrl}/images-authentication/${imageFilename}`;
+      } else if(role_name == 'SPV' || role_name == 'Admin Gudang' || role_name == 'Head Gudang'){
+        return `${baseUrl}/images-toko/${imageFilename}`;
+      }
+    }    
     return null;
   };
 
@@ -76,16 +80,18 @@ export default function Profile() {
 
       if (isKasirToko) {
         endpoint = `/cabang/${userId}`;
-      } else if (isAdminGudang) {
-        endpoint = '/cabang/1';
-      } else if (isAdmin) {
-        endpoint = `/toko/${userId}`;
-      } else if (isHeadGudang) {
-        endpoint = '/toko/1'; 
-      } else if (isOwner || isFinance || isManajer) {
-        endpoint = `/authentication/${userId}`;
-      } else if (isKaryawan) {
+      } else if(isKaryawan){
         endpoint = `/karyawan-user/${userId}`;
+      } else if(isManajer){
+        if (role_name == 'Admin Gudang') {
+          endpoint = '/cabang/1';
+        } else if (role_name == 'SPV'){
+          endpoint = `/toko/${id}`;
+        } else if(role_name == 'Head Gudang'){
+          endpoint = '/toko/1'; 
+        } else if(role_name == 'Owner' || role_name == 'Finance' || role_name == 'Manager'){
+          endpoint = `/authentication/${id}`;
+        }
       }
 
       console.log(`Fetching profile data from endpoint: ${endpoint}`);
@@ -95,7 +101,7 @@ export default function Profile() {
         const profileData = response.data.data;
         console.log("Profile data fetched:", profileData);
 
-        if (isKasirToko || isAdminGudang) {
+        if (isKasirToko || role_name == 'Admin Gudang') {
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -105,7 +111,7 @@ export default function Profile() {
             newPassword: '',
             confirmPassword: '',
           });
-        } else if (isAdmin || isHeadGudang) {
+        } else if (role_name == 'SPV' || role_name == 'Head Gudang'){
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -115,7 +121,7 @@ export default function Profile() {
             newPassword: '',
             confirmPassword: '',
           });
-        } else if (isOwner || isFinance || isManajer) {
+        } else if (role_name == 'Owner' || role_name == 'Finance' || role_name == 'Manager'){
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -125,7 +131,7 @@ export default function Profile() {
             newPassword: '',
             confirmPassword: '',
           });
-        } else if (isKaryawan) {
+        } else if (isKaryawan){
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -138,11 +144,53 @@ export default function Profile() {
           });
         }
 
+        // if (isKasirToko || isAdminGudang) {
+        //   setFormData({
+        //     ...formData,
+        //     email: profileData.email || '',
+        //     nama: profileData.nama_cabang || '',
+        //     password: '', 
+        //     oldPassword: '',
+        //     newPassword: '',
+        //     confirmPassword: '',
+        //   });
+        // } else if (isAdmin || isHeadGudang) {
+        //   setFormData({
+        //     ...formData,
+        //     email: profileData.email || '',
+        //     nama: profileData.nama_toko || '',
+        //     password: '',  
+        //     oldPassword: '',
+        //     newPassword: '',
+        //     confirmPassword: '',
+        //   });
+        // } else if (isOwner || isFinance || isManajer) {
+        //   setFormData({
+        //     ...formData,
+        //     email: profileData.email || '',
+        //     nama: profileData.nama || '',
+        //     password: '',  
+        //     oldPassword: '',
+        //     newPassword: '',
+        //     confirmPassword: '',
+        //   });
+        // } else if (isKaryawan) {
+        //   setFormData({
+        //     ...formData,
+        //     email: profileData.email || '',
+        //     nama: profileData.nama_karyawan || '',
+        //     noHandphone: profileData.nomor_handphone || '',
+        //     password: '',  
+        //     oldPassword: '',
+        //     newPassword: '',
+        //     confirmPassword: '',
+        //   });
+        // }
+
         if (profileData.image) {
           setImageFilename(profileData.image);
           setCurrentImageUrl(getImageUrl(profileData.image));
           
-          // Update userData in localStorage with the image filename
           if (profileData.image !== userData.image) {
             const updatedUserData = {
               ...userData,
@@ -191,7 +239,13 @@ export default function Profile() {
       
       let endpoint = '';
       let formPayload = new FormData();
-      let id = userId;
+      let id
+
+      if (isManajer) {
+        id = user_id
+      } else {
+        id = userId
+      }
 
       if (formData.newPassword || formData.oldPassword || formData.confirmPassword) {
         if (!formData.oldPassword || !formData.newPassword || !formData.confirmPassword) {
@@ -207,8 +261,16 @@ export default function Profile() {
         }
       }
 
-      if (isKasirToko || isAdminGudang) {
-        endpoint = `/cabang-user/${isAdminGudang ? 1 : id}`;
+      const roleAdminGudang = role_name == 'Admin Gudang'
+      const roleSpv = role_name == 'SPV'
+      const roleHeadGudang = role_name == 'Head Gudang'
+      const roleOwner = role_name == 'Owner'
+      const roleFinance = role_name == 'Finance'
+      const roleManager = role_name == 'Manager'
+
+
+      if (isKasirToko || roleAdminGudang) {
+        endpoint = `/cabang-user/${roleAdminGudang ? 1 : id}`;
       
         const jsonPayload = {
           nama_cabang: formData.nama,
@@ -241,8 +303,8 @@ export default function Profile() {
         setIsLoading(false);
         return; 
       } 
-      else if (isAdmin || isHeadGudang) {
-        endpoint = `/toko-user/${isHeadGudang ? 1 : id}`;
+      else if (roleSpv || roleHeadGudang) {
+        endpoint = `/toko-user/${roleHeadGudang ? 1 : id}`;
 
         formPayload.append('nama_toko', formData.nama);
         formPayload.append('email', formData.email);
@@ -257,7 +319,7 @@ export default function Profile() {
           formPayload.append('image', selectedImage);
         }
       } 
-      else if (isOwner || isFinance || isManajer) {
+      else if (roleOwner || roleFinance || roleManager) {
         endpoint = `/authentication/${id}`;
         
         formPayload.append('nama', formData.nama);
@@ -302,8 +364,7 @@ export default function Profile() {
       
       if (response.data.success) {
         setAlertSucc(true);
-      
-        // We'll fetch the updated profile which will also update localStorage
+  
         fetchUserProfile();
         
         setFormData(prev => ({
