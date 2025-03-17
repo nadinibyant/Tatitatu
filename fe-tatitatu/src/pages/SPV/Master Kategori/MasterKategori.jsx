@@ -80,7 +80,11 @@ export default function MasterKategori() {
     const fetchDivisi = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
+            const endpoint = isManajer 
+                ? '/divisi-karyawan' 
+                : `/divisi-karyawan?toko_id=${toko_id}`;
+            
+            const response = await api.get(endpoint);
             const items = response.data.data.map(item => ({
                 id: item.divisi_karyawan_id,
                 kategori: item.nama_divisi
@@ -255,7 +259,7 @@ export default function MasterKategori() {
             if (['admin', 'kasirtoko', 'finance', 'admingudang'].includes(userData.role)) {
                 fetchMetode();
             }
-            if (userData.role === 'admin' || userData.role === 'headgudang') {
+            if (userData.role === 'admin' || userData.role === 'headgudang' || userData.role === 'manajer') {
                 fetchDivisi();
             }
             if (userData.role === 'finance') {
@@ -365,6 +369,10 @@ export default function MasterKategori() {
                 return data.categories.filter(category => 
                     category.title === 'Divisi'
                 );
+            case 'manajer':
+                return data.categories.filter(category => 
+                    category.title === 'Divisi'
+                )
             default:
                 return data.categories;
         }
@@ -413,10 +421,11 @@ export default function MasterKategori() {
             setLoading(true);
             if(selectedCategory.title === 'Divisi') {
                 if(formType === 'add') {
-                    await api.post('/divisi-karyawan', {
-                        nama_divisi: formData,
-                        toko_id: toko_id
-                    });
+                    const payload = isManajer 
+                        ? { nama_divisi: formData } 
+                        : { nama_divisi: formData, toko_id: toko_id };
+                    
+                    await api.post('/divisi-karyawan', payload);
                     await fetchDivisi();
                     setShowFormModal(false);
                     setAlertSucc(true);

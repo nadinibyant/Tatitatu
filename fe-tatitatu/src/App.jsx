@@ -255,15 +255,15 @@ function App() {
         <Route path='/dataBarang/packaging' element={getProtectedRoute(Packaging, ['admin', 'admingudang'])} />
 
         {/* Akun Karyawan Routes */}
-        <Route path='/akunKaryawan' element={getProtectedRoute(AkunKaryawan, ['admin', 'headgudang'])} />
-        <Route path='/akunKaryawan/tambah' element={getProtectedRoute(TambahAkunKaryawan, ['admin', 'headgudang'])} />
-        <Route path='/akunKaryawan/edit/:id' element={getProtectedRoute(EditKaryawan, ['admin', 'headgudang'])} />
+        <Route path='/akunKaryawan' element={getProtectedRoute(AkunKaryawan, ['admin', 'headgudang', 'manajer'])} />
+        <Route path='/akunKaryawan/tambah' element={getProtectedRoute(TambahAkunKaryawan, ['admin', 'headgudang', 'manajer'])} />
+        <Route path='/akunKaryawan/edit/:id' element={getProtectedRoute(EditKaryawan, ['admin', 'headgudang', 'manajer'])} />
 
         {/* Final Routes */}
         <Route path='/stokBarang' element={getProtectedRoute(StokBarang, ['admin', 'kasirtoko', 'admingudang', 'manajer'])} />
         <Route path='/pengajuanCuti' element={getProtectedRoute(IzinCuti, ['admin', 'headgudang'])} />
         <Route path='/pengajuanAbsensi' element={getProtectedRoute(IzinCuti, ['admingudang'])} />
-        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko', 'finance', 'admingudang', 'headgudang'])} />
+        <Route path='/master-kategori' element={getProtectedRoute(MasterKategori, ['admin', 'kasirtoko', 'finance', 'admingudang', 'headgudang', 'manajer'])} />
         <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan, ['admin', 'headgudang', 'admingudang', 'manajer'])} />
 
         {/* karyawan */}

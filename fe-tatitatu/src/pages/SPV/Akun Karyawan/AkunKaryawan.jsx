@@ -36,14 +36,26 @@ export default function AkunKaryawan() {
     const userDataLogin = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userDataLogin?.role === 'admingudang'
     const isHeadGudang = userDataLogin?.role === 'headgudang'
+    const isOwner = userDataLogin?.role === 'owner';
+    const isManajer = userDataLogin?.role === 'manajer';
+    const isAdmin = userDataLogin?.role === 'admin';
+    const isFinance = userDataLogin?.role === 'finance'
     const toko_id = userDataLogin.userId
 
     
-    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? "coklatTua" 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : "primary";
 
-    const exportIcon = (isAdminGudang || isHeadGudang) ? (
+      const exportIcon = (isAdminGudang || isHeadGudang) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+        </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
         </svg>
       ) : (
         <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -161,7 +173,11 @@ export default function AkunKaryawan() {
     const fetchKaryawan = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/karyawan?toko_id=${toko_id}`);
+            const endpoint = isManajer 
+                ? '/karyawan'
+                : `/karyawan?toko_id=${toko_id}`; 
+            
+            const response = await api.get(endpoint);
             
             const formattedData = response.data.data.map(item => ({
                 id: item.karyawan_id,

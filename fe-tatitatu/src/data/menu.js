@@ -423,10 +423,22 @@ export const menuItems = [
       iconWarna: '/Icon Warna/targetKasir_non.svg',
     },
     {
+      label: "Akun Karyawan",
+      link: "/akunKaryawan",
+      icon: "/Menu/akunKaryawan.svg",
+      iconWarna: '/Icon Warna/akunKaryawan_non.svg',
+    },
+    {
       label: "Kelola Akun kerja",
       link: "/kelola-akun-kerja",
       icon: "/Menu/akunKerja.svg",
       iconWarna: '/Icon Warna/akunKerja_non.svg',
+    },
+    {
+      label: "Master Kategori",
+      link: "/master-kategori",
+      icon: "/Menu/masterKategori.svg",
+      iconWarna: '/Icon Warna/masterKategori_non.svg',
     },
   ]
   
