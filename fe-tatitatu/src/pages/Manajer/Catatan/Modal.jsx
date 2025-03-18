@@ -19,8 +19,19 @@ const Modal = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate()
   const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
   const isManajer = userData?.role === 'manajer';
-   const refresh = isManajer ? useRefresh() : null;
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
+  const refresh = isManajer ? useRefresh() : null;
+
+  const themeColor = (isAdminGudang || isHeadGudang) 
+   ? "coklatTua" 
+   : (isManajer || isOwner || isFinance) 
+     ? "biruTua" 
+     : "primary";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -129,7 +140,7 @@ const Modal = ({ isOpen, onClose }) => {
               </button>
               <button
                 type="submit"
-                className="bg-[#7B0C42] hover:bg-[#990D51] text-white px-10 py-2 rounded-lg ml-2"
+                className={`bg-${themeColor} hover:bg-${themeColor} text-white px-10 py-2 rounded-lg ml-2`}
               >
                 Kirim
               </button>

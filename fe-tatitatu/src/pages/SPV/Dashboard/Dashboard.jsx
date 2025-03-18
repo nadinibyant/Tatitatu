@@ -942,7 +942,7 @@ export default function Dashboard(){
                             </div>
 
                             <div className="w-full bg-white rounded-xl p-5">
-                                <p className="font-bold">
+                                <p className="font-bold pb-5">
                                   {isOwner || isManajer ? '10 Karyawan Terbaik Perusahaan' : '10 Karyawan Terbaik'}
                                 </p>
                                 <Table
@@ -955,8 +955,8 @@ export default function Dashboard(){
                                     }))}
                                     bg_header="bg-none"
                                     text_header="text-gray-400"
-                                    hasSearch={false}
-                                    hasPagination={false}
+                                    hasSearch={true}
+                                    hasPagination={true}
                                 />
                             </div>
                         </div>

@@ -41,7 +41,7 @@ export default function TambahAkunKaryawan(){
       const jenisKaryawanOptions = [
         { value: 'Umum', label: 'Umum' },
         { value: 'Produksi', label: 'Produksi' },
-        { value: 'Transportasi', label: 'Transportasi' }
+        { value: 'Transportasi', label: 'Khusus' }
       ];
 
   const [errors, setErrors] = useState({});
@@ -49,8 +49,16 @@ export default function TambahAkunKaryawan(){
   const toko_id = userDataLogin.userId
   const isHeadGudang = userDataLogin.role === 'headgudang'
   const isAdminGudang = userDataLogin?.role === 'admingudang'
+  const isManajer = userDataLogin?.role === 'manajer'
+  const isOwner = userDataLogin?.role === 'owner';
+  const isAdmin = userDataLogin?.role === 'admin';
+  const isFinance = userDataLogin?.role === 'finance'
 
-  const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? "coklatTua" 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : "primary";
 
   const validateForm = () => {
         const newErrors = {};
@@ -60,7 +68,7 @@ export default function TambahAkunKaryawan(){
         if (!formData.division) {
             newErrors.division = 'divisi harus dipilih';
         }
-        if (!isHeadGudang && !formData.branch) {
+        if (!isHeadGudang && !isManajer && !formData.branch) {
             newErrors.branch = 'cabang harus dipilih';
         }
         setErrors(newErrors);
@@ -68,6 +76,16 @@ export default function TambahAkunKaryawan(){
     };
 
     const fetchStore = async () => {
+        // Skip fetching store data for manager role
+        if (isManajer) {
+            setFormData(prev => ({
+                ...prev,
+                store: 'DBI',
+                branch: '-'
+            }));
+            return;
+        }
+
         try {
             setLoading(true);
             const response = await api.get(`/toko/${toko_id}`);
@@ -87,6 +105,11 @@ export default function TambahAkunKaryawan(){
     };
 
       const fetchBranches = async () => {
+        // Skip fetching branches for manager role
+        if (isManajer) {
+            return;
+        }
+
         try {
             setLoading(true)
             const response = await api.get(`/cabang?toko_id=${toko_id}`);
@@ -107,7 +130,9 @@ export default function TambahAkunKaryawan(){
       const fetchDivisi = async () => {
         try {
             setLoading(true)
-            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
+            // For manajer role, fetch without toko_id
+            const url = isManajer ? `/divisi-karyawan` : `/divisi-karyawan?toko_id=${toko_id}`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const options = response.data.data.map(div => ({
                     value: div.divisi_karyawan_id,
@@ -174,9 +199,15 @@ export default function TambahAkunKaryawan(){
                 formDataToSend.append('password', '12345678');
                 formDataToSend.append('divisi_karyawan_id', formData.division);
                 formDataToSend.append('jenis_karyawan', formData.jenis_karyawan);
-                if (!isHeadGudang) {
-                    formDataToSend.append('cabang_id', formData.branch);
+                
+                // Only append branch_id and toko_id for non-manager roles
+                if (!isManajer) {
+                    if (!isHeadGudang) {
+                        formDataToSend.append('cabang_id', formData.branch);
+                    }
+                    formDataToSend.append('toko_id', toko_id);
                 }
+                
                 formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
                 formDataToSend.append('bonus', formData.bonus);
                 
@@ -187,7 +218,6 @@ export default function TambahAkunKaryawan(){
                 }
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
-                formDataToSend.append('toko_id', toko_id)
         
                 const response = await api.post('/karyawan', formDataToSend, {
                     headers: {
@@ -339,10 +369,10 @@ export default function TambahAkunKaryawan(){
                                 options={branchList}
                                 value={formData.branch}
                                 onSelect={(option) => handleInputChange('branch')(option.value)}
-                                required={!isHeadGudang}
-                                error={!isHeadGudang && !!errors.branch}
+                                required={!isHeadGudang && !isManajer}
+                                error={!isHeadGudang && !isManajer && !!errors.branch}
                                 errorMessage={errors.branch}
-                                disabled={isHeadGudang}
+                                disabled={isHeadGudang || isManajer}
                             />
                             <Input
                                 label="Jumlah Gaji Pokok"

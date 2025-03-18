@@ -21,7 +21,7 @@ const AuthPages = () => {
     { value: '7', label: 'Kasir', storedRole: 'kasirtoko' },
     { value: '8', label: 'Karyawan Umum', storedRole: 'karyawanumum' },
     { value: '10', label: 'Karyawan Produksi', storedRole: 'karyawanproduksi' },
-    { value: '11', label: 'Karyawan Transportasi', storedRole: 'karyawantransportasi' }
+    { value: '11', label: 'Karyawan Khusus', storedRole: 'karyawantransportasi' }
   ];
 
   // Route mapping based on roles

@@ -418,8 +418,8 @@ export default function KaryawanTerbaik() {
                                         data={topKaryawan}
                                         bg_header="bg-none"
                                         text_header="text-gray-400"
-                                        hasSearch={false}
-                                        hasPagination={false}
+                                        hasSearch={true}
+                                        hasPagination={true}
                                         className="min-w-full"
                                     />
                                 </div>

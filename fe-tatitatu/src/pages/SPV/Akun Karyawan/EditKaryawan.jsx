@@ -48,6 +48,17 @@ export default function EditKaryawan(){
       const userData = JSON.parse(localStorage.getItem('userData'))
       const toko_id = userData.userId
       const isHeadGudang = userData.role === 'headgudang'
+      const isAdminGudang = userData?.role === 'admingudang'
+      const isManajer = userData?.role === 'manajer'
+      const isOwner = userData?.role === 'owner';
+      const isAdmin = userData?.role === 'admin';
+      const isFinance = userData?.role === 'finance'
+
+      const themeColor = (isAdminGudang || isHeadGudang) 
+      ? "coklatTua" 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : "primary";
 
       const [errors, setErrors] = useState({});
 
@@ -56,7 +67,7 @@ export default function EditKaryawan(){
         if (!formData.division) {
           newErrors.division = 'divisi harus dipilih';
         } 
-        if(!formData.branch && !isHeadGudang){
+        if(!formData.branch && !isHeadGudang && !isManajer){
           newErrors.branch = 'cabang harus dipilih';
         }
         if(!formData.jenis_karyawan){
@@ -77,8 +88,8 @@ export default function EditKaryawan(){
                 name: data.nama_karyawan || '',
                 password: data.password, 
                 division: data.divisi_karyawan_id,  
-                store: data.toko_id,
-                branch: data.cabang_id, 
+                store: isManajer ? 'DBI' : data.toko_id, // Default to 'DBI' for manager
+                branch: isManajer ? '-' : data.cabang_id, // Default to '-' for manager
                 baseSalary: data.jumlah_gaji_pokok?.toString() || '',  
                 bonus: data.bonus?.toString() || '',
                 workHours: {
@@ -103,6 +114,15 @@ export default function EditKaryawan(){
       };
 
     const fetchStore = async () => {
+        // Skip fetching store for manager role
+        if (isManajer) {
+            setFormData(prev => ({
+                ...prev,
+                store: 'DBI'
+            }));
+            return;
+        }
+
         try {
             setLoading(true);
             const response = await api.get(`/toko/${toko_id}`);
@@ -123,6 +143,11 @@ export default function EditKaryawan(){
 
     // Fetch cabang
     const fetchBranches = async () => {
+        // Skip fetching branches for manager role
+        if (isManajer) {
+            return;
+        }
+
         try {
             const response = await api.get(`/cabang?toko_id=${toko_id}`);
             if (response.data.success) {
@@ -140,7 +165,9 @@ export default function EditKaryawan(){
     // Fetch divisi
     const fetchDivisi = async () => {
         try {
-            const response = await api.get(`/divisi-karyawan?toko_id=${toko_id}`);
+            // For manajer role, fetch without toko_id
+            const url = isManajer ? `/divisi-karyawan` : `/divisi-karyawan?toko_id=${toko_id}`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const options = response.data.data.map(div => ({
                     value: div.divisi_karyawan_id,
@@ -219,9 +246,14 @@ export default function EditKaryawan(){
                 formDataToSend.append('divisi_karyawan_id', formData.division);
                 formDataToSend.append('jenis_karyawan', formData.jenis_karyawan); 
       
-                if (!isHeadGudang) {
-                    formDataToSend.append('cabang_id', formData.branch);
+                // Only append branch_id and toko_id for non-manager roles
+                if (!isManajer) {
+                    if (!isHeadGudang) {
+                        formDataToSend.append('cabang_id', formData.branch);
+                    }
+                    formDataToSend.append('toko_id', toko_id);
                 }
+                
                 formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
                 formDataToSend.append('bonus', formData.bonus);
                 
@@ -234,7 +266,6 @@ export default function EditKaryawan(){
                 }
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
-                formDataToSend.append('toko_id', toko_id)
       
                 const response = await api.put(`/karyawan/${id}`, formDataToSend, {
                     headers: {
@@ -277,7 +308,7 @@ export default function EditKaryawan(){
                           {/* Photo Upload Section */}
                           <div className="mb-6">
                               <p className="text-gray-700 font-bold mb-2">Masukan Foto Karyawan</p>
-                              <div className="relative w-40 h-40 border-2 border-dashed border-primary rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                              <div className={`relative w-40 h-40 border-2 border-dashed border-${themeColor} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors`}>
                                   <input
                                       type="file"
                                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -297,7 +328,7 @@ export default function EditKaryawan(){
                                                   <path d="M36.8346 19C36.8346 18.5138 36.6415 18.0474 36.2977 17.7036C35.9538 17.3598 35.4875 17.1667 35.0013 17.1667C34.5151 17.1667 34.0488 17.3598 33.7049 17.7036C33.3611 18.0474 33.168 18.5138 33.168 19H36.8346ZM18.5013 4.33332C18.9875 4.33332 19.4538 4.14017 19.7977 3.79635C20.1415 3.45254 20.3346 2.98622 20.3346 2.49999C20.3346 2.01376 20.1415 1.54744 19.7977 1.20363C19.4538 0.859811 18.9875 0.666656 18.5013 0.666656V4.33332ZM32.2513 33.6667H4.7513V37.3333H32.2513V33.6667ZM3.83464 32.75V5.24999H0.167969V32.75H3.83464ZM33.168 19V32.75H36.8346V19H33.168ZM4.7513 4.33332H18.5013V0.666656H4.7513V4.33332Z" fill="#7B0C42"/>
                                               </svg>
                                           </div>
-                                          <p className="mt-2 text-sm text-primary">Masukan Foto</p>
+                                          <p className={`mt-2 text-sm text-${themeColor}`}>Masukan Foto</p>
                                       </div>
                                   )}
                               </div>
@@ -361,11 +392,11 @@ export default function EditKaryawan(){
                                     label="Cabang"
                                     options={branchList}
                                     value={formData.branch}
-                                    error={!isHeadGudang && !!errors.branch}
+                                    error={!isHeadGudang && !isManajer && !!errors.branch}
                                     errorMessage={errors.branch}
                                     onSelect={(option) => handleInputChange('branch')(option.value)}
-                                    required={!isHeadGudang}
-                                    disabled={isHeadGudang}
+                                    required={!isHeadGudang && !isManajer}
+                                    disabled={isHeadGudang || isManajer}
                                 />
 
                               <Input
@@ -411,7 +442,7 @@ export default function EditKaryawan(){
                               </button>
                               <button
                                   type="submit"
-                                  className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                                  className={`px-6 py-2 bg-${themeColor} text-white rounded-md`}
                               >
                                   Simpan
                               </button>

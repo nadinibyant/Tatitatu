@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 
+// Enhanced Table component with fixed mobile dropdowns
 const Table = ({
   bg_header,
   text_header,
@@ -28,7 +29,6 @@ const Table = ({
   const isManajer = userData?.role === 'manajer'
   const isOwner = userData?.role === 'owner'
   const isFinance = userData?.role === 'finance'
-  // console.log(userRole)
   
   const headerBgColor = bg_header || (
     isAdminGudang || isHeadGudang 
@@ -64,6 +64,77 @@ const Table = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Add CSS to make dropdowns display properly on mobile
+  useEffect(() => {
+    if (isMobile) {
+      const styleElement = document.createElement('style');
+      styleElement.id = 'dropdown-mobile-fix';
+      styleElement.innerHTML = `
+        /* General dropdown fixes */
+        .dropdown-menu, .select-dropdown, [role="listbox"], 
+        ul[role="menu"], .select-options, .react-select__menu {
+          position: fixed !important;
+          z-index: 9999 !important;
+          max-height: 40vh !important;
+          overflow-y: auto !important;
+          width: auto !important;
+          min-width: 200px !important;
+          border: 1px solid #e2e8f0 !important;
+          background-color: white !important;
+          border-radius: 0.375rem !important;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          top: auto !important;
+        }
+        
+        /* Specific fix for the Waktu dropdown */
+        [data-field="waktu"] .dropdown-container,
+        [data-field="waktu"] .dropdown-wrapper,
+        [data-field="waktu"] > div {
+          position: static !important;
+          overflow: visible !important;
+        }
+        
+        /* Fix for the search input in dropdowns */
+        .dropdown-search-input,
+        input[placeholder="Search..."] {
+          width: 100% !important;
+          padding: 8px !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 0.25rem !important;
+          margin-bottom: 4px !important;
+        }
+        
+        /* Fix for dropdown items */
+        .dropdown-item,
+        .select-option,
+        [role="option"] {
+          padding: 8px 12px !important;
+          cursor: pointer !important;
+        }
+        
+        /* Fix for Pilih Waktu button */
+        button[aria-label="Pilih Waktu"],
+        button:contains("Pilih Waktu") {
+          width: 100% !important;
+          text-align: left !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+      `;
+      document.head.appendChild(styleElement);
+      
+      return () => {
+        const existingStyle = document.getElementById('dropdown-mobile-fix');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      };
+    }
+  }, [isMobile]);
 
   const paginationActiveColor = 
     isAdminGudang || isHeadGudang 
@@ -121,43 +192,108 @@ const Table = ({
     return pages;
   };
 
+  // Check if the content is a dropdown that needs special handling
+  const isDropdown = (content) => {
+    if (!content || typeof content !== 'object') return false;
+    
+    // Check if it's a React element with specific props that suggest it's a dropdown
+    const isReactElement = React.isValidElement(content);
+    if (!isReactElement) return false;
+    
+    // Check for common dropdown attributes
+    const hasDropdownProps = 
+      content.props && (
+        content.props.className?.includes('select') || 
+        content.props.className?.includes('dropdown') ||
+        content.props.className?.includes('Pilih') ||
+        content.props.children?.props?.className?.includes('select') ||
+        (typeof content.type === 'function' && 
+          (content.type.name?.includes('Dropdown') || 
+           content.type.name?.includes('Select') || 
+           content.type.displayName?.includes('Dropdown') ||
+           content.type.displayName?.includes('Select')))
+      );
+      
+    return hasDropdownProps;
+  };
+
+  // Enhance the cell content with additional props for dropdowns
+  const enhanceDropdownCell = (content, fieldName) => {
+    if (!React.isValidElement(content)) return content;
+    
+    if (isDropdown(content) || fieldName === 'waktu') {
+      // Clone the element and add enhanced props for better mobile display
+      return React.cloneElement(content, {
+        className: `${content.props.className || ''} mobile-enhanced-dropdown`,
+        style: { 
+          ...(content.props.style || {}),
+          position: 'static',
+          width: '100%',
+          zIndex: 50
+        },
+        // Add a data attribute to target this field with CSS
+        'data-field': fieldName
+      });
+    }
+    
+    return content;
+  };
+
   const renderMobileRow = (row, rowIndex) => (
     <div 
       key={rowIndex} 
-      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-      onClick={() => onRowClick && onRowClick(row)}
+      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-visible"
     >
       <div className="divide-y divide-gray-200">
-        {headers.map((header, idx) => (
-          <div 
-            key={idx} 
-            className={`
-              flex items-center p-3 gap-2
-              ${onRowClick ? "cursor-pointer" : ""}
-              ${header.key === 'aksi' ? 'justify-end bg-gray-50' : ''}
-            `}
-          >
-            {header.key !== 'aksi' && (
-              <>
-                <div className="w-32 flex-shrink-0">
-                  <span className="text-sm font-medium text-gray-700">
-                    {header.label}
-                  </span>
+        {headers.map((header, idx) => {
+          const cellContent = row[header.key];
+          const isDropdownCell = isDropdown(cellContent) || header.key === 'waktu';
+          const enhancedContent = enhanceDropdownCell(cellContent, header.key);
+          
+          return (
+            <div 
+              key={idx} 
+              data-field={header.key}
+              className={`
+                flex items-center p-3 gap-2
+                ${header.key === 'aksi' ? 'justify-end bg-gray-50' : ''}
+                ${isDropdownCell ? 'relative dropdown-container' : ''}
+              `}
+              onClick={(e) => {
+                if (isDropdownCell) {
+                  e.stopPropagation();
+                } else if (onRowClick) {
+                  onRowClick(row);
+                }
+              }}
+            >
+              {header.key !== 'aksi' && (
+                <>
+                  <div className="w-32 flex-shrink-0">
+                    <span className="text-sm font-medium text-gray-700">
+                      {header.label}
+                    </span>
+                  </div>
+                  <div 
+                    className={`flex-1 break-words ${isDropdownCell ? 'dropdown-wrapper' : ''}`}
+                    style={isDropdownCell ? {position: 'static', minHeight: '40px'} : {}}
+                  >
+                    <span 
+                      className={`text-sm text-gray-900 ${isDropdownCell ? 'block w-full' : ''}`}
+                    >
+                      {enhancedContent}
+                    </span>
+                  </div>
+                </>
+              )}
+              {header.key === 'aksi' && (
+                <div className="w-full">
+                  {enhancedContent}
                 </div>
-                <div className="flex-1 break-words">
-                  <span className="text-sm text-gray-900">
-                    {row[header.key]}
-                  </span>
-                </div>
-              </>
-            )}
-            {header.key === 'aksi' && (
-              <div className="w-full">
-                {row[header.key]}
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -195,10 +331,12 @@ const Table = ({
               {headers.map((header, cellIndex) => {
                 // Determine if this cell should wrap text
                 const shouldWrap = header.wrap !== false; // Default to wrapping unless explicitly set to false
+                const isDropdownCell = isDropdown(row[header.key]) || header.key === 'waktu';
                 
                 return (
                   <td
                     key={cellIndex}
+                    data-field={header.key}
                     style={{ 
                       width: header.width || 'auto',
                       maxWidth: header.width || 'auto',
@@ -207,9 +345,11 @@ const Table = ({
                       text-sm text-gray-700 py-4 px-4 
                       ${header.align || "text-left"} 
                       ${shouldWrap ? 'whitespace-normal break-words' : 'whitespace-nowrap'}
+                      ${isDropdownCell ? 'overflow-visible' : ''}
                     `}
+                    onClick={isDropdownCell ? (e) => e.stopPropagation() : undefined}
                   >
-                    {row[header.key]}
+                    {enhanceDropdownCell(row[header.key], header.key)}
                   </td>
                 );
               })}
