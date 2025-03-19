@@ -69,15 +69,18 @@ export default function LaporanKeuangan() {
     const toko_id = userData?.userId
 
     const iconToko = (isManajer || isOwner || isFinance) 
-    ? '/Icon Warna/toko_non.svg' 
+    ? '/Icon Warna/toko_non.svg'
+    : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+    ? '/icon/toko_toko2.svg'
     : 'icon/toko.svg';
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
-
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
       const exportIcon = (isAdminGudang || isHeadGudang) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
@@ -87,6 +90,10 @@ export default function LaporanKeuangan() {
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
         </svg>
+      ) : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+        <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#2D2D2D"/>
+        </svg>     
       ) : (
         <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
@@ -316,9 +323,9 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'penjualan') {
-            const isGudang = row.toko === 'Rumah Produksi' || row.toko === 'Rumah produksi' ||
+            const isGudang = row.toko === 'Rumah Produksi' || row.toko === 'Rumah produksi' || row.toko == 'Dansa' || row.toko == 'dansa' ||
             (typeof row.toko === 'object' && 
-             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi' || row.toko.nama_toko_lama === 'Rumah Produksi' || row.toko.nama_toko === 'Dansa' || row.toko.nama_toko === 'dansa'));
+             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi' || row.toko.nama_toko_lama === 'Rumah Produksi' || row.toko.nama_toko == 'Dansa' || row.toko.nama_toko == 'dansa'));
             
             if (isGudang || isHeadGudang) {
                 navigate('/laporanKeuangan/penjualan-gudang/detail', {
@@ -369,7 +376,7 @@ export default function LaporanKeuangan() {
             });
         } else if (row.jenis === 'pembelian') {
             console.log(toko_id)
-            const isGudang = toko_id === 1 || row.toko === 'Rumah Produksi' || 
+            const isGudang = toko_id === 1 || row.toko === 'Rumah Produksi' || row.toko == 'Dansa' || row.toko == 'dansa' || 
                             (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko_lama === 'Rumah produksi' || row.toko.nama_toko === 'Dansa' || row.toko.nama_toko === 'dansa');
             
             navigate('/pembelianStok/detail', { 
@@ -552,6 +559,8 @@ export default function LaporanKeuangan() {
           return `/keuangan/${baseIconName}_gudang.svg`;
         } else if(isManajer || isOwner || isFinance){
             return `/keuangan/${baseIconName}_non.svg`;
+        } else if(isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+            return `/keuangan/${baseIconName}_toko2.svg`;
         }
         return `/keuangan/${baseIconName}.svg`;
       };

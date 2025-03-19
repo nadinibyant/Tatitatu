@@ -55,10 +55,12 @@ export default function EditKaryawan(){
       const isFinance = userData?.role === 'finance'
 
       const themeColor = (isAdminGudang || isHeadGudang) 
-      ? "coklatTua" 
+      ? 'coklatTua' 
       : (isManajer || isOwner || isFinance) 
         ? "biruTua" 
-        : "primary";
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
 
       const [errors, setErrors] = useState({});
 

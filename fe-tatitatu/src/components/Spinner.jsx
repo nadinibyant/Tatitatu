@@ -10,10 +10,12 @@ const Spinner = () => {
   const isFinance = userData?.role === 'finance'
 
   const themeColor = (isAdminGudang || isHeadGudang) 
-  ? "coklatTua" 
+  ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
-    : "primary";
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">

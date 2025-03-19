@@ -23,18 +23,23 @@ export default function TambahKPI(){
     const isOwner = userData?.role === 'owner'
     const isManajer = userData?.role === 'manajer'
     const isFinance = userData?.role === 'finance'
+    const isAdmin = userData?.role === 'admin'
     const [totalCalculatedBonus, setTotalCalculatedBonus] = useState(0);
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+        ? "hitam"
+        : "primary";
 
       const bgBonus = (isAdminGudang || isHeadGudang) 
       ? "coklatMuda" 
       : (isManajer || isOwner || isFinance) 
         ? "biruMuda"
+        : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+        ? "secondary"
         : "pink";
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
@@ -433,6 +438,8 @@ export default function TambahKPI(){
           return `/icon/${baseIconName}_gudang.svg`;
         } else if (isOwner || isManajer || isFinance) {
           return `/icon/${baseIconName}_non.svg`;
+        } else if (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+          return `/icon/${baseIconName}_toko2.svg`;
         }
         return `/icon/${baseIconName}.svg`;
       };

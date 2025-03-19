@@ -17,17 +17,28 @@ const FileInput = ({
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance'
 
-    const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
+
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
       : "primary";
 
       const svgColor = (isAdminGudang || isHeadGudang) 
-      ? "#71503D" 
+      ? "#71503D"  
       : (isManajer || isOwner || isFinance) 
-        ? "#023F80" 
-        : "#7B0C42";
+        ? "#023F80"  
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "#2D2D2D"
+          : "#7B0C42";
+
+      // const svgColor = (isAdminGudang || isHeadGudang) 
+      // ? "#71503D" 
+      // : (isManajer || isOwner || isFinance) 
+      //   ? "#023F80" 
+      //   : "#7B0C42";
 
   // const svgColor = (role === "admingudang" || role === "headgudang") ? "#5D4037" : "#7B0C42";
 

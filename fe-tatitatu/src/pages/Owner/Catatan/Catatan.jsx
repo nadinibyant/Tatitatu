@@ -5,6 +5,7 @@ import moment from "moment";
 import Table from "../../../components/Table";
 import api from "../../../utils/api";
 import { RefreshProvider, useRefresh } from "../../../context/RefreshContext";
+import ButtonDropdown from "../../../components/ButtonDropdown";
 
 function CatatanContent(){
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,6 +16,10 @@ function CatatanContent(){
     const [data, setData] = useState([]);
     const [selectedMonth, setSelectedMonth] = useState(moment().format("MMMM"));
     const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
+    const [tokoOptions, setTokoOptions] = useState([]);
+    const [selectedToko, setSelectedToko] = useState("Semua");
+    const [selectedTokoId, setSelectedTokoId] = useState(null);
+    
     const { refreshTrigger } = useRefresh();
     const [isExporting, setIsExporting] = useState(false);
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -31,11 +36,39 @@ function CatatanContent(){
       ? "biruTua" 
       : "primary";
 
+    // Fetch toko data
+    const fetchTokoData = async () => {
+        try {
+            const response = await api.get('/toko');
+            if (response.data.success) {
+                const allOptions = [
+                    { value: 'all', label: 'Semua'},
+                    ...response.data.data.map(toko => ({
+                        value: toko.toko_id,
+                        label: toko.nama_toko,
+                    }))
+                ];
+                setTokoOptions(allOptions);
+            }
+        } catch (error) {
+            console.error('Error fetching toko data:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchTokoData();
+    }, []);
+
     const fetchData = async () => {
         try {
             const monthNumber = moment().month(selectedMonth).format('MM');
+            let url = `/catatan?bulan=${monthNumber}&tahun=${selectedYear}`;
             
-            const response = await api.get(`/catatan?bulan=${monthNumber}&tahun=${selectedYear}`);
+            if (selectedTokoId) {
+                url += `&toko_id=${selectedTokoId}`;
+            }
+            
+            const response = await api.get(url);
             
             if (response.data.success) {
                 const transformedData = response.data.data.map(item => ({
@@ -44,6 +77,7 @@ function CatatanContent(){
                     Judul: item.judul,
                     Isi: item.isi,
                     originalIsi: item.isi,
+                    Toko: item.toko?.nama_toko || '-',
                     createdAt: item.createdAt,
                     ...item
                 }));
@@ -61,23 +95,28 @@ function CatatanContent(){
             setIsExporting(true);
 
             const monthNumber = moment().month(selectedMonth).format('MM');
+            
+            let url = `/catatan/export?bulan=${monthNumber}&tahun=${selectedYear}`;
+            if (selectedTokoId) {
+                url += `&toko_id=${selectedTokoId}`;
+            }
 
-            const response = await api.get(`/catatan/export?bulan=${monthNumber}&tahun=${selectedYear}`, {
+            const response = await api.get(url, {
                 responseType: 'blob'
             });
             
             const blob = new Blob([response.data], { 
                 type: response.headers['content-type'] 
             });
-            const url = window.URL.createObjectURL(blob);
+            const url2 = window.URL.createObjectURL(blob);
 
             const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `catatan-${monthNumber}-${selectedYear}.xlsx`);
+            link.href = url2;
+            link.setAttribute('download', `catatan-${monthNumber}-${selectedYear}${selectedTokoId ? `-toko-${selectedTokoId}` : ''}.xlsx`);
             document.body.appendChild(link);
             link.click();
 
-            window.URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(url2);
             document.body.removeChild(link);
             
             setIsExporting(false);
@@ -90,8 +129,19 @@ function CatatanContent(){
   
     useEffect(() => {
         fetchData();
-    }, [selectedMonth, selectedYear, startDate, endDate, refreshTrigger]);
+    }, [selectedMonth, selectedYear, selectedTokoId, refreshTrigger]);
 
+    const handleTokoSelect = (tokoName) => {
+        setSelectedToko(tokoName);
+        if (tokoName === 'Semua') {
+            setSelectedTokoId(null);
+        } else {
+            const selectedOption = tokoOptions.find(option => option.label === tokoName);
+            if (selectedOption) {
+                setSelectedTokoId(selectedOption.value);
+            }
+        }
+    };
   
     const handleRowClick = (row) => {
         setSelectedData({
@@ -99,6 +149,7 @@ function CatatanContent(){
             Tanggal: row.Tanggal,
             Judul: row.Judul,
             Isi: row.originalIsi,
+            Toko: row.toko?.nama_toko || '-',
         });
         setShowDetailModal(true);
     };
@@ -107,7 +158,8 @@ function CatatanContent(){
         { label: "Tanggal", key: "Tanggal", align: "text-left", width: "110px" },
         { label: "Nama", key: "Nama", align: "text-left" ,width: "500px" },
         { label: "Judul", key: "Judul", align: "text-left",width: "500px"  },
-        { label: "Isi", key: "Isi", align: "text-left", width: "800px" },
+        { label: "Toko", key: "Toko", align: "text-left", width: "150px" },
+        { label: "Isi", key: "Isi", align: "text-left", width: "650px" },
     ];
 
     const truncateText = (text, wordLimit = 9) => {
@@ -149,6 +201,18 @@ function CatatanContent(){
                                     disabled={isExporting}
                                 />
                             </div>
+                            
+                            {/* Toko Filter Dropdown */}
+                            <div className="w-full md:w-40">
+                                <ButtonDropdown
+                                    options={tokoOptions}
+                                    label="Semua"
+                                    selectedStore={selectedToko}
+                                    selectedIcon="/Icon Warna/toko_non.svg"
+                                    onSelect={handleTokoSelect}
+                                />
+                            </div>
+                            
                             <div className="w-full md:w-auto relative">
                                 <div className="w-48 md:w-48">
                                     <div className="relative">
@@ -201,7 +265,7 @@ function CatatanContent(){
 
                 {/* Content */}
                 <div className="px-6 pb-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-3 gap-8">
                         <div>
                             <label className="block text-gray-500 mb-1">Nama</label>
                             <p className="text-gray-900">{selectedData.Nama}</p>
@@ -209,6 +273,10 @@ function CatatanContent(){
                         <div>
                             <label className="block text-gray-500 mb-1">Tanggal</label>
                             <p className="text-gray-900">{selectedData.Tanggal}</p>
+                        </div>
+                        <div>
+                            <label className="block text-gray-500 mb-1">Toko</label>
+                            <p className="text-gray-900">{selectedData.Toko}</p>
                         </div>
                     </div>
 

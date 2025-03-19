@@ -31,14 +31,17 @@ export default function KPISeluruhDivisi() {
     const isOwner = userData?.role === 'owner'
     const isFinance = userData?.role === 'finance'
     const isManajer = userData?.role === 'manajer'
+    const isAdmin = userData?.role === 'admin'
     const toko_id = userData.userId
 
     
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const headers = [
         { label: "No", key: "nomor", align: "text-left" },

@@ -15,6 +15,8 @@ const TextArea = ({
       return "focus:ring-coklatTua";
     } else if (role === "manajer" || role === "finance" || role === "owner") {
       return "focus:ring-biruTua";
+    } else if (role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2)){
+      return "focus:ring-hitam";
     } else {
       return "focus:ring-primary";
     }

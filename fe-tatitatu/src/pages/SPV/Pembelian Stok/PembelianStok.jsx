@@ -21,8 +21,12 @@ export default function PembelianStok() {
     const [isModalDel, setModalDel] = useState(false)
     const [isSuccess, setSuccess] = useState(false)
     const userData = JSON.parse(localStorage.getItem('userData'));
-    const isAdminGudang = userData?.role === 'admingudang';
-    const isHeadGudang = userData?.role === 'headgudang'
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const [data, setData] = useState([]);
@@ -31,18 +35,33 @@ export default function PembelianStok() {
     const [errorMessage, setErrorMessage] = useState("");
     const toko_id = userData.userId
 
-    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const exportIcon = (isAdminGudang || isHeadGudang) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
         </svg>
+      ) : (isManajer || isOwner || isFinance) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+        </svg>
+      ) : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)) ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+        <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#2D2D2D"/>
+        </svg>     
       ) : (
         <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
         </svg>
       );
 
+      
     const monthValue = `${selectedYear}-${selectedMonth}`;
 
     const handleMonthChange = (e) => {

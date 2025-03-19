@@ -8,6 +8,8 @@ const GalleryItem = ({ item, onSelect, selectionCount }) => {
       return "coklatTua";
     } else if (role === "manajer" || role === "finance" || role === "owner") {
       return "biruTua";
+    } else if(role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2))  {
+      return "hitam";
     } else {
       return "primary";
     }

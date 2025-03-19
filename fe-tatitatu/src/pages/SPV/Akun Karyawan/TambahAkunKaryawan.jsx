@@ -55,10 +55,12 @@ export default function TambahAkunKaryawan(){
   const isFinance = userDataLogin?.role === 'finance'
 
   const themeColor = (isAdminGudang || isHeadGudang) 
-  ? "coklatTua" 
+  ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
-    : "primary";
+    : (isAdmin && userDataLogin?.userId !== 1 && userDataLogin?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
   const validateForm = () => {
         const newErrors = {};

@@ -32,10 +32,12 @@ export default function EditPenjualanNonCustomKasir() {
     const cabang_id = fromLaporanKeuangan ? stateCabangId : userData.userId;
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     // Form state
     const [nomor, setNomor] = useState("");

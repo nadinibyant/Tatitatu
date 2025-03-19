@@ -13,8 +13,12 @@ const Button = ({
   const userData = JSON.parse(localStorage.getItem('userData'))
   const role = userData?.role
   const ringColor = (role === "admingudang" || role === "headgudang") 
-    ? "focus:ring-2 focus:ring-coklatTua focus:outline-none" 
-    : "focus:ring-2 focus:ring-primary focus:outline-none"; 
+    ? "focus:ring-1 focus:ring-coklatTua focus:outline-none" 
+    : (role === 'manajer' || role === 'owner' || role === 'finance')
+    ? "focus:ring-1 focus:ring-biruTua focus:outline-none" 
+    : (role === 'admin' && userData?.userId !== 1 || userData?.userId !== 1)
+    ? "focus:ring-1 focus:ring-hitam focus:outline-none" 
+    : "focus:ring-1 focus:ring-primary focus:outline-none"; 
   
   return (
     <button

@@ -40,10 +40,12 @@ export default function MasterKategori() {
     const isFinance = userDataLogin?.role === 'finance'
     
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const [toko_id, setTokoId] = useState(null);
 

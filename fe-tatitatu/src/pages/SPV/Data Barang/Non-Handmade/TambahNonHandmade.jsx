@@ -16,7 +16,6 @@ import Gallery2 from "../../../../components/Gallery2";
 
 export default function TambahBarangNonHandmade() {
   const userData = JSON.parse(localStorage.getItem('userData'));
-  const isAdminGudang = userData?.role === 'admingudang';
   const [dataKategori, setDataKategori] = useState([]);
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState([]);
@@ -32,10 +31,21 @@ export default function TambahBarangNonHandmade() {
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const toko_id = userData.userId
-  const isHeadGudang = userData?.role === 'headgudang'
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
 
   
-  const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
 
   const fetchMaterialData2 = async () => {

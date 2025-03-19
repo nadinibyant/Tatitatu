@@ -39,16 +39,26 @@ export default function TargetBulanan() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const themeColor = (isAdminGudang || isHeadGudang) 
-  ? "coklatTua" 
+  ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
-    : "primary";
+    : (isAdmin && userDataLogin?.userId !== 1 && userDataLogin?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
-  const themeColor2 = (isAdminGudang || isHeadGudang) 
-  ? "coklatMuda" 
+    const themeColor2 = (isAdminGudang || isHeadGudang) 
+  ? 'coklatMuda' 
   : (isManajer || isOwner || isFinance) 
     ? "biruMuda" 
-    : "pink";
+    : (isAdmin && userDataLogin?.userId !== 1 && userDataLogin?.userId !== 2)
+      ? "secondary"
+      : "pink";
+
+  // const themeColor2 = (isAdminGudang || isHeadGudang) 
+  // ? "coklatMuda" 
+  // : (isManajer || isOwner || isFinance) 
+  //   ? "biruMuda" 
+  //   : "pink";
 
   const formatCurrency = (amount) => {
     return `Rp${amount.toLocaleString('id-ID')}`;

@@ -28,7 +28,9 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
-    : "primary";
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
     
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const notifButtonRef = useRef(null);
@@ -122,7 +124,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
           const gudangNotifications = gudangResponse.data.success && gudangResponse.data.data 
             ? gudangResponse.data.data.map(item => ({
                 type: 'stok',
-                name: 'Stok Gudang Menipis',
+                name: 'Stok Menipis',
                 isi: item.message
               }))
             : [];
@@ -184,8 +186,9 @@ const getNotificationIcon = () => {
   }
   else if (isManajer) {
     return "/Icon Warna/dataBarang_non.svg";
-  }
-  else {
+  } else if(isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+    return "/Icon Warna/dataBarang_toko2.svg";
+  } else {
     return "/Icon Warna/dataBarang.svg";
   }
 };
@@ -423,11 +426,13 @@ const getNotificationIcon = () => {
               <div key={index} className="py-4 first:pt-0">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="bg-primary bg-opacity-10 w-6 h-6 rounded-full flex items-center justify-center">
+                    <div className={`bg-${themeColor} bg-opacity-10 w-6 h-6 rounded-full flex items-center justify-center`}>
                       <img 
                         src={(isAdminGudang || isHeadGudang) 
                           ? "/Icon Warna/dataBarang_gudang.svg" 
-                          : "/Icon Warna/dataBarang.svg"} 
+                          : (isAdmin && (userData?.userId !== 1 || userData?.userId !== 2))
+                            ? "/Icon Warna/dataBarang_toko2.svg" 
+                            : "/Icon Warna/dataBarang.svg"} 
                         alt="Stock Alert" 
                         className="w-4 h-4" 
                       />
@@ -464,7 +469,7 @@ const getNotificationIcon = () => {
               className="h-16 object-contain"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "/logo.png"; 
+                e.target.src = null; 
               }}
             />
          </a>

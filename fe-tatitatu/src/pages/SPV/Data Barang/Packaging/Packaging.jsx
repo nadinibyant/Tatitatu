@@ -26,11 +26,21 @@ export default function Packaging() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false)
   const userData = JSON.parse(localStorage.getItem('userData'));
-  const isAdminGudang = userData?.role === 'admingudang';
-  const isHeadGudang = userData?.role === 'headgudang'
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
   const toko_id = userData.userId
 
-  const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
   const [isAlertSUcc, setAlertSucc] = useState(false)
   const [data,setData] = useState([])

@@ -19,6 +19,22 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
     setShowPassword(!showPassword);
   };
 
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
+
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "pink";
+
   return (
     <div className="bg-white rounded-lg shadow-sm border p-4">
       <div className="flex items-center gap-3 mb-10">
@@ -34,16 +50,16 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-pink rounded-full flex items-center justify-center">
-            <div className="text-pink-600">👤</div>
-          </div>
-          <div className="text-sm">{branch.email}</div>
+      <div className="flex items-center gap-2">
+        <div className={`w-8 h-8 bg-${themeColor} rounded-full flex items-center justify-center`}>
+            <div className={themeColor === 'hitam' ? 'text-white' : `text-${themeColor}-600`}>👩‍💻</div>
         </div>
+        <div className="text-sm">{branch.email}</div>
+    </div>
 
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-pink rounded-full flex items-center justify-center">
-            <div className="text-pink-600">***</div>
+          <div className={`w-8 h-8 bg-${themeColor} rounded-full flex items-center justify-center`}>
+          <div className={themeColor === 'hitam' ? 'text-white' : `text-${themeColor}-600`}>***</div>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-sm font-mono">
@@ -83,6 +99,30 @@ export default function Cabang(){
     function formatNumberWithDots(number) {
         return number ? number.toLocaleString('id-ID') : '0';
     }
+
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
+
+    const themeColor2 = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "secondary"
+        : "pink";
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('add');
@@ -312,6 +352,17 @@ export default function Cabang(){
           }
         }
     };
+      
+      const getIcon = (baseIconName) => {
+        if (isManajer || isOwner || isFinance) {
+          return `/keuangan/${baseIconName}_non.svg`;
+        } else if (isAdminGudang || isHeadGudang){
+          return `/keuangan/${baseIconName}_gudang.svg`;
+        } else if (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+          return `/keuangan/${baseIconName}_toko2.svg`;
+        }
+        return `/keuangan/${baseIconName}.svg`;
+    };
 
     return(
         <>
@@ -319,7 +370,7 @@ export default function Cabang(){
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                        <p className="text-primary text-base font-bold">Daftar Cabang</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Daftar Cabang</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -340,8 +391,8 @@ export default function Cabang(){
                                         />
                                     </svg>
                                 }
-                                bgColor="bg-primary"
-                                hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                bgColor={`bg-${themeColor}`}
+                                hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                                 textColor="text-white"
                                 onClick={handleAdd}
                             />
@@ -358,10 +409,10 @@ export default function Cabang(){
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Keuntungan Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.keuntungan.nama_cabang || 'Belum ada data'}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
+                                        <p className={`text-${themeColor}`}>Rp{formatNumberWithDots(dataTerbanyak.keuntungan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
+                                        <img src={getIcon('keuntungan')} alt="keuntungan" />
                                     </div>
                                 </div>
                             </div>
@@ -372,10 +423,10 @@ export default function Cabang(){
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pemasukan Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.pemasukan.nama_cabang || 'Belum ada data'}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
+                                        <p className={`text-${themeColor}`}>Rp{formatNumberWithDots(dataTerbanyak.pemasukan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                    <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
+                                    <img src={getIcon('pemasukan')} alt="pemasukan" />
                                     </div>
                                 </div>
                             </div>
@@ -386,10 +437,10 @@ export default function Cabang(){
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Pengeluaran Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.pengeluaran.nama_cabang || 'Belum ada data'}</p>
-                                        <p className="text-primary">Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
+                                        <p className={`text-${themeColor}`}>Rp{formatNumberWithDots(dataTerbanyak.pengeluaran.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
+                                        <img src={getIcon('pengeluaran')} alt="pengeluaran" />
                                     </div>
                                 </div>
                             </div>
@@ -400,10 +451,10 @@ export default function Cabang(){
                                     <div className="flex-1">
                                         <p className="text-gray-400 text-sm">Barang Terjual Terbanyak</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.barang.nama_cabang || 'Belum ada data'}</p>
-                                        <p className="text-primary">{formatNumberWithDots(dataTerbanyak.barang.jumlah)} Pcs</p>
+                                        <p className={`text-${themeColor}`}>{formatNumberWithDots(dataTerbanyak.barang.jumlah)} Pcs</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/produkterjual.svg" alt="produk" />
+                                        <img src={getIcon('produkterjual')} alt="produk" />
                                     </div>
                                 </div>
                             </div>
@@ -426,12 +477,12 @@ export default function Cabang(){
                             {/* Add Branch Card */}
                             <div 
                                 onClick={handleAdd}
-                                className="border-2 border-dashed border-primary rounded-lg p-4 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-pink-400 transition-colors" 
+                                className={`border-2 border-dashed border-${themeColor} rounded-lg p-4 flex flex-col items-center justify-center min-h-[200px] cursor-pointer hover:border-${themeColor}-400 transition-colors`}
                             >
-                                <div className="w-12 h-12 bg-pink flex items-center justify-center mb-2">
-                                    <Plus className="text-pink-600" size={24} />
+                                <div className={`w-12 h-12 bg-${themeColor2} flex items-center justify-center mb-2`}>
+                                    <Plus className={`text-pink-600}`} size={24} />
                                 </div>
-                                <div className="text-pink-600 font-medium">Tambah Cabang</div>
+                                <div className={`text-${themeColor2}-600 font-medium`}>Tambah Cabang</div>
                             </div>
                         </div>
                     </div>
@@ -465,7 +516,7 @@ export default function Cabang(){
                                             value={formData.branchName}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Nama Cabang Disini"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
                                             required
                                         />
                                     </div>
@@ -480,7 +531,7 @@ export default function Cabang(){
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Email"
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
                                             required
                                         />
                                     </div>
@@ -495,7 +546,7 @@ export default function Cabang(){
                                             value={formData.password}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Password"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary ${
+                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} ${
                                                 passwordError ? 'border-red-500' : ''
                                             }`}
                                             required={modalMode === 'add'}
@@ -512,7 +563,7 @@ export default function Cabang(){
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="Masukan Ulang Password"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-primary ${
+                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} ${
                                                 passwordError ? 'border-red-500' : ''
                                             }`}
                                             required={modalMode === 'add'}
@@ -532,7 +583,7 @@ export default function Cabang(){
                                         </button>
                                         <button
                                             type="submit"
-                                            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-black-800 transition-colors"
+                                            className={`px-4 py-2 bg-${themeColor} text-white rounded-md hover:bg-black-800 transition-colors`}
                                         >
                                             {modalMode === 'add' ? 'Daftar' : 'Simpan'}
                                         </button>

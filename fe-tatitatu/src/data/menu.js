@@ -1,109 +1,119 @@
+const userData = JSON.parse(localStorage.getItem('userData'));
+const userId = userData?.userId ? Number(userData.userId) : null;
+
+const getIconWarna = (basePath) => {
+  if (userData?.role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2 )) {
+    const lastDotIndex = basePath.lastIndexOf('.');
+    const pathWithoutExt = basePath.substring(0, lastDotIndex);
+    const extension = basePath.substring(lastDotIndex);
+    return `${pathWithoutExt}_toko2${extension}`;
+  }
+  return basePath;
+};
+
 export const menuItems = [
-    {
-      label: "Dashboard",
-      link: "/dashboard",
-      icon: "/Menu/dashboard.svg",
-      iconWarna: '/Icon Warna/dashboard.svg',
+  {
+    label: "Dashboard",
+    link: "/dashboard",
+    icon: "/Menu/dashboard.svg",
+    iconWarna: getIconWarna('/Icon Warna/dashboard.svg'),
+    submenu: [
+      { label: "Overview", link: "/dashboard" },
+      { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
+      { label: "Cabang Terbaik", link: "/dashboard/cabang-terlaris" },
+      { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
+      { label: "Hari Terlaris", link: "/dashboard/hari-terlaris" },
+    ],
+  },
+  {
+      label: "Biaya Toko",
+      link: "/biayaGudang",
+      icon: "/Menu/biayaToko.svg",
+      iconWarna: getIconWarna('/Icon Warna/biayaToko.svg'),
+  },
+  {
+      label: "Data Barang",
+      link: "/dataBarang",
+      icon: "/Menu/dataBarang.svg",
+      iconWarna: getIconWarna('/Icon Warna/dataBarang.svg'),
       submenu: [
-        { label: "Overview", link: "/dashboard" },
-        { label: "Produk Terlaris", link: "/dashboard/produk-terlaris" },
-        { label: "Cabang Terbaik", link: "/dashboard/cabang-terlaris" },
-        { label: "Karyawan Terbaik", link: "/dashboard/karyawan-terbaik" },
-        { label: "Hari Terlaris", link: "/dashboard/hari-terlaris" },
+          { label: "Barang Handmade", link: "/dataBarang/handmade" },
+          { label: "Barang Non-Handmade", link: "/dataBarang/non-handmade" },
+          { label: "Barang Custom", link: "/dataBarang/custom" },
+          { label: "Packaging", link: "/dataBarang/packaging" },
       ],
-    },
-    {
-        label: "Biaya Toko",
-        link: "/biayaGudang",
-        icon: "/Menu/biayaToko.svg",
-        iconWarna: '/Icon Warna/biayaToko.svg',
-
-    },
-    {
-        label: "Data Barang",
-        link: "/dataBarang",
-        icon: "/Menu/dataBarang.svg",
-        iconWarna: '/Icon Warna/dataBarang.svg',
-        submenu: [
-            { label: "Barang Handmade", link: "/dataBarang/handmade" },
-            { label: "Barang Non-Handmade", link: "/dataBarang/non-handmade" },
-            { label: "Barang Custom", link: "/dataBarang/custom" },
-            { label: "Packaging", link: "/dataBarang/packaging" },
+  },
+  {
+      label: "Stok Barang",
+      link: "/stokBarang",
+      icon: "/Menu/stokBarang.svg",
+      iconWarna: getIconWarna('/Icon Warna/stokBarang.svg'),
+  },
+  {
+      label: "Pembelian Stok",
+      link: "/pembelianStok",
+      icon: "/Menu/pembelianStok.svg",
+      iconWarna: getIconWarna('/Icon Warna/pembelianStok.svg'),
+  },
+  {
+      label: "Penjualan",
+      link: "/penjualanToko",
+      icon: "/Menu/penjualan.svg",
+      iconWarna: getIconWarna('/Icon Warna/penjualan.svg'),
+  },
+  {
+      label: "KPI",
+      link: "/daftarPenilaianKPI",
+      icon: "/Menu/kpi.svg",
+      iconWarna: getIconWarna('/Icon Warna/kpi.svg'),
+      submenu: [
+          {label: "Daftar Penilaian KPI", link: '/daftarPenilaianKPI'},
+          {label: "KPI Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
         ],
-    },
-    {
-        label: "Stok Barang",
-        link: "/stokBarang",
-        icon: "/Menu/stokBarang.svg",
-        iconWarna: '/Icon Warna/stokBarang.svg',
-    },
-    {
-        label: "Pembelian Stok",
-        link: "/pembelianStok",
-        icon: "/Menu/pembelianStok.svg",
-        iconWarna: '/Icon Warna/pembelianStok.svg',
-    },
-    {
-        label: "Penjualan",
-        link: "/penjualanToko",
-        icon: "/Menu/penjualan.svg",
-        iconWarna: '/Icon Warna/penjualan.svg',
-    },
-    {
-        label: "KPI",
-        link: "/daftarPenilaianKPI",
-        icon: "/Menu/kpi.svg",
-        iconWarna: '/Icon Warna/kpi.svg',
-        submenu: [
-            {label: "Daftar Penilaian KPI", link: '/daftarPenilaianKPI'},
-            {label: "KPI Divisi", link: '/daftarPenilaianKPI/seluruh-divisi'}
-          ],
-    },
-    {
-        label: "Karyawan Absensi & Gaji",
-        link: "/dataKaryawanAbsenGaji",
-        icon: "/Menu/karyawanAbsensi.svg",
-        iconWarna: '/Icon Warna/karyawanAbsensi.svg',
-    },
-    {
-        label: "Akun Karyawan",
-        link: "/akunKaryawan",
-        icon: "/Menu/akunKaryawan.svg",
-        iconWarna: '/Icon Warna/akunKaryawan.svg',
-    },
-    {
-        label: "Izin/Cuti Karyawan",
-        link: "/pengajuanCuti",
-        icon: "/Menu/izinCuti.svg",
-        iconWarna: '/Icon Warna/izinCuti.svg',
-    },
-    {
-        label: "Laporan Keuangan Toko",
-        link: "/laporanKeuangan",
-        icon: "/Menu/laporanKeuangan.svg",
-        iconWarna: '/Icon Warna/laporanKeuangan.svg',
-    },
-    {
-        label: "Cabang",
-        link: "/daftarCabang",
-        icon: "/Menu/cabang.svg",
-        iconWarna: '/Icon Warna/cabang.svg',
-    },
-    {
-        label: "Target Kasir",
-        link: "/target-bulanan",
-        icon: "/Menu/targetKasir.svg",
-        iconWarna: '/Icon Warna/targetKasir.svg',
-
-    },
-    {
-        label: "Master Kategori",
-        link: "/master-kategori",
-        icon: "/Menu/masterKategori.svg",
-        iconWarna: '/Icon Warna/masterKategori.svg',
-    },
-
-  ];
+  },
+  {
+      label: "Karyawan Absensi & Gaji",
+      link: "/dataKaryawanAbsenGaji",
+      icon: "/Menu/karyawanAbsensi.svg",
+      iconWarna: getIconWarna('/Icon Warna/karyawanAbsensi.svg'),
+  },
+  {
+      label: "Akun Karyawan",
+      link: "/akunKaryawan",
+      icon: "/Menu/akunKaryawan.svg",
+      iconWarna: getIconWarna('/Icon Warna/akunKaryawan.svg'),
+  },
+  {
+      label: "Izin/Cuti Karyawan",
+      link: "/pengajuanCuti",
+      icon: "/Menu/izinCuti.svg",
+      iconWarna: getIconWarna('/Icon Warna/izinCuti.svg'),
+  },
+  {
+      label: "Laporan Keuangan Toko",
+      link: "/laporanKeuangan",
+      icon: "/Menu/laporanKeuangan.svg",
+      iconWarna: getIconWarna('/Icon Warna/laporanKeuangan.svg'),
+  },
+  {
+      label: "Cabang",
+      link: "/daftarCabang",
+      icon: "/Menu/cabang.svg",
+      iconWarna: getIconWarna('/Icon Warna/cabang.svg'),
+  },
+  {
+      label: "Target Kasir",
+      link: "/target-bulanan",
+      icon: "/Menu/targetKasir.svg",
+      iconWarna: getIconWarna('/Icon Warna/targetKasir.svg'),
+  },
+  {
+      label: "Master Kategori",
+      link: "/master-kategori",
+      icon: "/Menu/masterKategori.svg",
+      iconWarna: getIconWarna('/Icon Warna/masterKategori.svg'),
+  },
+];
   
   export const userOptions = [
     { label: "Profile", link: "/profile" },

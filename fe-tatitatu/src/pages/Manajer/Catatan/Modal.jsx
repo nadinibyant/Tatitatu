@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../../../components/Input';
 import TextArea from '../../../components/Textarea';
+import InputDropdown from '../../../components/InputDropdown';
 import api from '../../../utils/api';
 import Spinner from '../../../components/Spinner';
 import AlertSuccess from '../../../components/AlertSuccess';
@@ -17,6 +18,8 @@ const Modal = ({ isOpen, onClose }) => {
   const [isAlertSuccess, setAlertSucc] = useState(false);
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [tokoOptions, setTokoOptions] = useState([]);
+  const [selectedToko, setSelectedToko] = useState('');
   const navigate = useNavigate()
   const userData = JSON.parse(localStorage.getItem('userData'));
   const isAdminGudang = userData?.role === 'admingudang'
@@ -33,6 +36,38 @@ const Modal = ({ isOpen, onClose }) => {
      ? "biruTua" 
      : "primary";
 
+  // Fetch toko data when component mounts
+  useEffect(() => {
+    const fetchTokoData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/toko');
+        if (response.data.success) {
+          // Transform the data for the dropdown
+          const options = response.data.data.map(toko => ({
+            value: toko.toko_id,
+            label: toko.nama_toko
+          }));
+          setTokoOptions(options);
+        } else {
+          console.error('Failed to fetch toko data:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching toko data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchTokoData();
+    }
+  }, [isOpen]);
+
+  const handleTokoSelect = (option) => {
+    setSelectedToko(option.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -42,7 +77,8 @@ const Modal = ({ isOpen, onClose }) => {
         nama: name,
         tanggal: date,
         judul: judul,
-        isi: isi
+        isi: isi,
+        toko_id: selectedToko // Include the selected toko_id
       };
       const response = await api.post('/catatan', data);
 
@@ -72,6 +108,7 @@ const Modal = ({ isOpen, onClose }) => {
     setDate('');
     setIsi('');
     setJudul('');
+    setSelectedToko('');
     onClose();          
   };
 
@@ -118,6 +155,19 @@ const Modal = ({ isOpen, onClose }) => {
                 required
               />
             </div>
+            
+            {/* Toko Dropdown */}
+            <div className="pb-5">
+              <InputDropdown
+                label="Toko"
+                options={tokoOptions}
+                value={selectedToko}
+                onSelect={handleTokoSelect}
+                required
+                name="toko_id"
+              />
+            </div>
+
             <Input
               label="Judul"
               value={judul}
@@ -168,7 +218,7 @@ const Modal = ({ isOpen, onClose }) => {
         />
       )}
 
-{isLoading && <Spinner />}
+      {isLoading && <Spinner />}
 
     </>
   );

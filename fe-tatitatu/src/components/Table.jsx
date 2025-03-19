@@ -29,28 +29,56 @@ const Table = ({
   const isManajer = userData?.role === 'manajer'
   const isOwner = userData?.role === 'owner'
   const isFinance = userData?.role === 'finance'
+  const isAdmin = userData?.role === 'admin'
+  
+  // const headerBgColor = bg_header || (
+  //   isAdminGudang || isHeadGudang 
+  //     ? 'bg-coklatMuda' 
+  //     : isManajer || isOwner || isFinance
+  //       ? 'bg-biruTua'
+  //       : 'bg-pink'
+  // );
   
   const headerBgColor = bg_header || (
     isAdminGudang || isHeadGudang 
-      ? 'bg-coklatMuda' 
-      : isManajer || isOwner || isFinance
-        ? 'bg-biruTua'
-        : 'bg-pink'
-  );
-  
-  const headerTextColor = text_header || (
-    isAdminGudang || isHeadGudang 
-      ? 'text-coklatTua' 
-      : isManajer || isOwner || isFinance
-        ? 'text-biruMuda'
-        : 'text-primary'
-  );
+    ? 'bg-coklatMuda'
+    : isManajer || isOwner || isFinance
+    ? 'bg-biruTua'
+    : isAdmin && userData?.userId !== 1 && userData?.userId !== 2
+    ? 'bg-hitam'
+    : 'bg-pink'
+)
+  // const headerBgColor = bg_header || (isAdminGudang || isHeadGudang) 
+  // ? 'bg-coklatMuda'
+  // : (isManajer || isOwner || isFinance) 
+  //   ? 'bg-biruTua' 
+  //   : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+  //     ? 'bg-hitam'
+  //     : 'bg-pink';
+
+  // const headerTextColor = text_header || (
+  //   isAdminGudang || isHeadGudang 
+  //     ? 'text-coklatTua' 
+  //     : isManajer || isOwner || isFinance
+  //       ? 'text-biruMuda'
+  //       : 'text-primary'
+  // );
+
+  const headerTextColor = text_header || (isAdminGudang || isHeadGudang) 
+  ? 'text-coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? 'text-biruMuda' 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? 'text-white'
+      : 'text-primary'
   
   const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : "primary";
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? 'biruTua' 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? 'hitam'
+      : 'primary';
 
   useEffect(() => {
     const handleResize = () => {
@@ -137,11 +165,13 @@ const Table = ({
   }, [isMobile]);
 
   const paginationActiveColor = 
-    isAdminGudang || isHeadGudang 
-      ? 'bg-coklatTua' 
-      : isManajer || isOwner || isFinance
-        ? 'bg-biruTua'
-        : 'bg-primary'; 
+  isAdminGudang || isHeadGudang 
+    ? 'bg-coklatTua' 
+    : isManajer || isOwner || isFinance
+      ? 'bg-biruTua'
+      : isAdmin && userData?.userId !== 1 && userData?.userId !== 2
+        ? 'bg-hitam'
+        : 'bg-primary';
 
   const filteredData = data.filter((row) => {
     const matchesSearchTerm = Object.values(row).some((value) =>

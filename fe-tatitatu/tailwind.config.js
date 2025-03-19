@@ -17,7 +17,8 @@
           coklatMuda: '#F6E9DF',
           coklatTua: '#71503D',
           biruMuda: '#D7EAFF',
-          biruTua: '#023F80'
+          biruTua: '#023F80',
+          hitam: '#2D2D2D'
         }
       },
     },
@@ -25,14 +26,27 @@
       'hover:bg-primary',
       'hover:bg-biruTua',
       'hover:bg-coklatTua',
+      'hover:bg-hitam',
+      'hover:bg-secondary',
       'text-primary',
       'text-biruTua',
       'text-coklatTua',
       'text-biruMuda',
+      'text-hitam',
+      'text-secondary',
       'bg-biruMuda',
+      'bg-hitam',
+      'bg-secondary',
       'border-primary',
       'border-biruTua',
-      'border-coklatTua'
+      'border-coklatTua',
+      'border-hitam',
+      'border-secondary',
+      'focus:ring-primary',
+      'focus:ring-biruTua',
+      'focus:ring-coklatTua',
+      'focus:ring-hitam',
+      'focus:ring-secondary',
     ],
     plugins: [
       scrollbarHide,

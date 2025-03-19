@@ -20,11 +20,13 @@ const Input = ({
 
   const getRingColor = () => {
     if (role === "admingudang" || role === "headgudang") {
-      return "focus:ring-2 focus:ring-coklatTua focus:outline-none";
+      return "focus:ring-1 focus:ring-coklatTua focus:outline-none";
     } else if (role === "manajer" || role === "finance" || role === "owner") {
-      return "focus:ring-2 focus:ring-biruTua focus:outline-none";
+      return "focus:ring-1 focus:ring-biruTua focus:outline-none";
+    } else if (role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2)){
+      return "focus:ring-1 focus:ring-hitam focus:outline-none";
     } else {
-      return "focus:ring-2 focus:ring-primary focus:outline-none";
+      return "focus:ring-1 focus:ring-primary focus:outline-none";
     }
   };
 

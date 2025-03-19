@@ -27,11 +27,14 @@ export default function TambahKPISeluruhDivisi() {
     const isManajer = userData?.role === 'manajer'
     const isOwner = userData?.role === 'owner'
     const isFinance = userData?.role === 'finance'
+    const isAdmin = userData?.role === 'admin'
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const fetchDivisi = async () => {
         try {

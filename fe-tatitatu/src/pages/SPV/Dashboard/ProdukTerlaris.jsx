@@ -46,9 +46,11 @@ export default function ProdukTerlaris() {
   : '/icon/toko.svg';
 
   const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
       : "primary";
 
   const fetchCabangData = async () => {

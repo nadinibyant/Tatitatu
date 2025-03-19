@@ -26,10 +26,12 @@ const EditPenjualanCustomKasir = () => {
     const isFinance = userData?.role === 'finance'
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const [errorMessage, setErrorMessage] = useState(null)
     const { toko_id: stateTokoId, cabang_id: stateCabangId, fromLaporanKeuangan } = location.state || {};

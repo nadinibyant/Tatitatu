@@ -20,10 +20,22 @@ const Gallery = ({
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selectedItem, setSelectedItem] = useState(null);
   const userData = JSON.parse(localStorage.getItem('userData'))
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
   const role = userData?.role
   
   // Determine the color theme based on role
-  const themeColor = (role === "admingudang" || role === "headgudang") ? "coklatTua" : "primary";
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
   const filteredData = useMemo(() => {
     return data.filter(item => {

@@ -10,10 +10,12 @@ const Breadcrumbs = ({ items}) => {
   const isFinance = userData?.role === 'finance'
 
   const themeColor = (isAdminGudang || isHeadGudang) 
-  ? "coklatTua" 
+  ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
-    : "primary";
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "primary";
 
 
   return (

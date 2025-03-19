@@ -223,7 +223,7 @@ export default function BiayaRumahProduksi() {
     <LayoutWithNav>
       <div className="p-5">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-coklatTua">Rincian Biaya Gudang</h2>
+          <h2 className="text-xl font-bold text-coklatTua">Rincian Biaya Dansa</h2>
           {!isEditing ? (
             <Button
               label="Edit"

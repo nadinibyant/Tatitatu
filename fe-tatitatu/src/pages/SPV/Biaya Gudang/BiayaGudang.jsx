@@ -12,6 +12,36 @@ export default function BiayaGudang() {
   const [errorMessage, setErrorMessage] = useState("");
   const userData = JSON.parse(localStorage.getItem('userData'))
   const toko_id = userData.userId
+  const isAdminGudang = userData?.role === 'admingudang'
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance'
+
+  const themeColor = (isAdminGudang || isHeadGudang) 
+  ? 'coklatTua' 
+  : (isManajer || isOwner || isFinance) 
+    ? "biruTua" 
+    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+      ? "hitam"
+      : "pink";
+
+      const themeColor2 = (isAdminGudang || isHeadGudang) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary"; 
+
+      const textHeader = (isAdminGudang || isHeadGudang) 
+      ? 'coklatMuda' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruMuda" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "white"
+          : "primary";
 
   useEffect(() => {
     fetchData();
@@ -297,7 +327,7 @@ export default function BiayaGudang() {
                 >
                   <path 
                     d="M10 0.625C6.25875 0.625 3.125 3.75875 3.125 7.5C3.125 12.6562 9.25625 18.8937 9.5475 19.1912C9.67691 19.3229 9.84977 19.3965 10.0306 19.3965C10.2115 19.3965 10.3843 19.3229 10.5137 19.1912C10.8437 18.8937 16.875 12.6562 16.875 7.5C16.875 3.75875 13.7412 0.625 10 0.625ZM10 10C9.38194 10 8.77775 9.82405 8.26384 9.49441C7.74994 9.16477 7.34542 8.69623 7.09865 8.14805C6.85188 7.59987 6.77193 6.99667 6.86767 6.41473C6.9634 5.83279 7.23085 5.29824 7.63388 4.89521C8.03691 4.49218 8.57146 4.22473 9.1534 4.129C9.73534 4.03326 10.3385 4.11321 10.8867 4.35998C11.4349 4.60675 11.9034 5.01127 12.2331 5.52518C12.5627 6.03908 12.7387 6.64327 12.7387 7.26133C12.7387 8.08569 12.4116 8.87646 11.8291 9.45892C11.2466 10.0414 10.4559 10.3685 9.63154 10.3685L10 10Z" 
-                    fill="#7B0C42"
+                    fill={themeColor === 'hitam' ? '#2D2D2D' : '#7B0C42'}
                   />
                 </svg>
                   <h2 className="text-base font-bold">{branch.name}</h2>
@@ -315,13 +345,13 @@ export default function BiayaGudang() {
                 <div>
                   <h3 className="font-bold mb-4 text-black">Biaya Operasional<span className="text-red-500">*</span></h3>
                   <table className="w-full">
-                    <thead className="bg-pink ">
+                    <thead className={`bg-${themeColor}`}>
                       <tr>
-                        <th className="py-2 px-4 text-left text-black">No</th>
-                        <th className="py-2 px-4 text-left text-black">Nama Biaya</th>
-                        <th className="py-2 px-4 text-left text-black">Jumlah Biaya</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>No</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>Nama Biaya</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>Jumlah Biaya</th>
                         {editingBranches[branch.id] && (
-                          <th className="py-2 px-4 text-left text-black">Aksi</th>
+                          <th className={`py-2 px-4 text-left text-${textHeader}`}>Aksi</th>
                         )}
                       </tr>
                     </thead>
@@ -365,7 +395,7 @@ export default function BiayaGudang() {
                   {editingBranches[branch.id] && (
                     <button 
                       onClick={() => handleAddOperasionalRow(branch.id)}
-                      className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
+                      className={`mt-4 flex items-center gap-2 text-${themeColor} hover:text-${themeColor}-dark`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -379,13 +409,13 @@ export default function BiayaGudang() {
                 <div>
                   <h3 className="font-bold mb-4 text-black">Biaya Staff</h3>
                   <table className="w-full">
-                    <thead className="bg-pink">
+                    <thead className={`bg-${themeColor}`}>
                       <tr>
-                        <th className="py-2 px-4 text-left text-black">No</th>
-                        <th className="py-2 px-4 text-left text-black">Nama Biaya</th>
-                        <th className="py-2 px-4 text-left text-black">Jumlah Biaya</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>No</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>Nama Biaya</th>
+                        <th className={`py-2 px-4 text-left text-${textHeader}`}>Jumlah Biaya</th>
                         {editingBranches[branch.id] && (
-                          <th className="py-2 px-4 text-left text-black">Aksi</th>
+                          <th className={`py-2 px-4 text-left text-${textHeader}`}>Aksi</th>
                         )}
                       </tr>
                     </thead>
@@ -429,7 +459,7 @@ export default function BiayaGudang() {
                   {editingBranches[branch.id] && (
                     <button 
                       onClick={() => handleAddStaffRow(branch.id)}
-                      className="mt-4 flex items-center gap-2 text-primary hover:text-primary-dark"
+                      className={`mt-4 flex items-center gap-2 text-${themeColor} hover:text-${themeColor}-dark`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -461,8 +491,8 @@ export default function BiayaGudang() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="font-bold text-primary">Total Biaya</span>
-                      <span className="text-primary font-bold">Rp{calculateTotalBiaya(branch).toLocaleString("id-ID")}</span>
+                      <span className={`font-bold text-${themeColor}`}>Total Biaya</span>
+                      <span className={`text-${themeColor} font-bold`}>Rp{calculateTotalBiaya(branch).toLocaleString("id-ID")}</span>
                     </div>
                   </div>
                 </div>
@@ -477,7 +507,7 @@ export default function BiayaGudang() {
                     />
                     <Button 
                       label="Simpan"
-                      bgColor="bg-primary"
+                      bgColor={`bg-${themeColor2}`}
                       textColor="text-white"
                       onClick={() => handleSave(branch.id)}
                     />

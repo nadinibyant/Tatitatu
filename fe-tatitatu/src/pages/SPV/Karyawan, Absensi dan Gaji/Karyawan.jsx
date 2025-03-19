@@ -17,7 +17,12 @@ export default function Karyawan(){
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
     const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
     const [isLoading, setLoading] = useState(false)
     const [branchList, setBranchList] = useState([])
@@ -25,6 +30,14 @@ export default function Karyawan(){
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const [divisions, setDivisions] = useState([])
     const [filterFields, setFilterFields] = useState([]);
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const monthValue = `${selectedYear}-${selectedMonth}`;
     const toko_id = userData.userId
@@ -81,12 +94,12 @@ export default function Karyawan(){
                         { 
                             value: "Semua", 
                             label: "Semua",
-                            icon: '/icon/toko.svg' 
+                            icon: getTokoIconPath('toko') 
                         },
                         ...response.data.data.map(branch => ({
                             value: branch.cabang_id,
                             label: branch.nama_cabang,
-                            icon: '/icon/toko.svg' 
+                            icon: getTokoIconPath('toko') 
                         }))
                     ];
                     setBranchList(options);
@@ -260,22 +273,47 @@ export default function Karyawan(){
             }
         };
 
+        const exportIcon = (isAdminGudang || isHeadGudang) ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+              <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+            </svg>
+          ) : (isManajer || isOwner || isFinance) ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+              <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+            </svg>
+          ) : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)) ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+            <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#2D2D2D"/>
+            </svg>     
+          ) : (
+            <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+            </svg>
+          );
+
+          const getTokoIconPath = (baseIconName) => {
+            if (isManajer || isOwner || isFinance) {
+                return `/icon/${baseIconName}_non.svg`;
+            } else if (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+                return `/icon/${baseIconName}_toko2.svg`;
+            } else {
+                return `/icon/${baseIconName}.svg`;
+            }
+        };
     return(
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                    <p className="text-primary text-base font-bold">Data Karyawan Absensi dan Gaji</p>
+                    <p className={`text-${themeColor} text-base font-bold`}>Data Karyawan Absensi dan Gaji</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
                         <div className="w-full md:w-auto">
                             <Button 
                                 label="Export" 
-                                icon={<svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-                                </svg>} 
+                                icon={exportIcon} 
                                 bgColor="border border-secondary" 
                                 textColor="text-black" 
                                 onClick={handleExport}
@@ -284,7 +322,7 @@ export default function Karyawan(){
                         {!isHeadGudang && (
                             <div className="w-full md:w-auto">
                                 <ButtonDropdown 
-                                    selectedIcon={'/icon/toko.svg'} 
+                                    selectedIcon={getTokoIconPath('toko')} 
                                     options={branchList} 
                                     onSelect={(value) => setSelectedStore(value)} 
                                 />
@@ -351,7 +389,7 @@ export default function Karyawan(){
                                     ))}
                                     <button
                                         onClick={handleApplyFilter}
-                                        className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-opacity-90"
+                                        className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
                                     >
                                         Simpan
                                     </button>
