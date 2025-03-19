@@ -43,7 +43,9 @@ export default function ProdukTerlaris() {
 
   const iconToko = (isManajer || isOwner || isFinance) 
   ? '/Icon Warna/toko_non.svg' 
-  : '/icon/toko.svg';
+  : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+    ? '/icon/toko_toko2.svg' 
+    : '/icon/toko.svg';
 
   const themeColor = (isAdminGudang || isHeadGudang) 
   ? 'coklatTua' 
@@ -1077,6 +1079,8 @@ export default function ProdukTerlaris() {
       return `/Dashboard Produk/${iconName}_gudang.svg`;
     } else if(isManajer || isOwner || isFinance){
       return `/Dashboard Produk/${iconName}_non.svg`;
+    } else if(isAdmin && (userData?.userId !== 1 && userData?.userId !==2)){
+      return `/Dashboard Produk/${iconName}_toko2.svg`;
     }
     return `/Dashboard Produk/${iconName}.svg`;
   };
@@ -1329,7 +1333,7 @@ export default function ProdukTerlaris() {
                         Terjual: `${formatNumberWithDots(item.Terjual)} Pcs`,
                       }))}
                 bg_header="bg-none"
-                text_header="text-gray-400"
+                text_header="text-secondary"
                 hasSearch={false}
                 hasPagination={false}
               />

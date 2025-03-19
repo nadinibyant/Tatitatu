@@ -50,14 +50,18 @@ export default function KaryawanTerbaik() {
     const toko_id= userData?.userId
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
+    ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
-      : "primary";
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
-      const iconToko = (isManajer || isOwner || isFinance) 
+        const iconToko = (isManajer || isOwner || isFinance) 
         ? '/Icon Warna/toko_non.svg' 
-        : '/icon/toko.svg';
+        : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+          ? '/icon/toko_toko2.svg' 
+          : '/icon/toko.svg';
 
     const fetchCabangData = async () => {
         try {

@@ -11,6 +11,12 @@ export default function CabangTerlaris(){
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const userData = JSON.parse(localStorage.getItem('userData'));
+    const isAdminGudang = userData?.role === 'admingudang'
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState({
         keuntungan: {
@@ -35,21 +41,17 @@ export default function CabangTerlaris(){
     const fetchData = async () => {
         try {
             setLoading(true);
-            
-            // Calculate start and end date based on selected month and year
+  
             const startDate = moment(`${selectedYear}-${selectedMonth}-01`).startOf('month').format('YYYY-MM-DD');
             const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
-            
-            // Get toko_id from userData
+  
             const tokoId = userData?.userId;
-            
-            // Make API request
+
             const response = await api.get(`/toko/terlaris?toko_id=${tokoId}&startDate=${startDate}&endDate=${endDate}`);
             
             if (response.data.success) {
                 const apiData = response.data.data;
-                
-                // Transform API data to match component data structure
+
                 const transformedData = {
                     keuntungan: {
                         nama_toko: apiData.cabang_terlaris.keuntungan_tertinggi.nama_cabang,
@@ -85,7 +87,6 @@ export default function CabangTerlaris(){
         }
     };
 
-    // Fetch data when the component mounts or when month/year selection changes
     useEffect(() => {
         fetchData();
     }, [selectedMonth, selectedYear, userData?.userId]);
@@ -93,6 +94,14 @@ export default function CabangTerlaris(){
     function formatNumberWithDots(number) {
         return number.toLocaleString('id-ID');
     }
+
+    const themeColor = (isAdminGudang || isHeadGudang) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const headers = [
         { label: "#", key: "nomor", align: "text-left" },
@@ -103,13 +112,26 @@ export default function CabangTerlaris(){
         { label: "Keuntungan", key: "Keuntungan", align: "text-center" },
     ];
 
+    const getDashboardIconPath = (baseIconName) => {
+        const iconName = baseIconName
+        
+        if (isAdminGudang || isHeadGudang) {
+          return `/keuangan/${iconName}_gudang.svg`;
+        } else if(isManajer || isOwner || isFinance){
+          return `/keuangan/${iconName}_non.svg`;
+        } else if(isAdmin && (userData?.userId !== 1 && userData?.userId !==2)){
+          return `/keuangan/${iconName}_toko2.svg`;
+        }
+        return `/keuangan/${iconName}.svg`;
+    };
+
     return (
         <>
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                    <p className="text-primary text-base font-bold">Cabang Terbaik</p>
+                    <p className={`text-${themeColor} text-base font-bold`}>Cabang Terbaik</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -144,7 +166,7 @@ export default function CabangTerlaris(){
                                         <p className="">Rp{loading ? '0' : formatNumberWithDots(data.keuntungan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/keuntungan.svg" alt="keuntungan" />
+                                        <img src={getDashboardIconPath('keuntungan')} alt="keuntungan" />
                                     </div>
                                 </div>
                             </div>
@@ -158,7 +180,7 @@ export default function CabangTerlaris(){
                                         <p className="">Rp{loading ? '0' : formatNumberWithDots(data.pemasukan.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/pemasukan.svg" alt="pemasukan" />
+                                        <img src={getDashboardIconPath('pemasukan')} alt="pemasukan" />
                                     </div>
                                 </div>
                             </div>
@@ -172,7 +194,7 @@ export default function CabangTerlaris(){
                                         <p className="">Rp{loading ? '0' : formatNumberWithDots(data.pengeluaran.jumlah)}</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/pengeluaran.svg" alt="pengeluaran" />
+                                        <img src={getDashboardIconPath('pengeluaran')} alt="pengeluaran" />
                                     </div>
                                 </div>
                             </div>
@@ -186,7 +208,7 @@ export default function CabangTerlaris(){
                                         <p className="">{loading ? '0' : formatNumberWithDots(data.barang.jumlah)} Pcs</p>
                                     </div>
                                     <div className="flex items-center justify-center ml-4">
-                                        <img src="/keuangan/produkterjual.svg" alt="produk" />
+                                        <img src={getDashboardIconPath('produkterjual')} alt="produk" />
                                     </div>
                                 </div>
                             </div>
