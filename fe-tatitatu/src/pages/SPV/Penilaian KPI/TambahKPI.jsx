@@ -478,22 +478,19 @@ export default function TambahKPI(){
 
       const renderKPIBonus = (kpi, profile) => {
         const totalBonus = profile.stats.totalBonus;
- 
         const kpiTotalBonus = calculateKPITotalBonus(totalBonus, kpi.percentage);
         
         let totalCheckboxes = 0;
         if (kpi.waktu === 'Harian') {
-          totalCheckboxes = daysInMonth;
+          totalCheckboxes = 28;
         } else if (kpi.waktu === 'Mingguan') {
           totalCheckboxes = 4;
         } else if (kpi.waktu === 'Bulanan') {
           totalCheckboxes = 1;
         }
-        
-        const checkboxValue = calculateCheckboxValue(kpiTotalBonus, totalCheckboxes);
-  
+    
+        const checkboxValue = calculateCheckboxValue(kpiTotalBonus, totalCheckboxes, kpi.waktu);
         const checkedCount = kpi.checks.filter(checked => checked).length;
-
         const earnedBonus = calculateEarnedBonus(checkboxValue, checkedCount);
         
         return earnedBonus;
