@@ -41,20 +41,20 @@ export default function Toko(){
 
     const [dataTerbanyak, setDataTerbanyak] = useState({
         keuntungan: {
-            nama_toko: 'Tatitatu',
-            jumlah: 10000000
+            nama_toko: '',
+            jumlah: 0
         },
         pemasukan: {
-            nama_toko: 'Rumah Produksi',
-            jumlah: 65000000
+            nama_toko: '',
+            jumlah: 0
         },
         pengeluaran: {
-            nama_toko: 'Tatitatu',
-            jumlah: 100000000
+            nama_toko: '',
+            jumlah: 0
         },
         barang: {
-            nama_barang:'Bonifade',
-            jumlah: 1200
+            nama_barang:'',
+            jumlah: 0
         },
     })
 
@@ -63,6 +63,93 @@ export default function Toko(){
         return password.slice(0, 10) + '...';
     };
 
+    const fetchTokoTerlaris = async () => {
+        try {
+            const response = await api.get('/toko/terlaris');
+            
+            if (response.data.success && response.data.data && response.data.data.toko_terlaris) {
+                const terlarisData = response.data.data.toko_terlaris;
+     
+                const defaultToko = {
+                    nama_toko: '-',
+                    keuntungan: 0,
+                    total_pemasukan: 0,
+                    total_pengeluaran: 0,
+                    produk_terjual: 0
+                };
+                
+                const keuntunganTertinggi = terlarisData.keuntungan_tertinggi ?? defaultToko;
+                const pemasukanTertinggi = terlarisData.pemasukan_tertinggi ?? defaultToko;
+                const pengeluaranTertinggi = terlarisData.pengeluaran_tertinggi ?? defaultToko;
+                const penjualanTerbanyak = terlarisData.penjualan_terbanyak ?? defaultToko;
+                
+                setDataTerbanyak({
+                    keuntungan: {
+                        nama_toko: keuntunganTertinggi.nama_toko || '-',
+                        jumlah: keuntunganTertinggi.keuntungan || 0
+                    },
+                    pemasukan: {
+                        nama_toko: pemasukanTertinggi.nama_toko || '-',
+                        jumlah: pemasukanTertinggi.total_pemasukan || 0
+                    },
+                    pengeluaran: {
+                        nama_toko: pengeluaranTertinggi.nama_toko || '-',
+                        jumlah: pengeluaranTertinggi.total_pengeluaran || 0
+                    },
+                    barang: {
+                        nama_barang: penjualanTerbanyak.nama_toko || '-',
+                        jumlah: penjualanTerbanyak.produk_terjual || 0
+                    },
+                });
+            } else {
+
+                console.error('Failed to fetch terlaris data or invalid data structure:', 
+                    response.data.message || 'Unknown error');
+
+                setDataTerbanyak({
+                    keuntungan: {
+                        nama_toko: '-',
+                        jumlah: 0
+                    },
+                    pemasukan: {
+                        nama_toko: '-',
+                        jumlah: 0
+                    },
+                    pengeluaran: {
+                        nama_toko: '-',
+                        jumlah: 0
+                    },
+                    barang: {
+                        nama_barang: '-',
+                        jumlah: 0
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching terlaris data:', error);
+
+            setDataTerbanyak({
+                keuntungan: {
+                    nama_toko: '-',
+                    jumlah: 0
+                },
+                pemasukan: {
+                    nama_toko: '-',
+                    jumlah: 0
+                },
+                pengeluaran: {
+                    nama_toko: '-',
+                    jumlah: 0
+                },
+                barang: {
+                    nama_barang: '-',
+                    jumlah: 0
+                },
+            });
+        }
+    };
+
+    
 const fetchTokoData = async () => {
     try {
         setLoading(true);
@@ -106,9 +193,10 @@ const fetchTokoData = async () => {
     }
 };
 
-    useEffect(() => {
-        fetchTokoData();
-    }, []);
+useEffect(() => {
+    fetchTokoData();
+    fetchTokoTerlaris();
+}, []);
 
     // Handle file input
     const handleFileChange = (file) => {
