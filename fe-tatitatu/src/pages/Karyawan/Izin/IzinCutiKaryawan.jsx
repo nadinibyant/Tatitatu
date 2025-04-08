@@ -12,6 +12,14 @@ import api from "../../../utils/api";
 
 export default function IzinCutiKaryawan(){
     const userData = JSON.parse(localStorage.getItem('userData'))
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+    const isManajer = userData?.role === 'manajer';
+    const isKasirToko = userData?.role === 'kasirtoko';
+    const isAdminGudang = userData?.role === 'admingudang';
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance';
     const karyawan_id = userData.userId
     const toko_id = userData.tokoId
     const [showModal, setShowModal] = useState(false);
@@ -44,6 +52,14 @@ export default function IzinCutiKaryawan(){
             day: '2-digit'
         });
     };
+
+    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const fetchData = async () => {
         try {
@@ -190,7 +206,7 @@ export default function IzinCutiKaryawan(){
             <div className="p-5">
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                        <p className="text-primary text-base font-bold">Daftar Izin/Cuti</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Daftar Izin/Cuti</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -211,8 +227,8 @@ export default function IzinCutiKaryawan(){
                                         />
                                     </svg>
                                 }
-                                bgColor="bg-primary"
-                                hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                bgColor={`bg-${themeColor}`}
+                                hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                                 textColor="text-white"
                                 onClick={handleAdd}
                             />
@@ -292,7 +308,7 @@ export default function IzinCutiKaryawan(){
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                                className={`px-4 py-2 bg-${themeColor} text-white rounded-lg hover:bg-opacity-90 font-medium`}
                                                 disabled={isLoading}
                                             >
                                                 {isLoading ? 'Menyimpan...' : 'Simpan'}

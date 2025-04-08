@@ -8,8 +8,9 @@ const Breadcrumbs = ({ items}) => {
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance'
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
 
-  const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 

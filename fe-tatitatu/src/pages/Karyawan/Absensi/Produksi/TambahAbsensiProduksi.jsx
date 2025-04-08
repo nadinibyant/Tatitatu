@@ -37,6 +37,21 @@ export default function TambahAbsensiProduksi() {
     const [categories, setCategories] = useState([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [error, setError] = useState(null);
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+    const isManajer = userData?.role === 'manajer';
+    const isKasirToko = userData?.role === 'kasirtoko';
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance';
+
+    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
     const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
     const [geoError, setGeoError] = useState(null);
@@ -461,8 +476,8 @@ export default function TambahAbsensiProduksi() {
                                                 }
                                                 onClick={() => btnAddBaris(index)}
                                                 bgColor=""
-                                                hoverColor="hover:border-primary hover:border"
-                                                textColor="text-primary"
+                                                hoverColor={`hover:border-${themeColor} hover:border`}
+                                                textColor={`text-${themeColor}`}
                                             />
                                         </div>
                                     </div>
@@ -474,7 +489,7 @@ export default function TambahAbsensiProduksi() {
                                 <button className="px-4 py-2 border rounded-lg">
                                     Batal
                                 </button>
-                                <button className="px-4 py-2 bg-primary text-white rounded-lg">
+                                <button className={`px-4 py-2 bg-${themeColor} text-white rounded-lg`}>
                                     Simpan
                                 </button>
                             </div>
@@ -483,7 +498,7 @@ export default function TambahAbsensiProduksi() {
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                                     {/* Input Search */}
                                     <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
                                         <div className="relative w-full max-w-md flex-shrink-0">
@@ -526,7 +541,7 @@ export default function TambahAbsensiProduksi() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             </button>
-                                            <p className="text-primary font-semibold">
+                                            <p className={`text-${themeColor} font-semibold`}>
                                                 Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
                                             </p>
                                         </div>
@@ -545,7 +560,7 @@ export default function TambahAbsensiProduksi() {
                                             />
                                             <Button
                                                 label="Pilih"
-                                                bgColor="bg-primary"
+                                                bgColor={`bg-${themeColor}`}
                                                 hoverColor="hover:bg-opacity-90"
                                                 textColor="text-white"
                                                 onClick={handleModalSubmit}
@@ -566,7 +581,7 @@ export default function TambahAbsensiProduksi() {
                                                         key={jenis}
                                                         onClick={() => setSelectedJenis(jenis)}
                                                         className={`px-4 py-2 text-sm font-semibold ${
-                                                            selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
+                                                            selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
                                                         }`}
                                                     >
                                                         {jenis}
@@ -582,7 +597,7 @@ export default function TambahAbsensiProduksi() {
                                                         onClick={() => setSelectedCategory(kategori)}
                                                         className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                             selectedCategory === kategori
-                                                                ? "bg-primary text-white"
+                                                                ? `bg-${themeColor} text-white`
                                                                 : "border border-gray-300"
                                                         }`}
                                                     >

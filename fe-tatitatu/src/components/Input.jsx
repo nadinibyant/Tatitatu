@@ -19,7 +19,7 @@ const Input = ({
   const role = userData?.role
 
   const getRingColor = () => {
-    if (role === "admingudang" || role === "headgudang") {
+    if (role === "admingudang" || role === "headgudang" || role === 'karyawanproduksi') {
       return "focus:ring-1 focus:ring-coklatTua focus:outline-none";
     } else if (role === "manajer" || role === "finance" || role === "owner") {
       return "focus:ring-1 focus:ring-biruTua focus:outline-none";

@@ -130,18 +130,54 @@ export default function TambahKPISeluruhDivisi() {
         navigate('/daftarPenilaianKPI/seluruh-divisi')
     }
 
+    const validateForm = (formData) => {
+        if (!formData.divisi) {
+            return "Divisi belum dipilih";
+        }
+    
+        if (formData.data.length === 0) {
+            return "Harap tambahkan minimal satu KPI";
+        }
+    
+        for (let i = 0; i < formData.data.length; i++) {
+            const row = formData.data[i];
+            
+            if (!row.NamaKPI || row.NamaKPI.trim() === "") {
+                return `Nama KPI pada baris ke-${i+1} belum diisi`;
+            }
+            
+            if (!row.Persentase) {
+                return `Persentase pada baris ke-${i+1} belum diisi`;
+            }
+            
+            if (isNaN(parseFloat(row.Persentase)) || parseFloat(row.Persentase) <= 0) {
+                return `Persentase pada baris ke-${i+1} harus berupa angka positif`;
+            }
+            
+            if (!row.Waktu) {
+                return `Waktu pada baris ke-${i+1} belum dipilih`;
+            }
+        }
+    
+        const totalPercentage = formData.data.reduce((sum, row) => sum + (parseFloat(row.Persentase) || 0), 0);
+        if (totalPercentage > 100) {
+            return "Total persentase tidak boleh melebihi 100%";
+        }
+        return null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const validationError = validateForm(data);
+        if (validationError) {
+            setErrorMessage(validationError);
+            setErrorAlert(true);
+            return;
+        }
+        
         try {
             setLoading(true);
             const selectedDivision = divisions.find(div => div.label === data.divisi);
-
-            const totalPercentage = calculateTotalPercentage(data.data);
-            if (totalPercentage > 100) {
-                setErrorMessage("Total persentase tidak boleh melebihi 100%");
-                setErrorAlert(true);
-                return;
-            }
             
             const formattedData = data.data.map(row => ({
                 divisi_karyawan_id: selectedDivision.id, 
@@ -149,13 +185,10 @@ export default function TambahKPISeluruhDivisi() {
                 persentase: parseInt(row.Persentase),
                 waktu: row.Waktu
             }));
+            
             const response = await api.post('/kpi', formattedData);
-            console.log(response)
-            console.log(response.data.success)
-            console.log(response.data.message)
-
-    
-            if (response.data.success == true) {
+            
+            if (response.data.success === true) {
                 setAlertSucc(true);
                 setTimeout(() => {
                     navigate('/daftarPenilaianKPI/seluruh-divisi');
@@ -165,10 +198,10 @@ export default function TambahKPISeluruhDivisi() {
                 setErrorAlert(true);
             }
         } catch (error) {
-            setErrorMessage(error.response.data.message)
-            setErrorAlert(true)
+            setErrorMessage(error.response?.data?.message || "Terjadi kesalahan saat menyimpan data");
+            setErrorAlert(true);
         } finally {
-            setLoading(false)
+            setLoading(false);
         } 
     };
 

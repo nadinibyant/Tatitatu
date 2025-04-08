@@ -16,9 +16,10 @@ const FileInput = ({
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance'
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
 
 
-  const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 
@@ -26,7 +27,7 @@ const FileInput = ({
       ? "hitam"
       : "primary";
 
-      const svgColor = (isAdminGudang || isHeadGudang) 
+      const svgColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
       ? "#71503D"  
       : (isManajer || isOwner || isFinance) 
         ? "#023F80"  

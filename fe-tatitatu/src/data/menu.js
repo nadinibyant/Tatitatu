@@ -39,7 +39,7 @@ export const menuItems = [
       submenu: [
           { label: "Barang Handmade", link: "/dataBarang/handmade" },
           { label: "Barang Non-Handmade", link: "/dataBarang/non-handmade" },
-          { label: "Barang Custom", link: "/dataBarang/custom" },
+          { label: "Bahan Custom", link: "/dataBarang/custom" },
           { label: "Packaging", link: "/dataBarang/packaging" },
       ],
   },
@@ -307,13 +307,13 @@ export const menuItems = [
       label: "Absensi",
       link: "/absensi-karyawan-produksi",
       icon: "/Menu/absensi.svg",
-      iconWarna: '/Icon Warna/absensi.svg',
+      iconWarna: '/Icon Warna/absensi_gudang.svg',
     },
     {
       label: "Izin/Cuti Karyawan",
       link: "/izin-cuti-karyawan",
       icon: "/Menu/izinCuti.svg",
-      iconWarna: '/Icon Warna/izinCuti.svg',
+      iconWarna: '/Icon Warna/izinCuti_gudang.svg',
     },
   ]
   

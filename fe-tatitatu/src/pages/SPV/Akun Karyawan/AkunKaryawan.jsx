@@ -42,6 +42,14 @@ export default function AkunKaryawan() {
     const isFinance = userDataLogin?.role === 'finance'
     const toko_id = userDataLogin.userId
 
+    const moreIcon = (isAdminGudang || isHeadGudang) ? (
+        '/icon/more_gudang.svg'
+      ) : (isManajer || isOwner || isFinance) ? (
+        '/icon/more_non.svg'
+      ) : (
+        '/icon/more.svg'
+      );
+
     
     const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
@@ -175,7 +183,6 @@ export default function AkunKaryawan() {
 
 
     const [data, setData] = useState([])
-    // get data akun
     const fetchKaryawan = async () => {
         try {
             setLoading(true);
@@ -201,7 +208,7 @@ export default function AkunKaryawan() {
                     `${item.waktu_kerja_sebulan_antar} Antar` : "-",
                 Aksi: (
                     <img
-                        src="/icon/more.svg"
+                        src={moreIcon}
                         alt="More Options"
                         className="w-5 h-5 cursor-pointer"
                         onClick={(event) => handleMoreClick(item.karyawan_id, event)}

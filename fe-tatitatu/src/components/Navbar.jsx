@@ -13,6 +13,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const isOwner = userData?.role === 'owner';
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance';
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
   const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
   
   // Menentukan role yang hanya mendapatkan menu logout
@@ -24,7 +25,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const [profileImage, setProfileImage] = useState('https://via.placeholder.com/50');
   const navigate = useNavigate();
   
-  const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? "biruTua" 

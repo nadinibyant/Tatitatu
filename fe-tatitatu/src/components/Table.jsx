@@ -30,6 +30,7 @@ const Table = ({
   const isOwner = userData?.role === 'owner'
   const isFinance = userData?.role === 'finance'
   const isAdmin = userData?.role === 'admin'
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
   
   // const headerBgColor = bg_header || (
   //   isAdminGudang || isHeadGudang 
@@ -40,7 +41,7 @@ const Table = ({
   // );
   
   const headerBgColor = bg_header || (
-    isAdminGudang || isHeadGudang 
+    isAdminGudang || isHeadGudang || isKaryawanProduksi 
     ? 'bg-coklatMuda'
     : isManajer || isOwner || isFinance
     ? 'bg-biruTua'
@@ -64,7 +65,7 @@ const Table = ({
   //       : 'text-primary'
   // );
 
-  const headerTextColor = text_header || (isAdminGudang || isHeadGudang) 
+  const headerTextColor = text_header || (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'text-coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? 'text-biruMuda' 
@@ -72,7 +73,7 @@ const Table = ({
       ? 'text-white'
       : 'text-primary'
   
-  const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'coklatTua' 
   : (isManajer || isOwner || isFinance) 
     ? 'biruTua' 

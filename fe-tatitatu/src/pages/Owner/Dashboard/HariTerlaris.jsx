@@ -105,10 +105,10 @@ export default function HariTerlaris(){
             
             if (isAdmin) {
                 url = `/penjualan/toko?toko_id=${toko_id}&startDate=${startDate}&endDate=${endDate}`;
-                isBranchData = true; // Admin menggunakan toko_id sehingga mendapatkan data cabang
+                isBranchData = true; 
             } else if (isOwner || isFinance || isManajer) {
                 url = `/penjualan/toko?startDate=${startDate}&endDate=${endDate}`;
-                isBranchData = false; // Owner/Finance/Manajer mendapatkan data semua toko
+                isBranchData = false;
             }
                 
             const response = await api.get(url);
@@ -147,8 +147,8 @@ export default function HariTerlaris(){
                 const peakHour = findPeakHour(branch.daily_stats);
     
                 return {
-                    nama_toko: branch.cabang_name, // Menggunakan cabang_name
-                    toko_id: branch.cabang_id,     // Menggunakan cabang_id
+                    nama_toko: branch.cabang_name, 
+                    toko_id: branch.cabang_id,    
                     data: {
                         dashboard: {
                             hari_terlaris: {
@@ -348,7 +348,7 @@ export default function HariTerlaris(){
         { label: "#", key: "nomor", align: "text-left" },
         { label: "Hari", key: "Hari", align: "text-left" },
         { label: "Produk Terjual", key: "Produk Terjual", align: "text-left" },
-        { label: "Jam Terpanas", key: "Jam Terpanas", align: "text-left" },
+        { label: "Boom Time", key: "Jam Terpanas", align: "text-left" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
     ];
 
@@ -454,7 +454,7 @@ export default function HariTerlaris(){
                                     <div className="w-full">
                                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                             <div className="flex-1">
-                                                <p className="text-gray-400 text-sm">Hari Terlaris</p>
+                                                <p className="text-gray-400 text-sm">Golden Day</p>
                                                 <p className="font-bold text-lg">{toko.data.dashboard.hari_terlaris.waktu}</p>
                                                 <p className="">Rp{formatNumberWithDots(toko.data.dashboard.hari_terlaris.jumlah)}</p>
                                             </div>
@@ -467,10 +467,9 @@ export default function HariTerlaris(){
                                     <div className="w-full">
                                         <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                             <div className="flex-1">
-                                                <p className="text-gray-400 text-sm">Jam Terpanas</p>
+                                                <p className="text-gray-400 text-sm">Boom Time</p>
                                                 <p className="font-bold text-lg">{toko.data.dashboard.jam_terpanas.waktu}</p>
                                                 <p className="">
-                                                    {/* Display different format based on whether it's API or dummy data */}
                                                     {(isAdmin || isOwner || isFinance || isManajer) && tokoData.length > 0
                                                         ? `${toko.data.dashboard.jam_terpanas.jumlah} transaksi`
                                                         : `Rp${formatNumberWithDots(toko.data.dashboard.jam_terpanas.jumlah)}`

@@ -32,6 +32,23 @@ export default function Absensi() {
     const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
     const [geoError, setGeoError] = useState(null);
 
+    // Function to get current date in YYYY-MM-DD format
+    const getCurrentDate = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    // Function to get current time in HH:MM format
+    const getCurrentTime = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    };
+
     const getCurrentLocation = () => {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
@@ -102,8 +119,12 @@ export default function Absensi() {
         const [masukHour, masukMinute] = jamMasuk.split(':').map(Number);
         const [keluarHour, keluarMinute] = jamKeluar.split(':').map(Number);
         
-        const masukInMinutes = (masukHour * 60) + masukMinute;
-        const keluarInMinutes = (keluarHour * 60) + keluarMinute;
+        let masukInMinutes = (masukHour * 60) + masukMinute;
+        let keluarInMinutes = (keluarHour * 60) + keluarMinute;
+        
+        if (keluarInMinutes < masukInMinutes) {
+            keluarInMinutes += 1440; 
+        }
         
         return keluarInMinutes - masukInMinutes;
     };
@@ -123,8 +144,17 @@ export default function Absensi() {
             const response = await api.get(`/absensi-karyawan?karyawanId=${karyawan_id}`);
             
             if (response.data.success) {
-                const formattedData = response.data.data.map((item, index) => ({
+                // Sort data by date in descending order to ensure latest record is first
+                const sortedData = [...response.data.data].sort((a, b) => {
+                    return new Date(b.tanggal + ' ' + (b.jam_masuk || '00:00')) - 
+                           new Date(a.tanggal + ' ' + (a.jam_masuk || '00:00'));
+                });
+                
+                const formattedData = sortedData.map((item, index) => ({
                     nomor: index + 1,
+                    // Store original values for logic purposes
+                    original_jam_masuk: item.jam_masuk,
+                    original_jam_keluar: item.jam_keluar,
                     tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
                         day: '2-digit',
                         month: '2-digit',
@@ -179,14 +209,49 @@ export default function Absensi() {
 
     // Event Handlers
     const handleAdd = () => {
-        setFormData({
+        // Set default values with current date and time
+        const currentDate = getCurrentDate();
+        const currentTime = getCurrentTime();
+        
+        // Check last attendance record
+        const lastAttendance = data.length > 0 ? data[0] : null;
+        
+        // Convert currentDate to format matching the stored date for comparison
+        const today = new Date().toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        // Check if there's an attendance record for today
+        const hasTodayAttendance = lastAttendance && lastAttendance.tanggal === today;
+        
+        // Default form data
+        let newFormData = {
             image: null,
             karyawan_id: karyawan_id,
-            tanggal: '',
-            jam_masuk: '',
-            jam_keluar: '',
-            total_menit: ''
-        });
+            tanggal: currentDate,
+            jam_masuk: currentTime,
+            jam_keluar: '',  // Empty by default
+            total_menit: '0',
+            showJamKeluar: false  // Flag to determine if we should show jam_keluar
+        };
+        
+        // If last attendance exists, is from today, has jam_masuk but no jam_keluar
+        if (hasTodayAttendance && 
+            lastAttendance.jam_masuk && 
+            lastAttendance.jam_masuk !== '-' && 
+            (lastAttendance.jam_keluar === '-' || !lastAttendance.jam_keluar)) {
+            
+            newFormData = {
+                ...newFormData,
+                jam_masuk: lastAttendance.original_jam_masuk || lastAttendance.jam_masuk,
+                jam_keluar: currentTime,
+                showJamKeluar: true  // Show jam_keluar for completing today's attendance
+            };
+        }
+        
+        setFormData(newFormData);
         setShowModal(true);
     };
 
@@ -215,7 +280,8 @@ export default function Absensi() {
             errors.push('Jam masuk harus diisi');
         }
         
-        if (!formData.jam_keluar) {
+        // Only validate jam_keluar if it's visible
+        if (formData.showJamKeluar && !formData.jam_keluar) {
             errors.push('Jam keluar harus diisi');
         }
 
@@ -232,8 +298,6 @@ export default function Absensi() {
         return errors;
     };
 
-    console.log(formData)
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -244,6 +308,7 @@ export default function Absensi() {
         }
 
         try {
+            setIsLoading(true);
             let currentLocation;
             try {
                 currentLocation = await getCurrentLocation();
@@ -251,16 +316,27 @@ export default function Absensi() {
                 setGeoError(geoErr.message);
                 throw new Error(`Gagal mendapatkan lokasi: ${geoErr.message}. Mohon izinkan akses lokasi.`);
             }
-            setIsLoading(true);
-            const totalMenit = calculateTotalMinutes(formData.jam_masuk, formData.jam_keluar);
+            const totalMenit = formData.showJamKeluar ? 
+                calculateTotalMinutes(formData.jam_masuk, formData.jam_keluar) : 0;
+
             
+            
+            console.log(totalMenit)
             const submitData = new FormData();
             submitData.append('image', formData.image);
             submitData.append('karyawan_id', formData.karyawan_id);
             submitData.append('tanggal', formData.tanggal);
             submitData.append('jam_masuk', formData.jam_masuk);
-            submitData.append('jam_keluar', formData.jam_keluar);
-            submitData.append('total_menit', totalMenit.toString());
+            
+            // Only include jam_keluar if showJamKeluar is true
+            if (formData.showJamKeluar) {
+                submitData.append('jam_keluar', formData.jam_keluar);
+                submitData.append('total_menit', totalMenit.toString());
+            } else {
+                submitData.append('jam_keluar', '');
+                submitData.append('total_menit', '0');
+            }
+            
             if (currentLocation && currentLocation.lat && currentLocation.lng) {
                 submitData.append('lat', currentLocation.lat);
                 submitData.append('lng', currentLocation.lng);
@@ -269,15 +345,6 @@ export default function Absensi() {
                 submitData.append('lat', '0');
                 submitData.append('lng', '0');
             }
-
-            // Debug log
-            // console.log('Submitting data:', {
-            //     karyawan_id: formData.karyawan_id,
-            //     tanggal: formData.tanggal,
-            //     jam_masuk: formData.jam_masuk,
-            //     jam_keluar: formData.jam_keluar,
-            //     total_menit: totalMenit
-            // });
 
             const response = await api.post('/absensi-karyawan', submitData, {
                 headers: {
@@ -394,25 +461,53 @@ export default function Absensi() {
                                                 onChange={(value) => setFormData({...formData, tanggal: value})}
                                                 width="w-1/2"
                                                 required={true}
+                                                disabled={true}
                                             />
-                                            <Input
-                                                label="Jam Masuk"
-                                                type1="time"
-                                                value={formData.jam_masuk}
-                                                onChange={(value) => handleTimeChange('jam_masuk', value)}
-                                                width="w-1/2"
-                                                required={true}
-                                            />
+                                            
+                                            {(data.length === 0 || 
+                                              !(data[0].tanggal === new Date().toLocaleDateString('id-ID', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                }) && 
+                                                data[0].jam_masuk && 
+                                                data[0].jam_masuk !== '-' && 
+                                                (data[0].jam_keluar === '-' || !data[0].jam_keluar))
+                                            ) ? (
+                                                <Input
+                                                    label="Jam Masuk"
+                                                    type1="time"
+                                                    value={formData.jam_masuk}
+                                                    onChange={(value) => handleTimeChange('jam_masuk', value)}
+                                                    width="w-1/2"
+                                                    required={true}
+                                                    disabled={true}
+                                                />
+                                            ) : (
+                                                <Input
+                                                    label="Jam Masuk"
+                                                    type1="time"
+                                                    value={formData.jam_masuk}
+                                                    onChange={(value) => handleTimeChange('jam_masuk', value)}
+                                                    width="w-1/2"
+                                                    required={true}
+                                                    disabled={true}
+                                                />
+                                            )}
                                         </div>
 
-                                        <Input
-                                            label="Jam Keluar"
-                                            type1="time"
-                                            value={formData.jam_keluar}
-                                            onChange={(value) => handleTimeChange('jam_keluar', value)}
-                                            width="w-full md:w-1/2"
-                                            required={true}
-                                        />
+                                        
+                                        {formData.showJamKeluar && (
+                                            <Input
+                                                label="Jam Keluar"
+                                                type1="time"
+                                                value={formData.jam_keluar}
+                                                onChange={(value) => handleTimeChange('jam_keluar', value)}
+                                                width="w-full md:w-1/2"
+                                                required={true}
+                                                disabled={true}
+                                            />
+                                        )}
 
                                         <div className="flex justify-end gap-3 mt-6">
                                             <button

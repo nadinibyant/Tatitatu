@@ -14,6 +14,11 @@ const TimeInput = ({
   const [timeUnit, setTimeUnit] = useState(value.unit || defaultUnit);
   const dropdownRef = useRef(null);
   
+  const unitLabels = {
+    'Menit': 'APM',
+    'Antar': 'API'
+  };
+  
   useEffect(() => {
     setInputValue(value.amount || '');
     setTimeUnit(value.unit || defaultUnit);
@@ -71,7 +76,7 @@ const TimeInput = ({
             onClick={() => setIsOpen(!isOpen)}
             className="flex items-center justify-between min-w-[100px] h-full px-3 border border-gray-300 rounded-r-md bg-white hover:bg-gray-50 focus:outline-none"
           >
-            <span className="text-gray-700">{timeUnit}</span>
+            <span className="text-gray-700">{unitLabels[timeUnit] || timeUnit}</span>
             <svg
               className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
               fill="none"
@@ -95,7 +100,7 @@ const TimeInput = ({
                   className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleUnitClick(unit)}
                 >
-                  {unit}
+                  {unitLabels[unit] || unit}
                 </div>
               ))}
             </div>
