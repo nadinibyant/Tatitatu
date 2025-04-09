@@ -66,16 +66,18 @@ const EditPenjualanCustom = () => {
         image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
         code: item.barang_custom_id,
         nama_barang: item.nama_barang,
-        price: item.harga_jual
+        price: item.harga_jual,
+        stock: item.stok_barang?.jumlah_stok || 0
     }));
     
     const mapPackagingProducts = (data) => data.map(item => ({
         packaging_id: item.packaging_id,
         nama_packaging: item.nama_packaging,
         price: item.harga_jual,
+        stock: item.stok_barang?.jumlah_stok || 0,
         image: item.image ? 
             `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
-            "https://via.placeholder.com/50"
+            "https://via.placeholder.com/50",
     }));
 
     const fetchAllData = async () => {
@@ -95,10 +97,14 @@ const EditPenjualanCustom = () => {
                     label: m.nama_metode
                 }))
             ];
+
     
             setDataBarang(mapCustomProducts(customRes.data.data));
             setDataPackaging(mapPackagingProducts(packagingRes.data.data));
             setDataMetode(metodeList);
+            // console.log(dataBarang)
+            // console.log(setDataPackaging)
+
 
             const detail = penjualanRes.data.data;
             const isCash = detail.cash_or_non;
@@ -449,10 +455,9 @@ const EditPenjualanCustom = () => {
         try {
             setLoading(true);
             
-            // Collect all products (existing and new)
             const allProducts = [
                 ...detailData.customProducts.map(item => ({
-                    produk_penjualan_id: item.produk_penjualan_id, // for existing data
+                    produk_penjualan_id: item.produk_penjualan_id, 
                     barang_custom_id: item.barang_custom?.barang_custom_id || item.barang_custom_id,
                     harga_satuan: item.harga_satuan,
                     kuantitas: Number(item.kuantitas),
@@ -461,13 +466,12 @@ const EditPenjualanCustom = () => {
                 ...detailData.packagingProducts.map(item => ({
                     produk_penjualan_id: item.produk_penjualan_id,
                     packaging_id: item.packaging?.packaging_id || item.packaging_id,
-                    harga_satuan: 0, // Set harga_satuan to 0 for packaging
+                    harga_satuan: 0, 
                     kuantitas: Number(item.kuantitas),
-                    total_biaya: 0 // Set total_biaya to 0 for packaging
+                    total_biaya: 0
                 }))
             ];
     
-            // Collect all biaya details (existing and new)
             const allBiaya = detailData.biayaProducts.map(item => ({
                 rincian_biaya_custom_id: item.rincian_biaya_custom_id, 
                 nama_biaya: item.nama_biaya,
@@ -799,7 +803,8 @@ const EditPenjualanCustom = () => {
                                             image: item.image,
                                             code: item.packaging_id,
                                             name: item.nama_packaging,
-                                            price: item.price || item.harga_jual || item.harga
+                                            price: item.price || item.harga_jual || item.harga,
+                                            stock: item.stock
                                         }))
                                         : dataBarang.filter(item =>
                                             item.nama_barang?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
@@ -808,7 +813,8 @@ const EditPenjualanCustom = () => {
                                             image: item.image,
                                             code: item.barang_custom_id,
                                             name: item.nama_barang,
-                                            price: item.price || item.harga_jual || item.harga
+                                            price: item.price || item.harga_jual || item.harga,
+                                            stock: item.stock
                                         }))
                                     }
                                     onSelect={(item, count) => {
@@ -827,6 +833,7 @@ const EditPenjualanCustom = () => {
                                         });
                                     }}
                                     selectedItems={modalState.selectedItems}
+                                    enableStockValidation={true}
                                 />
                             </div>
                         </div>

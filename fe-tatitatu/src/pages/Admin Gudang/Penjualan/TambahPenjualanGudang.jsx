@@ -369,7 +369,8 @@ const handleDeletePackaging = (itemId) => {
                     name: item.nama_packaging,
                     ukuran: item.ukuran,
                     price: item.harga_jual,
-                    stok: item.jumlum_minimum_stok
+                    stok: item.jumlum_minimum_stok,
+                    stock: item.stok_barang?.jumlah_stok || 0
                 }));
                 setDataPackaging(packagingItems);
             }
@@ -394,7 +395,8 @@ const handleDeletePackaging = (itemId) => {
                         name: item.nama_barang,
                         price: item.harga_jual,
                         kategori: item.kategori?.nama_kategori_barang,
-                        code: item.barang_handmade_id.toString()
+                        code: item.barang_handmade_id.toString(),
+                        stock: item.stok_barang?.jumlah_stok || 0
                     };
 
                     const jenisId = item.jenis_barang_id;
@@ -415,7 +417,8 @@ const handleDeletePackaging = (itemId) => {
                         name: item.nama_barang,
                         price: item.harga_jual,
                         kategori: item.kategori?.nama_kategori_barang,
-                        code: item.barang_nonhandmade_id.toString()
+                        code: item.barang_nonhandmade_id.toString(),
+                        stock: item.stok_barang?.jumlah_stok || 0
                     };
 
                     const jenisId = jenisBarangData.find(j => j.nama_jenis_barang === "Non Handmade")?.jenis_barang_id;
@@ -912,6 +915,7 @@ const handleDeletePackaging = (itemId) => {
                                             )}
                                             onSelect={handleSelectPackagingItem}
                                             selectedItems={selectedPackagingItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>
@@ -1089,6 +1093,7 @@ const handleDeletePackaging = (itemId) => {
                                             }))}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>

@@ -82,7 +82,8 @@ const EditPenjualanCustomKasir = () => {
         image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
         code: item.barang_custom_id,
         nama_barang: item.nama_barang,
-        price: item.harga_jual
+        price: item.harga_jual,
+        stock: item.stok_barang.jumlah_stok || 0,
     }));
     
     const mapPackagingProducts = (data) => data.map(item => ({
@@ -91,7 +92,8 @@ const EditPenjualanCustomKasir = () => {
         price: 0, // Set price to 0 as per requirement
         image: item.image ? 
             `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
-            "https://via.placeholder.com/50"
+            "https://via.placeholder.com/50",
+        stock: item.stok_barang.jumlah_stok || 0
     }));
 
     const fetchAllData = async () => {
@@ -143,7 +145,6 @@ const EditPenjualanCustomKasir = () => {
                 packagingProducts: detail.produk.filter(p => p.packaging).map(item => ({
                     ...item,
                     id: item.produk_penjualan_id || `packaging-${Date.now()}-${item.packaging?.packaging_id}`,
-                    // Set price-related fields to 0 for packaging items
                     harga_satuan: 0,
                     total_biaya: 0
                 }))
@@ -806,8 +807,9 @@ const EditPenjualanCustomKasir = () => {
                                             image: item.image,
                                             code: item.packaging_id,
                                             name: item.nama_packaging,
-                                            price: 0, // Set price to 0 for packaging
-                                            formattedPrice: '' // Hide price display for packaging
+                                            price: 0,
+                                            formattedPrice: '' ,
+                                            stock: item.stock
                                         }))
                                         : dataBarang.filter(item =>
                                             item.nama_barang?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
@@ -817,7 +819,8 @@ const EditPenjualanCustomKasir = () => {
                                             code: item.barang_custom_id,
                                             name: item.nama_barang,
                                             price: item.price || item.harga_jual || item.harga,
-                                            formattedPrice: `Rp${(item.price || item.harga_jual || item.harga).toLocaleString('id-ID')}`
+                                            formattedPrice: `Rp${(item.price || item.harga_jual || item.harga).toLocaleString('id-ID')}`,
+                                            stock: item.stock
                                         }))
                                     }
                                     onSelect={(item, count) => {
@@ -836,6 +839,7 @@ const EditPenjualanCustomKasir = () => {
                                         });
                                     }}
                                     selectedItems={modalState.selectedItems}
+                                    enableStockValidation={true}
                                 />
                             </div>
                         </div>

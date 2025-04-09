@@ -66,7 +66,8 @@ export default function TambahPenjualanKasir() {
                             : "/placeholder-image.jpg",
                         name: `${item.nama_packaging} - ${item.ukuran}`,
                         price: item.harga_jual,
-                        kategori: item.kategori_barang.nama_kategori_barang
+                        kategori: item.kategori_barang.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok
                     }));
 
                 const kategoriBaru = [
@@ -410,7 +411,8 @@ export default function TambahPenjualanKasir() {
                         code: item.barang_handmade_id,
                         name: item.nama_barang,
                         price: item.rincian_biaya[0]?.harga_jual || 0,
-                        kategori: item.kategori_barang.nama_kategori_barang
+                        kategori: item.kategori_barang.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
 
                 setDataBarang(prev => prev.map(barang => 
@@ -426,7 +428,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchBarangNonHandmade = async () => {
         try {
-            const response = await api.get('/barang-non-handmade');
+            const response = await api.get(`/barang-non-handmade?cabang=${cabang_id}`);
             if (response.data.success) {
                 const nonHandmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -436,7 +438,8 @@ export default function TambahPenjualanKasir() {
                         code: item.barang_non_handmade_id,
                         name: item.nama_barang,
                         price: item.rincian_biaya[0]?.harga_jual || 0,
-                        kategori: item.kategori.nama_kategori_barang
+                        kategori: item.kategori.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
 
                 setDataBarang(prev => prev.map(barang => 
@@ -1042,6 +1045,7 @@ export default function TambahPenjualanKasir() {
                                             items={filteredItems || []}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>
@@ -1146,6 +1150,7 @@ export default function TambahPenjualanKasir() {
                                             })) || []}
                                             onSelect={handleSelectPackagingItem}
                                             selectedItems={selectedPackagingItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>

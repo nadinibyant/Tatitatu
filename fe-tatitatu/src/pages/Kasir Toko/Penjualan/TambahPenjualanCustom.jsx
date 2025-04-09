@@ -69,7 +69,6 @@ const TambahPenjualanCustom = () => {
     }, [isModalOpen]);
 
     const calculateSubtotal = () => {
-        // Only calculate from tables 0 and 1, excluding packaging table (index 2)
         return dataProduk.slice(0, 2).reduce((acc, table) => {
             const totalTable = table.data.reduce((tabAcc, row) => {
                 return tabAcc + (row.rawTotalBiaya || 0);
@@ -118,7 +117,6 @@ const TambahPenjualanCustom = () => {
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
-    // Simplified headers for packaging table
     const packagingHeaders = [
         { label: 'No', key: 'No', align: 'text-left' },
         { label: 'Foto Produk', key: 'Foto Produk', align: 'text-left' },
@@ -134,7 +132,6 @@ const TambahPenjualanCustom = () => {
         { label: 'Aksi', key: 'Aksi', align: 'text-left' },
     ];
 
-    // Helper function to get the appropriate headers based on table index
     const getHeadersForTable = (index) => {
         if (index === 1) return getRincianBiayaHeaders();
         if (index === 2) return packagingHeaders;
@@ -181,7 +178,7 @@ const TambahPenjualanCustom = () => {
 
     const btnAddBaris = (tableIndex) => {
         setActiveTable(tableIndex);
-        if (tableIndex === 1) { // Jika tabel "Rincian Biaya"
+        if (tableIndex === 1) { 
             const newItem = {
                 id: Date.now(),
                 No: dataProduk[tableIndex].data.length + 1,
@@ -238,7 +235,8 @@ const TambahPenjualanCustom = () => {
                         code: item.barang_custom_id,
                         price: item.harga_jual,
                         jenis: item.jenis_barang.nama_jenis_barang,
-                        kategori: item.kategori.nama_kategori_barang
+                        kategori: item.kategori.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
                 setDataBarang(transformedData);
             }
@@ -258,13 +256,14 @@ const TambahPenjualanCustom = () => {
                     .map(item => ({
                         id: item.packaging_id,
                         name: item.nama_packaging,
-                        price: 0, // Set price to 0 since we don't want to use it for calculations
+                        price: 0,
                         image: item.image 
                             ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
                             : "/placeholder-image.jpg",
                         jenis: item.jenis_barang.nama_jenis_barang,
                         kategori: item.kategori_barang.nama_kategori_barang,
-                        ukuran: item.ukuran
+                        ukuran: item.ukuran,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
                 setDataPackaging(transformedData);
             }
@@ -373,7 +372,6 @@ const TambahPenjualanCustom = () => {
                     ),
                 };
                 
-                // For packaging table (no price-related fields)
                 if (isPackaging) {
                     return {
                         ...baseItem,
@@ -409,7 +407,6 @@ const TambahPenjualanCustom = () => {
                         ),
                     };
                 } else {
-                    // For regular product table (with price fields)
                     const totalBiaya = item.price * item.count;
                     return {
                         ...baseItem,
@@ -928,6 +925,7 @@ const TambahPenjualanCustom = () => {
                                 }
                                 onSelect={handleSelectItem}
                                 selectedItems={selectedItems}
+                                enableStockValidation={true}
                             />
                         </div>
                         </div>

@@ -66,7 +66,8 @@ export default function EditPenjualanGudang() {
                         code: item.packaging_id,
                         nama_packaging: item.nama_packaging,  
                         packaging_id: item.packaging_id,      
-                        harga: item             
+                        harga: item,
+                        stock: item.stok_barang?.jumlah_stok        
                     }));
                     setDataPackaging(formattedData);
                 }
@@ -317,7 +318,8 @@ export default function EditPenjualanGudang() {
                                 name: item.nama_barang,
                                 price: item.harga_jual,
                                 kategori: item.kategori?.nama_kategori_barang,
-                                code: item.barang_handmade_id
+                                code: item.barang_handmade_id,
+                                stock: item.stok_barang?.jumlah_stok
                             });
                         }
                     });
@@ -332,7 +334,8 @@ export default function EditPenjualanGudang() {
                             name: item.nama_barang,
                             price: item.harga_jual,
                             kategori: item.kategori?.nama_kategori_barang,
-                            code: item.barang_nonhandmade_id
+                            code: item.barang_nonhandmade_id,
+                            stock: item.stok_barang?.jumlah_stok
                         }));
                     }
                 }
@@ -345,7 +348,8 @@ export default function EditPenjualanGudang() {
                             image: item.image,
                             name: item.nama_barang,
                             price: item.harga_satuan,
-                            code: item.barang_mentah_id
+                            code: item.barang_mentah_id,
+                            stock: item.stok_barang?.jumlah_stok
                         }));
                     }
                 }
@@ -1251,6 +1255,7 @@ export default function EditPenjualanGudang() {
                                     }))}
                                     onSelect={handleSelectItem}
                                     selectedItems={selectedItems}
+                                    enableStockValidation={true}
                                 />
                                 </div>
                             </div>
@@ -1319,6 +1324,7 @@ export default function EditPenjualanGudang() {
                                         )}
                                         onSelect={handleSelectPackagingItem}
                                         selectedItems={selectedPackagingItems}
+                                        enableStockValidation={true}
                                     />
                                 </div>
                             </div>

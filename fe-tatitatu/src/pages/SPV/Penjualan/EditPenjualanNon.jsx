@@ -109,7 +109,8 @@ export default function EditPenjualanNon() {
                             : "/placeholder-image.jpg",
                         name: `${item.nama_packaging} - ${item.ukuran}`,
                         price: item.harga_jual,
-                        kategori: item.kategori_barang.nama_kategori_barang
+                        kategori: item.kategori_barang.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
 
                 const kategoriBaru = [
@@ -160,7 +161,8 @@ export default function EditPenjualanNon() {
                         code: item.barang_handmade_id,
                         name: item.nama_barang,
                         price: item.rincian_biaya[0]?.harga_jual || 0,
-                        kategori: item.kategori_barang.nama_kategori_barang
+                        kategori: item.kategori_barang.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
 
                 setDataBarang(prev => prev.map(barang => 
@@ -186,7 +188,8 @@ export default function EditPenjualanNon() {
                         code: item.barang_non_handmade_id,
                         name: item.nama_barang,
                         price: item.rincian_biaya[0]?.harga_jual || 0,
-                        kategori: item.kategori?.nama_kategori_barang
+                        kategori: item.kategori?.nama_kategori_barang,
+                        stock: item.stok_barang?.jumlah_stok || 0
                     }));
 
                 setDataBarang(prev => prev.map(barang => 
@@ -1169,6 +1172,7 @@ export default function EditPenjualanNon() {
                                             items={filteredItems || []}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>
@@ -1273,6 +1277,7 @@ export default function EditPenjualanNon() {
                                             })) || []}
                                             onSelect={handleSelectPackagingItem}
                                             selectedItems={selectedPackagingItems}
+                                            enableStockValidation={true}
                                         />
                                     </div>
                                 </div>
