@@ -834,11 +834,11 @@ const TambahPenjualanCustom = () => {
 
                 {/* Modal Tambah Baris */}
                 {isModalOpen && (
-                    <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                        <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
-                            {/* Input Search */}
-                            <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
-                                <div className="relative w-full max-w-md flex-shrink-0">
+                <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
+                    <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                        <div className="flex flex-col space-y-4 mb-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div className="relative w-full sm:max-w-md">
                                     <span className="absolute inset-y-0 left-3 flex items-center">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -858,8 +858,7 @@ const TambahPenjualanCustom = () => {
                                     />
                                 </div>
 
-                                {/* Clear and Selected Count */}
-                                <div className="flex items-center space-x-4 flex-shrink-0">
+                                <div className="flex items-center space-x-4 self-end sm:self-auto">
                                     <button
                                         onClick={() => {
                                             setSearchTerm("");
@@ -882,31 +881,32 @@ const TambahPenjualanCustom = () => {
                                         Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
                                     </p>
                                 </div>
-
-                                {/* Buttons */}
-                                <div className="flex flex-wrap md:flex-nowrap gap-4 flex-shrink-0">
-                                    <Button
-                                        label="Batal"
-                                        bgColor="border border-secondary"
-                                        hoverColor="hover:bg-gray-100"
-                                        textColor="text-black"
-                                        onClick={() => {
-                                            resetSelection();
-                                            setSelectedItems([]);
-                                        }}
-                                    />
-                                    <Button
-                                        label="Pilih"
-                                        bgColor="bg-primary"
-                                        hoverColor="hover:bg-opacity-90"
-                                        textColor="text-white"
-                                        onClick={handleModalSubmit}
-                                    />
-                                </div>
                             </div>
 
-                            {/* Gallery */}
-                            <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                            {/* Bottom row: Action buttons */}
+                            <div className="flex justify-end gap-4">
+                                <Button
+                                    label="Batal"
+                                    bgColor="border border-secondary"
+                                    hoverColor="hover:bg-gray-100"
+                                    textColor="text-black"
+                                    onClick={() => {
+                                        resetSelection();
+                                        setSelectedItems([]);
+                                    }}
+                                />
+                                <Button
+                                    label="Pilih"
+                                    bgColor="bg-primary"
+                                    hoverColor="hover:bg-opacity-90"
+                                    textColor="text-white"
+                                    onClick={handleModalSubmit}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Gallery */}
+                        <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
                             <Gallery2
                                 items={modalContent === 'packaging' 
                                     ? dataPackaging.filter(item =>
@@ -928,9 +928,9 @@ const TambahPenjualanCustom = () => {
                                 enableStockValidation={true}
                             />
                         </div>
-                        </div>
-                    </section>
-                )}
+                    </div>
+                </section>
+            )}
             </section>
 
             {/* Modal Success */}

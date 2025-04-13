@@ -46,7 +46,7 @@ export default function TambahBeliStokGudang() {
 
     // Constants
     const productTypes = [
-        "Barang Handmade",
+        // "Barang Handmade",
         "Barang Non-Handmade",
         "Barang Mentah",
         "Packaging"
@@ -617,52 +617,54 @@ export default function TambahBeliStokGudang() {
                     {isModalOpen && (
                         <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                             <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
-                                <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
-                                    <div className="relative w-full max-w-md flex-shrink-0">
-                                        <span className="absolute inset-y-0 left-3 flex items-center">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5 text-gray-400"
-                                                fill="currentColor"
-                                                viewBox="0 0 24 24"
+                                <div className="flex flex-col space-y-4 mb-4">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div className="relative w-full sm:max-w-md">
+                                            <span className="absolute inset-y-0 left-3 flex items-center">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-5 h-5 text-gray-400"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                                </svg>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                placeholder="Cari Barang yang mau dibeli"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center space-x-4 self-end sm:self-auto">
+                                            <button
+                                                onClick={() => {
+                                                    setSearchTerm("");
+                                                    setSelectedItems([]);
+                                                }}
+                                                className="text-gray-400 hover:text-gray-700 focus:outline-none"
                                             >
-                                                <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                            </svg>
-                                        </span>
-                                        <input
-                                            type="text"
-                                            placeholder="Cari Barang yang mau dibeli"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                        />
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-6 w-6"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                            <p className={`text-${themeColor} font-semibold`}>
+                                                Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-4 flex-shrink-0">
-                                        <button
-                                            onClick={() => {
-                                                setSearchTerm("");
-                                                setSelectedItems([]);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-700 focus:outline-none"
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-6 w-6"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                                strokeWidth={2}
-                                            >
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                        <p className={`text-${themeColor} font-semibold`}>
-                                            Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex flex-wrap md:flex-nowrap gap-4 flex-shrink-0">
+                                    <div className="flex justify-end gap-4">
                                         <Button
                                             label="Batal"
                                             bgColor="border border-secondary"
@@ -680,7 +682,7 @@ export default function TambahBeliStokGudang() {
                                     </div>
                                 </div>
 
-                                <div className="flex border-b border-gray-300 mb-4">
+                                <div className="flex border-b border-gray-300 mb-4 overflow-x-auto">
                                     {productTypes.map((jenis) => (
                                         <button
                                             key={jenis}
@@ -688,7 +690,7 @@ export default function TambahBeliStokGudang() {
                                                 setSelectedJenis(jenis);
                                                 setSelectedCategory("Semua");
                                             }}
-                                            className={`px-4 py-2 text-sm font-semibold ${
+                                            className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
                                                 selectedJenis === jenis 
                                                     ? `text-${themeColor} border-b-2 border-${themeColor}` 
                                                     : "text-gray-400"

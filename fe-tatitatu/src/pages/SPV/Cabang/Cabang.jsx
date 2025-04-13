@@ -139,12 +139,22 @@ export default function Cabang(){
     const toko_id = userDataLogin.userId
     const image = userDataLogin?.image
     const [id,setId] = useState('')
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
       branchName: '',
       email: '',
       password: '',
       confirmPassword: ''
     });
+
+    const togglePasswordVisibility = () => {
+      setShowPassword(!showPassword);
+    };
+
+    const toggleConfirmPasswordVisibility = () => {
+      setShowConfirmPassword(!showConfirmPassword);
+    };
 
     const [dataTerbanyak, setDataTerbanyak] = useState({
         keuntungan: {
@@ -244,6 +254,8 @@ export default function Cabang(){
         setPasswordError('');
         setModalMode('edit');
         setIsModalOpen(true);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
     };
     
     const handleAdd = () => {
@@ -257,6 +269,8 @@ export default function Cabang(){
         setPasswordError('');
         setModalMode('add');
         setIsModalOpen(true);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
     };
     
     const handleDelete = (branchId) => {
@@ -540,34 +554,54 @@ export default function Cabang(){
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Password{modalMode === 'add' && <span className="text-red-500">*</span>}
                                         </label>
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleInputChange}
-                                            placeholder="Masukan Password"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} ${
-                                                passwordError ? 'border-red-500' : ''
-                                            }`}
-                                            required={modalMode === 'add'}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                placeholder="Masukan Password"
+                                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} pr-10 ${
+                                                    passwordError ? 'border-red-500' : ''
+                                                }`}
+                                                required={modalMode === 'add'}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 cursor-pointer"
+                                                onClick={togglePasswordVisibility}
+                                                tabIndex="-1"
+                                            >
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Masukan Ulang Password{modalMode === 'add' && <span className="text-red-500">*</span>}
                                         </label>
-                                        <input
-                                            type="password"
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            placeholder="Masukan Ulang Password"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} ${
-                                                passwordError ? 'border-red-500' : ''
-                                            }`}
-                                            required={modalMode === 'add'}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                value={formData.confirmPassword}
+                                                onChange={handleInputChange}
+                                                placeholder="Masukan Ulang Password"
+                                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor} pr-10 ${
+                                                    passwordError ? 'border-red-500' : ''
+                                                }`}
+                                                required={modalMode === 'add'}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 cursor-pointer"
+                                                onClick={toggleConfirmPasswordVisibility}
+                                                tabIndex="-1"
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
                                         {passwordError && (
                                             <p className="mt-1 text-sm text-red-500">{passwordError}</p>
                                         )}

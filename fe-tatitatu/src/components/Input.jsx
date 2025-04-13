@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react"; 
 
 const Input = ({ 
   label, 
@@ -15,6 +16,7 @@ const Input = ({
 }) => {
   const [rawValue, setRawValue] = useState(value || "");
   const [isTouched, setIsTouched] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const userData = JSON.parse(localStorage.getItem('userData'))
   const role = userData?.role
 
@@ -94,6 +96,17 @@ const Input = ({
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const getInputType = () => {
+    if (type1 === "password") {
+      return showPassword ? "text" : "password";
+    }
+    return type1;
+  };
+
   const showError = required && isTouched && !rawValue;
 
   return (
@@ -102,21 +115,37 @@ const Input = ({
         {label}
         {showRequired && required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <input
-        type={type1}
-        value={type === "number" ? formatNumber(rawValue) : rawValue}
-        onChange={handleInputChange}
-        onBlur={() => setIsTouched(true)}
-        className={`w-full border rounded-md sm:py-1 sm:px-4 py-2 px-3 focus:outline-none
-          ${showError 
-            ? 'border-red-500 focus:ring-red-200' 
-            : `border-gray-300 ${ringColor}`
-          } text-base`}
-        placeholder={placeholder || label}
-        required={required}
-        onKeyDown={onKeyDown}
-        disabled={disabled}
-      />
+      <div className="relative">
+        <input
+          type={getInputType()}
+          value={type === "number" ? formatNumber(rawValue) : rawValue}
+          onChange={handleInputChange}
+          onBlur={() => setIsTouched(true)}
+          className={`w-full border rounded-md sm:py-1 sm:px-4 py-2 px-3 ${type1 === "password" ? "pr-10" : ""} focus:outline-none
+            ${showError 
+              ? 'border-red-500 focus:ring-red-200' 
+              : `border-gray-300 ${ringColor}`
+            } text-base`}
+          placeholder={placeholder || label}
+          required={required}
+          onKeyDown={onKeyDown}
+          disabled={disabled}
+        />
+        {(type1 === "password") && (
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 cursor-pointer"
+            onClick={togglePasswordVisibility}
+            tabIndex="-1"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
+        )}
+      </div>
       {showError && (
         <p className="text-red-500 text-sm mt-1">
           {label} harus diisi
