@@ -173,7 +173,7 @@ export default function AkunKaryawan() {
         { label: "Nama", key: "Nama", align: "text-left" },
         { label: "Divisi", key: "Divisi", align: "text-left" },
         { label: "No.Handphone", key: "No.Handphone", align: "text-left" },
-        { label: "Email", key: "Email", align: "text-left" },
+        { label: "Email/Username", key: "Email", align: "text-left" },
         { label: "Aksi", key: "Aksi", align: "text-left" },
     ];
 

@@ -35,7 +35,7 @@ export default function EditKaryawan(){
       const jenisKaryawanOptions = [
         { value: 'Umum', label: 'Umum' },
         { value: 'Produksi', label: 'Produksi' },
-        { value: 'Transportasi', label: 'Transportasi' }
+        { value: 'Transportasi', label: 'Khusus' }
       ];
       const [photoPreview, setPhotoPreview] = useState(null);
       const [branchList, setBranchList] = useState([]);

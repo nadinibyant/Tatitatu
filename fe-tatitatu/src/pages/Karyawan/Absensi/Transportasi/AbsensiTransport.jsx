@@ -19,7 +19,7 @@ export default function AbsensiKaryawan() {
     const [formData, setFormData] = useState({
         foto: null,
         tanggal: '',
-        lokasi: '',
+        lokasi: 'Lokasi',
         status: ''
     });
     const [isLoading, setIsLoading] = useState(false);
@@ -131,9 +131,9 @@ export default function AbsensiKaryawan() {
             errors.push('Tanggal harus diisi');
         }
         
-        if (!formData.lokasi) {
-            errors.push('Lokasi harus diisi');
-        }
+        // if (!formData.lokasi) {
+        //     errors.push('Lokasi harus diisi');
+        // }
         
         if (!formData.status) {
             errors.push('Status harus dipilih');
@@ -229,7 +229,7 @@ export default function AbsensiKaryawan() {
             const submitData = new FormData();
             submitData.append('image', formData.foto);
             submitData.append('tanggal', formData.tanggal);
-            submitData.append('lokasi', formData.lokasi);
+            submitData.append('lokasi', "Lokasi");
             submitData.append('status', formData.status);
             submitData.append('karyawan_id', karyawan_id)
             if (currentLocation && currentLocation.lat && currentLocation.lng) {
@@ -310,22 +310,27 @@ export default function AbsensiKaryawan() {
                 {/* Add/Edit Modal */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 overflow-y-auto">
-                        <div className="flex items-center justify-center min-h-screen p-4">
-                            <div 
-                                className="fixed inset-0 bg-black opacity-30"
-                                onClick={handleClose}
-                            ></div>
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+                            onClick={handleClose}
+                        ></div>
 
-                            <div className="relative bg-white rounded-lg w-full md:w-1/3 p-6">
-                                <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center justify-center min-h-screen px-4 py-8 sm:p-0">
+                      
+                            <div className="relative bg-white rounded-xl shadow-xl transform transition-all w-full max-w-md mx-auto p-5 sm:p-6">
+                           
+                                <div className="flex justify-between items-center mb-4 border-b pb-3">
                                     <h3 className="text-lg font-semibold text-gray-900">
                                         Tambah Absensi
                                     </h3>
                                     <button 
                                         onClick={handleClose}
-                                        className="text-gray-400 hover:text-gray-500"
+                                        className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                                        aria-label="Close"
                                     >
-                                        <span className="text-2xl">×</span>
+                                        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
                                     </button>
                                 </div>
 
@@ -340,54 +345,48 @@ export default function AbsensiKaryawan() {
                                                 label="Masukan Foto Absen"
                                                 onFileChange={(file) => setFormData({...formData, foto: file})}
                                                 required={true}
-                                                width="w-full md:w-1/3"
+                                                width="w-full"
                                                 accept="image/*"
                                             />
                                         </div>
                                         
-                                        <div className="flex gap-4">
-                                            <Input
-                                                label="Tanggal"
-                                                type1="date"
-                                                value={formData.tanggal}
-                                                onChange={(value) => setFormData({...formData, tanggal: value})}
-                                                width="w-1/2"
-                                                required={true}
-                                            />
-                                            <Input
-                                                label="Lokasi"
-                                                type1="text"
-                                                value={formData.lokasi}
-                                                onChange={(value) => setFormData({...formData, lokasi: value})}
-                                                width="w-1/2"
-                                                required={true}
-                                                placeholder="Masukkan lokasi"
-                                            />
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <div className="w-full sm:w-1/2">
+                                                <Input
+                                                    label="Tanggal"
+                                                    type1="date"
+                                                    value={formData.tanggal}
+                                                    onChange={(value) => setFormData({...formData, tanggal: value})}
+                                                    width="w-full"
+                                                    required={true}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-1/2">
+                                                <InputDropdown
+                                                    label="Status"
+                                                    options={statusOptions}
+                                                    value={formData.status}
+                                                    onSelect={(selected) => setFormData({...formData, status: selected.value})}
+                                                    required={true}
+                                                    width="w-full"
+                                                    name="status"
+                                                    error={!formData.status && error}
+                                                    errorMessage="Status harus dipilih"
+                                                />
+                                            </div>
                                         </div>
 
-                                        <InputDropdown
-                                            label="Status"
-                                            options={statusOptions}
-                                            value={formData.status}
-                                            onSelect={(selected) => setFormData({...formData, status: selected.value})}
-                                            required={true}
-                                            width="w-full md:w-1/2"
-                                            name="status"
-                                            error={!formData.status && error}
-                                            errorMessage="Status harus dipilih"
-                                        />
-
-                                        <div className="flex justify-end gap-3 mt-6">
+                                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-6 pt-3 border-t">
                                             <button
                                                 type="button"
                                                 onClick={handleClose}
-                                                className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium rounded-lg border border-gray-300"
+                                                className="w-full sm:w-auto px-4 py-2 text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 mt-3 sm:mt-0"
                                             >
                                                 Batal
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                                className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
                                                 disabled={isLoading}
                                             >
                                                 {isLoading ? 'Menyimpan...' : 'Simpan'}

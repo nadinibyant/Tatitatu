@@ -211,7 +211,7 @@ export default function TambahAkunKaryawan(){
                 }
                 
                 formDataToSend.append('jumlah_gaji_pokok', formData.baseSalary);
-                formDataToSend.append('bonus', formData.bonus);
+                formDataToSend.append('bonus', formData.bonus || 0);
                 
                 if (formData.workHours.unit === 'Menit') {
                     formDataToSend.append('waktu_kerja_sebulan_menit', formData.workHours.amount.toString());
@@ -389,7 +389,8 @@ export default function TambahAkunKaryawan(){
                                 value={formData.bonus}
                                 onChange={handleInputChange('bonus')}
                                 type="number"
-                                required={true}
+                                required={false}
+                                showRequired={false}
                             />
                             
                             <TimeInput

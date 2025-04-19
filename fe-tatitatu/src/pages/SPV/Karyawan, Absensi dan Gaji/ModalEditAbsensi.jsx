@@ -35,7 +35,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
         setTimeError('');
       } else if (divisi === 'Transportasi') {
         setFormData({
-          lokasi: absensiData.Lokasi || '',
+          lokasi: 'Lokasi',
           status: absensiData.Status || ''
         });
       } else if (divisi === 'Produksi') {
@@ -115,9 +115,9 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
           }
         }
       } else if (divisi === 'Transportasi') {
-        if (!formData.lokasi) {
-          throw new Error('Lokasi wajib diisi');
-        }
+        // if (!formData.lokasi) {
+        //   throw new Error('Lokasi wajib diisi');
+        // }
         if (!formData.status) {
           throw new Error('Status wajib diisi');
         }
@@ -236,6 +236,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
                 onChange={(value) => handleInputChange(value, 'lokasi')}
                 placeholder="Masukkan Lokasi"
                 required={true}
+                disabled={true}
               />
               
               {/* Status */}
@@ -274,7 +275,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
             <Button
               type="submit"
               label={loading ? 'Menyimpan...' : 'Simpan'}
-              bgColor="bg-primary"
+              bgColor="bg-biruTua"
               textColor="text-white"
               hoverColor="hover:bg-opacity-90"
               disabled={!!timeError || loading}

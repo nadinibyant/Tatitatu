@@ -16,6 +16,7 @@ export default function DetailKaryawan(){
     const [isLoading, setLoading] = useState(false)
     const location = useLocation()
     const {id, divisi} = location.state || {}
+    console.log(divisi)
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const monthValue = `${selectedYear}-${selectedMonth}`;
@@ -219,12 +220,13 @@ export default function DetailKaryawan(){
     const fetchProduksiGudangData = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/produksi-gudang?toko_id=1`);
+            const response = await api.get(`/produksi-gudang/karyawan/${id}`);
             
             if (response.data.success) {
-                const formattedData = response.data.data.map(item => ({
+                const allData = response.data.data.map(item => ({
                     id: item.produksi_gudang_id,
                     Tanggal: item.tanggal,
+                    rawDate: new Date(item.tanggal), 
                     Foto: `${import.meta.env.VITE_API_URL}/images-produksi-gudang/${item.image}`,
                     "Jumlah Produksi": `${item.jumlah_produksi.toLocaleString('id-ID') || 0} Pcs`,
                     "Total Menit": `${item.total_menit.toLocaleString('id-ID') || 0} Menit`,
@@ -244,11 +246,43 @@ export default function DetailKaryawan(){
                         ? item.produk.map(p => `${p.jumlah}x ${p.barang.nama_barang}`).join(', ')
                         : '-'
                 }));
+                
+                const filteredData = allData.filter(item => {
+                    const itemDate = item.rawDate;
+                    const itemMonth = itemDate.getMonth() + 1; 
+                    const itemYear = itemDate.getFullYear();
+                    
+                    const monthNumber = parseInt(selectedMonth, 10);
+                    const yearNumber = parseInt(selectedYear, 10);
+                    
+                    return itemMonth === monthNumber && itemYear === yearNumber;
+                });
+                
+                console.log(`Filtered data: ${filteredData.length} records out of ${allData.length} total`);
+                
+                const finalData = filteredData.map(({ rawDate, ...rest }) => rest);
         
                 setData(prevData => ({
                     ...prevData,
-                    data: formattedData
+                    data: finalData
                 }));
+                
+                if (filteredData.length > 0) {
+                    const totalMinutes = filteredData.reduce((sum, item) => {
+                        const minutes = parseInt(item["Total Menit"].split(' ')[0].replace(/,/g, ''), 10);
+                        return sum + (isNaN(minutes) ? 0 : minutes);
+                    }, 0);
+                    
+                    const totalSalary = filteredData.reduce((sum, item) => {
+                        return sum + (item["Gaji Pokok Perhari"] || 0);
+                    }, 0);
+                    
+                    setData(prevData => ({
+                        ...prevData,
+                        "Total Menit Kerja": totalMinutes,
+                        "Gaji Pokok": totalSalary
+                    }));
+                }
             }
         } catch (error) {
             console.error('Error fetching produksi gudang data:', error);
