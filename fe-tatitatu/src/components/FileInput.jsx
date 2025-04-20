@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 const FileInput = ({
   label,
   onFileChange,
-  width = "w-full sm:w-2/3 md:w-1/2", 
+  width = "w-full sm:w-2/3 md:w-1/6", 
   defaultValue,
   allowCamera = false, 
   cameraOnly = false,

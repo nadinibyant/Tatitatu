@@ -4,14 +4,13 @@ import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import Table from "../../../components/Table";
 import Input from "../../../components/Input";
-import FileInput from "../../../components/FileInput"; // Import komponen FileInput yang sudah diperbarui
+import FileInput from "../../../components/FileInput"; 
 import AlertSuccess from "../../../components/AlertSuccess";
 import AlertError from "../../../components/AlertError";
 import Spinner from "../../../components/Spinner";
 import api from "../../../utils/api";
 
 export default function Absensi() {
-    // State Management
     const userData = JSON.parse(localStorage.getItem('userData'))
     const karyawan_id = userData.userId
     const [showModal, setShowModal] = useState(false);
