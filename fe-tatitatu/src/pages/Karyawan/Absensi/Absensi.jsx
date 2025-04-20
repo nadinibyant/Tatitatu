@@ -4,7 +4,7 @@ import Button from "../../../components/Button";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import Table from "../../../components/Table";
 import Input from "../../../components/Input";
-import FileInput from "../../../components/FileInput";
+import FileInput from "../../../components/FileInput"; // Import komponen FileInput yang sudah diperbarui
 import AlertSuccess from "../../../components/AlertSuccess";
 import AlertError from "../../../components/AlertError";
 import Spinner from "../../../components/Spinner";
@@ -209,21 +209,17 @@ export default function Absensi() {
 
     // Event Handlers
     const handleAdd = () => {
-        // Set default values with current date and time
         const currentDate = getCurrentDate();
         const currentTime = getCurrentTime();
         
-        // Check last attendance record
         const lastAttendance = data.length > 0 ? data[0] : null;
         
-        // Convert currentDate to format matching the stored date for comparison
         const today = new Date().toLocaleDateString('id-ID', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
         });
         
-        // Check if there's an attendance record for today
         const hasTodayAttendance = lastAttendance && lastAttendance.tanggal === today;
         
         // Default form data
@@ -232,12 +228,11 @@ export default function Absensi() {
             karyawan_id: karyawan_id,
             tanggal: currentDate,
             jam_masuk: currentTime,
-            jam_keluar: '',  // Empty by default
+            jam_keluar: '',  
             total_menit: '0',
-            showJamKeluar: false  // Flag to determine if we should show jam_keluar
+            showJamKeluar: false  
         };
         
-        // If last attendance exists, is from today, has jam_masuk but no jam_keluar
         if (hasTodayAttendance && 
             lastAttendance.jam_masuk && 
             lastAttendance.jam_masuk !== '-' && 
@@ -247,7 +242,7 @@ export default function Absensi() {
                 ...newFormData,
                 jam_masuk: lastAttendance.original_jam_masuk || lastAttendance.jam_masuk,
                 jam_keluar: currentTime,
-                showJamKeluar: true  // Show jam_keluar for completing today's attendance
+                showJamKeluar: true 
             };
         }
         
@@ -280,17 +275,14 @@ export default function Absensi() {
             errors.push('Jam masuk harus diisi');
         }
         
-        // Only validate jam_keluar if it's visible
         if (formData.showJamKeluar && !formData.jam_keluar) {
             errors.push('Jam keluar harus diisi');
         }
 
-        // Validate file type
         if (formData.image && !['image/jpeg', 'image/png', 'image/jpg'].includes(formData.image.type)) {
             errors.push('File harus berupa gambar (JPG, JPEG, atau PNG)');
         }
 
-        // Validate file size (max 5MB)
         if (formData.image && formData.image.size > 5 * 1024 * 1024) {
             errors.push('Ukuran file tidak boleh lebih dari 5MB');
         }
@@ -328,7 +320,6 @@ export default function Absensi() {
             submitData.append('tanggal', formData.tanggal);
             submitData.append('jam_masuk', formData.jam_masuk);
             
-            // Only include jam_keluar if showJamKeluar is true
             if (formData.showJamKeluar) {
                 submitData.append('jam_keluar', formData.jam_keluar);
                 submitData.append('total_menit', totalMenit.toString());
@@ -368,43 +359,41 @@ export default function Absensi() {
 
     return (
         <LayoutWithNav>
-            <div className="p-5">
-                {/* Header Section */}
-                <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
-                    <div className="left w-full md:w-auto">
+            <div className="p-3 sm:p-5">
+                {/* Header Section - Responsif */}
+                <section className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 mb-4">
+                    <div className="w-full sm:w-auto text-center sm:text-left mb-2 sm:mb-0">
                         <p className="text-primary text-base font-bold">Daftar Absensi</p>
                     </div>
 
-                    <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
-                        <div className="w-full md:w-auto">
-                            <Button
-                                label="Tambah"
-                                icon={
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 13 13"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            d="M13 8H8V13C8 13.2652 7.89464 13.5196 7.70711 13.7071C7.51957 13.8946 7.26522 14 7 14C6.73478 14 6.48043 13.8946 6.29289 13.7071C6.10536 13.5196 6 13.2652 6 13V8H1C0.734784 8 0.48043 7.89464 0.292893 7.70711C0.105357 7.51957 0 7.26522 0 7C0 6.73478 0.105357 6.48043 0.292893 6.29289C0.48043 6.10536 0.734784 6 1 6H6V1C6 0.734784 6.10536 0.480429 6.29289 0.292893C6.48043 0.105357 6.73478 0 7 0C7.26522 0 7.51957 0.105357 7.70711 0.292893C7.89464 0.480429 8 0.734784 8 1V6H13C13.2652 6 13.5196 6.10536 13.7071 6.29289C13.8946 6.48043 14 6.73478 14 7C14 7.26522 13.8946 7.51957 13.7071 7.70711C13.5196 7.89464 13.2652 8 13 8Z"
-                                            fill="white"
-                                        />
-                                    </svg>
-                                }
-                                bgColor="bg-primary"
-                                hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
-                                textColor="text-white"
-                                onClick={handleAdd}
-                            />
-                        </div>
+                    <div className="w-full sm:w-auto">
+                        <Button
+                            label="Tambah"
+                            icon={
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 13 13"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M13 8H8V13C8 13.2652 7.89464 13.5196 7.70711 13.7071C7.51957 13.8946 7.26522 14 7 14C6.73478 14 6.48043 13.8946 6.29289 13.7071C6.10536 13.5196 6 13.2652 6 13V8H1C0.734784 8 0.48043 7.89464 0.292893 7.70711C0.105357 7.51957 0 7.26522 0 7C0 6.73478 0.105357 6.48043 0.292893 6.29289C0.48043 6.10536 0.734784 6 1 6H6V1C6 0.734784 6.10536 0.480429 6.29289 0.292893C6.48043 0.105357 6.73478 0 7 0C7.26522 0 7.51957 0.105357 7.70711 0.292893C7.89464 0.480429 8 0.734784 8 1V6H13C13.2652 6 13.5196 6.10536 13.7071 6.29289C13.8946 6.48043 14 6.73478 14 7C14 7.26522 13.8946 7.51957 13.7071 7.70711C13.5196 7.89464 13.2652 8 13 8Z"
+                                        fill="white"
+                                    />
+                                </svg>
+                            }
+                            bgColor="bg-primary"
+                            hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                            textColor="text-white"
+                            onClick={handleAdd}
+                            className="w-full sm:w-auto"
+                        />
                     </div>
                 </section>
 
-                {/* Table Section */}
-                <section className="mt-5 bg-white rounded-xl">
-                    <div className="p-5">
+                <section className="mt-3 sm:mt-5 bg-white rounded-xl">
+                    <div className="p-3 sm:p-5">
                         <Table 
                             data={data}
                             headers={headers}
@@ -414,17 +403,17 @@ export default function Absensi() {
                     </div>
                 </section>
 
-                {/* Add Modal */}
+                {/* Add Modal - Responsif */}
                 {showModal && (
                     <div className="fixed inset-0 z-50 overflow-y-auto">
-                        <div className="flex items-center justify-center min-h-screen p-4">
+                        <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
                             <div 
                                 className="fixed inset-0 bg-black opacity-30"
                                 onClick={handleClose}
                             ></div>
 
-                            <div className="relative bg-white rounded-lg w-full md:w-1/3 p-6">
-                                <div className="flex justify-between items-center mb-6">
+                            <div className="relative bg-white rounded-lg w-full max-w-lg md:w-2/3 lg:w-1/2 xl:w-1/3 p-4 sm:p-6 mx-4 my-8 sm:my-0">
+                                <div className="flex justify-between items-center mb-4 sm:mb-6">
                                     <h3 className="text-lg font-semibold text-gray-900">
                                         Tambah Absensi
                                     </h3>
@@ -446,54 +435,33 @@ export default function Absensi() {
                                             <FileInput
                                                 label="Masukan Foto Absen"
                                                 onFileChange={(file) => setFormData({...formData, image: file})}
-                                                width="w-1/3"
+                                                width="w-full" 
                                                 required={true}
                                                 accept="image/*"
+                                                cameraOnly={true}
                                             />
-
                                         </div>
 
-                                        <div className="flex gap-4">
+                                        <div className="flex flex-col sm:flex-row gap-4">
                                             <Input
                                                 label="Tanggal"
                                                 type1="date"
                                                 value={formData.tanggal}
                                                 onChange={(value) => setFormData({...formData, tanggal: value})}
-                                                width="w-1/2"
+                                                width="w-full sm:w-1/2"
                                                 required={true}
                                                 disabled={true}
                                             />
                                             
-                                            {(data.length === 0 || 
-                                              !(data[0].tanggal === new Date().toLocaleDateString('id-ID', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: 'numeric'
-                                                }) && 
-                                                data[0].jam_masuk && 
-                                                data[0].jam_masuk !== '-' && 
-                                                (data[0].jam_keluar === '-' || !data[0].jam_keluar))
-                                            ) ? (
-                                                <Input
-                                                    label="Jam Masuk"
-                                                    type1="time"
-                                                    value={formData.jam_masuk}
-                                                    onChange={(value) => handleTimeChange('jam_masuk', value)}
-                                                    width="w-1/2"
-                                                    required={true}
-                                                    disabled={true}
-                                                />
-                                            ) : (
-                                                <Input
-                                                    label="Jam Masuk"
-                                                    type1="time"
-                                                    value={formData.jam_masuk}
-                                                    onChange={(value) => handleTimeChange('jam_masuk', value)}
-                                                    width="w-1/2"
-                                                    required={true}
-                                                    disabled={true}
-                                                />
-                                            )}
+                                            <Input
+                                                label="Jam Masuk"
+                                                type1="time"
+                                                value={formData.jam_masuk}
+                                                onChange={(value) => handleTimeChange('jam_masuk', value)}
+                                                width="w-full sm:w-1/2"
+                                                required={true}
+                                                disabled={true}
+                                            />
                                         </div>
 
                                         
@@ -503,23 +471,23 @@ export default function Absensi() {
                                                 type1="time"
                                                 value={formData.jam_keluar}
                                                 onChange={(value) => handleTimeChange('jam_keluar', value)}
-                                                width="w-full md:w-1/2"
+                                                width="w-full sm:w-1/2"
                                                 required={true}
                                                 disabled={true}
                                             />
                                         )}
 
-                                        <div className="flex justify-end gap-3 mt-6">
+                                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6">
                                             <button
                                                 type="button"
                                                 onClick={handleClose}
-                                                className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium rounded-lg border border-gray-300"
+                                                className="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium rounded-lg border border-gray-300 w-full sm:w-auto mt-2 sm:mt-0"
                                             >
                                                 Batal
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium w-full sm:w-auto"
                                                 disabled={isLoading}
                                             >
                                                 {isLoading ? 'Menyimpan...' : 'Simpan'}
@@ -542,8 +510,12 @@ export default function Absensi() {
                     />
                 )}
 
-                {/* Loading Spinner */}
-                {isLoading && <Spinner />}
+                {/* Loading Spinner - Responsif */}
+                {isLoading && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                        <Spinner />
+                    </div>
+                )}
 
                 {/* Error Alert */}
                 {error && (

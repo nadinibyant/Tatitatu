@@ -439,13 +439,15 @@ export default function TambahAbsensiProduksi() {
                         <form onSubmit={handleTambahSubmit}>
                             <section>
                                 <div className="">
-                                    <div className="mb-6">
+                                    <div className="mb-6 text-start">
                                         <label className="block text-gray-700 font-medium mb-2">Foto Absen</label>
                                         <FileInput
                                             label="Masukan Foto Absen"
                                             onFileChange={(file) => setSelectedImage(file)}
-                                            width="w-48 h-48"
+                                            cameraOnly={true}
+                                            alignment="start"
                                         />
+                                        
                                     </div>
 
                                     {/* Input Tanggal */}

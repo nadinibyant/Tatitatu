@@ -347,6 +347,8 @@ export default function AbsensiKaryawan() {
                                                 required={true}
                                                 width="w-full"
                                                 accept="image/*"
+                                                allowCamera={true}
+                                                cameraOnly={true}
                                             />
                                         </div>
                                         
