@@ -39,6 +39,14 @@ export default function DetailKaryawan(){
         ? "hitam"
         : "primary";
 
+        const themeColor3 = (isAdminGudang || isHeadGudang) 
+        ? 'coklatTua' 
+        : (isManajer || isOwner || isFinance) 
+          ? "biruTua" 
+          : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2))
+            ? "hitam"
+            : "pink";
+
         const themeColor2 = (isAdminGudang || isHeadGudang) 
         ? 'coklatTua' 
         : (isManajer || isOwner || isFinance) 
@@ -422,7 +430,7 @@ export default function DetailKaryawan(){
                         Tanggal: formatDate2(item.Tanggal),
                         Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
                         Status: <span className={`px-3 py-1 rounded-lg ${
-                            item.Status === 'Antar' ? `bg-${themeColor2} text-${textColor}` : `bg-${textColor} text-${themeColor}`
+                            item.Status === 'Antar' ? `bg-${themeColor2} text-${textColor}` : `bg-${textColor} text-${themeColor3}`
                         }`}>{item.Status}</span>,
                         ...(isManager && {
                             Aksi: (
