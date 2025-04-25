@@ -105,7 +105,7 @@ const AuthPages = () => {
         {/* Right Side - Form Section */}
         <div className="w-full md:w-1/2 p-8 md:p-12">
           <div className="md:hidden flex items-center gap-3 mb-8">
-            <ShoppingBag className="w-8 h-8 text-[#7B0C42]" />
+            <ShoppingBag className="w-8 h-8 text-black" />
           </div>
 
           <div className="space-y-6">
@@ -129,13 +129,13 @@ const AuthPages = () => {
               />
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">Username</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#7B0C42] focus:border-transparent transition"
-                  placeholder="Masukkan email Anda"
+                  placeholder="Masukkan username Anda"
                 />
               </div>
 

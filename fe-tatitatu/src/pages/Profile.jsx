@@ -442,7 +442,7 @@ export default function Profile() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Email"
+              label="Username"
               value={formData.email}
               onChange={handleInputChange('email')}
               required={true}

@@ -471,7 +471,7 @@ export default function AkunKaryawan() {
                                         <div className="md:col-span-2 space-y-4">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                                                 <div>
-                                                    <p className="text-gray-500">Email</p>
+                                                    <p className="text-gray-500">Username</p>
                                                     <p className="font-medium break-words">{selectedEmployee?.Email}</p>
                                                 </div>
                                                 <div>

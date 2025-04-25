@@ -537,14 +537,14 @@ export default function Cabang(){
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Email<span className="text-red-500">*</span>
+                                            Username<span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="email"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            placeholder="Masukan Email"
+                                            placeholder="Masukan Username"
                                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
                                             required
                                         />
