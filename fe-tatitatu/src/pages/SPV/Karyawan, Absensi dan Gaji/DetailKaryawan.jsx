@@ -30,6 +30,39 @@ export default function DetailKaryawan(){
     const isFinance = userData?.role === 'finance'
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedAbsensi, setSelectedAbsensi] = useState(null);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [detailData, setDetailData] = useState(null);
+    const [detailType, setDetailType] = useState('');
+
+    const extractCoordinates = (url) => {
+        try {
+          const regex = /q=([^&]+)/;
+          const match = url.match(regex);
+          if (match && match[1]) {
+            const coords = match[1].split(',');
+            if (coords.length === 2) {
+              return {
+                lat: parseFloat(coords[0]),
+                lng: parseFloat(coords[1])
+              };
+            }
+          }
+          return { lat: 0, lng: 0 };
+        } catch (error) {
+          console.error('Error extracting coordinates:', error);
+          return { lat: 0, lng: 0 };
+        }
+      };
+
+      const getMapEmbedUrl = (lat, lng) => {
+        return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+      };
+
+      const handleOpenDetailModal = (type, data) => {
+        setDetailData(data);
+        setDetailType(type);
+        setDetailModalOpen(true);
+      };
 
     const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
@@ -119,11 +152,11 @@ export default function DetailKaryawan(){
 
     const headers = [
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
-        { label: "Foto", key: "Foto", align: "text-left"},
+        // { label: "Foto", key: "Foto", align: "text-left"},
         { label: "Jam Masuk", key: "Jam Masuk", align: "text-left" },
         { label: "Jam Keluar", key: "Jam Keluar", align: "text-left" },
         { label: "Total Waktu", key: "Total Waktu", align: "text-left" },
-        { label: "Lokasi", key: "Lokasi", align: "text-left" },
+        // { label: "Lokasi", key: "Lokasi", align: "text-left" },
         { label: "Gaji Pokok Perhari", key: "Gaji Pokok Perhari", align: "text-left" },
         ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
     ];
@@ -357,30 +390,101 @@ export default function DetailKaryawan(){
             } 
             else {
                 setData(prevData => ({
-                    ...prevData,
-                    "Total Menit Kerja": totalMenit || 0,
-                    "Gaji Pokok": totalGajiPokok || 0,
-                    data: absensiRecord.map(item => ({
-                        id: item.absensi_karyawan_id,
-                        Tanggal: item.tanggal,
-                        Foto:`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
-                        "Jam Masuk": item.jam_masuk || '-',
-                        "Jam Keluar": item.jam_keluar || '-',
-                        "Total Waktu": item.total_menit || 0,
-                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0,
-                        "Lokasi": item.gmaps ? (
-                            <a
-                                href={item.gmaps}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline"
+                  ...prevData,
+                  "Total Menit Kerja": totalMenit || 0,
+                  "Gaji Pokok": totalGajiPokok || 0,
+                  data: absensiRecord.map(item => {
+                    const masuk = item.jam_masuk || { jam: '-', foto: '', lokasi: '' };
+                    const keluar = item.jam_keluar || { jam: '-', foto: '', lokasi: '' };
+                    
+                    return {
+                      id: item.absensi_karyawan_id || null,
+                      Tanggal: item.tanggal,
+                      Foto: <img 
+                        src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${masuk.foto}`} 
+                        className="w-12 h-12 object-cover" 
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/api/placeholder/64/64";
+                        }}
+                      />,
+                      "Jam Masuk": masuk.jam !== '-' ? (
+                        <button 
+                          className={`text-${themeColor} hover:underline flex items-center`}
+                          onClick={() => handleOpenDetailModal('masuk', masuk)}
+                        >
+                          {masuk.jam}
+                          <svg 
+                            className="w-4 h-4 ml-1" 
+                            fill="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M12 6C7.6 6 4 8.1 4 10.8V14.4C4 17.1 7.6 19.2 12 19.2C16.4 19.2 20 17.1 20 14.4V10.8C20 8.1 16.4 6 12 6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                            <path d="M12 15.6C14.2091 15.6 16 14.5255 16 13.2C16 11.8745 14.2091 10.8 12 10.8C9.79086 10.8 8 11.8745 8 13.2C8 14.5255 9.79086 15.6 12 15.6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                          </svg>
+                        </button>
+                      ) : '-',
+                      "Jam Keluar": keluar.jam !== '-' ? (
+                        <button 
+                          className={`text-${themeColor} hover:underline flex items-center`}
+                          onClick={() => handleOpenDetailModal('keluar', keluar)}
+                        >
+                          {keluar.jam}
+                          <svg 
+                            className="w-4 h-4 ml-1" 
+                            fill="currentColor" 
+                            viewBox="0 0 24 24" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M12 6C7.6 6 4 8.1 4 10.8V14.4C4 17.1 7.6 19.2 12 19.2C16.4 19.2 20 17.1 20 14.4V10.8C20 8.1 16.4 6 12 6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                            <path d="M12 15.6C14.2091 15.6 16 14.5255 16 13.2C16 11.8745 14.2091 10.8 12 10.8C9.79086 10.8 8 11.8745 8 13.2C8 14.5255 9.79086 15.6 12 15.6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                          </svg>
+                        </button>
+                      ) : '-',
+                      "Total Waktu": `${item.total_menit || 0}`,
+                      "Gaji Pokok Perhari": item.total_gaji_pokok || 0,
+                      "Lokasi": '-',
+                      // Store original data for internal use
+                      raw: {
+                        jam_masuk: masuk,
+                        jam_keluar: keluar
+                      },
+                      ...(isManager && {
+                        Aksi: (
+                          <div className="flex items-center justify-center space-x-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit({
+                                  ...item,
+                                  id: item.absensi_karyawan_id
+                                });
+                              }}
+                              className="p-1 text-blue-600 hover:text-blue-800"
                             >
-                                Lokasi
-                            </a>
-                        ) : '-',
-                    }))
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item.absensi_karyawan_id);
+                              }}
+                              className="p-1 text-red-600 hover:text-red-800"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        )
+                      })
+                    };
+                  })
                 }));
-            }
+              }
     
         } catch (error) {
             console.error('Error fetching absensi data:', error);
@@ -527,6 +631,97 @@ export default function DetailKaryawan(){
         '/icon/mail.svg'
     );
     
+    const DetailModal = ({ isOpen, onClose, data, type }) => {
+        if (!isOpen || !data) return null;
+        
+        const coords = extractCoordinates(data.lokasi);
+        
+        return (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
+              <div 
+                className="fixed inset-0 bg-black opacity-30"
+                onClick={onClose}
+              ></div>
+      
+              <div className="relative bg-white rounded-lg w-full max-w-lg md:w-2/3 lg:w-3/5 p-4 sm:p-6 mx-4 my-8 sm:my-0">
+                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Detail Absensi - Jam {type === 'masuk' ? 'Masuk' : 'Keluar'} ({data.jam})
+                  </h3>
+                  <button 
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <span className="text-2xl">×</span>
+                  </button>
+                </div>
+      
+                <div className="space-y-6">
+                  {/* Image */}
+                  <div>
+                    <h4 className="text-md font-medium mb-2">Foto Absensi</h4>
+                    <div className="bg-gray-100 rounded-lg p-2 flex justify-center">
+                      <img 
+                        src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${data.foto}`}
+                        alt={`Foto Absensi ${type}`}
+                        className="rounded-lg max-h-64 object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/api/placeholder/400/300";
+                        }}
+                      />
+                    </div>
+                  </div>
+      
+                  {/* Map */}
+                  <div>
+                    <h4 className="text-md font-medium mb-2">Lokasi</h4>
+                    <div className="bg-gray-100 rounded-lg p-2 h-64">
+                      <iframe
+                        title="Location Map"
+                        width="100%"
+                        height="100%"
+                        frameBorder="0"
+                        style={{ border: 0, borderRadius: '0.5rem' }}
+                        src={getMapEmbedUrl(coords.lat, coords.lng)}
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                    <div className="mt-2">
+                      <a 
+                        href={data.lokasi}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-${themeColor} hover:underline flex items-center justify-center`}
+                      >
+                        Buka di Google Maps
+                        <svg 
+                          className="w-4 h-4 ml-1" 
+                          fill="currentColor" 
+                          viewBox="0 0 24 24" 
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M14 5C13.4477 5 13 4.55228 13 4C13 3.44772 13.4477 3 14 3H20C20.5523 3 21 3.44772 21 4V10C21 10.5523 20.5523 11 20 11C19.4477 11 19 10.5523 19 10V6.41421L11.7071 13.7071C11.3166 14.0976 10.6834 14.0976 10.2929 13.7071C9.90237 13.3166 9.90237 12.6834 10.2929 12.2929L17.5858 5H14Z" />
+                          <path d="M5 7C4.44772 7 4 7.44772 4 8V19C4 19.5523 4.44772 20 5 20H16C16.5523 20 17 19.5523 17 19V14C17 13.4477 17.4477 13 18 13C18.5523 13 19 13.4477 19 14V19C19 20.6569 17.6569 22 16 22H5C3.34315 22 2 20.6569 2 19V8C2 6.34315 3.34315 5 5 5H10C10.5523 5 11 5.44772 11 6C11 6.55228 10.5523 7 10 7H5Z" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+      
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className={`w-full px-4 py-2 bg-${themeColor} text-white rounded-lg hover:bg-opacity-90 font-medium`}
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
 
     return(
         <>
@@ -746,6 +941,15 @@ export default function DetailKaryawan(){
                         {renderTable()}
                     </div>
                 </section>
+
+                {detailModalOpen && (
+                    <DetailModal
+                        isOpen={detailModalOpen}
+                        onClose={() => setDetailModalOpen(false)}
+                        data={detailData}
+                        type={detailType}
+                    />
+                )}
 
                 {isLoading && <Spinner />}
 

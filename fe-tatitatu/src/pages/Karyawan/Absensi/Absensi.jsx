@@ -30,6 +30,16 @@ export default function Absensi() {
     const navigate = useNavigate();
     const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
     const [geoError, setGeoError] = useState(null);
+    
+    // New state for detail modal
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [detailData, setDetailData] = useState({
+        type: '', // 'masuk' or 'keluar'
+        foto: '',
+        lokasi: '',
+        jam: '',
+        coordinates: { lat: 0, lng: 0 }
+      });
 
     // Function to get current date in YYYY-MM-DD format
     const getCurrentDate = () => {
@@ -87,11 +97,9 @@ export default function Absensi() {
     const headers = [
         { label: "No", key: "nomor", align: "text-center" },
         { label: "Tanggal", key: "tanggal", align: "text-left" },
-        { label: "Foto", key: "foto", align: "text-left" },
         { label: "Jam Masuk", key: "jam_masuk", align: "text-left" },
         { label: "Jam Keluar", key: "jam_keluar", align: "text-left" },
         { label: "Total Menit", key: "total_menit", align: "text-left" },
-        { label: "Lokasi", key: "lokasi", align: "text-left" },
     ];
 
     const handleTimeChange = (field, value) => {
@@ -136,6 +144,19 @@ export default function Absensi() {
         }
     }, [isInitialLoad]);
 
+    // Handler for opening detail modal
+    const handleOpenDetailModal = (type, data) => {
+        const coordinates = extractCoordinates(data.lokasi);
+        setDetailData({
+          type,
+          foto: data.foto,
+          lokasi: data.lokasi,
+          jam: data.jam,
+          coordinates: coordinates
+        });
+        setShowDetailModal(true);
+      };
+
     // API Functions
     const fetchData = async () => {
         try {
@@ -145,54 +166,71 @@ export default function Absensi() {
             if (response.data.success) {
                 // Sort data by date in descending order to ensure latest record is first
                 const sortedData = [...response.data.data].sort((a, b) => {
-                    return new Date(b.tanggal + ' ' + (b.jam_masuk || '00:00')) - 
-                           new Date(a.tanggal + ' ' + (a.jam_masuk || '00:00'));
+                    return new Date(b.tanggal) - new Date(a.tanggal);
                 });
                 
-                const formattedData = sortedData.map((item, index) => ({
-                    nomor: index + 1,
-                    // Store original values for logic purposes
-                    original_jam_masuk: item.jam_masuk,
-                    original_jam_keluar: item.jam_keluar,
-                    tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    }),
-                    lokasi: (
-                        <a 
-                            href={item.gmaps} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-maroon hover:text-red-800 underline flex items-center"
-                        >
-                            Lokasi
-                            <svg 
-                                className="w-4 h-4 ml-1" 
-                                fill="currentColor" 
-                                viewBox="0 0 24 24" 
-                                xmlns="http://www.w3.org/2000/svg"
+                const formattedData = sortedData.map((item, index) => {
+                    const masuk = item.jam_masuk || { jam: '-', foto: null, lokasi: null };
+                    const keluar = item.jam_keluar || { jam: '-', foto: null, lokasi: null };
+                    
+                    // Calculate total minutes
+                    let totalMenit = 0;
+                    if (masuk.jam !== '-' && keluar.jam !== '-') {
+                        totalMenit = calculateTotalMinutes(masuk.jam, keluar.jam);
+                    }
+                    
+                    return {
+                        nomor: index + 1,
+                        tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        }),
+                        // Create clickable jam masuk component
+                        jam_masuk: masuk.jam !== '-' ? (
+                            <button 
+                                className="text-primary hover:underline flex items-center"
+                                onClick={() => handleOpenDetailModal('masuk', masuk)}
                             >
-                                <path 
-                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                                />
-                            </svg>
-                        </a>
-                    ),
-                    foto: (
-                        <img 
-                            src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`}
-                            alt="Foto Absensi" 
-                            className="w-16 h-16 object-cover rounded"
-                            onError={(e) => {
-                                e.target.src = "/api/placeholder/64/64"; 
-                            }}
-                        />
-                    ),
-                    jam_masuk: item.jam_masuk || '-',
-                    jam_keluar: item.jam_keluar || '-',
-                    total_menit: item.total_menit ? `${formatNumber(item.total_menit)} Menit` : '-'
-                }));
+                                {masuk.jam}
+                                <svg 
+                                    className="w-4 h-4 ml-1" 
+                                    fill="currentColor" 
+                                    viewBox="0 0 24 24" 
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path d="M12 6C7.6 6 4 8.1 4 10.8V14.4C4 17.1 7.6 19.2 12 19.2C16.4 19.2 20 17.1 20 14.4V10.8C20 8.1 16.4 6 12 6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                                    <path d="M12 15.6C14.2091 15.6 16 14.5255 16 13.2C16 11.8745 14.2091 10.8 12 10.8C9.79086 10.8 8 11.8745 8 13.2C8 14.5255 9.79086 15.6 12 15.6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                                </svg>
+                            </button>
+                        ) : '-',
+                        // Create clickable jam keluar component
+                        jam_keluar: keluar.jam !== '-' ? (
+                            <button 
+                                className="text-primary hover:underline flex items-center"
+                                onClick={() => handleOpenDetailModal('keluar', keluar)}
+                            >
+                                {keluar.jam}
+                                <svg 
+                                    className="w-4 h-4 ml-1" 
+                                    fill="currentColor" 
+                                    viewBox="0 0 24 24" 
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path d="M12 6C7.6 6 4 8.1 4 10.8V14.4C4 17.1 7.6 19.2 12 19.2C16.4 19.2 20 17.1 20 14.4V10.8C20 8.1 16.4 6 12 6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                                    <path d="M12 15.6C14.2091 15.6 16 14.5255 16 13.2C16 11.8745 14.2091 10.8 12 10.8C9.79086 10.8 8 11.8745 8 13.2C8 14.5255 9.79086 15.6 12 15.6Z" strokeWidth="2" stroke="currentColor" fill="none"/>
+                                </svg>
+                            </button>
+                        ) : '-',
+                        total_menit: totalMenit ? `${formatNumber(totalMenit)} Menit` : '-',
+                        // Store raw data for internal use
+                        raw: {
+                            masuk,
+                            keluar,
+                            tanggal: item.tanggal
+                        }
+                    };
+                });
                 
                 setData(formattedData);
             } else {
@@ -219,7 +257,9 @@ export default function Absensi() {
             year: 'numeric'
         });
         
-        const hasTodayAttendance = lastAttendance && lastAttendance.tanggal === today;
+        const todayDate = getCurrentDate();
+        const hasTodayAttendance = lastAttendance && 
+            new Date(lastAttendance.raw.tanggal).toISOString().split('T')[0] === todayDate;
         
         // Default form data
         let newFormData = {
@@ -227,21 +267,21 @@ export default function Absensi() {
             karyawan_id: karyawan_id,
             tanggal: currentDate,
             jam_masuk: currentTime,
-            jam_keluar: '',  
+            jam_keluar: '',
             total_menit: '0',
-            showJamKeluar: false  
+            showJamKeluar: false
         };
         
         if (hasTodayAttendance && 
-            lastAttendance.jam_masuk && 
-            lastAttendance.jam_masuk !== '-' && 
-            (lastAttendance.jam_keluar === '-' || !lastAttendance.jam_keluar)) {
+            lastAttendance.raw.masuk && 
+            lastAttendance.raw.masuk.jam !== '-' && 
+            (!lastAttendance.raw.keluar || lastAttendance.raw.keluar.jam === '-')) {
             
             newFormData = {
                 ...newFormData,
-                jam_masuk: lastAttendance.original_jam_masuk || lastAttendance.jam_masuk,
+                jam_masuk: lastAttendance.raw.masuk.jam,
                 jam_keluar: currentTime,
-                showJamKeluar: true 
+                showJamKeluar: true
             };
         }
         
@@ -252,6 +292,10 @@ export default function Absensi() {
     const handleClose = () => {
         setShowModal(false);
         setError(null);
+    };
+
+    const handleCloseDetailModal = () => {
+        setShowDetailModal(false);
     };
 
     const handleAcc = () => {
@@ -289,6 +333,8 @@ export default function Absensi() {
         return errors;
     };
 
+    console.log(formData)
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -309,10 +355,7 @@ export default function Absensi() {
             }
             const totalMenit = formData.showJamKeluar ? 
                 calculateTotalMinutes(formData.jam_masuk, formData.jam_keluar) : 0;
-
             
-            
-            console.log(totalMenit)
             const submitData = new FormData();
             submitData.append('image', formData.image);
             submitData.append('karyawan_id', formData.karyawan_id);
@@ -355,6 +398,30 @@ export default function Absensi() {
             setIsLoading(false);
         }
     };
+
+    const extractCoordinates = (url) => {
+        try {
+          const regex = /q=([^&]+)/;
+          const match = url.match(regex);
+          if (match && match[1]) {
+            const coords = match[1].split(',');
+            if (coords.length === 2) {
+              return {
+                lat: parseFloat(coords[0]),
+                lng: parseFloat(coords[1])
+              };
+            }
+          }
+          return { lat: 0, lng: 0 };
+        } catch (error) {
+          console.error('Error extracting coordinates:', error);
+          return { lat: 0, lng: 0 };
+        }
+      };
+
+      const getMapEmbedUrl = (lat, lng) => {
+        return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+      };
 
     return (
         <LayoutWithNav>
@@ -499,8 +566,94 @@ export default function Absensi() {
                     </div>
                 )}
 
-                {/* Success Modal */}
-                {isModalSucc && (
+                {/* Detail Modal for Jam Masuk/Keluar */}
+                {showDetailModal && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
+                            <div 
+                                className="fixed inset-0 bg-black opacity-30"
+                                onClick={handleCloseDetailModal}
+                            ></div>
+
+                            <div className="relative bg-white rounded-lg w-full max-w-lg md:w-2/3 lg:w-3/5 p-4 sm:p-6 mx-4 my-8 sm:my-0">
+                                <div className="flex justify-between items-center mb-4 sm:mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        Detail Absensi - Jam {detailData.type === 'masuk' ? 'Masuk' : 'Keluar'} ({detailData.jam})
+                                    </h3>
+                                    <button 
+                                        onClick={handleCloseDetailModal}
+                                        className="text-gray-400 hover:text-gray-500"
+                                    >
+                                        <span className="text-2xl">×</span>
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Image */}
+                                    <div>
+                                        <h4 className="text-md font-medium mb-2">Foto Absensi</h4>
+                                        <div className="bg-gray-100 rounded-lg p-2 flex justify-center">
+                                            <img 
+                                                src={`${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${detailData.foto}`}
+                                                alt={`Foto Absensi ${detailData.type}`}
+                                                className="rounded-lg max-h-64 object-contain"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "/api/placeholder/400/300";
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Map */}
+                                    <div>
+                                        <h4 className="text-md font-medium mb-2">Lokasi</h4>
+                                        <div className="bg-gray-100 rounded-lg p-2 h-64">
+                                            <iframe
+                                            title="Location Map"
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            style={{ border: 0, borderRadius: '0.5rem' }}
+                                            src={getMapEmbedUrl(detailData.coordinates?.lat || 0, detailData.coordinates?.lng || 0)}
+                                            allowFullScreen
+                                            ></iframe>
+                                        </div>
+                                        <div className="mt-2">
+                                            <a 
+                                            href={detailData.lokasi}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline flex items-center justify-center"
+                                            >
+                                            Buka di Google Maps
+                                            <svg 
+                                                className="w-4 h-4 ml-1" 
+                                                fill="currentColor" 
+                                                viewBox="0 0 24 24" 
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path d="M14 5C13.4477 5 13 4.55228 13 4C13 3.44772 13.4477 3 14 3H20C20.5523 3 21 3.44772 21 4V10C21 10.5523 20.5523 11 20 11C19.4477 11 19 10.5523 19 10V6.41421L11.7071 13.7071C11.3166 14.0976 10.6834 14.0976 10.2929 13.7071C9.90237 13.3166 9.90237 12.6834 10.2929 12.2929L17.5858 5H14Z" />
+                                                <path d="M5 7C4.44772 7 4 7.44772 4 8V19C4 19.5523 4.44772 20 5 20H16C16.5523 20 17 19.5523 17 19V14C17 13.4477 17.4477 13 18 13C18.5523 13 19 13.4477 19 14V19C19 20.6569 17.6569 22 16 22H5C3.34315 22 2 20.6569 2 19V8C2 6.34315 3.34315 5 5 5H10C10.5523 5 11 5.44772 11 6C11 6.55228 10.5523 7 10 7H5Z" />
+                                            </svg>
+                                            </a>
+                                        </div>
+                                        </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleCloseDetailModal}
+                                        className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+{/* Success Modal */}
+{isModalSucc && (
                     <AlertSuccess
                         title="Berhasil!!"
                         description="Data berhasil ditambahkan"

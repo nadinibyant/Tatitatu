@@ -27,25 +27,31 @@ export default function KaryawanGaji() {
       ? "biruTua" 
       : "primary";
 
+    // Define icons based on user role
+    const tokoIcon = (isAdminGudang || isHeadGudang) 
+        ? '/icon/toko_gudang.svg'
+        : (isManajer || isOwner || isFinance) 
+            ? '/icon/toko_non.svg' 
+            : '/icon/toko.svg';
+
     const [searchText, setSearchText] = useState("");
     const [selectedStore, setSelectedStore] = useState("Semua");
     const [selectedMonth, setSelectedMonth] = useState(moment().format("MMMM"));
     const [selectedYear, setSelectedYear] = useState(moment().format("YYYY"));
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
-    const [errorMessasge, setErrorMessage] = useState("")
+    const [errorMessage, setErrorMessage] = useState("");
     const [errorAlert, setErrorAlert] = useState(false);
-    
-    // State for filter options
+
     const [filterOptions, setFilterOptions] = useState({
         divisi: [{ label: "Semua", value: "Semua" }],
         toko: [{ label: "Semua", value: "Semua" }],
         cabang: [{ label: "Semua", value: "Semua" }]
     });
-    const [selectedDivisi, setSelectedDivisi] = useState("Semua")
-    const [selectedToko, setSelectedToko] = useState("Semua")
-    const [selectedCabang, setSelectedCabang] = useState("Semua")
-    const [cabangData, setCabangData] = useState([])
+    const [selectedDivisi, setSelectedDivisi] = useState("Semua");
+    const [selectedToko, setSelectedToko] = useState("Semua");
+    const [selectedCabang, setSelectedCabang] = useState("Semua");
+    const [cabangData, setCabangData] = useState([]);
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -105,11 +111,11 @@ export default function KaryawanGaji() {
                 
                 if (response.data.success) {
                     const transformedCabangData = [
-                        { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
+                        { label: 'Semua', value: 'Semua', icon: tokoIcon },
                         ...response.data.data.map(cabang => ({
                             label: cabang.nama_cabang,
                             value: cabang.nama_cabang,
-                            icon: '/icon/toko.svg',
+                            icon: tokoIcon,
                             cabang_id: cabang.cabang_id 
                         }))
                     ];
@@ -149,7 +155,6 @@ export default function KaryawanGaji() {
         { label: "Total Gaji Akhir", key: "Total Gaji Akhir", align: "text-left" }
     ];
 
-    // Fetch data from API
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -185,7 +190,10 @@ export default function KaryawanGaji() {
                         "Potongan Gaji": 0,
                         "Total Gaji Akhir": item.totalGajiAkhir,
                         "waktu_kerja_sebulan_menit": item.karyawan.waktu_kerja_sebulan_menit || null,
-                        "waktu_kerja_sebulan_antar": item.karyawan.waktu_kerja_sebulan_antar || null
+                        "waktu_kerja_sebulan_antar": item.karyawan.waktu_kerja_sebulan_antar || null,
+                        divisi_id: item.karyawan.divisi?.divisi_karyawan_id,
+                        // toko_id: item.karyawan.toko?.toko_id,
+                        cabang_id: item.karyawan.cabang?.cabang_id
                     }));
 
                     setData(transformedData);
@@ -203,6 +211,22 @@ export default function KaryawanGaji() {
         fetchData();
     }, [selectedMonth, selectedYear]);
 
+    // Effect to sync selectedStore with selectedCabang
+    useEffect(() => {
+        // Update selectedCabang when selectedStore changes
+        if (selectedStore !== "Semua") {
+            setSelectedCabang(selectedStore);
+        }
+    }, [selectedStore]);
+
+    // Effect to sync selectedCabang with selectedStore
+    useEffect(() => {
+        // Update selectedStore when selectedCabang changes
+        if (selectedCabang !== "Semua") {
+            setSelectedStore(selectedCabang);
+        }
+    }, [selectedCabang]);
+
     const handleFilterClick = (event) => {
         const buttonRect = event.currentTarget.getBoundingClientRect();
         setFilterPosition({
@@ -212,22 +236,19 @@ export default function KaryawanGaji() {
         setIsFilterModalOpen(prev => !prev);
     };
 
+    // Filter data based on selected filters
     const filteredData = data.filter(item => {
         const matchDivisi = selectedDivisi === "Semua" || item.Divisi === selectedDivisi;
         const matchToko = selectedToko === "Semua" || item.Toko === selectedToko;
         const matchCabang = selectedCabang === "Semua" || item.Cabang === selectedCabang;
-        return matchDivisi && matchToko && matchCabang;
+        const matchStore = selectedStore === "Semua" || item.Cabang === selectedStore;
+        
+        return matchDivisi && matchToko && (matchCabang || matchStore);
     });
 
     const handleApplyFilter = () => {
         setIsFilterModalOpen(false);
     };
-
-    // const dataCabang = [
-    //     { label: 'Semua', value: 'Semua', icon: '/icon/toko.svg' },
-    //     { label: 'Gor Agus', value: 'Gor Agus', icon: '/icon/toko.svg' },
-    //     { label: 'Lubeg', value: 'Lubeg', icon: '/icon/toko.svg' },
-    // ];
 
     const handlePotongGajiChange = (id, value) => {
         const potongan = parseInt(value.replace(/\D/g, '')) || 0;
@@ -258,13 +279,9 @@ export default function KaryawanGaji() {
         setIsEditing(false);
     };
 
-    // const handleRowClick = (row) => {
-    //     navigate('/karyawan-absen-gaji/detail', { state: { id: row.id, divisi: row.Divisi } });
-    // }
-
     const handleRowClick = (row) => {
         const employeeData = data.find(item => item.id === row.id);
-        console.log(employeeData)
+        console.log(employeeData);
         let divisiType;
         if (employeeData.toko_id === 1) {
             if (employeeData.waktu_kerja_sebulan_antar === null) {
@@ -290,7 +307,7 @@ export default function KaryawanGaji() {
                 selectedMonth: selectedMonth,
                 selectedYear: selectedYear,
                 selectedCabang: selectedStore,
-                karyawanData: data.map(item => ({
+                karyawanData: filteredData.map(item => ({
                     id: item.id,
                     nama: item.Nama,
                     divisi: item.Divisi,
@@ -301,7 +318,8 @@ export default function KaryawanGaji() {
                 }))
             } 
         });
-    }
+    };
+
     // Render loading or error states
     if (loading) {
         return (
@@ -321,7 +339,6 @@ export default function KaryawanGaji() {
 
     const handleExport = async () => {
         try {
-
             let queryParams = {};
 
             if (selectedToko !== "Semua") {
@@ -345,9 +362,9 @@ export default function KaryawanGaji() {
                 }
             }
             
-            if (selectedStore !== "Semua") {
+            if (selectedStore !== "Semua" && !queryParams.cabang) {
                 const storeOption = cabangData.find(option => option.value === selectedStore);
-                if (storeOption && storeOption.cabang_id && !queryParams.cabang) {
+                if (storeOption && storeOption.cabang_id) {
                     queryParams.cabang = storeOption.cabang_id;
                 }
             }
@@ -390,8 +407,8 @@ export default function KaryawanGaji() {
             
         } catch (error) {
             console.error('Error exporting data:', error);
-            setErrorMessage(error.response.data.message)
-            setErrorAlert(true)
+            setErrorMessage(error.response?.data?.message || "Error exporting data");
+            setErrorAlert(true);
         } finally {
             setLoading(false);
         }
@@ -401,43 +418,35 @@ export default function KaryawanGaji() {
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
         </svg>
-      ) : (isManajer || isOwner || isFinance) ? (
+    ) : (isManajer || isOwner || isFinance) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
           <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
         </svg>
-      ) : (
+    ) : (
         <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
         </svg>
-      );
+    );
 
-      const gajiIcon = (isAdminGudang || isHeadGudang) ? (
+    const gajiIcon = (isAdminGudang || isHeadGudang) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#71503D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#71503D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#71503D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#71503D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-      ) : (isManajer || isOwner || isFinance) ? (
+    ) : (isManajer || isOwner || isFinance) ? (
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#023F80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#023F80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#023F80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#023F80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-      ) : (
+    ) : (
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-        <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 19C5.65685 19 7 17.6569 7 16C7 14.3431 5.65685 13 4 13C2.34315 13 1 14.3431 1 16C1 17.6569 2.34315 19 4 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12.001 13L4.00098 1M6.00098 13L9.00098 8.5M14.001 1L11.001 5.5" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 19C15.6569 19 17 17.6569 17 16C17 14.3431 15.6569 13 14 13C12.3431 13 11 14.3431 11 16C11 17.6569 12.3431 19 14 19Z" stroke="#7B0C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
-      );
-
-      const tokoIcon = (isAdminGudang || isHeadGudang) ? (
-        '/icon/toko_gudang.svg'
-      ) : (isManajer || isOwner || isFinance) ? (
-        '/icon/toko_non.svg'
-      ) : (
-        '/icon/toko.svg'
-      );
+    );
 
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -462,6 +471,7 @@ export default function KaryawanGaji() {
                                 selectedIcon={tokoIcon} 
                                 options={cabangData} 
                                 onSelect={(value) => setSelectedStore(value)} 
+                                selectedValue={selectedStore}
                             />
                         </div>
                         <div className="w-full md:w-auto relative">
@@ -559,45 +569,45 @@ export default function KaryawanGaji() {
                 {isFilterModalOpen && (
                     <>
                         <div 
-                        className="fixed inset-0"
-                        onClick={() => setIsFilterModalOpen(false)}
+                          className="fixed inset-0"
+                          onClick={() => setIsFilterModalOpen(false)}
                         />
                         <div 
-                        className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
-                        style={{ 
-                            top: filterPosition.top,
-                            left: filterPosition.left 
-                        }}
+                          className="absolute bg-white rounded-lg shadow-lg p-4 w-80 z-50"
+                          style={{ 
+                              top: filterPosition.top,
+                              left: filterPosition.left 
+                          }}
                         >
-                        <div className="space-y-4">
-                            <InputDropdown
-                            label="Divisi"
-                            options={filterOptions.divisi}
-                            value={selectedDivisi}
-                            onSelect={(value) => setSelectedDivisi(value.value)}
-                            required={true}
-                            />
-                            <InputDropdown
-                            label="Toko"
-                            options={filterOptions.toko}
-                            value={selectedToko}
-                            onSelect={(value) => setSelectedToko(value.value)}
-                            required={true}
-                            />
-                            <InputDropdown
-                            label="Cabang"
-                            options={filterOptions.cabang}
-                            value={selectedCabang}
-                            onSelect={(value) => setSelectedCabang(value.value)}
-                            required={true}
-                            />
-                            <button
-                            onClick={handleApplyFilter}
-                            className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
-                            >
-                            Simpan
-                            </button>
-                        </div>
+                          <div className="space-y-4">
+                              <InputDropdown
+                                label="Divisi"
+                                options={filterOptions.divisi}
+                                value={selectedDivisi}
+                                onSelect={(value) => setSelectedDivisi(value.value)}
+                                required={true}
+                              />
+                              <InputDropdown
+                                label="Toko"
+                                options={filterOptions.toko}
+                                value={selectedToko}
+                                onSelect={(value) => setSelectedToko(value.value)}
+                                required={true}
+                              />
+                              <InputDropdown
+                                label="Cabang"
+                                options={filterOptions.cabang}
+                                value={selectedCabang}
+                                onSelect={(value) => setSelectedCabang(value.value)}
+                                required={true}
+                              />
+                              <button
+                                onClick={handleApplyFilter}
+                                className={`w-full bg-${themeColor} text-white py-2 px-4 rounded-lg hover:bg-opacity-90`}
+                              >
+                                Simpan
+                              </button>
+                          </div>
                         </div>
                     </>
                 )}
@@ -606,7 +616,7 @@ export default function KaryawanGaji() {
             {errorAlert && (
               <AlertError
                 title="Gagal!!"
-                description={errorMessasge}
+                description={errorMessage}
                 confirmLabel="Ok"
                 onConfirm={() => setErrorAlert(false)}
               />
