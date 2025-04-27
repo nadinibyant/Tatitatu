@@ -65,13 +65,15 @@ const Table = ({
   //       : 'text-primary'
   // );
 
-  const headerTextColor = text_header || (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-  ? 'text-coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? 'text-biruMuda' 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? 'text-white'
-      : 'text-primary'
+const headerTextColor = text_header 
+  ? text_header 
+  : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    ? 'text-coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? 'text-biruMuda' 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? 'text-white'
+        : 'text-primary';
   
   const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
   ? 'coklatTua' 

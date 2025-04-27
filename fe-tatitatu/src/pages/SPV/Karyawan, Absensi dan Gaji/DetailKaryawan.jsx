@@ -33,6 +33,10 @@ export default function DetailKaryawan(){
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [detailData, setDetailData] = useState(null);
     const [detailType, setDetailType] = useState('');
+    
+    // Changed from deleteId to deleteIds array
+    const [deleteIds, setDeleteIds] = useState([]);
+    const [isAlert, setIsAlert] = useState(false);
 
     const extractCoordinates = (url) => {
         try {
@@ -96,24 +100,62 @@ export default function DetailKaryawan(){
         ? "white"
         : "primary"; 
 
-    const [isAlert, setIsAlert] = useState(false);
-    const [deleteId, setDeleteId] = useState(null);
-
-    const handleDelete = (id) => {
-        setDeleteId(id);
-        setIsAlert(true);
+    // Updated handleDelete function to accept the full item object
+    const handleDelete = (item) => {
+        // Initialize an array to hold IDs to delete
+        const idsToDelete = [];
+        
+        // Check if we're dealing with regular employee attendance
+        if (item.raw && item.raw.jam_masuk) {
+            // Add clock-in ID if it exists
+            if (item.raw.jam_masuk.absensi_karyawan_id) {
+                idsToDelete.push(item.raw.jam_masuk.absensi_karyawan_id);
+            }
+            
+            // Add clock-out ID if it exists
+            if (item.raw.jam_keluar && item.raw.jam_keluar.absensi_karyawan_id) {
+                idsToDelete.push(item.raw.jam_keluar.absensi_karyawan_id);
+            }
+        } 
+        // For other divisions or direct API data
+        else if (item.id) {
+            idsToDelete.push(item.id);
+        }
+        // For direct API response format
+        else if (item.absensi_karyawan_id) {
+            idsToDelete.push(item.absensi_karyawan_id);
+        }
+        
+        // Only proceed if we have IDs to delete
+        if (idsToDelete.length > 0) {
+            setDeleteIds(idsToDelete);
+            setIsAlert(true);
+        } else {
+            console.error("No valid IDs found for deletion", item);
+        }
     };
 
+    // Updated handleConfirmDel to handle deleting multiple records
     const handleConfirmDel = async () => {
         try {
             setLoading(true);
-            await api.delete(`/absensi-karyawan/${deleteId}`);
             
+            // Delete all IDs in sequence
+            for (const id of deleteIds) {
+                try {
+                    await api.delete(`/absensi-karyawan/${id}`);
+                    console.log(`Successfully deleted record with ID ${id}`);
+                } catch (error) {
+                    console.error(`Error deleting record with ID ${id}:`, error);
+                    // Continue with other deletions even if one fails
+                }
+            }
+            
+            // Refresh data after all deletes
             fetchAbsensiData();
-            
             setIsAlert(false);
         } catch (error) {
-            console.error('Error deleting data:', error);
+            console.error('Error in delete operation:', error);
         } finally {
             setLoading(false);
         }
@@ -179,6 +221,7 @@ export default function DetailKaryawan(){
         ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
     ];
 
+    // Updated handleEdit to pass the full data structure
     const handleEdit = (item) => {
         setSelectedAbsensi(item);
         setIsEditModalOpen(true);
@@ -456,10 +499,7 @@ export default function DetailKaryawan(){
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEdit({
-                                  ...item,
-                                  id: item.absensi_karyawan_id
-                                });
+                                handleEdit(item);
                               }}
                               className="p-1 text-blue-600 hover:text-blue-800"
                             >
@@ -470,7 +510,8 @@ export default function DetailKaryawan(){
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(item.absensi_karyawan_id);
+                                // Pass full item instead of just ID
+                                handleDelete(item);
                               }}
                               className="p-1 text-red-600 hover:text-red-800"
                             >
@@ -553,7 +594,8 @@ export default function DetailKaryawan(){
                                     <button 
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDelete(item.id);
+                                            // Pass full item instead of just ID
+                                            handleDelete(item);
                                         }}
                                         className="p-1 text-red-600 hover:text-red-800"
                                     >
@@ -594,7 +636,8 @@ export default function DetailKaryawan(){
                                     <button 
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDelete(item.id);
+                                            // Pass full item instead of just ID
+                                            handleDelete(item);
                                         }}
                                         className="p-1 text-red-600 hover:text-red-800"
                                     >

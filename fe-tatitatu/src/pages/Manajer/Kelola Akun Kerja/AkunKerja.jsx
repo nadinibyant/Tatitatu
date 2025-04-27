@@ -84,7 +84,7 @@ export default function AkunKerja() {
     const headers = [
         { label: "No", key: "nomor", width: "60px", align: "text-left" },
         { label: "Nama", key: "Nama", align: "text-left" },
-        { label: "Email", key: "Email", align: "text-left" },
+        { label: "Username", key: "Email", align: "text-left" },
         { label: "Aksi", key: "Aksi", width:"150px", align: "text-left" },
     ];
 

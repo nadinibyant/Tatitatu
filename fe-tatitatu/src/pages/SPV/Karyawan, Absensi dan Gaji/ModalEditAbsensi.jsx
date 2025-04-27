@@ -12,7 +12,9 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
     totalMenit: '',
     totalMenitRaw: 0, 
     lokasi: '',
-    status: ''
+    status: '',
+    id_masuk: null,
+    id_keluar: null
   });
   
   const [loading, setLoading] = useState(false);
@@ -21,22 +23,63 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
   
   useEffect(() => {
     if (isOpen && absensiData) {
+      console.log("Received absensiData:", absensiData);
+      
       if (divisi === 'Umum') {
-        const totalMenitValue = absensiData["Total Waktu"] 
-          ? parseInt(String(absensiData["Total Waktu"]).replace(' Menit', ''))
-          : 0;
+        let jamMasuk = '';
+        let jamKeluar = '';
+        let idMasuk = null;
+        let idKeluar = null;
+        let totalMenitValue = 0;
+        
+        if (absensiData.raw) {
+          const masuk = absensiData.raw.jam_masuk || {};
+          const keluar = absensiData.raw.jam_keluar || {};
+          
+          jamMasuk = masuk.jam && masuk.jam !== '-' ? masuk.jam : '';
+          jamKeluar = keluar.jam && keluar.jam !== '-' ? keluar.jam : '';
+          idMasuk = masuk.absensi_karyawan_id || null;
+          idKeluar = keluar.absensi_karyawan_id || null;
+          
+          totalMenitValue = parseInt(String(absensiData["Total Waktu"]).replace(' Menit', '')) || 0;
+        } 
+        else if (absensiData.jam_masuk) {
+          const masuk = absensiData.jam_masuk || {};
+          const keluar = absensiData.jam_keluar || {};
+          
+          jamMasuk = masuk.jam && masuk.jam !== '-' ? masuk.jam : '';
+          jamKeluar = keluar?.jam && keluar.jam !== '-' ? keluar.jam : '';
+          idMasuk = masuk.absensi_karyawan_id || null;
+          idKeluar = keluar?.absensi_karyawan_id || null;
+          
+          totalMenitValue = absensiData.total_menit || 0;
+        }
+        // If data is already in the expected format
+        else if (typeof absensiData["Jam Masuk"] === 'string') {
+          jamMasuk = absensiData["Jam Masuk"] === '-' ? '' : absensiData["Jam Masuk"];
+          jamKeluar = absensiData["Jam Keluar"] === '-' ? '' : absensiData["Jam Keluar"];
+          idMasuk = absensiData.id || null;
+          
+          totalMenitValue = parseInt(String(absensiData["Total Waktu"]).replace(' Menit', '')) || 0;
+        }
         
         setFormData({
-          jamMasuk: absensiData["Jam Masuk"] === '-' ? '' : absensiData["Jam Masuk"],
-          jamKeluar: absensiData["Jam Keluar"] === '-' ? '' : absensiData["Jam Keluar"],
+          jamMasuk,
+          jamKeluar,
           totalMenit: totalMenitValue.toLocaleString('id-ID'),
-          totalMenitRaw: totalMenitValue
+          totalMenitRaw: totalMenitValue,
+          id_masuk: idMasuk,
+          id_keluar: idKeluar
         });
+        
         setTimeError('');
       } else if (divisi === 'Transportasi') {
         setFormData({
           lokasi: 'Lokasi',
-          status: absensiData.Status || ''
+          status: typeof absensiData.Status === 'string' 
+            ? absensiData.Status 
+            : (absensiData.Status && absensiData.Status.props ? absensiData.Status.props.children : ''),
+          id_masuk: absensiData.id || null
         });
       } else if (divisi === 'Produksi') {
         // Handle Produksi if needed in the future
@@ -99,14 +142,12 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
     setError('');
     
     try {
-
       if (divisi === 'Umum') {
         if (!formData.jamMasuk) {
           throw new Error('Jam masuk wajib diisi');
         }
         
         if (formData.jamKeluar) {
-
           const masuk = moment(formData.jamMasuk, 'HH:mm');
           const keluar = moment(formData.jamKeluar, 'HH:mm');
           
@@ -114,39 +155,34 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
             throw new Error('Jam keluar tidak boleh lebih awal dari jam masuk');
           }
         }
+        
+        if (formData.id_masuk) {
+          await api.put(`/absensi-karyawan/${formData.id_masuk}`, {
+            jam: formData.jamMasuk
+          });
+          console.log(`Updated jam masuk with ID ${formData.id_masuk}`);
+        }
+        
+        if (formData.id_keluar) {
+          await api.put(`/absensi-karyawan/${formData.id_keluar}`, {
+            jam: formData.jamKeluar
+          });
+          console.log(`Updated jam keluar with ID ${formData.id_keluar}`);
+        }
       } else if (divisi === 'Transportasi') {
-        // if (!formData.lokasi) {
-        //   throw new Error('Lokasi wajib diisi');
-        // }
         if (!formData.status) {
           throw new Error('Status wajib diisi');
         }
-      }
-      
-      let requestData = {};
-      
-  
-      if (divisi === 'Umum') {
-        requestData = {
-          jam_masuk: formData.jamMasuk,
-          jam_keluar: formData.jamKeluar || '',
-          total_menit: formData.totalMenitRaw || 0
-        };
         
-
-        await api.put(`/absensi-karyawan/${absensiData.id}`, requestData);
-      } else if (divisi === 'Transportasi') {
-        requestData = {
-          lokasi: formData.lokasi,
+        let requestData = {
           status: formData.status
         };
 
-        await api.put(`/absensi-karyawan/${absensiData.id}`, requestData);
+        await api.put(`/absensi-karyawan/${formData.id_masuk}`, requestData);
       } else if (divisi === 'Produksi') {
-        // Handle Produksi API call if needed
+        // Handle Produksi API
       }
       
-      // When successful
       onSuccess && onSuccess();
       onClose();
     } catch (err) {

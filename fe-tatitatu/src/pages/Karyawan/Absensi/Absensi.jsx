@@ -249,19 +249,15 @@ export default function Absensi() {
         const currentDate = getCurrentDate();
         const currentTime = getCurrentTime();
         
-        const lastAttendance = data.length > 0 ? data[0] : null;
+        // Find TODAY's attendance records, if any
+        const todayAttendances = data.filter(item => 
+            new Date(item.raw.tanggal).toISOString().split('T')[0] === currentDate
+        );
         
-        const today = new Date().toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
+        // Get the most recent (last) attendance for today if it exists
+        const lastAttendanceToday = todayAttendances.length > 0 ? 
+            todayAttendances[todayAttendances.length - 1] : null;
         
-        const todayDate = getCurrentDate();
-        const hasTodayAttendance = lastAttendance && 
-            new Date(lastAttendance.raw.tanggal).toISOString().split('T')[0] === todayDate;
-        
-        // Default form data
         let newFormData = {
             image: null,
             karyawan_id: karyawan_id,
@@ -272,14 +268,15 @@ export default function Absensi() {
             showJamKeluar: false
         };
         
-        if (hasTodayAttendance && 
-            lastAttendance.raw.masuk && 
-            lastAttendance.raw.masuk.jam !== '-' && 
-            (!lastAttendance.raw.keluar || lastAttendance.raw.keluar.jam === '-')) {
+        // If we have a record for today with clock-in but no clock-out, show clock-out form
+        if (lastAttendanceToday && 
+            lastAttendanceToday.raw.masuk && 
+            lastAttendanceToday.raw.masuk.jam !== '-' && 
+            (!lastAttendanceToday.raw.keluar || lastAttendanceToday.raw.keluar.jam === '-')) {
             
             newFormData = {
                 ...newFormData,
-                jam_masuk: lastAttendance.raw.masuk.jam,
+                jam_masuk: lastAttendanceToday.raw.masuk.jam,
                 jam_keluar: currentTime,
                 showJamKeluar: true
             };
