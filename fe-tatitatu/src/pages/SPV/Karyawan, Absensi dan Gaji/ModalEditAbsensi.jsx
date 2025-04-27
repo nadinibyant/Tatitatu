@@ -54,7 +54,6 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
           
           totalMenitValue = absensiData.total_menit || 0;
         }
-        // If data is already in the expected format
         else if (typeof absensiData["Jam Masuk"] === 'string') {
           jamMasuk = absensiData["Jam Masuk"] === '-' ? '' : absensiData["Jam Masuk"];
           jamKeluar = absensiData["Jam Keluar"] === '-' ? '' : absensiData["Jam Keluar"];
@@ -133,7 +132,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (timeError) {
       return; 
     }
@@ -158,14 +157,14 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
         
         if (formData.id_masuk) {
           await api.put(`/absensi-karyawan/${formData.id_masuk}`, {
-            jam: formData.jamMasuk
+            jam_masuk: formData.jamMasuk
           });
           console.log(`Updated jam masuk with ID ${formData.id_masuk}`);
         }
         
-        if (formData.id_keluar) {
+        if (formData.id_keluar && formData.jamKeluar) {
           await api.put(`/absensi-karyawan/${formData.id_keluar}`, {
-            jam: formData.jamKeluar
+            jam_keluar: formData.jamKeluar
           });
           console.log(`Updated jam keluar with ID ${formData.id_keluar}`);
         }
@@ -177,10 +176,10 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
         let requestData = {
           status: formData.status
         };
-
+  
         await api.put(`/absensi-karyawan/${formData.id_masuk}`, requestData);
       } else if (divisi === 'Produksi') {
-        // Handle Produksi API
+        // Handle Produksi API if needed
       }
       
       onSuccess && onSuccess();
@@ -242,19 +241,17 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
                 required={false}
               />
               
-              {/* Time validation error */}
               {timeError && (
                 <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-sm">
                   {timeError}
                 </div>
               )}
               
-              {/* Total Menit (Readonly, calculated automatically) */}
               <Input
                 label="Total Menit"
                 type1="text"
                 value={formData.totalMenit}
-                onChange={() => {}} // No manual changes allowed
+                onChange={() => {}} 
                 placeholder="Dihitung otomatis"
                 required={false}
                 disabled={true}
