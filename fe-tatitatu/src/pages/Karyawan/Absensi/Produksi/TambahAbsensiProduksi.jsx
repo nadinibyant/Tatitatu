@@ -503,133 +503,147 @@ export default function TambahAbsensiProduksi() {
     
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
-                        <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50 p-2 sm:p-4">
-                            <div className={`bg-white border border-${themeColor} rounded-md p-3 sm:p-4 md:p-6 w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden`}>
-                                {/* Header Section - Search, Clear, Buttons */}
-                                <div className="flex flex-col space-y-3 mb-3 sm:mb-4">
-                                    {/* Input Search */}
-                                    <div className="relative w-full">
-                                        <span className="absolute inset-y-0 left-3 flex items-center">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5 text-gray-400"
-                                                fill="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                            </svg>
-                                        </span>
-                                        <input
-                                            type="text"
-                                            placeholder="Cari Barang yang mau dibeli"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                        />
-                                    </div>
-
-                                    {/* Controls Row - Clear/Count and Buttons */}
-                                    <div className="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
-                                        {/* Clear and Selected Count */}
-                                        <div className="flex items-center space-x-4">
-                                            <button
-                                                onClick={() => {
-                                                    setSearchTerm("");
-                                                    setSelectedItems([]);
-                                                }}
-                                                className="text-gray-400 hover:text-gray-700 focus:outline-none"
-                                            >
+                            <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50 p-2 sm:p-4">
+                                <div className={`bg-white border border-${themeColor} rounded-md p-3 sm:p-4 md:p-6 w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden`}>
+                                    {/* Header Section - Search, Clear, Buttons */}
+                                    <div className="flex flex-col space-y-3 mb-3 sm:mb-4">
+                                        {/* Input Search */}
+                                        <div className="relative w-full">
+                                            <span className="absolute inset-y-0 left-3 flex items-center">
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-6 w-6"
-                                                    fill="none"
+                                                    className="w-5 h-5 text-gray-400"
+                                                    fill="currentColor"
                                                     viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    strokeWidth={2}
                                                 >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
                                                 </svg>
-                                            </button>
-                                            <p className={`text-${themeColor} font-semibold`}>
-                                                Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
-                                            </p>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                placeholder="Cari Barang yang mau dibeli"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                            />
                                         </div>
 
-                                        {/* Buttons */}
-                                        <div className="flex gap-3">
-                                            <Button
-                                                label="Batal"
-                                                bgColor="border border-secondary"
-                                                hoverColor="hover:bg-gray-100"
-                                                textColor="text-black"
-                                                onClick={() => {
-                                                    resetSelection();
-                                                    setSelectedItems([]);
-                                                }}
-                                                className="flex-1 sm:flex-none"
-                                            />
-                                            <Button
-                                                label="Pilih"
-                                                bgColor={`bg-${themeColor}`}
-                                                hoverColor="hover:bg-opacity-90"
-                                                textColor="text-white"
-                                                onClick={handleModalSubmit}
-                                                className="flex-1 sm:flex-none"
-                                            />
+                                        {/* Controls Row - Clear/Count and Buttons */}
+                                        <div className="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+                                            {/* Clear and Selected Count */}
+                                            <div className="flex items-center space-x-4">
+                                                <button
+                                                    onClick={() => {
+                                                        setSearchTerm("");
+                                                        setSelectedItems([]);
+                                                    }}
+                                                    className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-6 w-6"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                        strokeWidth={2}
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                                <p className={`text-${themeColor} font-semibold`}>
+                                                    Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                                </p>
+                                            </div>
+
+                                            {/* Buttons */}
+                                            <div className="flex gap-3">
+                                                <Button
+                                                    label="Batal"
+                                                    bgColor="border border-secondary"
+                                                    hoverColor="hover:bg-gray-100"
+                                                    textColor="text-black"
+                                                    onClick={() => {
+                                                        resetSelection();
+                                                        setSelectedItems([]);
+                                                    }}
+                                                    className="flex-1 sm:flex-none"
+                                                />
+                                                <Button
+                                                    label="Pilih"
+                                                    bgColor={`bg-${themeColor}`}
+                                                    hoverColor="hover:bg-opacity-90"
+                                                    textColor="text-white"
+                                                    onClick={handleModalSubmit}
+                                                    className="flex-1 sm:flex-none"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {isLoadingData ? (
+                                        <div className="flex justify-center items-center flex-grow">
+                                            <Spinner />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col flex-grow overflow-hidden">
+                                            {/* Tabs for Barang Types */}
+                                            <div className="flex border-b border-gray-300 mb-3 overflow-x-auto hide-scrollbar">
+                                                {["Barang Handmade"].map((jenis) => (
+                                                    <button
+                                                        key={jenis}
+                                                        onClick={() => setSelectedJenis(jenis)}
+                                                        className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
+                                                            selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
+                                                        }`}
+                                                    >
+                                                        {jenis}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Kategori Buttons - FIXED */}
+                                            <div className="overflow-x-auto hide-scrollbar mb-3">
+                                                <div className="flex flex-nowrap gap-2 pb-1">
+                                                    {categories.map((kategori) => (
+                                                        <button
+                                                            key={kategori}
+                                                            onClick={() => setSelectedCategory(kategori)}
+                                                            className={`px-3 py-1 text-sm rounded-md whitespace-nowrap flex-shrink-0 ${
+                                                                selectedCategory === kategori
+                                                                    ? `bg-${themeColor} text-white`
+                                                                    : "border border-gray-300"
+                                                            }`}
+                                                        >
+                                                            {kategori}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-grow overflow-y-auto hide-scrollbar">
+                                                <Gallery2
+                                                    items={filteredItems || []}
+                                                    onSelect={handleSelectItem}
+                                                    selectedItems={selectedItems}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {isLoadingData ? (
-                                    <div className="flex justify-center items-center flex-grow">
-                                        <Spinner />
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col flex-grow overflow-hidden">
-                                        {/* Tabs for Barang Types */}
-                                        <div className="flex border-b border-gray-300 mb-3 overflow-x-auto no-scrollbar">
-                                            {["Barang Handmade"].map((jenis) => (
-                                                <button
-                                                    key={jenis}
-                                                    onClick={() => setSelectedJenis(jenis)}
-                                                    className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
-                                                        selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
-                                                    }`}
-                                                >
-                                                    {jenis}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {/* Kategori Buttons */}
-                                        <div className="flex flex-wrap gap-2 mb-3 overflow-x-auto no-scrollbar">
-                                            {categories.map((kategori) => (
-                                                <button
-                                                    key={kategori}
-                                                    onClick={() => setSelectedCategory(kategori)}
-                                                    className={`px-3 py-1 text-sm rounded-md whitespace-nowrap ${
-                                                        selectedCategory === kategori
-                                                            ? `bg-${themeColor} text-white`
-                                                            : "border border-gray-300"
-                                                    }`}
-                                                >
-                                                    {kategori}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex-grow overflow-y-auto no-scrollbar">
-                                            <Gallery2
-                                                items={filteredItems || []}
-                                                onSelect={handleSelectItem}
-                                                selectedItems={selectedItems}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    )}
+                                {/* Add this style to hide scrollbars while maintaining scroll functionality */}
+                                <style jsx>{`
+                                    .hide-scrollbar {
+                                        -ms-overflow-style: none;  /* IE and Edge */
+                                        scrollbar-width: none;  /* Firefox */
+                                    }
+                                    
+                                    .hide-scrollbar::-webkit-scrollbar {
+                                        display: none;  /* Chrome, Safari and Opera */
+                                    }
+                                `}</style>
+                            </section>
+                        )}
                     </section>
                 </div>
 
