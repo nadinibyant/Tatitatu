@@ -502,7 +502,7 @@ useEffect(() => {
                             <div className="w-full">
                                 <div className="flex items-center border border-[#F2E8F6] p-4 rounded-lg h-full">
                                     <div className="flex-1">
-                                        <p className="text-gray-400 text-sm">Barang Custom Terlaris</p>
+                                        <p className="text-gray-400 text-sm">Bahan Custom Terlaris</p>
                                         <p className="font-bold text-lg">{dataTerbanyak.barang.nama_barang}</p>
                                         <p className="text-biruTua">{formatNumberWithDots(dataTerbanyak.barang.jumlah)}</p>
                                     </div>

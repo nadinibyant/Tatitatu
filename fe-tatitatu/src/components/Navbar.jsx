@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "./Button";
 import Modal from "../pages/Manajer/Catatan/Modal";
 import api from "../utils/api";
+import { User } from "lucide-react"; // Import User icon from lucide-react
 
 const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = false}) => {
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -16,13 +17,13 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
   const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
   
-  // Menentukan role yang hanya mendapatkan menu logout
   const isLogoutOnly = ['admingudang', 'headgudang', 'manajer', 'finance', 'admin', 'owner'].includes(userData?.role);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [branchName, setBranchName] = useState('');
   const [logoSrc, setLogoSrc] = useState('');
-  const [profileImage, setProfileImage] = useState('https://via.placeholder.com/50');
+  const [profileImage, setProfileImage] = useState(null); 
+  const [profileImageError, setProfileImageError] = useState(false);
   const navigate = useNavigate();
   
   const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
@@ -173,9 +174,9 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
     }
   };
 
-    useEffect(() => {
-      fetchNotifications();
-    }, [isOwner, isAdminGudang, isHeadGudang, isAdmin, isKasirToko, userData?.userId, userData?.tokoId]);
+  useEffect(() => {
+    fetchNotifications();
+  }, [isOwner, isAdminGudang, isHeadGudang, isAdmin, isKasirToko, userData?.userId, userData?.tokoId]);
 
 
 const getNotificationIcon = () => {
@@ -269,14 +270,16 @@ const getNotificationIcon = () => {
   }, [userData?.role, userData?.userId, userData?.tokoId]);
 
   useEffect(() => {
+    // Reset error state when userData changes
+    setProfileImageError(false);
+    
     if (!userData?.image) {
-      setProfileImage('https://via.placeholder.com/50');
+      setProfileImage(null); // No image available
       return;
     }
 
     const apiBaseUrl = import.meta.env.VITE_API_URL || '';
     
-
     if (['admin', 'admingudang', 'headgudang', 'kasirtoko'].includes(userData?.role)) {
       setProfileImage(`${apiBaseUrl}/images-toko/${userData.image}`);
     } else if (['owner', 'manajer', 'finance'].includes(userData?.role)) {
@@ -284,7 +287,7 @@ const getNotificationIcon = () => {
     } else if (['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userData?.role)) {
       setProfileImage(`${apiBaseUrl}/images-karyawan/${userData.image}`);
     } else {
-      setProfileImage('https://via.placeholder.com/50');
+      setProfileImage(null); // No valid role for image
     }
   }, [userData?.role, userData?.image]);
 
@@ -457,13 +460,13 @@ const getNotificationIcon = () => {
    <div className="flex h-screen">
      {/* Sidebar */}
      <div
-       className={`fixed top-0 left-0 h-full bg-white text-white transition-all duration-300 ease-in-out w-64 z-20 ${
-         sidebarOpen ? "translate-x-0" : "-translate-x-full"
-       }`}
-     >
-       {/* Logo */}
-       <div className="flex items-center justify-center h-20">
-         <a href="">
+        className={`fixed top-0 left-0 h-full bg-white text-white transition-all duration-300 ease-in-out w-64 z-20 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-center h-20">
+          <a href="">
             <img 
               src={logoSrc} 
               alt="Logo" 
@@ -473,82 +476,93 @@ const getNotificationIcon = () => {
                 e.target.src = null; 
               }}
             />
-         </a>
-       </div>
+          </a>
+        </div>
 
-       {/* Menu Items */}
-       <ul className="mt-4 text-black overflow-y-auto h-[calc(100%-80px)] pr-2 pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-         {menuItems.map((menu) => (
-           <li key={menu.label} className="group">
-             <div
-               className={`flex text-sm items-center justify-between px-4 py-2 hover:bg-${themeColor} hover:text-white cursor-pointer ${
-                 location.pathname === menu.link || menu.submenu?.some(sub => location.pathname === sub.link) 
-                   ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
-                   : ""
-               }`}
-             >
-               <Link to={menu.link} className="flex items-center">
-                 <img 
-                   src={
-                    location.pathname === menu.link || 
-                    menu.submenu?.some(sub => location.pathname === sub.link)
-                      ? menu.iconWarna 
-                      : menu.icon    
+        <ul className="mt-4 text-black overflow-y-auto h-[calc(100%-80px)] pr-2 pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {menuItems.map((menu) => (
+            <li key={menu.label} className="group">
+              <div
+                className={`flex text-sm items-center justify-between px-4 py-2 hover:bg-${themeColor} hover:text-white cursor-pointer ${
+                  location.pathname === menu.link || menu.submenu?.some(sub => location.pathname === sub.link) 
+                    ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
+                    : ""
+                }`}
+                onClick={() => {
+                  if (menu.submenu) {
+                    toggleSubmenu(menu.label);
+                  } 
+                  else if (menu.link) {
+                    navigate(menu.link);
+                  }
+                }}
+              >
+                <div className="flex items-center">
+                  <img 
+                    src={
+                      location.pathname === menu.link || 
+                      menu.submenu?.some(sub => location.pathname === sub.link)
+                        ? menu.iconWarna 
+                        : menu.icon    
                     } 
-                   alt={`${menu.label} icon`}
-                   className="w-5 h-8 mr-4"
-                   onError={(e) => {
-                     e.target.onerror = null;
-                     e.target.src = "/Menu/default-icon.svg";
-                   }}
-                 />
-                 {menu.label}
-               </Link>
+                    alt={`${menu.label} icon`}
+                    className="w-5 h-8 mr-4"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/Menu/default-icon.svg";
+                    }}
+                  />
+                  <span>{menu.label}</span>
+                </div>
 
-               {menu.submenu && (
-                 <button
-                   onClick={() => toggleSubmenu(menu.label)}
-                   className="text-sm text-dark focus:outline-none"
-                 >
-                   <svg
-                     className={`w-4 h-4 transition-transform ${
-                       submenuOpen[menu.label] ? "rotate-180" : "rotate-0"
-                     }`}
-                     xmlns="http://www.w3.org/2000/svg"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke="currentColor"
-                   >
-                     <path
-                       strokeLinecap="round"
-                       strokeLinejoin="round"
-                       strokeWidth="2"
-                       d="M19 9l-7 7-7-7"
-                     />
-                   </svg>
-                 </button>
-               )}
-             </div>
-             {menu.submenu && submenuOpen[menu.label] && (
-               <ul className="pl-8">
-                 {menu.submenu.map((sub) => (
-                   <li
-                     key={sub.label}
-                     className={`px-4 py-2 hover:bg-${themeColor} hover:text-white ${
-                       location.pathname === sub.link
-                         ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
-                         : ""
-                     }`}
-                   >
-                     <Link to={sub.link}>{sub.label}</Link>
-                   </li>
-                 ))}
-               </ul>
-             )}
-           </li>
-         ))}
-       </ul>
-     </div>
+                {menu.submenu && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSubmenu(menu.label);
+                    }}
+                    className="text-sm text-dark focus:outline-none"
+                  >
+                    <svg
+                      className={`w-4 h-4 transition-transform ${
+                        submenuOpen[menu.label] ? "rotate-180" : "rotate-0"
+                      }`}
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {menu.submenu && submenuOpen[menu.label] && (
+                <ul className="pl-8">
+                  {menu.submenu.map((sub) => (
+                    <li
+                      key={sub.label}
+                      className={`px-4 py-2 hover:bg-${themeColor} hover:text-white cursor-pointer ${
+                        location.pathname === sub.link
+                          ? `text-${themeColor} font-bold border-l-4 border-${themeColor}`
+                          : ""
+                      }`}
+                      onClick={() => navigate(sub.link)}
+                    >
+                      {sub.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
 
      {/* Main Content */}
      <div
@@ -623,15 +637,22 @@ const getNotificationIcon = () => {
               onClick={toggleDropdown}
               className="flex items-center gap-2 focus:outline-none"
             >
-              <img 
-                src={profileImage} 
-                alt="Profile" 
-                className="w-8 h-8 rounded-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "";
-                }}
-              />
+              {/* Profile Image or User Icon */}
+              {profileImage && !profileImageError ? (
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    setProfileImageError(true);
+                  }}
+                />
+              ) : (
+                <div className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-${themeColor}`}>
+                  <User size={16} />
+                </div>
+              )}
               <svg
                 className={`w-4 h-4 transition-transform ${
                   dropdownOpen ? "rotate-180" : "rotate-0"
@@ -656,8 +677,7 @@ const getNotificationIcon = () => {
                     <li
                       key={option.label}
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setDropdownOpen(false);
+                      onClick={() => {setDropdownOpen(false);
                         
                         if (option.label === 'Logout') {
                           handleLogout();

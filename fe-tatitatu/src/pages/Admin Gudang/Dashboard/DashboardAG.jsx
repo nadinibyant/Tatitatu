@@ -225,7 +225,7 @@ export default function DashboardAG() {
         { label: "Semua", value: "Semua" },
         { label: "Barang Handmade", value: "Barang Handmade" },
         { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
-        { label: "Barang Custom", value: "Barang Custom" },
+        { label: "Bahan Custom", value: "Barang Custom" },
       ]
     },
     {

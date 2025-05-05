@@ -121,7 +121,7 @@ export default function Dashboard(){
         case "Non Handmade":
           return "Barang Non-Handmade";
         case "Custom":
-          return "Barang Custom"; 
+          return "Bahan Custom"; 
         case "Packaging":
           return "Packaging";
         default:
@@ -861,7 +861,7 @@ export default function Dashboard(){
                 <p className="text-gray-400 text-sm">
                   {isAdmin ? "Barang Terjual Terbanyak" : 
                    (isOwner || isManajer) ? "Barang Terjual Terbanyak" : 
-                   "Barang Custom Terlaris"}
+                   "Bahan Custom Terlaris"}
                 </p>
                 <p className="font-bold text-lg">{data.cabang_terlaris?.barang?.nama_barang || '-'}</p>
                 <p className="">{formatNumberWithDots(data.cabang_terlaris?.barang?.jumlah)} Pcs</p>

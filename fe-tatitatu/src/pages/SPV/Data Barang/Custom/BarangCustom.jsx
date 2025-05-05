@@ -353,7 +353,7 @@ const handleAddBtn = () => {
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className={`text-${themeColor} text-base font-bold`}>{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Barang Custom"}</p>
+              <p className={`text-${themeColor} text-base font-bold`}>{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Bahan Custom"}</p>
             </div>
 
             {/* Right Section */}

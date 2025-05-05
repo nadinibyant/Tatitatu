@@ -363,7 +363,7 @@ export default function ProdukTerlaris() {
       } else if (normalizedKategori.includes('non') && normalizedKategori.includes('handmade')) {
         return "Barang Non-Handmade";
       } else if (normalizedKategori.includes('custom')) {
-        return "Barang Custom"; 
+        return "Bahan Custom"; 
       } else if (normalizedKategori.includes('packaging')) {
         return "Packaging";
       } else if (normalizedKategori.includes('mentah') || normalizedKategori.includes('bahan')) {
@@ -1037,7 +1037,7 @@ export default function ProdukTerlaris() {
         { label: "Semua", value: "Semua" },
         { label: "Barang Handmade", value: "Barang Handmade" },
         { label: "Barang Non-Handmade", value: "Barang Non-Handmade" },
-        { label: "Barang Custom", value: "Barang Custom" },
+        { label: "Bahan Custom", value: "Barang Custom" },
       ]
     },
     {
@@ -1231,7 +1231,7 @@ export default function ProdukTerlaris() {
                       {/* Dynamic title based on the store type */}
                       {(isOwner || isManajer) && dashboardData.barang_custom.isMentah
                         ? 'Barang Mentah Terlaris'
-                        : 'Barang Custom Terlaris'}
+                        : 'Bahan Custom Terlaris'}
                     </p>
                     <p className="font-bold text-lg truncate">{dashboardData.barang_custom.nama}</p>
                     <p>{formatNumberWithDots(dashboardData.barang_custom.jumlah)} Pcs</p>

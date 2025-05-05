@@ -160,7 +160,7 @@ export default function EditPembelianStok() {
                                     "Jenis Barang": productDetails?.jenis_barang?.nama_jenis_barang || 
                                                   (product.barang_handmade ? "Handmade" :
                                                    product.barang_non_handmade ? "Barang Non-Handmade" :
-                                                   product.barang_custom ? "Barang Custom" :
+                                                   product.barang_custom ? "Bahan Custom" :
                                                    "Packaging"),
                                     "Harga Satuan": product.harga_satuan,
                                     "Kuantitas": product.kuantitas,
@@ -283,7 +283,7 @@ export default function EditPembelianStok() {
                         items: nonHandmadeItems
                     },
                     {
-                        jenis: "Barang Custom",
+                        jenis: "Bahan Custom",
                         kategori: categories,
                         items: customItems
                     },
@@ -636,7 +636,7 @@ export default function EditPembelianStok() {
                         case 'Barang Non-Handmade':
                             imagePath = 'images-barang-non-handmade';
                             break;
-                        case 'Barang Custom':
+                        case 'Bahan Custom':
                             imagePath = 'images-barang-custom';
                             break;
                         case 'Packaging':
@@ -821,7 +821,7 @@ export default function EditPembelianStok() {
                     case 'Barang Non-Handmade':
                         imagePath = 'images-barang-non-handmade';
                         break;
-                    case 'Barang Custom':
+                    case 'Bahan Custom':
                         imagePath = 'images-barang-custom';
                         break;
                     case 'Packaging':
@@ -920,7 +920,7 @@ export default function EditPembelianStok() {
                         productType = "barang_handmade_id";
                     } else if (item["Jenis Barang"] === "Barang Non-Handmade" || item["Jenis Barang"] === "Non Handmade") {
                         productType = "barang_non_handmade_id";
-                    } else if (item["Jenis Barang"] === "Barang Custom" || item["Jenis Barang"] === "Custom") {
+                    } else if (item["Jenis Barang"] === "Bahan Custom" || item["Jenis Barang"] === "Custom") {
                         productType = "barang_custom_id";
                     } else if (item["Jenis Barang"] === "Packaging") {  
                         productType = "packaging_id";
@@ -1206,7 +1206,7 @@ export default function EditPembelianStok() {
 
                                     {/* Tabs for Barang Types */}
                                     <div className="flex border-b border-gray-300 mb-4 overflow-x-auto">
-                                        {["Barang Handmade", "Barang Non-Handmade", "Barang Custom", "Packaging"].map((jenis) => (
+                                        {["Barang Handmade", "Barang Non-Handmade", "Bahan Custom", "Packaging"].map((jenis) => (
                                             <button
                                                 key={jenis}
                                                 onClick={() => setSelectedJenis(jenis)}

@@ -585,7 +585,7 @@ export default function TambahAbsensiProduksi() {
                                             <Spinner />
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col flex-grow overflow-hidden">
+                                        <div className="flex flex-col flex-grow">
                                             {/* Tabs for Barang Types */}
                                             <div className="flex border-b border-gray-300 mb-3 overflow-x-auto hide-scrollbar">
                                                 {["Barang Handmade"].map((jenis) => (

@@ -99,7 +99,7 @@ export default function TambahPembelianStok() {
                 return `${baseUrl}/images-barang-handmade/${item.image}`;
             case "Barang Non-Handmade":
                 return `${baseUrl}/images-barang-non-handmade/${item.image}`;
-            case "Barang Custom":
+            case "Bahan Custom":
                 return `${baseUrl}/images-barang-custom/${item.image}`;
             case "Packaging":
                 return `${baseUrl}/images-packaging/${item.image}`;
@@ -166,7 +166,7 @@ export default function TambahPembelianStok() {
             };
 
             const customData = {
-                jenis: "Barang Custom",
+                jenis: "Bahan Custom",
                 items: formatItems(customRes.data.data, 'barang_custom')
             };
 
@@ -366,7 +366,7 @@ const handleModalSubmit = () => {
                 case "Barang Non-Handmade":
                     typeSpecificId = { barang_non_handmade_id: item.id };
                     break;
-                case "Barang Custom":
+                case "Bahan Custom":
                     typeSpecificId = { barang_custom_id: item.id };
                     break;
                 case "Packaging":
@@ -811,7 +811,7 @@ const handleModalSubmit = () => {
 
                                     {/* Tabs for Barang Types */}
                                     <div className="flex border-b border-gray-300 mb-4 overflow-x-auto">
-                                        {["Barang Handmade", "Barang Non-Handmade", "Barang Custom", "Packaging"].map((jenis) => (
+                                        {["Barang Handmade", "Barang Non-Handmade", "Bahan Custom", "Packaging"].map((jenis) => (
                                             <button
                                                 key={jenis}
                                                 onClick={() => setSelectedJenis(jenis)}
