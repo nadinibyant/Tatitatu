@@ -165,7 +165,7 @@ const fetchTokoData = async () => {
     try {
         setLoading(true);
         const response = await api.get('/toko');
-        
+        console.log(response)
         if (response.data.success) {
             const transformedData = response.data.data
                 .filter(toko => !toko.is_deleted)
@@ -184,12 +184,12 @@ const fetchTokoData = async () => {
                         id: toko.toko_id,
                         nama: toko.nama_toko,
                         email: toko.email,
+                        detail_password: toko.detail_password,
                         password: toko.password,
                         logo: toko.image,
                         imageUrl: imageUrl
                     };
                 });
-                
             setBranchData(transformedData);
         } else {
             setErrorMessage('Gagal mengambil data toko');
@@ -547,7 +547,7 @@ useEffect(() => {
                                     <div className="flex items-center gap-2">
                                     <div className="text-sm font-mono">
                                         {branch.showPassword 
-                                        ? partiallyRevealPassword(branch.password) 
+                                        ? (branch.detail_password) 
                                         : '***'}
                                     </div>
                                     <button 

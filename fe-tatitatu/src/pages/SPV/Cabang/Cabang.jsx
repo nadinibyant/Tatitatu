@@ -11,9 +11,9 @@ import Alert from "../../../components/Alert";
 
 const BranchCard = ({ branch, onEdit, onDelete }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const decodeHashedPassword = (hashedPassword) => {
-    return hashedPassword.substring(0, 12) + "...";
-  };
+//   const decodeHashedPassword = (hashedPassword) => {
+//     return hashedPassword.substring(0, 12) + "...";
+//   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -63,7 +63,7 @@ const BranchCard = ({ branch, onEdit, onDelete }) => {
           </div>
           <div className="flex items-center gap-2">
             <div className="text-sm font-mono">
-              {showPassword ? decodeHashedPassword(branch.password) : '••••••••••••'}
+              {showPassword ? (branch.detail_password) : '••••••••••••'}
             </div>
             <button 
               onClick={togglePasswordVisibility}
@@ -218,6 +218,7 @@ export default function Cabang(){
               id: branch.cabang_id,
               nama: branch.nama_cabang,
               email: branch.email,
+              detail_password: branch.detail_password,
               password: branch.password,
               logo: `${import.meta.env.VITE_API_URL}/images-toko/${image}`
             }));

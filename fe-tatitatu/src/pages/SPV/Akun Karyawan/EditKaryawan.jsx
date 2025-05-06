@@ -88,10 +88,10 @@ export default function EditKaryawan(){
                 photo: data.image,
                 email: data.email || '',
                 name: data.nama_karyawan || '',
-                password: data.password, 
+                password: data.detail_password, 
                 division: data.divisi_karyawan_id,  
-                store: isManajer ? 'DBI' : data.toko_id, // Default to 'DBI' for manager
-                branch: isManajer ? '-' : data.cabang_id, // Default to '-' for manager
+                store: isManajer ? 'DBI' : data.toko_id, 
+                branch: isManajer ? '-' : data.cabang_id,
                 baseSalary: data.jumlah_gaji_pokok?.toString() || '',  
                 bonus: data.bonus?.toString() || '',
                 workHours: {
