@@ -416,7 +416,7 @@ return (
                         </div>
                         {/* Pajak */}
                         <div className="flex justify-between border-b pb-2">
-                            <p className="font-bold">Pajak</p>
+                            <p className="font-bold">Potongan Harga</p>
                             <p>{formatCurrency(pembelianData?.pajak || 0)}</p>
                         </div>
                         {/* Total Penjualan */}

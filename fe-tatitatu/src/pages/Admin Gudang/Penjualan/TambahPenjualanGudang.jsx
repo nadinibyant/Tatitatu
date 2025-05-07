@@ -958,7 +958,7 @@ const handleDeletePackaging = (itemId) => {
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center border-b pb-2">
-                                            <p className="font-bold">Pajak</p>
+                                            <p className="font-bold">Potongan Harga</p>
                                             <div className="w-30">
                                                 <Input
                                                     type="number"

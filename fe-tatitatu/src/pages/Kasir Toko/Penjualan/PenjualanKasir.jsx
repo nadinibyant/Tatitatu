@@ -108,7 +108,7 @@ export default function PenjualanKasir() {
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
         { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-left" },
         { label: "Diskon", key: "Diskon", align: "text-left" },
-        { label: "Pajak", key: "Pajak", align: "text-left" },
+        { label: "Potongan Harga", key: "Pajak", align: "text-left" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
         // { label: "Aksi", key: "aksi", align: "text-right" },
     ];

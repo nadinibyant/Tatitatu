@@ -74,7 +74,7 @@ export default function PenjualanGudang() {
         { label: "Nama Barang", key: "nama_barang", align: "text-left" },
         { label: "Jumlah Barang", key: "jumlah_barang", align: "text-left" },
         { label: "Diskon", key: "diskon", align: "text-center" },
-        { label: "Pajak", key: "pajak", align: "text-center" },
+        { label: "Potongan Harga", key: "pajak", align: "text-center" },
         { label: "Total Transaksi", key: "total_penjualan", align: "text-center" },
         { label: "Aksi", key: "action", align: "text-center" },
     ];

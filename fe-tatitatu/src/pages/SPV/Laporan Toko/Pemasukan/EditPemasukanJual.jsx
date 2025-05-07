@@ -517,7 +517,7 @@ export default function EditPemasukanJual() {
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-600">Pajak</span>
+                                        <span className="text-gray-600">Potongan Harga</span>
                                         <div className="w-32">
                                             <Input
                                                 type="number"

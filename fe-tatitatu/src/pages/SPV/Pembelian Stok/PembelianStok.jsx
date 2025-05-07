@@ -172,7 +172,7 @@ export default function PembelianStok() {
         { label: "Nama Barang", key: "Nama Barang", align: "text-left" },
         { label: "Jumlah Barang", key: "Jumlah Barang", align: "text-left" },
         { label: "Diskon", key: "Diskon", align: "text-left" },
-        { label: "Pajak", key: "Pajak", align: "text-left" },
+        { label: "Potongan Harga", key: "Pajak", align: "text-left" },
         { label: "Total Transaksi", key: "Total Transaksi", align: "text-left" },
         { label: "Aksi", key: "action", align: "text-left" },
       ];
