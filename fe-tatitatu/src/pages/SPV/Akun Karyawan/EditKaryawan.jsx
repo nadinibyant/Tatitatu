@@ -22,6 +22,7 @@ export default function EditKaryawan(){
         division: '',
         store: '',
         branch: '',
+        storeId: '',
         baseSalary: '',
         bonus: '',
         workHours: {
@@ -78,19 +79,40 @@ export default function EditKaryawan(){
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
       };
+
+      const fetchStoreById = async (storeId) => {
+        try {
+          const response = await api.get(`/toko/${storeId}`);
+          if (response.data.success) {
+            setFormData(prev => ({
+              ...prev,
+              store: response.data.data.nama_toko
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching store:', error);
+          setErrorMessage('Gagal mengambil data toko');
+          setErrorAlert(true);
+        }
+      };
+
       const fetchKaryawanById = async () => {
         try {
             setLoading(true);
             const response = await api.get(`/karyawan/${id}`);
             const data = response.data.data;
             
+            const karyawanTokoId = data.toko_id;
+
             setFormData({
                 photo: data.image,
                 email: data.email || '',
                 name: data.nama_karyawan || '',
                 password: data.detail_password, 
                 division: data.divisi_karyawan_id,  
-                store: isManajer ? 'DBI' : data.toko_id, 
+                // store: isManajer ? 'DBI' : data.toko_id,
+                store: '',
+                storeId: karyawanTokoId, 
                 branch: isManajer ? '-' : data.cabang_id,
                 baseSalary: data.jumlah_gaji_pokok?.toString() || '',  
                 bonus: data.bonus?.toString() || '',
@@ -101,7 +123,11 @@ export default function EditKaryawan(){
                 phone: data.nomor_handphone || '',
                 jenis_karyawan: data.jenis_karyawan || '' 
             });
-      
+
+            if (karyawanTokoId) {
+                fetchStoreById(karyawanTokoId);
+            }
+          
             if (data.image) {
                 setPhotoPreview(`${import.meta.env.VITE_API_URL}/images-karyawan/${data.image}`);
             }
@@ -120,9 +146,10 @@ export default function EditKaryawan(){
         if (isManajer) {
             setFormData(prev => ({
                 ...prev,
-                store: 'DBI'
-            }));
-            return;
+                store: 'DBI',
+                storeId: 'DBI'
+              }));
+              return;
         }
 
         try {
