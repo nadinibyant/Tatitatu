@@ -139,12 +139,13 @@ export default function Karyawan(){
                 setLoading(true);
                 const response = await api.get(`/absensi-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`);
         
-                
+                console.log(response)
                 if (response.data.success) {
                     const formattedData = response.data.data.map(item => ({
                         id: item.karyawan.karyawan_id,
                         toko_id: item.karyawan.toko_id, 
                         Nama: item.karyawan.nama_karyawan,
+                        jenis_karyawan: item.karyawan.jenis_karyawan,
                         Divisi: item.karyawan.divisi.nama_divisi,
                         Cabang: isHeadGudang ? item.karyawan.toko.nama_toko : (item.karyawan.cabang?.nama_cabang || '-'),
                         Absen: item.kehadiran,
@@ -210,13 +211,29 @@ export default function Karyawan(){
             
             let divisiType;
             if (employeeData.toko_id === 1) {
-                if (employeeData.waktu_kerja_sebulan_antar === null) {
-                    divisiType = "Produksi";
-                } else if (employeeData.waktu_kerja_sebulan_menit === null) {
-                    divisiType = "Transportasi";
+                // if (employeeData.waktu_kerja_sebulan_antar === null) {
+                //     divisiType = "Produksi";
+                // } else if (employeeData.waktu_kerja_sebulan_menit === null) {
+                //     divisiType = "Transportasi";
+                // } else {
+                //     divisiType = "Umum"
+                // }
+                if (employeeData.jenis_karyawan == 'Umum') {
+                    divisiType = "Umum"
+                } else  if(employeeData.jenis_karyawan == 'Transportasi'){
+                    divisiType = "Transportasi"
+                } else {
+                    divisiType = "Produksi"
                 }
             } else {
-                divisiType = employeeData.waktu_kerja_sebulan_antar === null ? "Umum" : "Transportasi";
+                if (employeeData.jenis_karyawan == 'Umum') {
+                    divisiType = "Umum"
+                } else  if(employeeData.jenis_karyawan == 'Transportasi'){
+                    divisiType = "Transportasi"
+                } else {
+                    divisiType = "Produksi"
+                }
+                // divisiType = employeeData.waktu_kerja_sebulan_antar === null ? "Umum" : "Transportasi";
             }
             
             navigate('/dataKaryawanAbsenGaji/detail', { 
