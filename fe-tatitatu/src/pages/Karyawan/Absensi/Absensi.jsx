@@ -244,19 +244,21 @@ export default function Absensi() {
         }
     };
 
-    // Event Handlers
     const handleAdd = () => {
         const currentDate = getCurrentDate();
         const currentTime = getCurrentTime();
         
-        // Find TODAY's attendance records, if any
-        const todayAttendances = data.filter(item => 
-            new Date(item.raw.tanggal).toISOString().split('T')[0] === currentDate
-        );
+        const allAttendances = [...data].sort((a, b) => {
+            const dateA = new Date(a.raw.tanggal + ' ' + a.raw.masuk.jam);
+            const dateB = new Date(b.raw.tanggal + ' ' + b.raw.masuk.jam);
+            return dateB - dateA; 
+        });
         
-        // Get the most recent (last) attendance for today if it exists
-        const lastAttendanceToday = todayAttendances.length > 0 ? 
-            todayAttendances[todayAttendances.length - 1] : null;
+        const unfinishedAttendance = allAttendances.find(item => 
+            item.raw.masuk && 
+            item.raw.masuk.jam !== '-' && 
+            (!item.raw.keluar || item.raw.keluar.jam === '-')
+        );
         
         let newFormData = {
             image: null,
@@ -268,18 +270,29 @@ export default function Absensi() {
             showJamKeluar: false
         };
         
-        // If we have a record for today with clock-in but no clock-out, show clock-out form
-        if (lastAttendanceToday && 
-            lastAttendanceToday.raw.masuk && 
-            lastAttendanceToday.raw.masuk.jam !== '-' && 
-            (!lastAttendanceToday.raw.keluar || lastAttendanceToday.raw.keluar.jam === '-')) {
+        if (unfinishedAttendance) {
+            const totalMenit = calculateTotalMinutes(
+                unfinishedAttendance.raw.masuk.jam, 
+                currentTime
+            );
             
             newFormData = {
                 ...newFormData,
-                jam_masuk: lastAttendanceToday.raw.masuk.jam,
+                jam_masuk: unfinishedAttendance.raw.masuk.jam,
                 jam_keluar: currentTime,
-                showJamKeluar: true
+                total_menit: totalMenit,
+                showJamKeluar: true,
+                tanggal: unfinishedAttendance.raw.tanggal 
             };
+            
+            console.log('Clock-out mode:', {
+                originalDate: unfinishedAttendance.raw.tanggal,
+                clockIn: unfinishedAttendance.raw.masuk.jam,
+                clockOut: currentTime,
+                totalMinutes: totalMenit
+            });
+        } else {
+            console.log('Clock-in mode - new attendance');
         }
         
         setFormData(newFormData);
