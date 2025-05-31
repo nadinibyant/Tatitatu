@@ -318,8 +318,13 @@ const ActionButtons = ({ id, status }) => {
                     setData(formattedData);
                 }
             } else {
-                const response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`); 
-                
+                let response 
+                if (isManajer) {
+                    response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}`); 
+                } else {
+                    response = await api.get(`/cuti-karyawan/${selectedMonth}/${selectedYear}?toko_id=${toko_id}`); 
+                }
+                console.log(response.data.data)
                 const formattedData = response.data.data.flatMap(karyawan => 
                     karyawan.cuti_karyawan.map(cuti => ({
                         id: cuti.cuti_karyawan_id,
@@ -400,8 +405,6 @@ const ActionButtons = ({ id, status }) => {
         
         setModalDetail(true);
     };
-
-    console.log(selectedRow)
     
     return (
         <>

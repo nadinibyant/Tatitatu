@@ -14,8 +14,10 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const isOwner = userData?.role === 'owner';
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance';
-  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
-  const isAdminOrKasirToko = ['admin', 'kasirtoko'].includes(userData?.role);
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+  const isKaryawanTransportasi = userData?.role === 'karyawantransportasi';
+  const isKaryawanUmum = userData?.role === 'karyawanumum';
+  const isKaryawanLogistik = userData?.role === 'karyawanlogistik';
   
   const isLogoutOnly = ['admingudang', 'headgudang', 'manajer', 'finance', 'admin', 'owner'].includes(userData?.role);
   
@@ -25,14 +27,33 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const [profileImage, setProfileImage] = useState(null); 
   const [profileImageError, setProfileImageError] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-  ? 'coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? "biruTua" 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? "hitam"
-      : "primary";
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+  
+  const toko_id = userData?.tokoId;
+  
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
     
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const notifButtonRef = useRef(null);
@@ -220,18 +241,35 @@ const getNotificationIcon = () => {
   }, [isNotifModalOpen]);
 
   useEffect(() => {
-    const fetchLogoBasedOnRole = async () => {
-      if (['headgudang', 'admingudang', 'karyawanproduksi'].includes(userData?.role)) {
-        setLogoSrc('/logoDansa.svg');
-        return;
+    // Update logo based on themeColor
+    const getLogoBasedOnTheme = () => {
+      if (themeColor === "biruTua") {
+        return '/logoDBI.svg';
+      } else if (themeColor === "primary") {
+        return '/logo2.svg';
+      } else if (themeColor === "coklatTua") {
+        return '/logoDansa.svg';
+      } else if (themeColor === "hitam") {
+        // For hitam theme, use the API URL image
+        const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+        const tokoId = userData?.role === 'admin' 
+          ? userData?.userId 
+          : userData?.tokoId;
+          
+        if (tokoId) {
+          // We'll fetch this later in the fetchTokoImage function
+          return null;
+        } else {
+          return '/logo.png';
+        }
+      } else {
+        return '/logo.png';
       }
-      
-      if (['owner', 'manajer', 'finance'].includes(userData?.role)) {
-        setLogoSrc('/logoDBI.svg');
-        return;
-      }
-      
-      if (['admin', 'kasirtoko', 'karyawanumum', 'karyawantransportasi'].includes(userData?.role)) {
+    };
+
+    const fetchTokoImage = async () => {
+      // Only fetch from API if themeColor is "hitam"
+      if (themeColor === "hitam") {
         try {
           const tokoId = userData?.role === 'admin' 
             ? userData?.userId 
@@ -258,16 +296,16 @@ const getNotificationIcon = () => {
           }
         } catch (error) {
           console.error('Error fetching toko data:', error);
-          setLogoSrc('/logo.png')
+          setLogoSrc('/logo.png');
         }
       } else {
-
-        setLogoSrc('/logo.png');
+        // For other themes, we can directly set the logo
+        setLogoSrc(getLogoBasedOnTheme());
       }
     };
     
-    fetchLogoBasedOnRole();
-  }, [userData?.role, userData?.userId, userData?.tokoId]);
+    fetchTokoImage();
+  }, [themeColor, userData?.role, userData?.userId, userData?.tokoId]);
 
   useEffect(() => {
     // Reset error state when userData changes
@@ -338,8 +376,6 @@ const getNotificationIcon = () => {
  const [submenuOpen, setSubmenuOpen] = useState({});
  const [dropdownOpen, setDropdownOpen] = useState(false);
  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
-
- const location = useLocation();
 
  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
  const closeSidebar = () => setSidebarOpen(false);
@@ -588,7 +624,7 @@ const getNotificationIcon = () => {
           )}
           
           <div className="flex flex-col">
-            <p className="text-primary font-bold">{label}</p>
+            <p className={`text-${themeColor} font-bold`}>{label}</p>
           </div>
          </div>
 
@@ -639,8 +675,7 @@ const getNotificationIcon = () => {
             >
               {/* Profile Image or User Icon */}
               {profileImage && !profileImageError ? (
-                <img 
-                  src={profileImage} 
+                <img src={profileImage} 
                   alt="Profile" 
                   className="w-8 h-8 rounded-full object-cover"
                   onError={(e) => {
@@ -653,8 +688,7 @@ const getNotificationIcon = () => {
                   <User size={16} />
                 </div>
               )}
-              <svg
-                className={`w-4 h-4 transition-transform ${
+              <svg className={`w-4 h-4 transition-transform ${
                   dropdownOpen ? "rotate-180" : "rotate-0"
                 }`}
                 xmlns="http://www.w3.org/2000/svg"

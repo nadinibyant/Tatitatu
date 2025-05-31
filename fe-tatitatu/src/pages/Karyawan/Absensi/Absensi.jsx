@@ -12,7 +12,17 @@ import api from "../../../utils/api";
 
 export default function Absensi() {
     const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData?.tokoId
     const karyawan_id = userData.userId
+    
+    const themeColor = !toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+            ? "coklatTua" 
+            : toko_id === 2 
+                ? "primary" 
+                : "hitam";
+    
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         image: null,
@@ -31,17 +41,15 @@ export default function Absensi() {
     const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
     const [geoError, setGeoError] = useState(null);
     
-    // New state for detail modal
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [detailData, setDetailData] = useState({
-        type: '', // 'masuk' or 'keluar'
+        type: '', 
         foto: '',
         lokasi: '',
         jam: '',
         coordinates: { lat: 0, lng: 0 }
       });
 
-    // Function to get current date in YYYY-MM-DD format
     const getCurrentDate = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -50,7 +58,6 @@ export default function Absensi() {
         return `${year}-${month}-${day}`;
     };
     
-    // Function to get current time in HH:MM format
     const getCurrentTime = () => {
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
@@ -189,7 +196,7 @@ export default function Absensi() {
                         // Create clickable jam masuk component
                         jam_masuk: masuk.jam !== '-' ? (
                             <button 
-                                className="text-primary hover:underline flex items-center"
+                                className={`text-${themeColor} hover:underline flex items-center`}
                                 onClick={() => handleOpenDetailModal('masuk', masuk)}
                             >
                                 {masuk.jam}
@@ -207,7 +214,7 @@ export default function Absensi() {
                         // Create clickable jam keluar component
                         jam_keluar: keluar.jam !== '-' ? (
                             <button 
-                                className="text-primary hover:underline flex items-center"
+                                className={`text-${themeColor} hover:underline flex items-center`}
                                 onClick={() => handleOpenDetailModal('keluar', keluar)}
                             >
                                 {keluar.jam}
@@ -439,7 +446,7 @@ export default function Absensi() {
                 {/* Header Section - Responsif */}
                 <section className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 mb-4">
                     <div className="w-full sm:w-auto text-center sm:text-left mb-2 sm:mb-0">
-                        <p className="text-primary text-base font-bold">Daftar Absensi</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Daftar Absensi</p>
                     </div>
 
                     <div className="w-full sm:w-auto">
@@ -459,8 +466,8 @@ export default function Absensi() {
                                     />
                                 </svg>
                             }
-                            bgColor="bg-primary"
-                            hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                            bgColor={`bg-${themeColor}`}
+                            hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                             textColor="text-white"
                             onClick={handleAdd}
                             className="w-full sm:w-auto"
@@ -563,7 +570,7 @@ export default function Absensi() {
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium w-full sm:w-auto"
+                                                className={`px-4 py-2 bg-${themeColor} text-white rounded-lg hover:bg-opacity-90 font-medium w-full sm:w-auto`}
                                                 disabled={isLoading}
                                             >
                                                 {isLoading ? 'Menyimpan...' : 'Simpan'}
@@ -634,7 +641,7 @@ export default function Absensi() {
                                             href={detailData.lokasi}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-primary hover:underline flex items-center justify-center"
+                                            className={`text-${themeColor} hover:underline flex items-center justify-center`}
                                             >
                                             Buka di Google Maps
                                             <svg 
@@ -644,7 +651,7 @@ export default function Absensi() {
                                                 xmlns="http://www.w3.org/2000/svg"
                                             >
                                                 <path d="M14 5C13.4477 5 13 4.55228 13 4C13 3.44772 13.4477 3 14 3H20C20.5523 3 21 3.44772 21 4V10C21 10.5523 20.5523 11 20 11C19.4477 11 19 10.5523 19 10V6.41421L11.7071 13.7071C11.3166 14.0976 10.6834 14.0976 10.2929 13.7071C9.90237 13.3166 9.90237 12.6834 10.2929 12.2929L17.5858 5H14Z" />
-                                                <path d="M5 7C4.44772 7 4 7.44772 4 8V19C4 19.5523 4.44772 20 5 20H16C16.5523 20 17 19.5523 17 19V14C17 13.4477 17.4477 13 18 13C18.5523 13 19 13.4477 19 14V19C19 20.6569 17.6569 22 16 22H5C3.34315 22 2 20.6569 2 19V8C2 6.34315 3.34315 5 5 5H10C10.5523 5 11 5.44772 11 6C11 6.55228 10.5523 7 10 7H5Z" />
+                                                <path d="M5 7C4.44772 7 4 7.44772 48V19C4 19.5523 4.44772 20 5 20H16C16.5523 20 17 19.5523 17 19V14C17 13.4477 17.4477 13 18 13C18.5523 13 19 13.4477 19 14V19C19 20.6569 17.6569 22 16 22H5C3.34315 22 2 20.6569 2 19V8C2 6.34315 3.34315 5 5 5H10C10.5523 5 11 5.44772 11 6C11 6.55228 10.5523 7 10 7H5Z" />
                                             </svg>
                                             </a>
                                         </div>
@@ -653,7 +660,7 @@ export default function Absensi() {
                                     <button
                                         type="button"
                                         onClick={handleCloseDetailModal}
-                                        className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                        className={`w-full px-4 py-2 bg-${themeColor} text-white rounded-lg hover:bg-opacity-90 font-medium`}
                                     >
                                         Tutup
                                     </button>

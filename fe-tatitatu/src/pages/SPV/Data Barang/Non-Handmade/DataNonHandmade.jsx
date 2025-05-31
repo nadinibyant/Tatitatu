@@ -75,7 +75,7 @@ export default function DataBarangNonHandmade() {
                         return {
                             id: item.barang_non_handmade_id,
                             title: item.nama_barang,
-                            price: `Rp${item.rincian_biaya[0]?.harga_jual.toLocaleString('id-ID')}`,
+                            price: `Rp${item.rincian_biaya[0]?.harga_logis.toLocaleString('id-ID')}`,
                             image: item.image ? 
                                 `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}` : 
                                 "https://via.placeholder.com/50",

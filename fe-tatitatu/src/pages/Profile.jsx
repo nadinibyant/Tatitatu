@@ -18,6 +18,8 @@ export default function Profile() {
   const isOwner = userRole === 'owner';
   const isFinance = userRole === 'finance';
   const isManajer = userRole === 'manajer';
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+
 
   const role_name = localStorage.getItem('role_name')
   const { id } = useParams();
@@ -26,11 +28,32 @@ export default function Profile() {
   const isKaryawan = ['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userRole);
   const [isAlertSucc, setAlertSucc] = useState(false);
 
-    const themeColor = (isAdminGudang || isHeadGudang) 
-    ? "coklatTua" 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : "primary";
+
+    const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+  
+  const toko_id = userData?.tokoId;
+  
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

@@ -52,14 +52,33 @@ export default function IzinCutiKaryawan(){
             day: '2-digit'
         });
     };
+    
 
-    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-    ? 'coklatTua' 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? "hitam"
-        : "primary";
+    const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+  
+//   const toko_id = userData?.tokoId;
+  
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
 
     const fetchData = async () => {
         try {

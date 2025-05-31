@@ -3,172 +3,161 @@ import Button from "../../../components/Button";
 import Input from "../../../components/Input";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import api from "../../../utils/api";
+import { useLocation } from "react-router-dom";
 
 export default function BiayaGudang() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingBranches, setEditingBranches] = useState({});
-  const [data, setData] = useState({ branches: [] });
+  const [isEditing, setIsEditing] = useState({});
+  const [branches, setBranches] = useState([]);
+  const [branchData, setBranchData] = useState({});
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const userData = JSON.parse(localStorage.getItem('userData'))
-  const toko_id = userData.userId
-  const isAdminGudang = userData?.role === 'admingudang'
+  const location = useLocation();
+  
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const toko_id = userData.userId;
+  const isAdminGudang = userData?.role === 'admingudang';
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
-  const isFinance = userData?.role === 'finance'
-
-  const themeColor = (isAdminGudang || isHeadGudang) 
-  ? 'coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? "biruTua" 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? "hitam"
-      : "pink";
-
-      const themeColor2 = (isAdminGudang || isHeadGudang) 
+  const isFinance = userData?.role === 'finance';
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+  
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+    
+  const store_id = userData?.tokoId;
+  
+  const themeColor = isAbsensiRoute
+    ? (!store_id 
+        ? "biruTua" 
+        : store_id === 1 
+          ? "coklatTua" 
+          : store_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
       ? 'coklatTua' 
       : (isManajer || isOwner || isFinance) 
         ? "biruTua" 
         : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
           ? "hitam"
-          : "primary"; 
-
-      const textHeader = (isAdminGudang || isHeadGudang) 
-      ? 'coklatMuda' 
-      : (isManajer || isOwner || isFinance) 
-        ? "biruMuda" 
-        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-          ? "white"
           : "primary";
+          
+  const bgColor = themeColor === 'primary' ? 'pink' : 
+                 themeColor === 'hitam' ? 'hitam' : 
+                 themeColor === 'biruTua' ? 'biruTua' :
+                 'coklatMuda';
+                 
+  const textColor = themeColor === 'primary' ? 'primary' : 
+                   themeColor === 'hitam' ? 'white' : 
+                   themeColor === 'biruTua' ? 'biruMuda' :
+                   'coklatTua';
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const toggleEdit = (branchId) => {
-    setEditingBranches(prev => ({
-      ...prev,
-      [branchId]: !prev[branchId]
-    }));
-  };
-
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [branchResponse, biayaResponse] = await Promise.all([
-        api.get(`/cabang?toko_id=${toko_id}`),
-        api.get('/biaya-toko')
-      ]);
-  
-      if (branchResponse.data.success && biayaResponse.data.success) {
-        const branches = branchResponse.data.data
-          .filter(branch => !branch.is_deleted);
-        
-        const combinedData = {
-          branches: branches.map(branch => {
-            const biaya = biayaResponse.data.data.find(b => b.cabang_id === branch.cabang_id && !b.is_deleted);
-            
-            return {
-              id: branch.cabang_id,
-              name: branch.nama_cabang,
-              operasional: biaya ? {
-                data: biaya.biaya_operasional
-                  .filter(op => !op.is_deleted)
-                  .map(op => ({
-                    id: op.biaya_operasional_id,
-                    "Nama Biaya": op.nama_biaya,
-                    "Jumlah Biaya": op.jumlah_biaya,
-                    isEditable: false
-                  })),
-                total: biaya.biaya_operasional
-                  .filter(op => !op.is_deleted)
-                  .reduce((sum, op) => sum + op.jumlah_biaya, 0)
-              } : {
-                data: [],
-                total: 0
-              },
-              staff: biaya ? {
-                data: biaya.biaya_staff
-                  .filter(staff => !staff.is_deleted)
-                  .map(staff => ({
-                    id: staff.biaya_staff_id,
-                    "Nama Biaya": staff.nama_biaya,
-                    "Jumlah Biaya": staff.jumlah_biaya,
-                    isEditable: false
-                  })),
-                total: biaya.biaya_staff
-                  .filter(staff => !staff.is_deleted)
-                  .reduce((sum, staff) => sum + staff.jumlah_biaya, 0)
-              } : {
-                data: [],
-                total: 0
-              },
-              rataTerjual: biaya ? biaya.rata_rata : 0
-            };
-          })
-        };
-  
-        setData(combinedData);
-      } else {
-        setErrorMessage('Gagal mengambil data');
+      
+      const branchResponse = await api.get(`/cabang?toko_id=${toko_id}`);
+      
+      if (!branchResponse.data.success) {
+        setErrorMessage('Gagal mengambil data cabang');
+        return;
       }
+      
+      const activeBranches = branchResponse.data.data.filter(branch => !branch.is_deleted);
+      setBranches(activeBranches);
+      const branchDataMap = {};
+      
+      for (const branch of activeBranches) {
+        try {
+          const biayaResponse = await api.get(`/biaya-toko/${branch.cabang_id}`);
+          
+          if (biayaResponse.data.success) {
+            branchDataMap[branch.cabang_id] = biayaResponse.data.data;
+          } else {
+            branchDataMap[branch.cabang_id] = {
+              cabang_id: branch.cabang_id,
+              persentase: 0,
+              exists: false
+            };
+          }
+        } catch (error) {
+          branchDataMap[branch.cabang_id] = {
+            cabang_id: branch.cabang_id,
+            persentase: 0,
+            exists: false
+          };
+        }
+      }
+      
+      setBranchData(branchDataMap);
+      
     } catch (error) {
+      console.error('Error fetching data:', error);
       setErrorMessage('Terjadi kesalahan saat mengambil data');
-      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEdit = (branchId) => {
+    setIsEditing(prev => ({
+      ...prev,
+      [branchId]: true
+    }));
+  };
+
   const handleCancel = (branchId) => {
-    setEditingBranches(prev => ({
+    setIsEditing(prev => ({
       ...prev,
       [branchId]: false
     }));
+    
+    // Reset to original value by refetching
+    fetchData();
   };
 
   const handleSave = async (branchId) => {
     try {
       setLoading(true);
-      const branch = data.branches.find(b => b.id === branchId);
+      const branch = branches.find(b => b.cabang_id === branchId);
+      const branchPercentage = branchData[branchId]?.persentase || 0;
       
+      // Create payload
       const payload = {
         cabang_id: branchId,
-        biaya_operasional: branch.operasional.data.map(op => ({
-          nama_biaya: op["Nama Biaya"],
-          jumlah_biaya: parseInt(op["Jumlah Biaya"])
-        })),
-        biaya_staff: branch.staff.data.map(staff => ({
-          nama_biaya: staff["Nama Biaya"],
-          jumlah_biaya: parseInt(staff["Jumlah Biaya"])
-        })),
-        total: branch.operasional.data.reduce((sum, op) => sum + parseInt(op["Jumlah Biaya"]), 0) +
-               branch.staff.data.reduce((sum, staff) => sum + parseInt(staff["Jumlah Biaya"]), 0),
-        rata_rata: parseInt(branch.rataTerjual),
-        total_biaya: calculateTotalBiaya(branch)
+        persentase: branchPercentage
       };
-  
-      // Get current biaya data
-      const biayaResponse = await api.get('/biaya-toko');
-      const existingData = biayaResponse.data.data.find(
-        b => b.cabang_id === branchId && !b.is_deleted
-      );
-  
+      
       let response;
-      if (existingData) {
-        response = await api.put(`/biaya-toko/${branchId}`, payload);
-      } else {
+      
+      // Check if data already exists for this branch
+      if (branchData[branchId]?.exists === false) {
+        // If data doesn't exist, use POST to create new
         response = await api.post('/biaya-toko', payload);
+      } else {
+        // If data exists, use PUT to update
+        response = await api.put(`/biaya-toko/${branchId}`, {
+          persentase: branchPercentage
+        });
       }
       
       if (response.data.success) {
-        setEditingBranches(prev => ({
+        setIsEditing(prev => ({
           ...prev,
           [branchId]: false
         }));
-        await fetchData();
+        await fetchData(); // Refresh data
       } else {
         setErrorMessage('Gagal menyimpan perubahan');
       }
@@ -180,118 +169,13 @@ export default function BiayaGudang() {
     }
   };
 
-  const handleAddOperasionalRow = (branchId) => {
-    setData(prevData => ({
-      ...prevData,
-      branches: prevData.branches.map(branch => {
-        if (branch.id === branchId) {
-          return {
-            ...branch,
-            operasional: {
-              ...branch.operasional,
-              data: [
-                ...branch.operasional.data,
-                {
-                  id: branch.operasional.data.length + 1,
-                  "Nama Biaya": "",
-                  "Jumlah Biaya": "",
-                  isEditable: true,
-                }
-              ]
-            }
-          };
-        }
-        return branch;
-      })
-    }));
-  };
-
-  const handleAddStaffRow = (branchId) => {
-    setData(prevData => ({
-      ...prevData,
-      branches: prevData.branches.map(branch => {
-        if (branch.id === branchId) {
-          return {
-            ...branch,
-            staff: {
-              ...branch.staff,
-              data: [
-                ...branch.staff.data,
-                {
-                  id: branch.staff.data.length + 1,
-                  "Nama Biaya": "",
-                  "Jumlah Biaya": "",
-                  isEditable: true,
-                }
-              ]
-            }
-          };
-        }
-        return branch;
-      })
-    }));
-  };
-
-  const handleDeleteRow = (branchId, section, index) => {
-    setData(prevData => ({
-      ...prevData,
-      branches: prevData.branches.map(branch => {
-        if (branch.id === branchId) {
-          const updatedData = branch[section].data.filter((_, idx) => idx !== index);
-          return {
-            ...branch,
-            [section]: {
-              ...branch[section],
-              data: updatedData.map((item, idx) => ({
-                ...item,
-                id: idx + 1
-              }))
-            }
-          };
-        }
-        return branch;
-      })
-    }));
-  };
-
-
-  const calculateTotalBiaya = (branch) => {
-    const totalOperasional = branch.operasional.data.reduce((sum, item) => sum + (parseFloat(item["Jumlah Biaya"]) || 0), 0);
-    const totalStaff = branch.staff.data.reduce((sum, item) => sum + (parseFloat(item["Jumlah Biaya"]) || 0), 0);
-    const total = totalOperasional + totalStaff;
-    return branch.rataTerjual ? Math.round(total / branch.rataTerjual) : 0;
-  };
-
-  const handleInputChange = (branchId, section, rowIndex, key, value) => {
-    setData(prevData => ({
-      ...prevData,
-      branches: prevData.branches.map(branch => {
-        if (branch.id === branchId) {
-          const updatedData = branch[section].data.map((row, index) =>
-            index === rowIndex ? { ...row, [key]: value } : row
-          );
-          return {
-            ...branch,
-            [section]: {
-              ...branch[section],
-              data: updatedData
-            }
-          };
-        }
-        return branch;
-      })
-    }));
-  };
-
-  const handleRataTerjualChange = (branchId, value) => {
-    setData(prevData => ({
-      ...prevData,
-      branches: prevData.branches.map(branch => 
-        branch.id === branchId ? { 
-          ...branch, 
-          rataTerjual: value === "" ? 0 : parseFloat(value)
-        } : branch
-      )
+  const handlePercentageChange = (branchId, value) => {
+    setBranchData(prev => ({
+      ...prev,
+      [branchId]: {
+        ...prev[branchId],
+        persentase: value === "" ? 0 : parseFloat(value)
+      }
     }));
   };
 
@@ -307,239 +191,92 @@ export default function BiayaGudang() {
   return (
     <LayoutWithNav>
       <div className="p-3 md:p-5">
+          <div className="left w-full md:w-auto pb-5">
+            <p className={`text-${themeColor} text-base font-bold`}>Persentase HPP Toko</p>
+          </div>
+        
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <p>Loading...</p>
           </div>
-        ) : data.branches.length === 0 ? (
+        ) : branches.length === 0 ? (
           <EmptyState />
         ) : (
-          data.branches.map(branch => (
-            <div key={branch.id} className="bg-white rounded-xl p-4 md:p-6 mb-6">
+          branches.map(branch => (
+            <div key={branch.cabang_id} className="bg-white rounded-xl p-4 md:p-6 mb-8 shadow-sm">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                 <div className="flex items-center gap-2">
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 20 20" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="flex-shrink-0"
-                  >
-                    <path 
-                      d="M10 0.625C6.25875 0.625 3.125 3.75875 3.125 7.5C3.125 12.6562 9.25625 18.8937 9.5475 19.1912C9.67691 19.3229 9.84977 19.3965 10.0306 19.3965C10.2115 19.3965 10.3843 19.3229 10.5137 19.1912C10.8437 18.8937 16.875 12.6562 16.875 7.5C16.875 3.75875 13.7412 0.625 10 0.625ZM10 10C9.38194 10 8.77775 9.82405 8.26384 9.49441C7.74994 9.16477 7.34542 8.69623 7.09865 8.14805C6.85188 7.59987 6.77193 6.99667 6.86767 6.41473C6.9634 5.83279 7.23085 5.29824 7.63388 4.89521C8.03691 4.49218 8.57146 4.22473 9.1534 4.129C9.73534 4.03326 10.3385 4.11321 10.8867 4.35998C11.4349 4.60675 11.9034 5.01127 12.2331 5.52518C12.5627 6.03908 12.7387 6.64327 12.7387 7.26133C12.7387 8.08569 12.4116 8.87646 11.8291 9.45892C11.2466 10.0414 10.4559 10.3685 9.63154 10.3685L10 10Z" 
-                      fill={themeColor === 'hitam' ? '#2D2D2D' : '#7B0C42'}
-                    />
+                  <svg width="18" height="22" viewBox="0 0 18 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.8217 13.6253C17.5093 12.3348 17.8675 10.8945 17.8647 9.43233C17.8647 4.49906 13.8656 0.5 8.93235 0.5C3.99907 0.5 1.37724e-05 4.49906 1.37724e-05 9.43233C-0.00369351 11.5395 0.741157 13.5794 2.10174 15.1884L2.11225 15.2016L2.12171 15.2121H2.10174L7.40229 20.8394C7.59878 21.048 7.83585 21.2142 8.09893 21.3278C8.362 21.4414 8.64553 21.5 8.93208 21.5C9.21864 21.5 9.50216 21.4414 9.76524 21.3278C10.0283 21.2142 10.2654 21.048 10.4619 20.8394L15.763 15.2121H15.743L15.7514 15.2021L15.7524 15.201C15.7903 15.1559 15.8279 15.1103 15.8654 15.0644C16.23 14.6166 16.5502 14.135 16.8217 13.6253ZM8.93497 12.8471C8.09886 12.8471 7.29698 12.515 6.70576 11.9237C6.11453 11.3325 5.78238 10.5306 5.78238 9.69452C5.78238 8.85841 6.11453 8.05653 6.70576 7.46531C7.29698 6.87408 8.09886 6.54194 8.93497 6.54194C9.77109 6.54194 10.573 6.87408 11.1642 7.46531C11.7554 8.05653 12.0876 8.85841 12.0876 9.69452C12.0876 10.5306 11.7554 11.3325 11.1642 11.9237C10.573 12.515 9.77109 12.8471 8.93497 12.8471Z" fill="#7B0C42"/>
                   </svg>
-                  <h2 className="text-base font-bold break-words">{branch.name}</h2>
+                  <h2 className="text-base font-bold break-words">Cabang {branch.nama_cabang}</h2>
                 </div>
-                <Button
-                  label="Edit"
-                  bgColor="bg-white border border-orange-500"
-                  textColor="text-orange-500"
-                  onClick={() => toggleEdit(branch.id)}
-                  className="w-full sm:w-auto"
-                />
+                
+                {!isEditing[branch.cabang_id] ? (
+                  <Button
+                    label="Edit"
+                    bgColor="bg-white border border-orange-500"
+                    textColor="text-orange-500"
+                    onClick={() => handleEdit(branch.cabang_id)}
+                    className="w-full sm:w-auto"
+                  />
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      label="Batal"
+                      bgColor="bg-white border-secondary border"
+                      textColor="text-gray-700"
+                      onClick={() => handleCancel(branch.cabang_id)}
+                      className="w-full sm:w-auto"
+                    />
+                    <Button
+                      label="Simpan"
+                      bgColor={`bg-${themeColor}`}
+                      textColor="text-white"
+                      onClick={() => handleSave(branch.cabang_id)}
+                      className="w-full sm:w-auto"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-                {/* Biaya Operasional */}
-                <div className="overflow-x-auto">
-                  <h3 className="font-bold mb-4 text-black">Biaya Operasional<span className="text-red-500">*</span></h3>
-                  <div className="overflow-x-auto shadow-sm">
-                    <table className="w-full min-w-[640px]">
-                      <thead className={`bg-${themeColor}`}>
-                        <tr>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>No</th>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Nama Biaya</th>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Jumlah Biaya</th>
-                          {editingBranches[branch.id] && (
-                            <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Aksi</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {branch.operasional.data.map((item, index) => (
-                          <tr key={item.id} className="border-b">
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">{index + 1}</td>
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">
-                              {editingBranches[branch.id] ? (
-                                <div className="max-w-[200px]">
-                                  <Input
-                                    showRequired={false}
-                                    value={item["Nama Biaya"]}
-                                    onChange={(value) => handleInputChange(branch.id, 'operasional', index, "Nama Biaya", value)}
-                                    className="w-full text-sm"
-                                  />
-                                </div>
-                              ) : (
-                                <span className="break-words">{item["Nama Biaya"]}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">
-                              {editingBranches[branch.id] ? (
-                                <div className="max-w-[150px]">
-                                  <Input
-                                    showRequired={false}
-                                    type="number"
-                                    value={item["Jumlah Biaya"]}
-                                    onChange={(value) => handleInputChange(branch.id, 'operasional', index, "Jumlah Biaya", value)}
-                                    className="w-full text-sm"
-                                  />
-                                </div>
-                              ) : `Rp${item["Jumlah Biaya"].toLocaleString("id-ID")}`}
-                            </td>
-                            {editingBranches[branch.id] && (
-                              <td className="py-2 px-3 md:px-4">
-                                <button 
-                                  className="text-red-500 hover:text-red-700 text-sm md:text-base"
-                                  onClick={() => handleDeleteRow(branch.id, 'operasional', index)}
-                                >
-                                  Hapus
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {editingBranches[branch.id] && (
-                    <button 
-                      onClick={() => handleAddOperasionalRow(branch.id)}
-                      className={`mt-4 flex items-center gap-2 text-${themeColor} hover:text-${themeColor}-dark text-sm md:text-base`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                      </svg>
-                      Tambah Baris
-                    </button>
-                  )}
-                </div>
+              <div className="mb-4">
+                <h3 className="font-bold text-sm text-gray-800 mb-2">Persentase Untuk Harga Ideal <span className="text-red-500">*</span></h3>
+              </div>
 
-                {/* Biaya Staff dan Summary */}
-                <div>
-                  <h3 className="font-bold mb-4 text-black">Biaya Staff</h3>
-                  <div className="overflow-x-auto shadow-sm">
-                    <table className="w-full min-w-[640px]">
-                      <thead className={`bg-${themeColor}`}>
-                        <tr>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>No</th>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Nama Biaya</th>
-                          <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Jumlah Biaya</th>
-                          {editingBranches[branch.id] && (
-                            <th className={`py-2 px-3 md:px-4 text-left text-${textHeader} text-sm md:text-base`}>Aksi</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {branch.staff.data.map((item, index) => (
-                          <tr key={item.id} className="border-b">
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">{index + 1}</td>
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">
-                              {editingBranches[branch.id] ? (
-                                <div className="max-w-[200px]">
-                                  <Input
-                                    showRequired={false}
-                                    value={item["Nama Biaya"]}
-                                    onChange={(value) => handleInputChange(branch.id, 'staff', index, "Nama Biaya", value)}
-                                    className="w-full text-sm"
-                                  />
-                                </div>
-                              ) : (
-                                <span className="break-words">{item["Nama Biaya"]}</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 md:px-4 text-sm md:text-base">
-                              {editingBranches[branch.id] ? (
-                                <div className="max-w-[150px]">
-                                  <Input
-                                    showRequired={false}
-                                    type="number"
-                                    value={item["Jumlah Biaya"]}
-                                    onChange={(value) => handleInputChange(branch.id, 'staff', index, "Jumlah Biaya", value)}
-                                    className="w-full text-sm"
-                                  />
-                                </div>
-                              ) : `Rp${item["Jumlah Biaya"].toLocaleString("id-ID")}`}
-                            </td>
-                            {editingBranches[branch.id] && (
-                              <td className="py-2 px-3 md:px-4">
-                                <button 
-                                  className="text-red-500 hover:text-red-700 text-sm md:text-base"
-                                  onClick={() => handleDeleteRow(branch.id, 'staff', index)}
-                                >
-                                  Hapus
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {editingBranches[branch.id] && (
-                    <button 
-                      onClick={() => handleAddStaffRow(branch.id)}
-                      className={`mt-4 flex items-center gap-2 text-${themeColor} hover:text-${themeColor}-dark text-sm md:text-base`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                      </svg>
-                      Tambah Baris
-                    </button>
-                  )}
-
-                  <div className="mt-6 space-y-3 p-4 rounded-lg">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 py-2 gap-2">
-                      <span className="font-bold text-sm md:text-base">Total</span>
-                      <span className="text-sm md:text-base">Rp{(
-                        branch.staff.data.reduce((sum, item) => sum + (parseFloat(item["Jumlah Biaya"]) || 0), 0) +
-                        branch.operasional.data.reduce((sum, item) => sum + (parseFloat(item["Jumlah Biaya"]) || 0), 0)
-                      ).toLocaleString("id-ID")}</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 py-2 gap-2">
-                      <span className="font-bold text-sm md:text-base">Rata-Rata Terjual</span>
-                      <span className="text-sm md:text-base w-full sm:w-auto">
-                        {editingBranches[branch.id] ? (
-                          <div className="max-w-[150px] sm:max-w-none">
+              <div className="overflow-x-auto rounded-lg">
+                <table className="w-full min-w-[640px]">
+                  <thead className={`bg-${bgColor} rounded-t-lg`}>
+                    <tr>
+                      <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold rounded-tl-lg w-16`}>No</th>
+                      <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold`}>Nama Biaya</th>
+                      <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold rounded-tr-lg`}>Persentase</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    <tr className="border-b">
+                      <td className="py-3 px-4 text-sm">1</td>
+                      <td className="py-3 px-4 text-sm">Persentase HPP</td>
+                      <td className="py-3 px-4 text-sm">
+                        {isEditing[branch.cabang_id] ? (
+                          <div className="max-w-[120px]">
                             <Input
                               showRequired={false}
                               type="number"
-                              value={branch.rataTerjual}
-                              onChange={(value) => handleRataTerjualChange(branch.id, value)}
+                              value={branchData[branch.cabang_id]?.persentase || 0}
+                              onChange={(value) => handlePercentageChange(branch.cabang_id, value)}
                               className="w-full text-sm"
+                              suffixText="%"
                             />
                           </div>
-                        ) : `${branch.rataTerjual.toLocaleString('id-ID')}`}
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 gap-2">
-                      <span className={`font-bold text-primary text-sm md:text-base`}>Total Biaya</span>
-                      <span className={`text-primary font-bold text-sm md:text-base`}>Rp{calculateTotalBiaya(branch).toLocaleString("id-ID")}</span>
-                    </div>
-                  </div>
-                </div>
+                        ) : (
+                          `${branchData[branch.cabang_id]?.persentase || 0}%`
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-
-              {editingBranches[branch.id] && (
-                <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t">
-                  <Button 
-                    label="Batal"
-                    bgColor="bg-white border-secondary border"
-                    textColor="text-gray-700"
-                    onClick={() => handleCancel(branch.id)}
-                    className="w-full sm:w-auto order-2 sm:order-1"
-                  />
-                  <Button 
-                    label="Simpan"
-                    bgColor={`bg-${themeColor2}`}
-                    textColor="text-white"
-                    onClick={() => handleSave(branch.id)}
-                    className="w-full sm:w-auto order-1 sm:order-2"
-                  />
-                </div>
-              )}
             </div>
           ))
         )}

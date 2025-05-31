@@ -1,27 +1,75 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const TimeInput = ({ 
   label, 
   value = { amount: '', unit: 'Menit' },
   onChange,
-  options = ['Menit', 'Antar'], 
-  defaultUnit = 'Menit', 
   required = true,
   width = "w-full"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value.amount || '');
-  const [timeUnit, setTimeUnit] = useState(value.unit || defaultUnit);
+  const [selectedOption, setSelectedOption] = useState(null);
   const dropdownRef = useRef(null);
+  const location = useLocation();
   
-  const unitLabels = {
-    'Menit': 'APM',
-    'Antar': 'API'
-  };
+  // Define options as array of objects with label and value
+  const timeOptions = [
+    { label: 'APM', value: 'Menit' },
+    { label: 'API', value: 'Antar' },
+    { label: 'APH', value: 'Antar' }  // This option has same value as API but different label
+  ];
+
+  // Mendapatkan data pengguna untuk theming
+  const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+  const isAdminGudang = userData?.role === "admingudang";
+  const isHeadGudang = userData?.role === "headgudang";
+  const isOwner = userData?.role === "owner";
+  const isManajer = userData?.role === "manajer";
+  const isAdmin = userData?.role === "admin";
+  const isFinance = userData?.role === "finance";
+  const isKaryawanProduksi = userData?.role === "karyawanproduksi";
   
+  // Check if current route is an absensi route
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+    
+  // Get toko_id from userData
+  const toko_id = userData?.tokoId;
+  
+  // Theme color logic based on route and toko_id
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
+  
+  // Find the matching option based on value.unit
   useEffect(() => {
+    const initialOption = timeOptions.find(option => 
+      option.value === value.unit && 
+      // If we have a label stored, match that too
+      (value.label ? option.label === value.label : true)
+    ) || timeOptions[0];
+    
+    setSelectedOption(initialOption);
     setInputValue(value.amount || '');
-    setTimeUnit(value.unit || defaultUnit);
   }, [value]);
 
   useEffect(() => {
@@ -40,16 +88,18 @@ const TimeInput = ({
     setInputValue(newAmount);
     onChange && onChange({
       amount: newAmount,
-      unit: timeUnit
+      unit: selectedOption.value,
+      label: selectedOption.label
     });
   };
 
-  const handleUnitClick = (unit) => {
-    setTimeUnit(unit);
+  const handleOptionClick = (option) => {
+    setSelectedOption(option);
     setIsOpen(false);
     onChange && onChange({
       amount: inputValue,
-      unit: unit
+      unit: option.value,
+      label: option.label
     });
   };
 
@@ -65,7 +115,7 @@ const TimeInput = ({
           type="number"
           value={inputValue}
           onChange={handleInputChange}
-          className="w-full rounded-l-md border border-r-0 border-gray-300 px-5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className={`w-full rounded-l-md border border-r-0 border-gray-300 px-5 py-1 focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
           placeholder="Masukkan Jumlah"
           required={required}
         />
@@ -74,9 +124,9 @@ const TimeInput = ({
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center justify-between min-w-[100px] h-full px-3 border border-gray-300 rounded-r-md bg-white hover:bg-gray-50 focus:outline-none"
+            className={`flex items-center justify-between min-w-[100px] h-full px-3 border border-gray-300 rounded-r-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
           >
-            <span className="text-gray-700">{unitLabels[timeUnit] || timeUnit}</span>
+            <span className="text-gray-700">{selectedOption?.label}</span>
             <svg
               className={`w-4 h-4 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
               fill="none"
@@ -94,13 +144,13 @@ const TimeInput = ({
 
           {isOpen && (
             <div className="absolute right-0 z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-              {options.map((unit) => (
+              {timeOptions.map((option, index) => (
                 <div
-                  key={unit}
-                  className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleUnitClick(unit)}
+                  key={index}
+                  className={`px-4 py-2 cursor-pointer hover:bg-${themeColor === 'primary' ? 'purple' : themeColor === 'biruTua' ? 'blue' : themeColor === 'hitam' ? 'gray' : 'amber'}-50`}
+                  onClick={() => handleOptionClick(option)}
                 >
-                  {unitLabels[unit] || unit}
+                  {option.label}
                 </div>
               ))}
             </div>

@@ -70,19 +70,23 @@ export default function DetailBarang() {
                                 nama: cabangName,
                                 totalHPP: rincian.total_hpp,
                                 keuntungan: rincian.keuntungan,
-                                hargaJual: rincian.harga_jual
+                                hargaJual: rincian.harga_jual,
+                                hargaIdeal: rincian.harga_jual_ideal,
+                                hargaLogis: rincian.harga_logis,
+                                marginPersentase: rincian.margin_persentase,
+                                marginNominal: rincian.margin_nominal
                             });
 
                             const branchRincianBiaya = [];
 
-                            if (biayaToko) {
-                                branchRincianBiaya.push({
-                                    id: biayaToko.biaya_toko_id,
-                                    "Nama Biaya": `Biaya Operasional dan Staff ${cabangName}`,
-                                    "Jumlah Biaya": biayaToko.total_biaya,
-                                    isEditable: false
-                                });
-                            }
+                            // if (biayaToko) {
+                            //     branchRincianBiaya.push({
+                            //         id: biayaToko.biaya_toko_id,
+                            //         "Nama Biaya": `Biaya Operasional dan Staff ${cabangName}`,
+                            //         "Jumlah Biaya": biayaToko.total_biaya,
+                            //         isEditable: false
+                            //     });
+                            // }
 
                             rincian.detail_rincian_biaya.forEach(detail => {
                                 if (!detail.biaya_toko_id && !detail.is_deleted) {
@@ -133,6 +137,37 @@ export default function DetailBarang() {
             return data?.rincian_biaya || [];
         }
         return rincianBiayaPerCabang[selectedCabang] || [];
+    };
+
+    const getCurrentBranchData = () => {
+        if (isAdminGudang) {
+            return {
+                "Total HPP": data["Total HPP"],
+                "Total Keuntungan": data["Total Keuntungan"],
+                "Harga Jual": data["Harga Jual"]
+            };
+        }
+        
+        const branchData = data.dataCabang.find(cabang => cabang.nama === selectedCabang);
+        
+        if (branchData) {
+            return {
+                "Total HPP": branchData.totalHPP,
+                "Total Keuntungan": branchData.keuntungan,
+                "Harga Jual": branchData.hargaJual,
+                "Harga Jual Ideal": branchData.hargaIdeal,
+                "Harga Logis": branchData.hargaLogis,
+                "Margin Persentase": branchData.marginPersentase,
+                "Margin Nominal": branchData.marginNominal
+                
+            };
+        }
+        
+        return {
+            "Total HPP": data["Total HPP"],
+            "Total Keuntungan": data["Total Keuntungan"],
+            "Harga Jual": data["Harga Jual"]
+        };
     };
 
     const breadcrumbItems = [
@@ -225,12 +260,20 @@ export default function DetailBarang() {
                                         <h3 className="text-primary mb-4">{cabang.nama}</h3>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-gray-500 text-sm">Total HPP</p>
-                                                <p className="font-medium">Rp{formatNumberWithDots(cabang.totalHPP)}</p>
+                                                <p className="text-gray-500 text-sm">Harga Ideal</p>
+                                                <p className="font-medium">Rp{formatNumberWithDots(cabang.hargaIdeal)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-gray-500 text-sm">Harga Jual</p>
-                                                <p className="font-medium">Rp{formatNumberWithDots(cabang.hargaJual)}</p>
+                                                <p className="text-gray-500 text-sm">Harga Logis</p>
+                                                <p className="font-medium">Rp{formatNumberWithDots(cabang.hargaLogis)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-sm">Margin Persentase</p>
+                                                <p className="font-medium">{formatNumberWithDots(cabang.marginPersentase)}%</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-sm">Margin Nominal</p>
+                                                <p className="font-medium">Rp{formatNumberWithDots(cabang.marginNominal)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -283,22 +326,27 @@ export default function DetailBarang() {
 
                                 <div>
                                     <p className="text-gray-500">Total HPP</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Total HPP"])}</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Total HPP"])}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-gray-500">Total Keuntungan</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Total Keuntungan"])}</p>
+                                    <p className="text-gray-500">Harga Jual Ideal</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Harga Jual Ideal"])}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-gray-500">Harga Jual</p>
-                                    <p className="font-medium">Rp{formatNumberWithDots(data["Harga Jual"])}</p>
+                                    <p className="text-gray-500">Harga Logis</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Harga Logis"])}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-gray-500">Jumlah Minimum Stok</p>
-                                    <p className="font-medium">{data["Jumlah Minimum Stok"].toLocaleString('id-ID') || 0}</p>
+                                    <p className="text-gray-500">Margin Persentase</p>
+                                    <p className="font-medium">{formatNumberWithDots(getCurrentBranchData()["Margin Persentase"])}%</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-gray-500">Margin Nominal</p>
+                                    <p className="font-medium">Rp{formatNumberWithDots(getCurrentBranchData()["Margin Nominal"])}</p>
                                 </div>
                             </div>
                         </div>

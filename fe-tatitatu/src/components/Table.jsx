@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
-// Enhanced Table component with fixed mobile dropdowns
+// Enhanced Table component with fixed mobile dropdowns and route-specific theming
 const Table = ({
   bg_header,
   text_header,
@@ -31,57 +32,58 @@ const Table = ({
   const isFinance = userData?.role === 'finance'
   const isAdmin = userData?.role === 'admin'
   const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+  const location = useLocation();
   
-  // const headerBgColor = bg_header || (
-  //   isAdminGudang || isHeadGudang 
-  //     ? 'bg-coklatMuda' 
-  //     : isManajer || isOwner || isFinance
-  //       ? 'bg-biruTua'
-  //       : 'bg-pink'
-  // );
+  // Check if current route is an absensi route
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+    
+  // Get toko_id from userData
+  const toko_id = userData?.tokoId;
   
-  const headerBgColor = bg_header || (
-    isAdminGudang || isHeadGudang || isKaryawanProduksi 
-    ? 'bg-coklatMuda'
-    : isManajer || isOwner || isFinance
-    ? 'bg-biruTua'
-    : isAdmin && userData?.userId !== 1 && userData?.userId !== 2
-    ? 'bg-hitam'
-    : 'bg-pink'
-)
-  // const headerBgColor = bg_header || (isAdminGudang || isHeadGudang) 
-  // ? 'bg-coklatMuda'
-  // : (isManajer || isOwner || isFinance) 
-  //   ? 'bg-biruTua' 
-  //   : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-  //     ? 'bg-hitam'
-  //     : 'bg-pink';
-
-  // const headerTextColor = text_header || (
-  //   isAdminGudang || isHeadGudang 
-  //     ? 'text-coklatTua' 
-  //     : isManajer || isOwner || isFinance
-  //       ? 'text-biruMuda'
-  //       : 'text-primary'
-  // );
-
-const headerTextColor = text_header 
-  ? text_header 
-  : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-    ? 'text-coklatTua' 
-    : (isManajer || isOwner || isFinance) 
-      ? 'text-biruMuda' 
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? 'text-white'
-        : 'text-primary';
+  // Theme color logic based on route and toko_id
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
   
-  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-  ? 'coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? 'biruTua' 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? 'hitam'
-      : 'primary';
+  // Map theme colors to header background colors
+  const headerBgColorMap = {
+    'biruTua': 'bg-biruTua',
+    'coklatTua': 'bg-coklatMuda',
+    'hitam': 'bg-hitam',
+    'primary': 'bg-pink'
+  };
+  
+  // Map theme colors to text colors
+  const headerTextColorMap = {
+    'biruTua': 'text-biruMuda',
+    'coklatTua': 'text-coklatTua',
+    'hitam': 'text-white',
+    'primary': 'text-primary'
+  };
+  
+  // Set header background color based on theme
+  const headerBgColor = bg_header || headerBgColorMap[themeColor];
+  
+  // Set header text color based on theme
+  const headerTextColor = text_header || headerTextColorMap[themeColor];
 
   useEffect(() => {
     const handleResize = () => {
@@ -167,14 +169,8 @@ const headerTextColor = text_header
     }
   }, [isMobile]);
 
-  const paginationActiveColor = 
-  isAdminGudang || isHeadGudang 
-    ? 'bg-coklatTua' 
-    : isManajer || isOwner || isFinance
-      ? 'bg-biruTua'
-      : isAdmin && userData?.userId !== 1 && userData?.userId !== 2
-        ? 'bg-hitam'
-        : 'bg-primary';
+  // Use theme color for pagination active state
+  const paginationActiveColor = `bg-${themeColor}`;
 
   const filteredData = data.filter((row) => {
     const matchesSearchTerm = Object.values(row).some((value) =>

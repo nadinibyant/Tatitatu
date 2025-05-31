@@ -202,7 +202,6 @@ export default function TambahAkunKaryawan(){
                 formDataToSend.append('divisi_karyawan_id', formData.division);
                 formDataToSend.append('jenis_karyawan', formData.jenis_karyawan);
                 
-                // Only append branch_id and toko_id for non-manager roles
                 if (!isManajer) {
                     if (!isHeadGudang) {
                         formDataToSend.append('cabang_id', formData.branch);

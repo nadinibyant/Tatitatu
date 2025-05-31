@@ -63,7 +63,7 @@ export default function DataBarang() {
                 const transformedData = response.data.data.map(item => {
                     const hargaJual = isAdminGudang 
                         ? item.harga_jual 
-                        : item.rincian_biaya?.[0]?.harga_jual;
+                        : item.rincian_biaya?.[0]?.harga_logis;
                     
                     const kategoriNama = isAdminGudang
                         ? item.kategori?.nama_kategori_barang

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const FileInput = ({
   label,
@@ -18,6 +19,7 @@ const FileInput = ({
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  const location = useLocation();
 
   const alignmentClass = 
     alignment === "start" ? "items-start justify-start" : 
@@ -32,22 +34,45 @@ const FileInput = ({
   const isAdmin = userData?.role === "admin";
   const isFinance = userData?.role === "finance";
   const isKaryawanProduksi = userData?.role === "karyawanproduksi";
+  
+  // Check if current route is an absensi route
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+    
+  // Get toko_id from userData
+  const toko_id = userData?.tokoId;
+  
+  // Theme color logic based on route and toko_id
+  const themeColor = isAbsensiRoute
+    ? (!toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+          ? "coklatTua" 
+          : toko_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
 
-  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi)
-    ? "coklatTua"
-    : (isManajer || isOwner || isFinance)
-      ? "biruTua"
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? "hitam"
-        : "primary";
-
-  const svgColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi)
-    ? "#71503D"
-    : (isManajer || isOwner || isFinance)
-      ? "#023F80"
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? "#2D2D2D"
-        : "#7B0C42";
+  // Color mapping for SVG elements based on theme
+  const svgColorMap = {
+    'biruTua': '#023F80',
+    'coklatTua': '#71503D',
+    'hitam': '#2D2D2D',
+    'primary': '#7B0C42'
+  };
+  
+  const svgColor = svgColorMap[themeColor];
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -232,6 +257,9 @@ const FileInput = ({
     </div>
   );
 
+  // Define hover color based on theme
+  const hoverBgColor = themeColor === "primary" ? "purple" : themeColor === "biruTua" ? "blue" : themeColor === "hitam" ? "gray" : "amber";
+
   if (cameraOnly) {
     return (
       <div className={`flex flex-col ${alignmentClass} border-2 border-dashed border-${themeColor} rounded-lg p-4 text-${themeColor} ${width} ${className}`}>
@@ -384,7 +412,7 @@ const FileInput = ({
 
   // Standard mode (file upload with optional camera)
   return (
-    <div className={`flex flex-col ${alignmentClass} border-2 border-dashed border-${themeColor} rounded-lg p-4 text-${themeColor} cursor-pointer hover:bg-${themeColor === "primary" ? "purple" : "amber"}-50 ${width} ${className}`}>
+    <div className={`flex flex-col ${alignmentClass} border-2 border-dashed border-${themeColor} rounded-lg p-4 text-${themeColor} cursor-pointer hover:bg-${hoverBgColor}-50 ${width} ${className}`}>
       {showCamera ? (
         <div className="flex flex-col items-center w-full relative">
           <div className="relative w-full rounded-md overflow-hidden aspect-video mb-3">

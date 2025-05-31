@@ -1,14 +1,85 @@
 const userData = JSON.parse(localStorage.getItem('userData'));
 const userId = userData?.userId ? Number(userData.userId) : null;
+const isManajer = userData?.role === 'manajer';
+const isKasirToko = userData?.role === 'kasirtoko';
+const isAdminGudang = userData?.role === 'admingudang';
+const isHeadGudang = userData?.role === 'headgudang';
+const isOwner = userData?.role === 'owner';
+const isAdmin = userData?.role === 'admin';
+const isFinance = userData?.role === 'finance';
+const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+const isKaryawanTransportasi = userData?.role === 'karyawantransportasi';
+const isKaryawanUmum = userData?.role === 'karyawanumum';
+const isKaryawanLogistik = userData?.role === 'karyawanlogistik';
+
+// Get current route for Absensi routes check
+const currentPath = window.location.pathname;
+const isAbsensiRoute = 
+  currentPath === '/absensi-karyawan' || 
+  currentPath === '/absensi-karyawan-transport' || 
+  currentPath === '/absensi-karyawan-produksi' ||
+  currentPath.startsWith('/absensi-karyawan-produksi/tambah');
+
+const toko_id = userData?.tokoId;
+
+const themeColor = isAbsensiRoute
+  ? (!toko_id 
+      ? "biruTua" 
+      : toko_id === 1 
+        ? "coklatTua" 
+        : toko_id === 2 
+          ? "primary" 
+          : "hitam")
+  : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
 
 const getIconWarna = (basePath) => {
-  if (userData?.role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2 )) {
-    const lastDotIndex = basePath.lastIndexOf('.');
-    const pathWithoutExt = basePath.substring(0, lastDotIndex);
-    const extension = basePath.substring(lastDotIndex);
+  const lastDotIndex = basePath.lastIndexOf('.');
+  const pathWithoutExt = basePath.substring(0, lastDotIndex);
+  const extension = basePath.substring(lastDotIndex);
+
+  if (themeColor === 'biruTua') {
+    return `${pathWithoutExt}_non${extension}`;
+  } else if (themeColor === 'coklatTua') {
+    return `${pathWithoutExt}_gudang${extension}`;
+  } else if (themeColor === 'hitam') {
     return `${pathWithoutExt}_toko2${extension}`;
+  } else {
+    return basePath;
   }
-  return basePath;
+};
+
+const applyThemeToMenuIcons = (menuItems) => {
+  return menuItems.map(item => {
+    const baseIconPath = '/Icon Warna/';
+    const iconName = item.iconWarna.replace('/Icon Warna/', '');
+    
+    if (themeColor === 'biruTua') {
+      const lastDotIndex = iconName.lastIndexOf('.');
+      const nameWithoutExt = iconName.substring(0, lastDotIndex);
+      const extension = iconName.substring(lastDotIndex);
+      item.iconWarna = `${baseIconPath}${nameWithoutExt}_non${extension}`;
+    } else if (themeColor === 'coklatTua') {
+      const lastDotIndex = iconName.lastIndexOf('.');
+      const nameWithoutExt = iconName.substring(0, lastDotIndex);
+      const extension = iconName.substring(lastDotIndex);
+      item.iconWarna = `${baseIconPath}${nameWithoutExt}_gudang${extension}`;
+    } else if (themeColor === 'hitam') {
+      const lastDotIndex = iconName.lastIndexOf('.');
+      const nameWithoutExt = iconName.substring(0, lastDotIndex);
+      const extension = iconName.substring(lastDotIndex);
+      item.iconWarna = `${baseIconPath}${nameWithoutExt}_toko2${extension}`;
+    } else {
+      item.iconWarna = `${baseIconPath}${iconName}`;
+    }
+    
+    return item;
+  });
 };
 
 export const menuItems = [
@@ -272,7 +343,7 @@ export const menuItems = [
   },
   ]
 
-  export const menuKaryawan = [
+  const baseMenuKaryawan = [
     {
       label: "Absensi",
       link: "/absensi-karyawan",
@@ -285,9 +356,9 @@ export const menuItems = [
       icon: "/Menu/izinCuti.svg",
       iconWarna: '/Icon Warna/izinCuti.svg',
     },
-  ]
-  
-  export const menuKaryawanTransport = [
+  ];
+
+  const baseMenuKaryawanTransport = [
     {
       label: "Absensi",
       link: "/absensi-karyawan-transport",
@@ -300,22 +371,27 @@ export const menuItems = [
       icon: "/Menu/izinCuti.svg",
       iconWarna: '/Icon Warna/izinCuti.svg',
     },
-  ]
+  ];
 
-  export const menuKaryawanProduksi = [
+  const baseMenuKaryawanProduksi = [
     {
       label: "Absensi",
       link: "/absensi-karyawan-produksi",
       icon: "/Menu/absensi.svg",
-      iconWarna: '/Icon Warna/absensi_gudang.svg',
+      iconWarna: '/Icon Warna/absensi.svg',
     },
     {
       label: "Izin/Cuti Karyawan",
       link: "/izin-cuti-karyawan",
       icon: "/Menu/izinCuti.svg",
-      iconWarna: '/Icon Warna/izinCuti_gudang.svg',
+      iconWarna: '/Icon Warna/izinCuti.svg',
     },
-  ]
+  ];
+
+  // Apply theme to menu configurations
+  export const menuKaryawan = applyThemeToMenuIcons(baseMenuKaryawan);
+  export const menuKaryawanTransport = applyThemeToMenuIcons(baseMenuKaryawanTransport);
+  export const menuKaryawanProduksi = applyThemeToMenuIcons(baseMenuKaryawanProduksi);
   
   export const menuOwner = [
     {
@@ -401,6 +477,12 @@ export const menuItems = [
       link: "/karyawan-absen-gaji",
       icon: "/Menu/karyawanAbsensi.svg",
       iconWarna: '/Icon Warna/karyawanAbsensi_non.svg',
+    },
+    {
+      label: "Izin/Cuti Karyawan",
+      link: "/pengajuanCuti",
+      icon: "/Menu/izinCuti.svg",
+      iconWarna: getIconWarna('/Icon Warna/izinCuti_non.svg'),
     },
     {
       label: "Laporan Keuangan Perusahaan",

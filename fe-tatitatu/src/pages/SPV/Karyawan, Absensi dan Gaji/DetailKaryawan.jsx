@@ -188,9 +188,13 @@ export default function DetailKaryawan(){
           year: "numeric",
         });
 
-    function formatNumberWithDots(number) {
-        return number.toLocaleString('id-ID');
+function formatNumberWithDots(number) {
+    const numValue = parseFloat(number); 
+    if (isNaN(numValue)) { 
+        return ""; 
     }
+    return numValue.toLocaleString('id-ID');
+}
 
     const headers = [
         { label: "Tanggal", key: "Tanggal", align: "text-left" },
@@ -281,7 +285,7 @@ export default function DetailKaryawan(){
                     nama: karyawan.nama_karyawan,
                     phone: karyawan.nomor_handphone || '-',
                     email: karyawan.email,
-                    toko: karyawan.toko.nama_toko, 
+                    toko: karyawan.toko?.nama_toko || '-', 
                     cabang: karyawan.cabang?.nama_cabang || '-',
                     divisi: karyawan.divisi.nama_divisi,
                     total_gaji_pokok: karyawan.jumlah_gaji_pokok || 0,
@@ -953,9 +957,9 @@ export default function DetailKaryawan(){
                             <div className="">
                                 <p className="text-sm text-gray-500">Waktu Kerja Sebulan</p>
                                 {divisi === "Transportasi" ? (
-                                    <p className="font-bold">{formatNumberWithDots(data.profile.waktu_kerja_sebulan_antar) || 0} Antar</p>   
+                                    <p className="font-bold">{formatNumberWithDots(data?.profile?.waktu_kerja_sebulan_antar)} Antar</p>   
                                 ) : (
-                                    <p className="font-bold">{formatNumberWithDots(data.profile.waktu_kerja_sebulan_menit) || 0} Menit</p>   
+                                    <p className="font-bold">{formatNumberWithDots(data?.profile?.waktu_kerja_sebulan_menit)} Menit</p>   
                                 )}
                             </div>
 
