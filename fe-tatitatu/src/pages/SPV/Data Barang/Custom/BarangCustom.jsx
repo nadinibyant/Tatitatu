@@ -205,7 +205,11 @@ const handleAddBtn = () => {
   ];
 
   const formatCurrency = (amount) => {
-    return amount.toLocaleString('id-ID', {});
+      if (!amount || amount === 0) return 0;
+      return amount.toLocaleString('id-ID', {
+          style: 'currency',
+          currency: 'IDR'
+      });
   };
 
 
@@ -506,7 +510,7 @@ const handleAddBtn = () => {
                                   onChange={(value) => handleInputChange("HargaJual", value)}
                                 />
                               ),
-                              HargaSatuan: `Rp${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
+                              HargaSatuan: `${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
                             },
                           ]}
                         />
@@ -585,10 +589,10 @@ const handleAddBtn = () => {
                     data={data2.rincian_biaya.map((item, index) => ({
                         ...item,
                         No: index + 1,
-                        Harga: `Rp${formatCurrency(item.Harga)}`,
+                        Harga: `${formatCurrency(item.Harga)}`,
                         Isi: formatCurrency(item.Isi),
-                        HargaSatuan: `Rp${formatCurrency(item.HargaSatuan)}`,
-                        HargaJual: `Rp${formatCurrency(item.HargaJual)}`
+                        HargaSatuan: `${formatCurrency(item.HargaSatuan)}`,
+                        HargaJual: `${formatCurrency(item.HargaJual)}`
                     }))}
                     hasPagination={false}
                     hasSearch={false}

@@ -6,116 +6,96 @@ import Spinner from "../../../components/Spinner";
 import api from "../../../utils/api";
 import AlertSuccess from "../../../components/AlertSuccess";
 import AlertError from "../../../components/AlertError";
+import { useLocation } from "react-router-dom";
+import { menuItems, userOptions } from "../../../data/menu";
 
 export default function BiayaRumahProduksi() {
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setLoading] = useState(false)
+  const [isLoading, setLoading] = useState(false);
   const [alertSucc, setAlertSucc] = useState(false);
   const [errorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [persentase, setPersentase] = useState(0);
+  const location = useLocation();
 
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const isAdminGudang = userData?.role === 'admingudang';
+  const isHeadGudang = userData?.role === 'headgudang';
+  const isOwner = userData?.role === 'owner';
+  const isManajer = userData?.role === 'manajer';
+  const isAdmin = userData?.role === 'admin';
+  const isFinance = userData?.role === 'finance';
+  const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+  
+  const isAbsensiRoute = 
+    location.pathname === '/absensi-karyawan' || 
+    location.pathname === '/absensi-karyawan-transport' || 
+    location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/izin-cuti-karyawan' ||
+    location.pathname === '/profile' ||
+    location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
+    
+  const store_id = userData?.tokoId;
+  
+  const themeColor = isAbsensiRoute
+    ? (!store_id 
+        ? "biruTua" 
+        : store_id === 1 
+          ? "coklatTua" 
+          : store_id === 2 
+            ? "primary" 
+            : "hitam")
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+      ? 'coklatTua' 
+      : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+          ? "hitam"
+          : "primary";
+          
+  const bgColor = themeColor === 'primary' ? 'pink' : 
+                 themeColor === 'hitam' ? 'hitam' : 
+                 themeColor === 'biruTua' ? 'biruTua' :
+                 'coklatMuda';
+                 
+  const textColor = themeColor === 'primary' ? 'primary' : 
+                   themeColor === 'hitam' ? 'white' : 
+                   themeColor === 'biruTua' ? 'biruMuda' :
+                   'coklatTua';
 
-  const [data, setData] = useState({
-    operasionalStaff: {
-      data: [],
-      total: 0,
-      rataTercetak: 0
-    },
-    operasionalProduksi: {
-      data: [],
-      waktuKerja: 0,
-      totalModal: 0
-    }
-  });
-
-  const fetchBiayaGudang = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/biaya-gudang');
+      const response = await api.get('/biaya-gudang'); // tetap menggunakan endpoint biaya-gudang
       
       if (response.data.success) {
+        // Mengambil persentase dari respons API
         const apiData = response.data.data;
-
-        const transformedData = {
-          operasionalStaff: {
-            data: apiData?.biaya_staff ? apiData.biaya_staff.map((item, index) => ({
-              id: index + 1,
-              "Nama Biaya": item.nama_biaya,
-              "Total Biaya": parseInt(item.total_biaya)
-            })) : [],
-            total: parseFloat(apiData?.total || 0),
-            rataTercetak: parseInt(apiData?.rata_rata || 0)
-          },
-          operasionalProduksi: {
-            data: apiData?.biaya_operasional ? apiData.biaya_operasional.map((item, index) => ({
-              id: index + 1,
-              "Nama Divisi": item.nama_biaya,
-              "Total Biaya": parseInt(item.total_biaya)
-            })) : [], 
-            waktuKerja: parseInt(apiData?.waktu_kerja || 0),
-            totalModal: parseFloat(apiData?.total_modal || 0)
-          }
-        };
-        
-        setData(transformedData);
-      } else {
-        setData({
-          operasionalStaff: {
-            data: [],
-            total: 0,
-            rataTercetak: 0
-          },
-          operasionalProduksi: {
-            data: [],
-            waktuKerja: 0,
-            totalModal: 0
-          }
-        });
+        setPersentase(apiData?.persentase || 0);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      setData({
-        operasionalStaff: {
-          data: [],
-          total: 0,
-          rataTercetak: 0
-        },
-        operasionalProduksi: {
-          data: [],
-          waktuKerja: 0,
-          totalModal: 0
-        }
-      });
       setErrorMessage(error.response?.data?.message || "Error fetching data");
       setErrorAlert(true);
     } finally {
       setLoading(false);
     }
-};
+  };
 
   useEffect(() => {
-    fetchBiayaGudang();
+    fetchData();
   }, []);
 
   const handleSave = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
+      
+      // Payload berdasarkan struktur baru
       const formDataToSend = {
-        biaya_operasional: data.operasionalProduksi.data.map(item => ({
-          nama_biaya: item["Nama Divisi"],
-          jumlah_biaya: item["Total Biaya"]
-        })),
-        biaya_staff: data.operasionalStaff.data.map(item => ({
-          nama_biaya: item["Nama Biaya"],
-          jumlah_biaya: item["Total Biaya"]
-        })),
-        total: data.operasionalStaff.total,
-        rata_rata: data.operasionalStaff.rataTercetak,
-        total_biaya: calculateTotalBiaya(),
-        waktu_kerja: data.operasionalProduksi.waktuKerja,
-        total_modal: calculateTotalModal()
+        persentase: persentase
       };
 
+      // Tetap menggunakan endpoint yang sama
       const response = await api.put('/biaya-gudang/1', formDataToSend, {
         headers: {
           'Content-Type': 'application/json',
@@ -125,317 +105,133 @@ export default function BiayaRumahProduksi() {
       if (response.data.success) {
         setAlertSucc(true);
         setIsEditing(false);
+        
+        setTimeout(() => {
+          setAlertSucc(false);
+        }, 3000);
       } else {
-        setErrorMessage(response.data.message);
+        setErrorMessage(response.data.message || "Gagal menyimpan data");
         setErrorAlert(true);
       }
     } catch (error) {
+      console.error('Error saving data:', error);
       setErrorMessage(error.response?.data?.message || "Error saving data");
       setErrorAlert(true);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
-  const handleAddOperasionalStaffRow = () => {
-    setData(prev => ({
-      ...prev,
-      operasionalStaff: {
-        ...prev.operasionalStaff,
-        data: [
-          ...prev.operasionalStaff.data,
-          {
-            id: prev.operasionalStaff.data.length + 1,
-            "Nama Biaya": "",
-            "Total Biaya": 0,
-          }
-        ]
-      }
-    }));
+  const handleCancel = () => {
+    setIsEditing(false);
+    fetchData(); 
   };
 
-  const handleAddOperasionalProduksiRow = () => {
-    setData(prev => ({
-      ...prev,
-      operasionalProduksi: {
-        ...prev.operasionalProduksi,
-        data: [
-          ...prev.operasionalProduksi.data,
-          {
-            id: prev.operasionalProduksi.data.length + 1,
-            "Nama Divisi": "",
-            "Total Biaya": 0,
-          }
-        ]
-      }
-    }));
-  };
-
-  const handleDeleteRow = (section, index) => {
-    setData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        data: prev[section].data.filter((_, idx) => idx !== index)
-      }
-    }));
-  };
-
-  const handleInputChange = (section, index, field, value) => {
-    setData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        data: prev[section].data.map((item, idx) => 
-          idx === index ? { ...item, [field]: value } : item
-        ),
-        ...(section === 'operasionalStaff' && {
-          total: field === 'Total Biaya' 
-            ? prev.operasionalStaff.data.reduce((sum, item, i) => 
-                sum + (i === index ? Number(value) : Number(item["Total Biaya"])), 0)
-            : prev.operasionalStaff.total
-        })
-      }
-    }));
-  };
-
-  const handleMetricChange = (section, field, value) => {
-    setData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: Number(value)
-      }
-    }));
-  };
-
-  const calculateTotalBiaya = () => {
-    const total = data.operasionalStaff.data.reduce((sum, item) => sum + Number(item["Total Biaya"]), 0);
-    return data.operasionalStaff.rataTercetak ? total / data.operasionalStaff.rataTercetak : 0;
-  };
-
-  const calculateTotalModal = () => {
-    const total = data.operasionalProduksi.data.reduce((sum, item) => sum + Number(item["Total Biaya"]), 0);
-    return data.operasionalProduksi.waktuKerja ? total / data.operasionalProduksi.waktuKerja : 0;
+  const handlePercentageChange = (value) => {
+    setPersentase(value === "" ? 0 : parseFloat(value));
   };
 
   return (
-    <LayoutWithNav>
-      <div className="p-5">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-coklatTua">Rincian Biaya Dansa</h2>
-          {!isEditing ? (
-            <Button
-              label="Edit"
-              icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 19H6.4L15.025 10.375L13.625 8.975L5 17.6V19ZM19.3 8.925L15.05 4.725L16.45 3.325C16.8333 2.94167 17.3043 2.75 17.863 2.75C18.421 2.75 18.8917 2.94167 19.275 3.325L20.675 4.725C21.0583 5.10833 21.2583 5.571 21.275 6.113C21.2917 6.65433 21.1083 7.11667 20.725 7.5L19.3 8.925ZM17.85 10.4L7.25 21H3V16.75L13.6 6.15L17.85 10.4Z" fill="#FB6D3A"/>
-              </svg>}
-              bgColor="bg-white border border-orange-500"
-              textColor="text-orange-500"
-              onClick={() => setIsEditing(true)}
-            />
-          ) : (
-            <div className="flex gap-4">
-              <Button
-                label="Batal"
-                bgColor="border border-secondary"
-                textColor="text-black"
-                onClick={() => setIsEditing(false)}
-              />
-              <Button
-                label="Simpan"
-                bgColor="bg-coklatTua"
-                textColor="text-white"
-                onClick={handleSave}
-              />
+    <LayoutWithNav
+      menuItems={menuItems}
+      userOptions={userOptions}
+    >
+      <div className="p-3 md:p-5">
+        
+        
+        {isLoading ? (
+          <Spinner />
+        ) : (
+          <div className="bg-white rounded-xl p-4 md:p-6 mb-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+              <div className="left w-full md:w-auto pb-5">
+                <p className={`text-${themeColor} text-base font-bold`}>Persentase HPP Dansa</p>
+              </div>
+              {!isEditing ? (
+                <Button
+                  label="Edit"
+                  bgColor="bg-white border border-orange-500"
+                  textColor="text-orange-500"
+                  onClick={() => setIsEditing(true)}
+                  className="w-full sm:w-auto"
+                  icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 19H6.4L15.025 10.375L13.625 8.975L5 17.6V19ZM19.3 8.925L15.05 4.725L16.45 3.325C16.8333 2.94167 17.3043 2.75 17.863 2.75C18.421 2.75 18.8917 2.94167 19.275 3.325L20.675 4.725C21.0583 5.10833 21.2583 5.571 21.275 6.113C21.2917 6.65433 21.1083 7.11667 20.725 7.5L19.3 8.925ZM17.85 10.4L7.25 21H3V16.75L13.6 6.15L17.85 10.4Z" fill="#FB6D3A"/>
+                  </svg>}
+                />
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    label="Batal"
+                    bgColor="bg-white border-secondary border"
+                    textColor="text-gray-700"
+                    onClick={handleCancel}
+                    className="w-full sm:w-auto"
+                  />
+                  <Button
+                    label="Simpan"
+                    bgColor={`bg-${themeColor}`}
+                    textColor="text-white"
+                    onClick={handleSave}
+                    className="w-full sm:w-auto"
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Biaya Operasional dan Staff */}
-          <div className="bg-white rounded-xl p-6">
-            <h3 className="font-bold mb-4 text-black">Biaya Operasional dan Staff<span className="text-red-500">*</span></h3>
-            <table className="w-full">
-              <thead className="bg-coklatMuda">
-                <tr>
-                  <th className="py-2 px-4 text-left">No</th>
-                  <th className="py-2 px-4 text-left">Nama Biaya</th>
-                  <th className="py-2 px-4 text-left">Total Biaya</th>
-                  {isEditing && <th className="py-2 px-4">Aksi</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {data.operasionalStaff.data.map((item, index) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="py-2 px-4">{index + 1}</td>
-                    <td className="py-2 px-4">
-                      {isEditing ? (
-                        <Input
-                          showRequired={false}
-                          value={item["Nama Biaya"]}
-                          onChange={(value) => handleInputChange("operasionalStaff", index, "Nama Biaya", value)}
-                        />
-                      ) : item["Nama Biaya"]}
-                    </td>
-                    <td className="py-2 px-4">
-                      {isEditing ? (
-                        <Input
-                        showRequired={false}
-                          type="number"
-                          value={item["Total Biaya"]}
-                          onChange={(value) => handleInputChange("operasionalStaff", index, "Total Biaya", value)}
-                        />
-                      ) : `Rp${item["Total Biaya"].toLocaleString()}`}
-                    </td>
-                    {isEditing && (
-                      <td className="py-2 px-4 text-center">
-                        <button 
-                          onClick={() => handleDeleteRow("operasionalStaff", index)}
-                          className="text-red-500"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    )}
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full min-w-[640px]">
+                <thead className={`bg-${bgColor} rounded-t-lg`}>
+                  <tr>
+                    <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold rounded-tl-lg w-16`}>No</th>
+                    <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold`}>Nama Biaya</th>
+                    <th className={`py-3 px-4 text-left text-${textColor} text-sm font-semibold rounded-tr-lg`}>Persentase</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {isEditing && (
-              <button 
-                onClick={handleAddOperasionalStaffRow}
-                className="mt-4 text-coklatTua flex items-center gap-2"
-              >
-                <span>+</span> Tambah Baris
-              </button>
-            )}
-            
-            <div className="mt-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Total</span>
-                <span>Rp{data.operasionalStaff.total.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Rata-Rata Tercetak</span>
-                <span>
-                  {isEditing ? (
-                    <Input
-                    showRequired={false}
-                      type="number"
-                      required={true}
-                      value={data.operasionalStaff.rataTercetak}
-                      onChange={(value) => handleMetricChange("operasionalStaff", "rataTercetak", value)}
-                    />
-                  ) : data.operasionalStaff.rataTercetak.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-coklatTua font-bold">Total Biaya</span>
-                <span className="text-coklatTua font-bold">Rp{Math.round(calculateTotalBiaya()).toLocaleString()}</span>
-              </div>
+                </thead>
+                <tbody className="bg-white">
+                  <tr className="border-b">
+                    <td className="py-3 px-4 text-sm">1</td>
+                    <td className="py-3 px-4 text-sm">Persentase HPP</td>
+                    <td className="py-3 px-4 text-sm">
+                      {isEditing ? (
+                        <div className="max-w-[120px]">
+                          <Input
+                            showRequired={false}
+                            type="number"
+                            value={persentase}
+                            onChange={(value) => handlePercentageChange(value)}
+                            className="w-full text-sm"
+                            suffixText="%"
+                          />
+                        </div>
+                      ) : (
+                        `${persentase}%`
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
 
-          {/* Biaya Operasional Produksi */}
-          <div className="bg-white rounded-xl p-6">
-            <h3 className="font-bold mb-4">Biaya Operasional Produksi</h3>
-            <table className="w-full">
-              <thead className="bg-coklatMuda">
-                <tr>
-                  <th className="py-2 px-4 text-left">No</th>
-                  <th className="py-2 px-4 text-left">Nama Divisi</th>
-                  <th className="py-2 px-4 text-left">Total Biaya</th>
-                  {isEditing && <th className="py-2 px-4">Aksi</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {data.operasionalProduksi.data.map((item, index) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="py-2 px-4">{index + 1}</td>
-                    <td className="py-2 px-4">
-                      {isEditing ? (
-                        <Input
-                        showRequired={false}
-                          value={item["Nama Divisi"]}
-                          onChange={(value) => handleInputChange("operasionalProduksi", index, "Nama Divisi", value)}
-                        />
-                      ) : item["Nama Divisi"]}
-                    </td>
-                    <td className="py-2 px-4">
-                      {isEditing ? (
-                        <Input
-                        showRequired={false}
-                          type="number"
-                          value={item["Total Biaya"]}
-                          onChange={(value) => handleInputChange("operasionalProduksi", index, "Total Biaya", value)}
-                        />
-                      ) : `Rp${item["Total Biaya"].toLocaleString()}`}
-                    </td>
-                    {isEditing && (
-                      <td className="py-2 px-4 text-center">
-                        <button 
-                          onClick={() => handleDeleteRow("operasionalProduksi", index)}
-                          className="text-red-500"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {isEditing && (
-              <button 
-                onClick={handleAddOperasionalProduksiRow}
-                className="mt-4 text-coklatTua flex items-center gap-2"
-              >
-                <span>+</span> Tambah Baris
-              </button>
-            )}
-
-            <div className="mt-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Waktu Kerja</span>
-                <span>
-                  {isEditing ? (
-                    <Input
-                    showRequired={false}
-                      type="number"
-                      required={true}
-                      value={data.operasionalProduksi.waktuKerja}
-                      onChange={(value) => handleMetricChange("operasionalProduksi", "waktuKerja", value)}
-                    />
-                  ) : data.operasionalProduksi.waktuKerja}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-coklatTua font-bold">Total Modal Operasional Produksi</span>
-                <span className="text-coklatTua font-bold">Rp{Math.round(calculateTotalModal()).toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {isLoading && <Spinner/>}
-
-              {alertSucc && (
-                    <AlertSuccess
-                        title="Berhasil!!"
-                        description="Data berhasil diperbaharui"
-                        confirmLabel="Ok"
-                    />
-                )}
+        {alertSucc && (
+          <AlertSuccess
+            title="Berhasil!!"
+            description="Data berhasil diperbaharui"
+            confirmLabel="Ok"
+            onConfirm={() => setAlertSucc(false)}
+          />
+        )}
 
         {errorAlert && (
-              <AlertError
-                title="Gagal!!"
-                description={errorMessage}
-                confirmLabel="Ok"
-                onConfirm={() => setErrorAlert(false)}
-              />
-            )}
+          <AlertError
+            title="Gagal!!"
+            description={errorMessage}
+            confirmLabel="Ok"
+            onConfirm={() => setErrorAlert(false)}
+          />
+        )}
+      </div>
     </LayoutWithNav>
   );
 }

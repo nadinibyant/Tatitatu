@@ -37,6 +37,8 @@ export default function EditBarang() {
   const [isAlertSuccess, setAlertSucc] = useState(false)
   const [isErrorAlert, setErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [biayaGudangData, setBiayaGudangData] = useState(null);
+  const [biayaTokoData, setBiayaTokoData] = useState([]);
   const toko_id = userData.userId
   const { id } = useParams();
 
@@ -47,8 +49,6 @@ export default function EditBarang() {
     : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
       ? "hitam"
       : "primary";
-
-  const [biayaGudangData, setBiayaGudangData] = useState(null);
   
   const fetchBiayaGudang = async () => {
     try {
@@ -66,7 +66,6 @@ export default function EditBarang() {
       fetchBiayaGudang();
     }
   }, [isAdminGudang]);
-
 
   useEffect(() => {
     if (!isAdminGudang) {
@@ -102,12 +101,11 @@ export default function EditBarang() {
             totalHPP: detailData.total_hpp,
             keuntungan: detailData.keuntungan,
             hargaJual: detailData.harga_jual,
-            rincianBiaya: detailData.rincian_biaya.map((biaya, index) => ({
-              id: index + 1,
-              "Nama Biaya": biaya.nama_biaya,
-              "Jumlah Biaya": biaya.jumlah_biaya,
-              isEditable: false
-            }))
+            hargaJualIdeal: detailData.harga_jual_ideal || detailData.harga_jual,
+            marginPersentase: detailData.margin_persentase || 0,
+            marginNominal: detailData.margin_nominal || 0,
+            hargaLogis: detailData.harga_logis || detailData.harga_jual,
+            persentaseHPP: biayaGudangData?.persentase || 0
           }));
   
           if (detailData.rincian_bahan) {
@@ -127,84 +125,81 @@ export default function EditBarang() {
         }
       } else {
         const [detailDataResponse, biayaTokoResponse] = detailResponse;
-      if (detailDataResponse.data.success) {
-        const detailData = detailDataResponse.data.data;
-        const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
-        
-        setData(prevData => ({
-          ...prevData,
-          info_barang: {
-            ...prevData.info_barang,
-            Nomor: detailData.barang_handmade_id,
-            "Nama Barang": detailData.nama_barang,
-            "Kategori": detailData.kategori_barang_id,
-            "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
-            Foto: detailData.image
-          },
-        }));
-        
-        const initialHargaPerCabang = {};
-        const initialRincianBiaya = {};
+        if (detailDataResponse.data.success) {
+          const detailData = detailDataResponse.data.data;
+          const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
+          setBiayaTokoData(biayaTokoData);
+          
+          setData(prevData => ({
+            ...prevData,
+            info_barang: {
+              ...prevData.info_barang,
+              Nomor: detailData.barang_handmade_id,
+              "Nama Barang": detailData.nama_barang,
+              "Kategori": detailData.kategori_barang_id,
+              "Jumlah Minimum Stok": detailData.jumlah_minimum_stok,
+              Foto: detailData.image
+            },
+          }));
+          
+          const initialHargaPerCabang = {};
+          const initialRincianBiaya = {};
 
-        detailData.rincian_biaya.forEach(rincian => {
-          const cabangData = dataCabang.find(c => c.cabang_id === rincian.cabang_id);
-          if (cabangData) {
-            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
-
-            initialHargaPerCabang[cabangData.nama_cabang] = {
+          detailData.rincian_biaya.forEach(rincian => {
+            initialHargaPerCabang[rincian.cabang.nama_cabang] = {
               totalHPP: rincian.total_hpp,
               keuntungan: rincian.keuntungan,
-              hargaJual: rincian.harga_jual
+              hargaJual: rincian.harga_jual,
+              hargaJualIdeal: rincian.harga_jual_ideal,
+              marginPersentase: rincian.margin_persentase,
+              marginNominal: rincian.margin_nominal,
+              hargaLogis: rincian.harga_logis,
+              persentaseHPP: 0 // Will be updated when biaya toko is found
             };
 
-            const biayaList = [];
-            
-            rincian.detail_rincian_biaya.forEach(detail => {
+            const cabang = dataCabang.find(c => c.cabang_id === rincian.cabang_id);
+            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
+            if (biayaToko) {
+              initialHargaPerCabang[rincian.cabang.nama_cabang].persentaseHPP = biayaToko.persentase || 0;
+            }
+
+            // Process detail_rincian_biaya
+            const biayaList = rincian.detail_rincian_biaya.map(detail => {
+              // Check if it's Modal entry
               if (detail.nama_biaya === "Modal") {
-  
-                biayaList.push({
-                  id: 'modal', 
+                return {
+                  id: detail.detail_rincian_biaya_id,
                   "Nama Biaya": "Modal",
                   "Jumlah Biaya": detail.jumlah_biaya,
-                  isEditable: true,
-                  isDefault: true 
-                });
-              } else if (detail.biaya_toko_id && biayaToko) {
-                biayaList.push({
-                  id: detail.biaya_toko_id,
-                  "Nama Biaya": `Biaya Operasional dan Staff ${cabangData.nama_cabang}`,
-                  "Jumlah Biaya": biayaToko.total_biaya,
-                  isEditable: false
-                });
-              } else if (!detail.biaya_toko_id && detail.nama_biaya !== "Modal") {
-                biayaList.push({
+                  isEditable: {
+                    name: false,
+                    amount: true,
+                  },
+                  isDefault: true
+                };
+              } else {
+                return {
                   id: detail.detail_rincian_biaya_id,
                   "Nama Biaya": detail.nama_biaya,
                   "Jumlah Biaya": detail.jumlah_biaya,
                   isEditable: true
-                });
+                };
               }
             });
 
-            if (!biayaList.some(item => item["Nama Biaya"] === "Modal")) {
-              biayaList.unshift({
-                id: 'modal', 
-                "Nama Biaya": "Modal",
-                "Jumlah Biaya": 0,
-                isEditable: true,
-                isDefault: true 
-              });
-            }
+            initialRincianBiaya[rincian.cabang.nama_cabang] = biayaList;
+          });
 
-            initialRincianBiaya[cabangData.nama_cabang] = biayaList;
+          setRincianBiayaPerCabang(initialRincianBiaya);
+          setData(prevData => ({
+            ...prevData,
+            hargaPerCabang: initialHargaPerCabang
+          }));
+
+          // Set first cabang as selected
+          if (detailData.rincian_biaya.length > 0) {
+            setSelectedCabang(detailData.rincian_biaya[0].cabang.nama_cabang);
           }
-        });
-
-        setRincianBiayaPerCabang(initialRincianBiaya);
-        setData(prevData => ({
-          ...prevData,
-          hargaPerCabang: initialHargaPerCabang
-        }));
         }
       }
     } catch (error) {
@@ -215,7 +210,6 @@ export default function EditBarang() {
       setLoading(false);
     }
   };
-
 
   const fetchMaterialData2 = async () => {
     try {
@@ -247,8 +241,7 @@ export default function EditBarang() {
     }
   };
   
-
-   const fetchMaterialData = async () => {
+  const fetchMaterialData = async () => {
     try {
       const response = await api.get('/barang-mentah');
       if (response.data.success) {
@@ -299,9 +292,10 @@ export default function EditBarang() {
       const materialOption = materialOptions.find(opt => opt.value === item.id);
       if (!materialOption) return null;
   
-      const imageUrl = materialOption.image.startsWith('http') 
-        ? materialOption.image 
-        : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${materialOption.image}`;
+      let imageUrl = materialOption.image;
+      if (imageUrl && !imageUrl.startsWith('http')) {
+        imageUrl = `${import.meta.env.VITE_API_URL}/images-barang-mentah/${imageUrl}`;
+      }
       
       return {
         id: item.id,
@@ -365,23 +359,14 @@ export default function EditBarang() {
       Foto: "",
     },
     ...(isAdminGudang ? {
-      rincianBiaya: [
-        {
-          id: 1,
-          "Nama Biaya": "Biaya Operasional & Staff",
-          "Jumlah Biaya": 24000,
-          isEditable: false
-        },
-        {
-          id: 2,
-          "Nama Biaya": "Biaya Operasional Produksi",
-          "Jumlah Biaya": 24000,
-          isEditable: true
-        }
-      ],
       totalHPP: 0,
       keuntungan: 0,
-      hargaJual: 0
+      hargaJual: 0,
+      hargaJualIdeal: 0,
+      marginPersentase: 0,
+      marginNominal: 0,
+      hargaLogis: 0,
+      persentaseHPP: 0
     } : {
       hargaPerCabang: {}
     })
@@ -396,20 +381,18 @@ export default function EditBarang() {
         api.get('/biaya-toko'),
       ]);
   
-      if (cabangResponse.data.success) {
+      if (cabangResponse.data.success && biayaResponse.data.success) {
         const cabangData = cabangResponse.data.data;
-        const biayaTokoData = biayaResponse.data.success ? biayaResponse.data.data : [];
-
+        const biayaData = biayaResponse.data.success ? biayaResponse.data.data : [];
+        setBiayaTokoData(biayaData);
+  
         const cabangDenganBiaya = cabangData.filter((cabang) => {
-          return biayaTokoData.some((biaya) => biaya.cabang_id === cabang.cabang_id);
+          const biayaToko = biayaData.find((biaya) => biaya.cabang_id === cabang.cabang_id);
+          return biayaToko;
         });
-
-        setDataCabang(cabangData);
-
-        if (cabangDenganBiaya.length > 0) {
-          setSelectedCabang(cabangDenganBiaya[0].nama_cabang);
-        }
-
+  
+        setDataCabang(cabangDenganBiaya);
+        
         const options = cabangDenganBiaya.map((item) => ({
           label: item.nama_cabang,
           value: item.nama_cabang,
@@ -421,166 +404,95 @@ export default function EditBarang() {
     }
   };
 
-
-  // const handleInputChange = (type, rowIndex, key, value) => {
-  //   if (type === 'gudang') {
-  //     setData(prevData => {
-  //       const updatedRincianBiaya = prevData.rincianBiaya.map((row, index) =>
-  //         index === rowIndex ? { ...row, [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value } : row
-  //       );
-  
-  //       const newTotalHPP = calculateMaterialCosts() + updatedRincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0);
-  
-  //       return {
-  //         ...prevData,
-  //         rincianBiaya: updatedRincianBiaya,
-  //         totalHPP: newTotalHPP,
-  //         keuntungan: prevData.hargaJual - newTotalHPP
-  //       };
-  //     });
-  //   } else {
-  //     setRincianBiayaPerCabang(prevData => {
-  //       // Pastikan array untuk cabang ini sudah ada
-  //       if (!prevData[type]) {
-  //         prevData[type] = [];
-  //       }
-        
-  //       const cabangData = [...prevData[type]];
-        
-  //       // Pastikan baris ada
-  //       if (!cabangData[rowIndex]) {
-  //         cabangData[rowIndex] = {
-  //           id: `temp-${Date.now()}`,
-  //           "Nama Biaya": "",
-  //           "Jumlah Biaya": 0,
-  //           isEditable: true
-  //         };
-  //       }
-        
-  //       cabangData[rowIndex] = {
-  //         ...cabangData[rowIndex],
-  //         [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value
-  //       };
-        
-  //       return {
-  //         ...prevData,
-  //         [type]: cabangData
-  //       };
-  //     });
-  //   }
-  // };
-
   const handleInputChange = (type, rowIndex, key, value) => {
-    if (type === 'gudang') {
-      // Kode untuk admin gudang tetap seperti aslinya
-      setData(prevData => {
-        const updatedRincianBiaya = prevData.rincianBiaya.map((row, index) =>
-          index === rowIndex ? { ...row, [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value } : row
-        );
-  
-        const newTotalHPP = calculateMaterialCosts() + updatedRincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0);
-  
-        return {
-          ...prevData,
-          rincianBiaya: updatedRincianBiaya,
-          totalHPP: newTotalHPP,
-          keuntungan: prevData.hargaJual - newTotalHPP
-        };
-      });
-    } else {
-      setRincianBiayaPerCabang(prevData => {
-        if (!prevData[type]) {
-          prevData[type] = [];
-        }
-        
-        const cabangData = [...prevData[type]];
-        const currentRow = cabangData[rowIndex];
-        
-        if (currentRow["Nama Biaya"]?.toLowerCase() === "modal" && key === "Nama Biaya") {
-          return prevData; 
-        }
-        
-        cabangData[rowIndex] = {
-          ...cabangData[rowIndex],
-          [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value
-        };
-        
-        const updatedRincianBiaya = {
-          ...prevData,
-          [type]: cabangData
-        };
+    setRincianBiayaPerCabang(prevData => {
+      const cabangData = [...prevData[type]];
+      
+      // Check if it's the modal row and trying to change name
+      if (cabangData[rowIndex].isDefault && key === "Nama Biaya") {
+        return prevData; // Don't allow changing Modal name
+      }
+      
+      cabangData[rowIndex] = {
+        ...cabangData[rowIndex],
+        [key]: key === "Jumlah Biaya" ? Number(value) || 0 : value
+      };
+      
+      return {
+        ...prevData,
+        [type]: cabangData
+      };
+    });
 
-        const newTotalHPP = cabangData.reduce(
-          (sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 
-          0
-        );
-        
-        setTimeout(() => {
-          setData(prevData => {
-            const currentHargaPerCabang = prevData.hargaPerCabang || {};
-            const currentCabangData = currentHargaPerCabang[type] || {
-              totalHPP: 0,
-              keuntungan: 0,
-              hargaJual: 0
-            };
-            
-            const hargaJual = currentCabangData.hargaJual || 0;
-            const newKeuntungan = hargaJual - newTotalHPP;
-            
-            return {
-              ...prevData,
-              hargaPerCabang: {
-                ...currentHargaPerCabang,
-                [type]: {
-                  ...currentCabangData,
-                  totalHPP: newTotalHPP,
-                  keuntungan: newKeuntungan
-                }
-              }
-            };
-          });
-        }, 0);
-        
-        return updatedRincianBiaya;
-      });
-    }
+    // Update calculations when any value changes
+    updateCabangCalculations(type);
+  };
+
+  const updateCabangCalculations = (cabangName) => {
+    if (!rincianBiayaPerCabang[cabangName]) return;
+    
+    const totalHPP = rincianBiayaPerCabang[cabangName].reduce(
+      (sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0),
+      0
+    );
+
+    const cabangData = data.hargaPerCabang[cabangName] || {};
+    const hargaLogis = cabangData.hargaLogis || 0;
+    
+    const cabang = dataCabang.find(c => c.nama_cabang === cabangName);
+    const biayaToko = biayaTokoData.find(biaya => biaya.cabang_id === cabang?.cabang_id);
+    const persentaseHPP = biayaToko?.persentase || 0;
+    
+    const hargaJualIdeal = totalHPP + (totalHPP * (persentaseHPP / 100));
+    
+    const marginPersentase = hargaJualIdeal > 0 ? Math.round((hargaLogis / hargaJualIdeal) * 100) : 0;
+    const marginNominal = hargaLogis - hargaJualIdeal;
+    
+    setData(prevData => ({
+      ...prevData,
+      hargaPerCabang: {
+        ...prevData.hargaPerCabang,
+        [cabangName]: {
+          ...prevData.hargaPerCabang[cabangName],
+          totalHPP,
+          hargaJualIdeal,
+          hargaJual: hargaJualIdeal,
+          marginPersentase,
+          marginNominal,
+          persentaseHPP,
+          keuntungan: hargaLogis - totalHPP
+        }
+      }
+    }));
   };
 
   const handleDeleteRow = (type, rowId) => {
-    if (type === 'gudang') {
-      setData(prevData => ({
-        ...prevData,
-        rincianBiaya: prevData.rincianBiaya.filter(row => {
-          return row["Nama Biaya"] === "Modal" || row.id !== rowId;
-        })
-      }));
-    } else {
-      setRincianBiayaPerCabang(prevData => {
-        if (!prevData[type]) {
-          return prevData;
+    setRincianBiayaPerCabang(prevData => {
+      if (!prevData[type]) {
+        return prevData;
+      }
+      
+      const updatedCabangData = prevData[type].filter(row => {
+        if (!row) return false;
+        
+        if (row.isDefault) {
+          return true; // Keep Modal row
         }
-        
-        const updatedCabangData = prevData[type].filter(row => {
-          if (!row) return false;
-          
-          if (row.isDefault || !row.isEditable) {
-            return true;
-          }
-          return row.id !== rowId;
-        });
-        
-        return {
-          ...prevData,
-          [type]: updatedCabangData
-        };
+        return row.id !== rowId;
       });
-    }
+      
+      return {
+        ...prevData,
+        [type]: updatedCabangData
+      };
+    });
+    
+    setTimeout(() => updateCabangCalculations(type), 0);
   };
 
   const handleAddRow = (type) => {
-    const tempId = `temp-${Date.now()}`;
     const newRow = {
-      id: tempId,  
+      id: Date.now(),  
       "Nama Biaya": "",
       "Jumlah Biaya": 0,
       isEditable: true,
@@ -588,177 +500,87 @@ export default function EditBarang() {
       jumlah_biaya: 0 
     };
   
-    if (type === 'gudang') {
-      setData((prevData) => ({
+    setRincianBiayaPerCabang((prevData) => {
+      const updatedRows = [...(prevData[type] || []), newRow];
+      return {
         ...prevData,
-        rincianBiaya: [...(prevData.rincianBiaya || []), newRow],
+        [type]: updatedRows
+      };
+    });
+    
+    setTimeout(() => updateCabangCalculations(type), 0);
+  };
+
+  const handleHargaLogisChange = (cabang, value) => {
+    const numValue = Number(value) || 0;
+    
+    if (isAdminGudang) {
+      const totalHPP = data.totalHPP || 0;
+      const hargaJualIdeal = data.hargaJualIdeal || 0;
+      
+      const marginPersentase = hargaJualIdeal > 0 ? 
+        Math.round((numValue / hargaJualIdeal) * 100) : 0;
+      const marginNominal = numValue - hargaJualIdeal;
+      
+      setData(prevData => ({
+        ...prevData,
+        hargaLogis: numValue,
+        marginPersentase,
+        marginNominal,
+        keuntungan: numValue - totalHPP
       }));
     } else {
-      setRincianBiayaPerCabang((prevData) => {
-        if (!prevData[type]) {
-          prevData[type] = [];
-        }
-        
-        return {
-          ...prevData,
-          [type]: [...(prevData[type] || []), newRow],
-        };
-      });
-    }
-  };
-  
-  const calculateTotalHPP = (cabang, callback) => {
-    if (!rincianBiayaPerCabang[cabang]) {
-      return 0;
-    }
-    
-    if (!Array.isArray(rincianBiayaPerCabang[cabang]) || rincianBiayaPerCabang[cabang].length === 0) {
-      return 0;
-    }
-    
-    const totalHPP = rincianBiayaPerCabang[cabang].reduce(
-      (sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0),
-      0
-    );
-
-    if (callback && typeof callback === 'function') {
-      callback(totalHPP);
-    }
-    
-    return totalHPP;
-  };
-
-  useEffect(() => {
-    if (!isAdminGudang && selectedCabang && rincianBiayaPerCabang[selectedCabang]) {
-      const newTotalHPP = calculateTotalHPP(selectedCabang);
+      const totalHPP = data.hargaPerCabang[cabang]?.totalHPP || 0;
+      const hargaJualIdeal = data.hargaPerCabang[cabang]?.hargaJualIdeal || 0;
       
-      setData(prevData => {
-        const currentHargaPerCabang = prevData.hargaPerCabang || {};
-        const currentCabangData = currentHargaPerCabang[selectedCabang] || {
-          totalHPP: 0,
-          keuntungan: 0,
-          hargaJual: 0
-        };
-        
-        if (currentCabangData.totalHPP === newTotalHPP) {
-          return prevData;
-        }
-        
-        const hargaJual = currentCabangData.hargaJual || 0;
-        const newKeuntungan = hargaJual - newTotalHPP;
-        
-        return {
-          ...prevData,
-          hargaPerCabang: {
-            ...currentHargaPerCabang,
-            [selectedCabang]: {
-              ...currentCabangData,
-              totalHPP: newTotalHPP,
-              keuntungan: newKeuntungan
-            }
+      const marginPersentase = hargaJualIdeal > 0 ? 
+        Math.round((numValue / hargaJualIdeal) * 100) : 0;
+      const marginNominal = numValue - hargaJualIdeal;
+      
+      setData(prevData => ({
+        ...prevData,
+        hargaPerCabang: {
+          ...prevData.hargaPerCabang,
+          [cabang]: {
+            ...prevData.hargaPerCabang[cabang],
+            hargaLogis: numValue,
+            marginPersentase,
+            marginNominal,
+            keuntungan: numValue - totalHPP
           }
-        };
-      });
+        }
+      }));
     }
-  }, [isAdminGudang, selectedCabang, rincianBiayaPerCabang]);
-
-
-  const calculateKeuntungan = (hargaJual, totalHPP) => {
-    return (Number(hargaJual) || 0) - (Number(totalHPP) || 0);
   };
 
   useEffect(() => {
-    if (!isAdminGudang && selectedCabang) {
-      if (dataCabang.length === 0) return;
-  
-      const selectedCabangData = dataCabang.find(c => c.nama_cabang === selectedCabang);
-      if (!selectedCabangData) return;
-  
-      if (!data.hargaPerCabang || !data.hargaPerCabang[selectedCabang]) {
-        setData(prevData => ({
-          ...prevData,
-          hargaPerCabang: {
-            ...(prevData.hargaPerCabang || {}),
-            [selectedCabang]: {
-              totalHPP: 0,
-              keuntungan: 0,
-              hargaJual: 0
-            }
-          }
-        }));
-      }
+    if (isAdminGudang && biayaGudangData) {
+      const totalMaterialCost = materials.reduce((sum, item) => sum + (item["Total Biaya"] || 0), 0);
+      const persentaseHPP = biayaGudangData?.persentase || 0;
+      const totalHPP = totalMaterialCost;
+      const hargaJualIdeal = totalHPP + (totalHPP * (persentaseHPP / 100));
+      const hargaLogis = data.hargaLogis || hargaJualIdeal;
+      const marginPersentase = hargaJualIdeal > 0 ? Math.round((hargaLogis / hargaJualIdeal) * 100) : 0;
+      const marginNominal = hargaLogis - hargaJualIdeal;
 
-      if (!rincianBiayaPerCabang[selectedCabang]) {
-        api.get('/biaya-toko').then(response => {
-          if (response.data.success) {
-            const biayaTokoData = response.data.data;
-            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === selectedCabangData.cabang_id);
-            
-            if (biayaToko) {
-              const biayaList = [
-                {
-                  id: 'modal', 
-                  "Nama Biaya": "Modal",
-                  "Jumlah Biaya": 0,
-                  isEditable: true,
-                  isDefault: true 
-                },
-                {
-                  id: biayaToko.biaya_toko_id,
-                  "Nama Biaya": `Biaya Operasional dan Staff ${selectedCabang}`,
-                  "Jumlah Biaya": biayaToko.total_biaya,
-                  isEditable: false
-                }
-              ];
-              
-              setRincianBiayaPerCabang(prev => ({
-                ...prev,
-                [selectedCabang]: biayaList
-              }));
-              
-              // Update total costs
-              const totalHPP = biayaToko.total_biaya;
-              
-              setData(prevData => ({
-                ...prevData,
-                hargaPerCabang: {
-                  ...prevData.hargaPerCabang,
-                  [selectedCabang]: {
-                    ...prevData.hargaPerCabang[selectedCabang],
-                    totalHPP,
-                    keuntungan: calculateKeuntungan(
-                      prevData.hargaPerCabang[selectedCabang]?.hargaJual || 0,
-                      totalHPP
-                    )
-                  }
-                }
-              }));
-            }
-          }
-        }).catch(error => {
-          console.error('Error fetching biaya toko:', error);
-        });
-      } else {
-        const totalHPP = calculateTotalHPP(selectedCabang);
-        const keuntungan = calculateKeuntungan(
-          data.hargaPerCabang[selectedCabang]?.hargaJual || 0,
-          totalHPP
-        );
-        
-        setData(prevData => ({
-          ...prevData,
-          hargaPerCabang: {
-            ...prevData.hargaPerCabang,
-            [selectedCabang]: {
-              ...prevData.hargaPerCabang[selectedCabang],
-              totalHPP,
-              keuntungan
-            }
-          }
-        }));
-      }
+      setData(prevData => ({
+        ...prevData,
+        totalHPP: totalHPP,
+        hargaJualIdeal: hargaJualIdeal,
+        hargaJual: hargaJualIdeal,
+        persentaseHPP: persentaseHPP,
+        marginPersentase: marginPersentase,
+        marginNominal: marginNominal,
+        keuntungan: hargaLogis - totalHPP
+      }));
     }
-  }, [selectedCabang, isAdminGudang, dataCabang]);
+  }, [isAdminGudang, biayaGudangData, materials, data.hargaLogis]);
+
+  useEffect(() => {
+    if (!isAdminGudang && selectedCabang && data.hargaPerCabang) {
+      updateCabangCalculations(selectedCabang);
+    }
+  }, [selectedCabang, rincianBiayaPerCabang, isAdminGudang]);
 
   const handleInfoBarangChange = (key, value) => {
     setData((prevData) => ({
@@ -768,35 +590,6 @@ export default function EditBarang() {
         [key]: value,
       },
     }));
-  };
-
-  const handleHargaJualChange = (cabang, value) => {
-    const numValue = Number(value) || 0;
-    
-    const totalHPP = calculateTotalHPP(cabang);
-    const keuntungan = calculateKeuntungan(numValue, totalHPP);
-
-    setData((prevData) => {
-      const currentHargaPerCabang = prevData.hargaPerCabang || {};
-
-      const currentCabangData = currentHargaPerCabang[cabang] || {
-        totalHPP: 0,
-        keuntungan: 0,
-        hargaJual: 0
-      };
-      
-      return {
-        ...prevData,
-        hargaPerCabang: {
-          ...currentHargaPerCabang,
-          [cabang]: {
-            ...currentCabangData,
-            hargaJual: numValue,
-            keuntungan
-          }
-        }
-      };
-    });
   };
 
   const formatCurrency = (amount) => {
@@ -823,12 +616,53 @@ export default function EditBarang() {
     });
   };
 
+  // Check if harga logis is at least 65% higher than harga jual ideal
+  const isHargaLogisValid = (cabang) => {
+    if (isAdminGudang) {
+      const hargaJualIdeal = data.hargaJualIdeal || 0;
+      const hargaLogis = data.hargaLogis || 0;
+      
+      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      
+      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
+      
+      if (currentPercentage < minRequiredPercentage) {
+        return { 
+          isValid: false, 
+          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
+        };
+      }
+      
+      return { isValid: true, message: "" };
+    } else {
+      const cabangData = data.hargaPerCabang[cabang];
+      if (!cabangData) return { isValid: true, message: "" };
+      
+      const hargaJualIdeal = cabangData.hargaJualIdeal || 0;
+      const hargaLogis = cabangData.hargaLogis || 0;
+      
+      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      
+      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
+      
+      if (currentPercentage < minRequiredPercentage) {
+        return { 
+          isValid: false, 
+          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
+        };
+      }
+      
+      return { isValid: true, message: "" };
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
   
     try {
       setLoading(true);
-      const formData = new FormData();
   
       if (!data.info_barang["Nama Barang"]) {
         setErrorMessage("Nama barang harus diisi");
@@ -848,32 +682,45 @@ export default function EditBarang() {
         return;
       }
 
-      if (!isAdminGudang) {
-        let cabangBelumLengkap = [];
+      const formData = new FormData();
+      
+      if (isAdminGudang) {
+        if (!data.info_barang["Waktu Pengerjaan"]) {
+          setErrorMessage("Waktu pengerjaan harus diisi");
+          setErrorAlert(true);
+          return;
+        }
+  
+        if (!data.hargaLogis) {
+          setErrorMessage("Harga logis harus diisi");
+          setErrorAlert(true);
+          return;
+        }
+  
+        if (materials.length === 0) {
+          setErrorMessage("Minimal harus memilih 1 bahan mentah");
+          setErrorAlert(true);
+          return;
+        }
 
-        Object.keys(rincianBiayaPerCabang).forEach(cabangName => {
-          const hargaJual = data.hargaPerCabang?.[cabangName]?.hargaJual;
-
-          if (!hargaJual || hargaJual <= 0) {
-            cabangBelumLengkap.push(cabangName);
-          }
-        });
-
-        if (cabangBelumLengkap.length > 0) {
-          setErrorMessage(`Harga jual pada cabang ${cabangBelumLengkap.join(', ')} belum diisi. Mohon lengkapi data tersebut.`);
+        const hargaLogisValidation = isHargaLogisValid();
+        if (!hargaLogisValidation.isValid) {
+          setErrorMessage(hargaLogisValidation.message);
           setErrorAlert(true);
           setLoading(false);
           return;
         }
-      }
   
-      if (isAdminGudang) {
-        formData.append('nama_barang', data.info_barang["Nama Barang"]);
+formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('kategori_barang_id', data.info_barang.Kategori);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
         formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
         formData.append('keuntungan', data.keuntungan);
         formData.append('harga_jual', data.hargaJual);
+        formData.append('harga_jual_ideal', data.hargaJualIdeal);
+        formData.append('margin_persentase', data.marginPersentase);
+        formData.append('margin_nominal', data.marginNominal);
+        formData.append('harga_logis', data.hargaLogis);
         formData.append('total_hpp', data.totalHPP);
 
         materials.forEach((material, index) => {
@@ -900,23 +747,39 @@ export default function EditBarang() {
           }, 2000);
         }
       } else {
+        if (Object.keys(data.hargaPerCabang).length === 0) {
+          setErrorMessage("Data cabang belum lengkap");
+          setErrorAlert(true);
+          setLoading(false);
+          return;
+        }
 
-        const formData = new FormData();
-  
+        let cabangBelumLengkap = [];
+        Object.keys(data.hargaPerCabang).forEach(cabangName => {
+          const hargaLogis = data.hargaPerCabang[cabangName]?.hargaLogis;
+
+          if (!hargaLogis || hargaLogis <= 0) {
+            cabangBelumLengkap.push(cabangName);
+          }
+
+          const hargaLogisValidation = isHargaLogisValid(cabangName);
+          if (!hargaLogisValidation.isValid) {
+            cabangBelumLengkap.push(cabangName + " (harga logis belum valid)");
+          }
+        });
+
+        if (cabangBelumLengkap.length > 0) {
+          setErrorMessage(`Harga logis pada cabang ${cabangBelumLengkap.join(', ')} belum valid. Mohon lengkapi data tersebut.`);
+          setErrorAlert(true);
+          setLoading(false);
+          return;
+        }
+
         formData.append('kategori_barang_id', data.info_barang.Kategori);
         formData.append('nama_barang', data.info_barang["Nama Barang"]);
         formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
 
-        if (!data.info_barang.Foto) {
-          setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
-          setErrorAlert(true);
-          setLoading(false);
-          return; 
-        }
-    
         if (data.info_barang.Foto instanceof File) {
-          formData.append('image', data.info_barang.Foto);
-        } else {
           formData.append('image', data.info_barang.Foto);
         }
   
@@ -924,51 +787,34 @@ export default function EditBarang() {
         let hasError = false;
         let cabangError = "";
       
-        Object.entries(rincianBiayaPerCabang).forEach(([cabangName, rincianBiaya]) => {
+        Object.entries(data.hargaPerCabang).forEach(([cabangName, cabangData]) => {
           const cabang = dataCabang.find((c) => c.nama_cabang === cabangName);
-          
-          if (!data.hargaPerCabang[cabangName]) {
-            data.hargaPerCabang[cabangName] = {
-              totalHPP: 0,
-              keuntungan: 0,
-              hargaJual: 0
-            };
-          }
-          
-          const cabangData = data.hargaPerCabang[cabangName];
-
-          if (!Array.isArray(rincianBiaya)) {
-            rincianBiaya = [];
+          const rincianBiaya = rincianBiayaPerCabang[cabangName];
+      
+          if (!rincianBiaya) {
+            hasError = true;
+            cabangError = cabangName;
+            return;
           }
       
-          if (cabangData && cabang && cabang.cabang_id) {
+          if (cabang && cabang.cabang_id) {
             const rincianData = {
               cabang_id: cabang.cabang_id,
               total_hpp: cabangData.totalHPP || 0,
               keuntungan: cabangData.keuntungan || 0,
-              harga_jual: cabangData.hargaJual || 0,
-              detail_rincian_biaya: rincianBiaya.map((item) => {
+              harga_jual: cabangData.hargaJualIdeal || 0, 
+              harga_jual_ideal: cabangData.hargaJualIdeal || 0,
+              margin_persentase: cabangData.marginPersentase || 0,
+              margin_nominal: cabangData.marginNominal || 0,
+              harga_logis: cabangData.hargaLogis || 0,
+              detail_rincian_biaya: rincianBiaya.map(item => {
                 if (!item) return null;
                 
-                if (item.isDefault) {
-
-                  return {
-                    nama_biaya: "Modal",
-                    jumlah_biaya: Number(item["Jumlah Biaya"]) || 0
-                  };
-                } else if (item.isEditable) {
-                  return {
-                    nama_biaya: item["Nama Biaya"] || "",
-                    jumlah_biaya: Number(item["Jumlah Biaya"]) || 0
-                  };
-                } else {
-                  return {
-                    biaya_toko_id: item.id,
-                    nama_biaya: null,
-                    jumlah_biaya: null
-                  };
-                }
-              }).filter(Boolean),
+                return {
+                  nama_biaya: item["Nama Biaya"] || "",
+                  jumlah_biaya: Number(item["Jumlah Biaya"]) || 0
+                };
+              }).filter(Boolean)
             };
       
             rincianBiayaData.push(rincianData);
@@ -976,6 +822,8 @@ export default function EditBarang() {
         });
   
         if (hasError) {
+          setErrorMessage(`Data rincian biaya pada cabang ${cabangError} belum lengkap`);
+          setErrorAlert(true);
           setLoading(false);
           return;
         }
@@ -985,23 +833,20 @@ export default function EditBarang() {
           formData.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
           formData.append(`rincian_biaya[${index}][keuntungan]`, biaya.keuntungan);
           formData.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
+          formData.append(`rincian_biaya[${index}][harga_jual_ideal]`, biaya.harga_jual_ideal);
+          formData.append(`rincian_biaya[${index}][margin_persentase]`, biaya.margin_persentase);
+          formData.append(`rincian_biaya[${index}][margin_nominal]`, biaya.margin_nominal);
+          formData.append(`rincian_biaya[${index}][harga_logis]`, biaya.harga_logis);
         
           biaya.detail_rincian_biaya.forEach((detail, detailIndex) => {
-            if (detail.biaya_toko_id) {  // Cek biaya_toko_id, bukan id
-              formData.append(
-                `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][biaya_toko_id]`,
-                detail.biaya_toko_id
-              );
-            } else {
-              formData.append(
-                `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][nama_biaya]`,
-                detail.nama_biaya || ""
-              );
-              formData.append(
-                `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][jumlah_biaya]`,
-                detail.jumlah_biaya || 0
-              );
-            }
+            formData.append(
+              `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][nama_biaya]`,
+              detail.nama_biaya || ""
+            );
+            formData.append(
+              `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][jumlah_biaya]`,
+              detail.jumlah_biaya || 0
+            );
           });
         });
   
@@ -1032,28 +877,6 @@ export default function EditBarang() {
     navigate('/dataBarang/handmade')
   }
   
-  const calculateMaterialCosts = () => {
-    return materials.reduce((sum, material) => sum + (material["Total Biaya"] || 0), 0);
-  };
-
-  const calculateOperationalCosts = () => {
-    return data.rincianBiaya ? data.rincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0) : 0;
-  };
-  
-  const updateTotalHPP = () => {
-    if (isAdminGudang) {
-      const materialCosts = calculateMaterialCosts();
-      const operationalCosts = calculateOperationalCosts();
-      const totalHPP = materialCosts + operationalCosts;
-      
-      setData(prev => ({
-        ...prev,
-        totalHPP,
-        keuntungan: prev.hargaJual - totalHPP
-      }));
-    }
-  };
-
   useEffect(() => {
     if (!isAdminGudang) {
       fetchCabangAndBiayaData();
@@ -1061,18 +884,10 @@ export default function EditBarang() {
   }, [isAdminGudang]);
   
   useEffect(() => {
-    if (id && dataCabang.length > 0) {
+    if (id && (isAdminGudang || dataCabang.length > 0)) {
       fetchDetailBarang();
     }
-  }, [id, dataCabang]);
-
-  useEffect(() => {
-    if (isAdminGudang) {
-      updateTotalHPP();
-    }
-  }, [materials, data.rincianBiaya]);
-
-
+  }, [id, dataCabang, isAdminGudang]);
 
   return (
     <LayoutWithNav
@@ -1088,10 +903,18 @@ export default function EditBarang() {
             <form onSubmit={handleSubmit}>
               <div>
                 <p className="pb-5 font-bold">Masukan Foto Barang</p>
-                {data.info_barang.Foto ? (
+                {data.info_barang.Foto && !(data.info_barang.Foto instanceof File) ? (
                   <div className="mb-4">
                     <img 
                       src={`${import.meta.env.VITE_API_URL}/${isAdminGudang ? 'images-barang-handmade-gudang' : 'images-barang-handmade'}/${data.info_barang.Foto}`}
+                      alt="Preview" 
+                      className="h-32 w-32 object-cover rounded-md"
+                    />
+                  </div>
+                ) : data.info_barang.Foto instanceof File ? (
+                  <div className="mb-4">
+                    <img 
+                      src={URL.createObjectURL(data.info_barang.Foto)}
                       alt="Preview" 
                       className="h-32 w-32 object-cover rounded-md"
                     />
@@ -1150,20 +973,157 @@ export default function EditBarang() {
               </div>
 
               {isAdminGudang ? (
-                <section className="pt-5">
-                  <p className="font-bold">Rincian Biaya</p>
-                  <div className="pt-3">
-                    <Table
-                      headers={headers}
-                      data={(data.rincianBiaya || []).map((row, index) => ({
-                        No: index + 1,
-                        "Nama Biaya": row["Nama Biaya"],
-                        "Jumlah Biaya": `Rp${formatCurrency(row["Jumlah Biaya"])}`,
-                        Aksi: null,
-                      }))}
-                    />
-                  </div>
-                </section>
+                <>
+                  <section className="pt-5">
+                    <p className="font-bold">Rincian Jumlah dan Bahan</p>
+                    <div className="pt-3">
+                      <Table
+                        headers={materialHeaders}
+                        data={materials.map((row, index) => ({
+                          No: index + 1,
+                          "Foto": row.Foto ? (
+                            <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+                              <img 
+                                src={row.Foto.startsWith('http') ? row.Foto : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${row.Foto}`}
+                                alt={row["Nama Bahan"]} 
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  console.error("Image load error:", e);
+                                  e.target.parentElement.innerHTML = 
+                                    '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+                              <span className="text-gray-400 text-sm">No Image</span>
+                            </div>
+                          ),
+                          "Nama Bahan": (
+                            <InputDropdown
+                              showRequired={false}
+                              options={materialOptions}
+                              value={row.selectedId}
+                              onSelect={(selectedOption) => {
+                                const updatedMaterials = [...materials];
+                                const imageUrl = selectedOption.image.startsWith('http') 
+                                  ? selectedOption.image 
+                                  : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${selectedOption.image}`;
+                                
+                                updatedMaterials[index] = {
+                                  ...updatedMaterials[index],
+                                  id: selectedOption.value,
+                                  selectedId: selectedOption.value,
+                                  "Nama Bahan": selectedOption.label,
+                                  "Harga Satuan": selectedOption.price,
+                                  "Total Biaya": selectedOption.price * (updatedMaterials[index]["Kuantitas"] || 0),
+                                  Foto: imageUrl,
+                                  value: selectedOption.value,
+                                  label: selectedOption.label
+                                };
+                                setMaterials(updatedMaterials);
+                              }}
+                            />
+                          ),
+                          "Harga Satuan": `Rp${formatCurrency(row["Harga Satuan"] || 0)}`,
+                          "Kuantitas": (
+                            <Input
+                              showRequired={false}
+                              type="number" 
+                              value={row["Kuantitas"]}
+                              onChange={(value) => {
+                                const updatedMaterials = [...materials];
+                                const numValue = Number(value) || 0;
+                                updatedMaterials[index] = {
+                                  ...updatedMaterials[index],
+                                  "Kuantitas": numValue,
+                                  "Total Biaya": (updatedMaterials[index]["Harga Satuan"] || 0) * numValue
+                                };
+                                setMaterials(updatedMaterials);
+                              }}
+                            />
+                          ),
+                          "Total Biaya": `Rp${formatCurrency(row["Total Biaya"] || 0)}`,
+                          "Aksi": (
+                            <Button
+                              label="Hapus"
+                              bgColor=""
+                              textColor="text-red-600"
+                              hoverColor="hover:text-red-800"
+                              onClick={() => handleDeleteMaterial(row.id)}
+                            />
+                          )
+                        }))}
+                      />
+                      <Button
+                        label="Tambah Baris"
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            className="w-5 h-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                        }
+                        bgColor={`focus:ring-${themeColor}`}
+                        hoverColor={`hover:border-${themeColor} hover:border`}
+                        textColor={`text-${themeColor}`}
+                        onClick={handleMaterialModal}
+                      />
+                    </div>
+                  </section>
+
+                  {/* HPP Calculation Section for Admin Gudang */}
+                  <section className="mt-8 flex justify-end">
+                    <div className="px-5 space-y-2">
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <p className="text-md font-bold">Total HPP</p>
+                        <p className="text-md">Rp{formatCurrency(data.totalHPP)}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <p className="text-md font-bold">Harga Jual Ideal</p>
+                        <p className="text-md">Rp{formatCurrency(data.hargaJualIdeal)}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <p className="text-md font-bold">Margin Persentase</p>
+                        <p className="text-md">{data.marginPersentase}%</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center border-b pb-2">
+                        <p className="text-md font-bold">Margin Nominal</p>
+                        <p className="text-md">Rp{formatCurrency(data.marginNominal)}</p>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pt-1">
+                        <div>
+                          <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
+                          {!isHargaLogisValid().isValid && (
+                            <p className="text-red-500 text-sm">{isHargaLogisValid().message}</p>
+                          )}
+                        </div>
+                        <div className="ps-10">
+                          <Input
+                            showRequired={false}
+                            type="number"
+                            width="w-40"
+                            value={data.hargaLogis}
+                            onChange={(value) => handleHargaLogisChange(null, value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </>
               ) : (
                 <>
                   <section className="mt-8">
@@ -1188,277 +1148,150 @@ export default function EditBarang() {
                   {selectedCabang && rincianBiayaPerCabang[selectedCabang] && (
                     <>
                      <section className="pt-5">
-                      <p className="font-bold">Rincian Biaya</p>
-                      <div className="pt-3">
-                      <Table
-                        headers={headers}
-                        data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => {
-                          if (!row) return null;
+                        <p className="font-bold">Rincian Harga Pokok Penjualan (HPP)</p>
+                        <div className="pt-3">
+                          <Table
+                            headers={headers}
+                            data={(rincianBiayaPerCabang[selectedCabang] || []).map((row, index) => ({
+                              No: index + 1,
+                              "Nama Biaya": row.isDefault ? (
+                                row["Nama Biaya"]
+                              ) : (
+                                <Input
+                                  showRequired={false}
+                                  className="w-full"
+                                  value={row["Nama Biaya"]}
+                                  onChange={(value) =>
+                                    handleInputChange(selectedCabang, index, "Nama Biaya", value)
+                                  }
+                                />
+                              ),
+                              "Jumlah Biaya": (
+                                <Input
+                                  showRequired={false}
+                                  type="number"
+                                  width="w-full"
+                                  value={row["Jumlah Biaya"]}
+                                  onChange={(value) =>
+                                    handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
+                                  }
+                                />
+                              ),
+                              Aksi: !row.isDefault ? (
+                                <Button
+                                  label="Hapus"
+                                  bgColor=""
+                                  textColor="text-red-600"
+                                  hoverColor="hover:text-red-800"
+                                  onClick={() => handleDeleteRow(selectedCabang, row.id)}
+                                />
+                              ) : null,
+                            }))}
+                          />
+                          <Button
+                            label="Tambah Baris"
+                            icon={
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
+                            }
+                            bgColor={`focus:ring-${themeColor}`}
+                            hoverColor={`hover:border-${themeColor} hover:border`}
+                            textColor={`text-${themeColor}`}
+                            onClick={() => handleAddRow(selectedCabang)}
+                          />
+                        </div>
+                      </section>
+
+                      <section className="mt-8 flex justify-end">
+                        <div className="px-5 space-y-2">
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <p className="text-md font-bold">Total HPP</p>
+                            <p className="text-md">Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.totalHPP)}</p>
+                          </div>
                           
-                          return {
-                            No: index + 1,
-                            "Nama Biaya": row.isDefault ? (
-                              row["Nama Biaya"]
-                            ) : row.isEditable ? (
-                              <Input
-                                showRequired={false}
-                                className="w-full max-w-xs sm:max-w-sm"
-                                value={row["Nama Biaya"]}
-                                onChange={(value) =>
-                                  handleInputChange(selectedCabang, index, "Nama Biaya", value)
-                                }
-                              />
-                            ) : (
-                              row["Nama Biaya"]
-                            ),
-                            "Jumlah Biaya": row.isDefault || row.isEditable ? (
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <p className="text-md font-bold">Harga Jual Ideal</p>
+                            <p className="text-md">Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.hargaJualIdeal)}</p>
+                          </div>
+                          
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <p className="text-md font-bold">Margin Persentase</p>
+                            <p className="text-md">{data.hargaPerCabang[selectedCabang]?.marginPersentase}%</p>
+                          </div>
+                          
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <p className="text-md font-bold">Margin Nominal</p>
+                            <p className="text-md">Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.marginNominal)}</p>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pt-1">
+                            <div>
+                              <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
+                              {!isHargaLogisValid(selectedCabang).isValid && (
+                                <p className="text-red-500 text-sm">{isHargaLogisValid(selectedCabang).message}</p>
+                              )}
+                            </div>
+                            <div className="ps-10">
                               <Input
                                 showRequired={false}
                                 type="number"
-                                width="w-full"
-                                value={row["Jumlah Biaya"]}
-                                onChange={(value) =>
-                                  handleInputChange(selectedCabang, index, "Jumlah Biaya", value)
-                                }
+                                width="w-40"
+                                value={data.hargaPerCabang[selectedCabang]?.hargaLogis}
+                                onChange={(value) => handleHargaLogisChange(selectedCabang, value)}
                               />
-                            ) : (
-                              `Rp${formatCurrency(row["Jumlah Biaya"])}`
-                            ),
-                            Aksi: !row.isDefault && row.isEditable && (
-                              <Button
-                                label="Hapus"
-                                bgColor=""
-                                textColor="text-red-600"
-                                hoverColor="hover:text-red-800"
-                                onClick={() => handleDeleteRow(selectedCabang, row.id)}
-                              />
-                            )
-                          };
-                        }).filter(Boolean)}
-                      />
-                        <Button
-                          label="Tambah Baris"
-                          icon={
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              className="w-5 h-5"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
-                          }
-                          bgColor={`focus:ring-${themeColor}`}
-                          hoverColor={`hover:border-${themeColor} hover:border`}
-                          textColor={`text-${themeColor}`}
-                          onClick={() => handleAddRow(selectedCabang)}
-                        />
-                      </div>
-                    </section>
+                            </div>
+                          </div>
+                        </div>
+                      </section>
                     </>
                   )}
                 </>
               )}
 
-              {isAdminGudang && (
-                <section className="pt-5">
-                <p className="font-bold">Rincian Jumlah dan Bahan</p>
-                <div className="pt-3">
-                  <Table
-                    headers={materialHeaders}
-                    data={materials.map((row, index) => ({
-                      No: index + 1,
-                      "Foto": row.Foto ? (
-                        <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
-                          <img 
-                            src={row.Foto.startsWith('http') ? row.Foto : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${row.Foto}`}
-                            alt={row["Nama Bahan"]} 
-                            className="w-full h-full object-cover rounded"
-                            onError={(e) => {
-                              console.error("Image load error:", e);
-                              e.target.parentElement.innerHTML = 
-                                '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>';
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 flex items-center justify-center border border-gray-200 rounded bg-gray-50">
-                          <span className="text-gray-400 text-sm">No Image</span>
-                        </div>
-                      ),
-                      "Nama Bahan": (
-                        <InputDropdown
-                          showRequired={false}
-                          options={materialOptions}
-                          value={row.selectedId}
-                          onSelect={(selectedOption) => {
-                            const updatedMaterials = [...materials];
-                            const imageUrl = selectedOption.image.startsWith('http') 
-                              ? selectedOption.image 
-                              : `${import.meta.env.VITE_API_URL}/images-barang-mentah/${selectedOption.image}`;
-                            
-                            updatedMaterials[index] = {
-                              ...updatedMaterials[index],
-                              id: selectedOption.value,
-                              selectedId: selectedOption.value,
-                              "Nama Bahan": selectedOption.label,
-                              "Harga Satuan": selectedOption.price,
-                              "Total Biaya": selectedOption.price * (updatedMaterials[index]["Kuantitas"] || 0),
-                              Foto: imageUrl,
-                              value: selectedOption.value,
-                              label: selectedOption.label
-                            };
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Harga Satuan": `Rp${formatCurrency(row["Harga Satuan"] || 0)}`,
-                      "Kuantitas": (
-                        <Input
-                          showRequired={false}
-                          type="number" 
-                          value={row["Kuantitas"]}
-                          onChange={(value) => {
-                            const updatedMaterials = [...materials];
-                            const numValue = Number(value) || 0;
-                            updatedMaterials[index] = {
-                              ...updatedMaterials[index],
-                              "Kuantitas": numValue,
-                              "Total Biaya": (updatedMaterials[index]["Harga Satuan"] || 0) * numValue
-                            };
-                            setMaterials(updatedMaterials);
-                          }}
-                        />
-                      ),
-                      "Total Biaya": `Rp${formatCurrency(row["Total Biaya"] || 0)}`,
-                      "Aksi": (
-                        <Button
-                          label="Hapus"
-                          bgColor=""
-                          textColor="text-red-600"
-                          hoverColor="hover:text-red-800"
-                          onClick={() => handleDeleteMaterial(row.id)}
-                        />
-                      )
-                    }))}
-                  />
-                  <Button
-                    label="Tambah Baris"
-                    icon={
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        className="w-5 h-5"
+              {!isAdminGudang && (
+                <section className="px-5 mt-8">
+                  <p className="font-bold text-base mb-4">Ringkasan Harga Jual Seluruh Cabang</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(data.hargaPerCabang).map(([cabangName, cabangData]) => (
+                      <div 
+                        key={cabangName} 
+                        className="border border-gray-300 bg-[#F9F9F9] rounded-lg p-4"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    }
-                    bgColor={`focus:ring-${themeColor}`}
-                    hoverColor={`hover:border-${themeColor} hover:border`}
-                    textColor={`text-${themeColor}`}
-                    onClick={handleMaterialModal}
-                  />
-                </div>
-              </section>
-              )}
-
-              {/* Totals Section */}
-              {isAdminGudang ? (
-                <section className="flex justify-end text-base p-5">
-                  <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
-                    <div className="flex justify-between">
-                      <p className="font-bold">Total HPP</p>
-                      <p>Rp{formatCurrency(data.totalHPP)}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p className="font-bold">Keuntungan</p>
-                      <p>Rp{formatCurrency(data.keuntungan)}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p className="font-bold">Harga Jual</p>
-                      <Input
-                        showRequired={false}
-                        type="number"
-                        width="w-1/2"
-                        value={data.hargaJual}
-                        onChange={(value) => {
-                          const numValue = Number(value) || 0;
-                          const totalHPP = data.rincianBiaya.reduce((sum, item) => sum + (Number(item["Jumlah Biaya"]) || 0), 0);
-                          setData(prev => ({
-                            ...prev,
-                            hargaJual: numValue,
-                            totalHPP,
-                            keuntungan: numValue - totalHPP
-                          }));
-                        }}
-                      />
-                    </div>
-                  </div>
-                </section>
-              ) : (
-                <>
-                  {selectedCabang && data.hargaPerCabang && data.hargaPerCabang[selectedCabang] && (
-                    <section className="flex justify-end text-base p-5">
-                      <div className="w-full md:w-1/2 lg:w-1/3 space-y-4 text-sm">
-                        <div className="flex justify-between">
-                          <p className="font-bold">Total HPP</p>
-                          <p>Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.totalHPP || 0)}</p>
-                        </div>
-                        <div className="flex justify-between">
-                          <p className="font-bold">Keuntungan</p>
-                          <p>Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.keuntungan || 0)}</p>
-                        </div>
-                        <div className="flex justify-between">
-                          <p className="font-bold">Harga Jual</p>
-                          <Input
-                            showRequired={false}
-                            type="number"
-                            width="w-1/2"
-                            value={data.hargaPerCabang[selectedCabang]?.hargaJual || 0}
-                            onChange={(value) => handleHargaJualChange(selectedCabang, value)}
-                          />
-                        </div>
-                      </div>
-                    </section>
-                  )}
-
-                  <section className="px-5">
-                    <p className="font-bold text-base mb-4">Ringkasan Harga Jual Seluruh Cabang</p>
-                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                      {Object.entries(data.hargaPerCabang || {}).map(([cabangName, cabangData]) => (
-                        <div 
-                          key={cabangName} 
-                          className="border border-[#7E7E7E] bg-[#F9F9F9] rounded-2xl p-4"
-                        >
-                          <h3 className={`text-${themeColor} mb-4 font-medium`}>Cabang {cabangName}</h3>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-gray-500 text-sm mb-1">Total HPP</p>
-                              <p className="font-medium">Rp{formatCurrency(cabangData?.totalHPP || 0)}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 text-sm mb-1">Harga Jual</p>
-                              <p className="font-medium">Rp{formatCurrency(cabangData?.hargaJual || 0)}</p>
-                            </div>
+                        <h3 className={`text-${themeColor} mb-3 font-medium`}>Cabang {cabangName}</h3>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <p className="text-gray-700 text-sm">Harga Ideal</p>
+                            <p className="font-medium">Rp{formatCurrency(cabangData.hargaJualIdeal)}</p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-gray-700 text-sm">Harga Logis</p>
+                            <p className="font-medium">Rp{formatCurrency(cabangData.hargaLogis)}</p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-gray-700 text-sm">Margin Persentase</p>
+                            <p className="font-medium">{cabangData.marginPersentase}%</p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-gray-700 text-sm">Margin Nominal</p>
+                            <p className="font-medium">Rp{formatCurrency(cabangData.marginNominal)}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                </>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               )}
 
               {isMaterialModalOpen && (
@@ -1482,10 +1315,32 @@ export default function EditBarang() {
                       </div>
 
                       {/* Selected count */}
-                      <div className="flex items-center space-x-4 flex-shrink-0">
-                        <p className={`text-${themeColor} font-semibold`}>
-                          Terpilih {selectedMaterial.reduce((sum, item) => sum + item.count, 0)}
-                        </p>
+<div className="flex items-center space-x-4 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-${themeColor} font-semibold`}>
+                            Terpilih {selectedMaterial.reduce((sum, item) => sum + item.count, 0)}
+                          </p>
+                          {selectedMaterial.length > 0 && (
+                            <button 
+                              onClick={() => setSelectedMaterial([])} 
+                              className="hover:bg-gray-100 p-1 rounded-full"
+                            >
+                              <svg 
+                                width="20" 
+                                height="20" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                              >
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Action buttons */}
@@ -1516,7 +1371,7 @@ export default function EditBarang() {
                       />
                     </div>
                   </div>
-                  </section>
+                </section>
               )}
 
               {/* Action Buttons */}
@@ -1531,7 +1386,7 @@ export default function EditBarang() {
                   />
                   <Button 
                     label={'Simpan'} 
-                    bgColor={`bg-${themeColor}`}
+                    bgColor={`bg-${themeColor}`} 
                     textColor="text-white" 
                     type="submit"
                   />
@@ -1565,3 +1420,4 @@ export default function EditBarang() {
     </LayoutWithNav>
   );
 }
+        

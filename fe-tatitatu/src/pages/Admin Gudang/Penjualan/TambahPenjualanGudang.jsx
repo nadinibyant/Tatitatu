@@ -97,7 +97,7 @@ const handlePackagingModalSubmit = () => {
                 <InputDropdown
                     showRequired={false}
                     options={dropdownOptions}
-                    value={item.id} // Gunakan item.id bukan dropdownValue
+                    value={item.id} 
                     onSelect={(newSelection) => handlePackagingDropdownChange(item.id, newSelection)}
                 />
             ),
@@ -331,7 +331,6 @@ const handleDeletePackaging = (itemId) => {
    const getImageUrl = (item) => {
         let basePath = '';
         
-        // Menentukan base path berdasarkan tipe item
         if (item.id.startsWith('BHM')) {
             basePath = '/images-barang-handmade-gudang/';
         } else if (item.id.startsWith('BNH')) {
@@ -393,7 +392,7 @@ const handleDeletePackaging = (itemId) => {
                         id: item.barang_handmade_id.toString(),
                         image: item.image ,
                         name: item.nama_barang,
-                        price: item.harga_jual,
+                        price: item.harga_logis,
                         kategori: item.kategori?.nama_kategori_barang,
                         code: item.barang_handmade_id.toString(),
                         stock: item.stok_barang?.jumlah_stok || 0
@@ -415,7 +414,7 @@ const handleDeletePackaging = (itemId) => {
                         id: item.barang_nonhandmade_id.toString(),
                         image: item.image,
                         name: item.nama_barang,
-                        price: item.harga_jual,
+                        price: item.harga_logis,
                         kategori: item.kategori?.nama_kategori_barang,
                         code: item.barang_nonhandmade_id.toString(),
                         stock: item.stok_barang?.jumlah_stok || 0
@@ -688,7 +687,7 @@ const handleDeletePackaging = (itemId) => {
                 ...itemData.map(item => {
                     const idKey = item.id.startsWith('MTH') ? 'barang_mentah_id' :
                                 item.id.startsWith('BHM') ? 'barang_handmade_id' :
-                                item.id.startsWith('BNH') ? 'barang_non_handmade_id' :
+                                item.id.startsWith('BNH') ? 'barang_nonhandmade_id' :
                                 item.id.startsWith('PCK') ? 'packaging_id' : null;
 
                     return {

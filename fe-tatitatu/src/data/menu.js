@@ -38,6 +38,8 @@ const themeColor = isAbsensiRoute
         ? "hitam"
         : "primary";
 
+console.log(themeColor)
+
 const getIconWarna = (basePath) => {
   const lastDotIndex = basePath.lastIndexOf('.');
   const pathWithoutExt = basePath.substring(0, lastDotIndex);
@@ -97,8 +99,8 @@ export const menuItems = [
     ],
   },
   {
-      label: "Biaya Toko",
-      link: "/biayaGudang",
+      label: "Persentase HPP Toko",
+      link: "/persentase-hpp-toko",
       icon: "/Menu/biayaToko.svg",
       iconWarna: getIconWarna('/Icon Warna/biayaToko.svg'),
   },
@@ -288,8 +290,8 @@ export const menuItems = [
       iconWarna: '/Icon Warna/dashboard_gudang.svg',
     },
     {
-      label: "Biaya Rumah Produksi",
-      link: "/biaya-gudang",
+      label: "Persentase HPP",
+      link: "/persentase-hpp",
       icon: "/Menu/biayaToko.svg",
       iconWarna: '/Icon Warna/biayaToko_gudang.svg',
     },

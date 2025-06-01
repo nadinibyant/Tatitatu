@@ -175,7 +175,6 @@ export default function TambahAkunKaryawan(){
             photo: file
           }));
           
-          // Create preview URL
           const reader = new FileReader();
           reader.onloadend = () => {
             setPhotoPreview(reader.result);
@@ -218,6 +217,8 @@ export default function TambahAkunKaryawan(){
                     formDataToSend.append('waktu_kerja_sebulan_antar', formData.workHours.amount.toString());
                 }
                 
+                formDataToSend.append('label', formData.workHours.label || '');
+                
                 formDataToSend.append('nomor_handphone', formData.phone);
         
                 const response = await api.post('/karyawan', formDataToSend, {
@@ -243,7 +244,6 @@ export default function TambahAkunKaryawan(){
                 setLoading(false);
             }
         }
-        
     };
     
       const navigate = useNavigate()

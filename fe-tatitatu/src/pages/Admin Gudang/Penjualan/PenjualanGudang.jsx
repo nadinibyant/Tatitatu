@@ -80,17 +80,28 @@ export default function PenjualanGudang() {
     ];
 
     const formatNamaBarang = (produk) => {
-        const namaBarang = produk.map(item => item.nama_barang).filter(Boolean);
-    
-        if (namaBarang.length > 2) {
+        const namaBarangArray = produk.map(item => {
+            if (item.barang_handmade && item.barang_handmade.nama_barang) {
+                return item.barang_handmade.nama_barang;
+            } else if (item.barang_nonhandmade && item.barang_nonhandmade.nama_barang) {
+                return item.barang_nonhandmade.nama_barang;
+            } else if (item.barang_mentah && item.barang_mentah.nama_barang) {
+                return item.barang_mentah.nama_barang;
+            } else if (item.packaging && item.packaging.nama_packaging) {
+                return item.packaging.nama_packaging;
+            }
+            return null; 
+        }).filter(Boolean); 
+
+        if (namaBarangArray.length > 2) {
             return (
                 <>
-                    {namaBarang.slice(0, 2).join(', ')}{" "}
-                    <span className="text-gray-500">+ {namaBarang.length - 2} lainnya</span>
+                    {namaBarangArray.slice(0, 2).join(', ')}{" "}
+                    <span className="text-gray-500">+ {namaBarangArray.length - 2} lainnya</span>
                 </>
             );
         }
-        return namaBarang.join(', ');
+        return namaBarangArray.join(', ');
     };
 
     const getTotalBarang = (produk) => {

@@ -27,7 +27,6 @@ export default function EditBeliStokGudang() {
     const [pajak, setPajak] = useState(0);
     const [itemData, setItemData] = useState([]);
     
-    // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("Semua");
     const [selectedItems, setSelectedItems] = useState([]);
@@ -37,7 +36,6 @@ export default function EditBeliStokGudang() {
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
     const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     
-    // Product data states
     const [formattedProducts, setFormattedProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -46,7 +44,19 @@ export default function EditBeliStokGudang() {
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
     const isHeadGudang = userData?.role === 'headgudang'
-    const themeColor = (isAdminGudang || isHeadGudang) ? "coklatTua" : "primary";
+    const isOwner = userData?.role === 'owner';
+    const isManajer = userData?.role === 'manajer';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance'
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
+
 
     const productTypes = [
         "Barang Handmade",
@@ -60,7 +70,6 @@ export default function EditBeliStokGudang() {
         { value: 2, label: "Non-Cash" }
     ];
 
-    // Fetch products data first
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -132,7 +141,6 @@ export default function EditBeliStokGudang() {
         fetchProducts();
     }, [isAdminGudang]);
 
-    // Fetch purchase detail after products are loaded
     useEffect(() => {
         const fetchPurchaseDetail = async () => {
             if (!id || !isProductsLoaded || formattedProducts.length === 0) return;
@@ -146,17 +154,15 @@ export default function EditBeliStokGudang() {
         
                 const { data } = detailRes.data;
                 
-                // Set form data
                 setNomor(data.pembelian_id);
                 setTanggal(new Date(data.tanggal).toISOString().split('T')[0]);
                 setNote(data.catatan || "");
-                setNamaPembeli(data.nama_pembeli || ""); // Set nama pembeli from data
+                setNamaPembeli(data.nama_pembeli || "");
                 setSelectedBayar(data.cash_or_non ? 1 : 2);
                 setSelectMetode(data.cash_or_non ? 0 : data.metode_id);
                 setDiskon(data.diskon);
                 setPajak(data.pajak);
         
-                // Process products data
                 const tableRows = data.produk.map((item, index) => {
                     const baseUrl = import.meta.env.VITE_API_URL;
                     let imagePath;

@@ -64,7 +64,7 @@ export default function DataBarangNonHandmade() {
                         return {
                             id: item.barang_nonhandmade_id,
                             title: item.nama_barang,
-                            price: `Rp${item.harga_jual.toLocaleString('id-ID')}`,
+                            price: `Rp${item.harga_logis.toLocaleString('id-ID')}`,
                             image: item.image ? 
                                 `${import.meta.env.VITE_API_URL}/images-barang-non-handmade-gudang/${item.image}` : 
                                 "https://via.placeholder.com/50",
@@ -118,6 +118,7 @@ export default function DataBarangNonHandmade() {
                 ? `/barang-nonhandmade-gudang/${selectedId}`
                 : `/barang-non-handmade/${selectedId}`;
             
+            console.log(selectedId)
             const response = await api.delete(endpoint);
             
             if (response.data.success) {

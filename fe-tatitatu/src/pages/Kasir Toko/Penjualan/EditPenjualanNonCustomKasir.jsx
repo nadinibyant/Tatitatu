@@ -359,7 +359,7 @@ export default function EditPenjualanNonCustomKasir() {
                         image: `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.image}`,
                         code: item.barang_handmade_id,
                         name: item.nama_barang,
-                        price: item.rincian_biaya[0]?.harga_jual || 0,
+                        price: item.rincian_biaya[0]?.harga_logis || 0,
                         kategori: item.kategori_barang.nama_kategori_barang,
                         stock: item.stok_barang?.jumlah_stok || 0
                     }));
@@ -386,7 +386,7 @@ export default function EditPenjualanNonCustomKasir() {
                         image: `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}`,
                         code: item.barang_non_handmade_id,
                         name: item.nama_barang,
-                        price: item.rincian_biaya[0]?.harga_jual || 0,
+                        price: item.rincian_biaya[0]?.harga_logis || 0,
                         kategori: item.kategori.nama_kategori_barang,
                         stock: item.stok_barang?.jumlah_stok || 0
                     }));

@@ -237,8 +237,8 @@ function App() {
 
         {/* Other Routes */}
         <Route path='/daftarCabang' element={getProtectedRoute(Cabang)} />
-        <Route path='/biayaGudang' element={getProtectedRoute(BiayaGudang, ['admin'])} />
-        <Route path='/biaya-gudang' element={getProtectedRoute(BiayaRumahProduksi, ['admingudang'])} />
+        <Route path='/persentase-hpp-toko' element={getProtectedRoute(BiayaGudang, ['admin'])} />
+        <Route path='/persentase-hpp' element={getProtectedRoute(BiayaRumahProduksi, ['admingudang'])} />
 
         {/* Data Barang Routes */}
         <Route path='/dataBarang' element={getProtectedRoute(DataBarang, ['admin', 'admingudang'])}/>

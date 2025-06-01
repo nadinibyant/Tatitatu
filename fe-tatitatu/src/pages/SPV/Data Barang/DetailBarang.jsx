@@ -44,10 +44,15 @@ export default function DetailBarang() {
                             "Harga Jual": itemData.harga_jual,
                             "Jumlah Minimum Stok": itemData.jumlah_minimum_stok,
                             "image": itemData.image,
-                            "rincian_biaya": itemData.rincian_biaya.map(biaya => ({
-                                "Nama Biaya": biaya.nama_biaya,
-                                "Jumlah Biaya": biaya.jumlah_biaya
-                            })),
+                            "Harga Jual Ideal": itemData.harga_jual_ideal,
+                            "Harga Logis": itemData.harga_logis,
+                            "Margin Persentase": itemData.margin_persentase,
+                            "Margin Nominal": itemData.margin_nominal,
+                            
+                            // "rincian_biaya": itemData.rincian_biaya.map(biaya => ({
+                            //     "Nama Biaya": biaya.nama_biaya,
+                            //     "Jumlah Biaya": biaya.jumlah_biaya
+                            // })),
                             "rincian_bahan": itemData.rincian_bahan.map(bahan => ({
                                 "Nama Bahan": bahan.barang_mentah.nama_barang,
                                 "Harga Satuan": bahan.harga_satuan,
@@ -214,7 +219,11 @@ export default function DetailBarang() {
             return {
                 "Total HPP": data["Total HPP"],
                 "Total Keuntungan": data["Total Keuntungan"],
-                "Harga Jual": data["Harga Jual"]
+                "Harga Jual": data["Harga Jual"],
+                "Harga Jual Ideal": data["Harga Jual Ideal"],
+                "Harga Logis": data["Harga Logis"],
+                "Margin Persentase": data["Margin Persentase"],
+                "Margin Nominal": data["Margin Nominal"]
             };
         }
         
@@ -379,17 +388,19 @@ export default function DetailBarang() {
                             </div>
                         </div>
 
-                        <div className="mb-6">
-                            <h3 className="font-bold mb-4">Rincian Biaya</h3>
-                            <Table
-                                headers={headers}
-                                data={getCurrentBranchRincianBiaya().map((item, index) => ({
-                                    No: index + 1,
-                                    "Nama Biaya": item["Nama Biaya"],
-                                    "Jumlah Biaya": `Rp${formatNumberWithDots(item["Jumlah Biaya"])}`
-                                }))}
-                            />
-                        </div>
+                        {!isAdminGudang && (
+                            <div className="mb-6">
+                                <h3 className="font-bold mb-4">Rincian Biaya</h3>
+                                <Table
+                                    headers={headers}
+                                    data={getCurrentBranchRincianBiaya().map((item, index) => ({
+                                        No: index + 1,
+                                        "Nama Biaya": item["Nama Biaya"],
+                                        "Jumlah Biaya": `Rp${formatNumberWithDots(item["Jumlah Biaya"])}`
+                                    }))}
+                                />
+                            </div>
+                        )}
 
                         {isAdminGudang && (
                             <div>

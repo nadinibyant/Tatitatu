@@ -34,6 +34,7 @@ export default function DetailPenjualanGudang() {
             try {
                 setLoading(true)
                 const response = await api.get(`/penjualan-gudang/${nomor}`);
+                console.log(response)
                 if (response.data.success) {
                     setData(response.data.data);
                 }
@@ -162,23 +163,56 @@ export default function DetailPenjualanGudang() {
                             <Table
                                 headers={headers}
                                 data={data.produk.map((item, index) => {
+                                    let produkDetail = null;
+                                    let jenisBarang = '';
+                                    let namaBarang = '';
+                                    let hargaJual = 0;
+                                    let image = null; 
+
+                                    if (item.barang_handmade) {
+                                        produkDetail = item.barang_handmade;
+                                        jenisBarang = 'Barang Handmade';
+                                        namaBarang = produkDetail.nama_barang;
+                                        hargaJual = produkDetail.harga_logis; 
+                                        image = produkDetail.image;
+                                    } else if (item.barang_nonhandmade) {
+                                        produkDetail = item.barang_nonhandmade;
+                                        jenisBarang = 'Barang Non-Handmade';
+                                        namaBarang = produkDetail.nama_barang;
+                                        hargaJual = produkDetail.harga_logis;
+                                        image = produkDetail.image;
+                                    } else if (item.barang_mentah) {
+                                        produkDetail = item.barang_mentah;
+                                        jenisBarang = 'Barang Mentah';
+                                        namaBarang = produkDetail.nama_barang;
+                                        hargaJual = produkDetail.harga_satuan;
+                                        image = produkDetail.image;
+                                    } else if (item.packaging) {
+                                        produkDetail = item.packaging;
+                                        jenisBarang = 'Packaging';
+                                        namaBarang = produkDetail.nama_packaging; 
+                                        hargaJual = produkDetail.harga_jual; 
+                                        image = produkDetail.image;
+                                    }
+
                                     const getImagePath = (jenis) => {
                                         switch(jenis) {
                                             case 'Barang Handmade':
                                                 return 'images-barang-handmade-gudang';
                                             case 'Barang Non-Handmade':
-                                                return 'images-barang-nonhandmade-gudang';
+                                                return 'images-barang-non-handmade-gudang';
                                             case 'Barang Mentah':
                                                 return 'images-barang-mentah';
                                             case 'Packaging':
                                                 return 'images-packaging-gudang';
                                             default:
-                                                return '';
+                                                return ''; 
                                         }
                                     };
                                     
-                                    const imageUrl = item.image ? 
-                                        `${import.meta.env.VITE_API_URL}/${getImagePath(item.jenis)}/${item.image}` 
+                                    // Membangun URL gambar lengkap
+                                    const imageUrl = image && jenisBarang ? 
+                                        `${import.meta.env.VITE_API_URL}/${getImagePath(jenisBarang)}/${image}` 
                                         : null;
                                     
                                     return {
@@ -186,18 +220,18 @@ export default function DetailPenjualanGudang() {
                                         "Foto Produk": imageUrl ? (
                                             <img 
                                                 src={imageUrl} 
-                                                alt={item.nama_barang} 
+                                                alt={namaBarang} 
                                                 className="w-12 h-12 object-cover" 
                                             />
                                         ) : (
-                                            <div className="w-12 h-12 bg-gray-200 flex items-center justify-center">
+                                            <div className="w-12 h-12 bg-gray-200 flex items-center justify-center text-xs text-gray-500">
                                                 No Image
                                             </div>
                                         ),
-                                        "Nama Produk": item.nama_barang,
-                                        "Jenis Barang": item.jenis,
-                                        "Harga Satuan": formatRupiah(item.harga_satuan),
-                                        "Harga Jual": formatRupiah(item.harga_jual || 0),
+                                        "Nama Produk": namaBarang,
+                                        "Jenis Barang": jenisBarang,
+                                        "Harga Satuan": formatRupiah(item.harga_satuan), // harga_satuan di level item produk
+                                        "Harga Jual": formatRupiah(hargaJual || 0), // hargaJual yang sudah diekstrak
                                         "kuantitas": item.kuantitas.toLocaleString(),
                                         "Total Biaya": formatRupiah(item.total_biaya)
                                     };

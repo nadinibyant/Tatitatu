@@ -118,7 +118,8 @@ export default function EditKaryawan(){
                 bonus: data.bonus?.toString() || '',
                 workHours: {
                     amount: (data.waktu_kerja_sebulan_menit || data.waktu_kerja_sebulan_antar || '').toString(),
-                    unit: data.waktu_kerja_sebulan_menit ? 'Menit' : 'Antar'
+                    unit: data.waktu_kerja_sebulan_menit ? 'Menit' : 'Antar',
+                    label: data.label || (data.waktu_kerja_sebulan_menit ? 'APM' : 'API') 
                 },
                 phone: data.nomor_handphone || '',
                 jenis_karyawan: data.jenis_karyawan || '' 
@@ -127,11 +128,11 @@ export default function EditKaryawan(){
             if (karyawanTokoId) {
                 fetchStoreById(karyawanTokoId);
             }
-          
+        
             if (data.image) {
                 setPhotoPreview(`${import.meta.env.VITE_API_URL}/images-karyawan/${data.image}`);
             }
-      
+    
         } catch (error) {
             console.error('Error fetching karyawan:', error);
             setErrorMessage('Gagal mengambil data karyawan');
@@ -139,7 +140,7 @@ export default function EditKaryawan(){
         } finally {
             setLoading(false);
         }
-      };
+    };
 
     const fetchStore = async () => {
         // Skip fetching store for manager role
@@ -264,7 +265,7 @@ export default function EditKaryawan(){
             try {
                 setLoading(true);
                 const formDataToSend = new FormData();
-      
+    
                 if (formData.photo) {
                     formDataToSend.append('image', formData.photo);
                 }
@@ -274,7 +275,7 @@ export default function EditKaryawan(){
                 formDataToSend.append('password', formData.password);
                 formDataToSend.append('divisi_karyawan_id', formData.division);
                 formDataToSend.append('jenis_karyawan', formData.jenis_karyawan); 
-      
+    
                 // Only append branch_id and toko_id for non-manager roles
                 if (!isManajer) {
                     if (!isHeadGudang) {
@@ -294,16 +295,19 @@ export default function EditKaryawan(){
                     formDataToSend.append('waktu_kerja_sebulan_menit', null);
                 }
                 
+                // Add the label from TimeInput component
+                formDataToSend.append('label', formData.workHours.label || '');
+                
                 formDataToSend.append('nomor_handphone', formData.phone);
-      
+    
                 const response = await api.put(`/karyawan/${id}`, formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
                 });
-      
+    
                 console.log(response)
-      
+    
                 if (response.data.success) {
                     setAlertSucc(true);
                     setTimeout(() => {
@@ -318,7 +322,7 @@ export default function EditKaryawan(){
                 setLoading(false);
             }
         }
-      };
+    };
     
       const navigate = useNavigate()
 

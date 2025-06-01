@@ -144,130 +144,180 @@ export default function EditPenjualanGudang() {
                 setNote(data.catatan);
                 setDiskon(data.diskon);
                 setPajak(data.pajak);
- 
-                setSelectedBayar(data.cash_or_non ? 1 : 2); 
-                
+                setSelectedBayar(data.cash_or_non ? 1 : 2);
+
                 if (!data.cash_or_non) {
                     setIsMetodeDisabled(false);
-                    const matchingMethod = dataMetode.find(
-                        method => method.label === data.metode
-                    );
-                    if (matchingMethod) {
-                        setSelectMetode(matchingMethod.value);
+                    if (dataMetode.length > 1) {
+                        const matchingMethod = dataMetode.find(
+                            method => method.label === data.metode
+                        );
+                        if (matchingMethod) {
+                            setSelectMetode(matchingMethod.value);
+                        } else {
+                            setSelectMetode(1);
+                        }
                     }
                 } else {
                     setIsMetodeDisabled(true);
                     setSelectMetode(1);
                 }
 
-                const formattedItems = data.produk
-                    .filter(item => item.jenis !== "Packaging")
-                    .map((item, index) => ({
-                        id: item.barang_id,
+                const extractProductInfo = (apiProdItem) => {
+                    if (apiProdItem.barang_handmade) {
+                        return {
+                            id: apiProdItem.barang_handmade.barang_handmade_id,
+                            nama: apiProdItem.barang_handmade.nama_barang,
+                            image: apiProdItem.barang_handmade.image,
+                            jenis: 'Barang Handmade',
+                            harga_jual_katalog: apiProdItem.barang_handmade.harga_logis,
+                            is_packaging: false,
+                        };
+                    } else if (apiProdItem.barang_nonhandmade) {
+                        return {
+                            id: apiProdItem.barang_nonhandmade.barang_nonhandmade_id,
+                            nama: apiProdItem.barang_nonhandmade.nama_barang,
+                            image: apiProdItem.barang_nonhandmade.image,
+                            jenis: 'Barang Non-Handmade',
+                            harga_jual_katalog: apiProdItem.barang_nonhandmade.harga_logis,
+                            is_packaging: false,
+                        };
+                    } else if (apiProdItem.barang_mentah) {
+                        return {
+                            id: apiProdItem.barang_mentah.barang_mentah_id,
+                            nama: apiProdItem.barang_mentah.nama_barang,
+                            image: apiProdItem.barang_mentah.image,
+                            jenis: 'Barang Mentah',
+                            harga_jual_katalog: apiProdItem.barang_mentah.harga_satuan,
+                            is_packaging: false,
+                        };
+                    } else if (apiProdItem.packaging) {
+                        return {
+                            id: apiProdItem.packaging.packaging_id,
+                            nama: apiProdItem.packaging.nama_packaging,
+                            image: apiProdItem.packaging.image,
+                            jenis: 'Packaging',
+                            harga_jual_katalog: apiProdItem.packaging.harga_jual,
+                            is_packaging: true,
+                        };
+                    }
+                    console.warn("Unknown product structure in API response:", apiProdItem);
+                    return null;
+                };
+
+                const productsFromSale = data.produk.map(apiProdItem => {
+                    const info = extractProductInfo(apiProdItem);
+                    if (!info) return null;
+
+                    return {
+                        ...info, 
+                        harga_satuan_transaksi: apiProdItem.harga_satuan,
+                        kuantitas: apiProdItem.kuantitas,
+                        total_biaya: apiProdItem.total_biaya,
+                    };
+                }).filter(p => p !== null);
+
+
+                const regularItemsFromSale = productsFromSale.filter(p => !p.is_packaging);
+                const packagingItemFromSale = productsFromSale.find(p => p.is_packaging);
+
+                if (dataBarang.length > 0) {
+                    const formattedItems = regularItemsFromSale.map((itemDetail, index) => ({
+                        id: itemDetail.id,
                         No: index + 1,
                         "Foto Produk": (
-                            <img 
-                                src={getImageUrl(item)} 
-                                alt={item.nama_barang} 
-                                className="w-12 h-12" 
-                                onError={(e) => {
-                                    e.target.src = "https://via.placeholder.com/150";
-                                }}
+                            <img
+                                src={getImageUrl({ barang_id: itemDetail.id, image: itemDetail.image })}
+                                alt={itemDetail.nama}
+                                className="w-12 h-12 object-cover"
+                                onError={(e) => { e.target.src = "https://via.placeholder.com/150"; }}
                             />
                         ),
                         "Nama Produk": (
                             <InputDropdown
                                 showRequired={false}
-                                options={getAllProductOptions(dataBarang)}
-                                value={item.barang_id}
-                                onSelect={(newSelection) => handleDropdownChange(item.barang_id, newSelection)}
+                                options={getAllProductOptions(dataBarang)} 
+                                value={itemDetail.id}
+                                onSelect={(newSelection) => handleDropdownChange(itemDetail.id, newSelection)}
                             />
                         ),
-                        "Jenis Barang": item.jenis,
-                        "Harga Satuan": `Rp${item.harga_satuan.toLocaleString()}`,
+                        "Jenis Barang": itemDetail.jenis,
+                        "Harga Satuan": `Rp${itemDetail.harga_satuan_transaksi.toLocaleString()}`, 
                         "Kuantitas": (
                             <Input
                                 showRequired={false}
                                 type="number"
-                                value={item.kuantitas}
-                                onChange={(newCount) => handleQuantityChange(item.barang_id, newCount)}
+                                value={itemDetail.kuantitas}
+                                onChange={(newCount) => handleQuantityChange(itemDetail.id, newCount)}
                             />
                         ),
-                        quantity: item.kuantitas,
-                        "Total Biaya": `Rp${item.total_biaya.toLocaleString()}`,
-                        rawTotalBiaya: item.total_biaya,
-                        currentPrice: item.harga_satuan
+                        quantity: itemDetail.kuantitas,
+                        "Total Biaya": `Rp${itemDetail.total_biaya.toLocaleString()}`,
+                        rawTotalBiaya: itemDetail.total_biaya,
+                        currentPrice: itemDetail.harga_satuan_transaksi,
                     }));
-                setItemData(formattedItems);
-
-                const packagingItem = data.produk.find(item => item.jenis === "Packaging");
-                if (packagingItem) {
-                    const matchingPackaging = dataPackaging.find(pkg => 
-                        pkg.packaging_id === packagingItem.barang_id || 
-                        pkg.id === packagingItem.barang_id || 
-                        pkg.value === packagingItem.barang_id
-                    );
-
-                    const correctPrice = matchingPackaging 
-                        ? (matchingPackaging.harga_jual || matchingPackaging.price || 
-                           (matchingPackaging.harga ? matchingPackaging.harga.harga_jual : packagingItem.harga_satuan))
-                        : packagingItem.harga_satuan;
-
+                    setItemData(formattedItems);
+                }
+                if (packagingItemFromSale && dataPackaging.length > 0) {
                     const formattedPackaging = [{
-                        id: packagingItem.barang_id,
-                        packaging_id: packagingItem.barang_id,
+                        id: packagingItemFromSale.id,
+                        packaging_id: packagingItemFromSale.id, 
                         No: 1,
                         "Foto Packaging": (
-                            <img 
-                                src={getImageUrl(packagingItem)} 
-                                alt={packagingItem.nama_barang} 
-                                className="w-12 h-12" 
-                                onError={(e) => {
-                                    e.target.src = "https://via.placeholder.com/150";
-                                }}
+                            <img
+                                src={getImageUrl({ barang_id: packagingItemFromSale.id, image: packagingItemFromSale.image })}
+                                alt={packagingItemFromSale.nama}
+                                className="w-12 h-12 object-cover"
+                                onError={(e) => { e.target.src = "https://via.placeholder.com/150"; }}
                             />
                         ),
                         "Nama Packaging": (
                             <InputDropdown
                                 showRequired={false}
                                 options={dataPackaging.map(pack => ({
-                                    label: pack.nama_packaging,
-                                    value: pack.packaging_id,
-                                    price: pack.harga
+                                    label: pack.nama_packaging || pack.label, 
+                                    value: pack.packaging_id || pack.id,   
+                                    price: pack.price || pack.harga_jual || (pack.harga ? pack.harga.harga_jual : 0)
                                 }))}
-                                value={packagingItem.barang_id}
-                                onSelect={(newSelection) => handlePackagingDropdownChange(packagingItem.barang_id, newSelection)}
+                                value={packagingItemFromSale.id} 
+                                onSelect={(newSelection) => handlePackagingDropdownChange(packagingItemFromSale.id, newSelection)}
                             />
                         ),
-                        "Harga Satuan": `Rp${correctPrice.toLocaleString()}`,
+                        "Harga Satuan": `Rp${packagingItemFromSale.harga_satuan_transaksi.toLocaleString()}`,
                         "Kuantitas": (
                             <Input
                                 showRequired={false}
                                 type="number"
-                                value={packagingItem.kuantitas}
-                                onChange={(newCount) => handlePackagingQuantityChange(packagingItem.barang_id, newCount)}
+                                value={packagingItemFromSale.kuantitas}
+                                onChange={(newCount) => handlePackagingQuantityChange(packagingItemFromSale.id, newCount)}
                             />
                         ),
-                        quantity: packagingItem.kuantitas,
-                        "Total Biaya": `Rp${packagingItem.total_biaya.toLocaleString()}`,
-                        rawTotalBiaya: packagingItem.total_biaya,
-                        currentPrice: packagingItem.harga_satuan
+                        quantity: packagingItemFromSale.kuantitas,
+                        "Total Biaya": `Rp${packagingItemFromSale.total_biaya.toLocaleString()}`,
+                        rawTotalBiaya: packagingItemFromSale.total_biaya,
+                        currentPrice: packagingItemFromSale.harga_satuan_transaksi,
                     }];
                     setPackagingData(formattedPackaging);
                     setHasPackaging(true);
+                } else {
+                    setPackagingData([]); 
+                    setHasPackaging(false);
                 }
-    
+
             } catch (error) {
                 console.error("Error fetching penjualan:", error);
+                setErrorMessage(error.response?.data?.message || "Gagal mengambil data penjualan");
             } finally {
                 setLoading(false);
             }
         };
-    
-        if (dataMetode.length > 0) {
+
+        if (id && dataMetode.length > 0 && dataBarang.length > 0 && dataPackaging.length > 0 && !isLoading) {
+        if (nomor !== id || itemData.length === 0) {
             fetchPenjualan();
         }
-    }, [id, dataMetode, dataBarang, dataPackaging]);
+        }
+    }, [id, dataMetode, dataBarang, dataPackaging, nomor, itemData.length, isLoading]); 
     
 
     useEffect(() => {
@@ -316,7 +366,7 @@ export default function EditPenjualanGudang() {
                                 id: item.barang_handmade_id,
                                 image: item.image,
                                 name: item.nama_barang,
-                                price: item.harga_jual,
+                                price: item.harga_logis,
                                 kategori: item.kategori?.nama_kategori_barang,
                                 code: item.barang_handmade_id,
                                 stock: item.stok_barang?.jumlah_stok
@@ -332,7 +382,7 @@ export default function EditPenjualanGudang() {
                             id: item.barang_nonhandmade_id,
                             image: item.image,
                             name: item.nama_barang,
-                            price: item.harga_jual,
+                            price: item.harga_logis,
                             kategori: item.kategori?.nama_kategori_barang,
                             code: item.barang_nonhandmade_id,
                             stock: item.stok_barang?.jumlah_stok

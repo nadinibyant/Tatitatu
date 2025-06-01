@@ -445,22 +445,22 @@ export default function TambahKPI(){
       };
 
       const calculateKPIBonus = (kpi, employeeTotalBonus) => {
-        const kpiTotalBonus = employeeTotalBonus * (kpi.percentage / 100);
+    const kpiTotalBonus = employeeTotalBonus * (kpi.percentage / 100);
 
-        let totalCheckboxes = 0;
-        if (kpi.waktu === 'Harian') {
-          totalCheckboxes = daysInMonth;
-        } else if (kpi.waktu === 'Mingguan') {
-          totalCheckboxes = 4;
-        } else if (kpi.waktu === 'Bulanan') {
-          totalCheckboxes = 1;
-        }
-        
-        const checkboxValue = totalCheckboxes > 0 ? kpiTotalBonus / totalCheckboxes : 0;
-        const checkedCount = kpi.checks.filter(checked => checked).length;
+    let totalCheckboxes = 0;
+    if (kpi.waktu === 'Harian') {
+        totalCheckboxes = 28; 
+    } else if (kpi.waktu === 'Mingguan') {
+        totalCheckboxes = 4;
+    } else if (kpi.waktu === 'Bulanan') {
+        totalCheckboxes = 1;
+    }
+    
+    const checkboxValue = totalCheckboxes > 0 ? kpiTotalBonus / totalCheckboxes : 0;
+    const checkedCount = kpi.checks.filter(checked => checked).length;
 
-        return checkboxValue * checkedCount;
-      };
+    return checkboxValue * checkedCount;
+    };
 
       const calculateKPITotalBonus = (totalBonus, kpiPercentage) => {
         return totalBonus * (kpiPercentage / 100);
