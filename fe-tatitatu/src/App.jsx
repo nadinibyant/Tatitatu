@@ -267,9 +267,10 @@ function App() {
         <Route path='/target-bulanan' element={getProtectedRoute(TargetBulanan, ['admin', 'headgudang', 'admingudang', 'manajer'])} />
 
         {/* karyawan */}
-        <Route path='/izin-cuti-karyawan' element={getProtectedRoute(IzinCutiKaryawan, ['karyawanumum', 'karyawanproduksi', 'karyawanlogistik', 'karyawantransportasi'])} />
+        <Route path='/izin-cuti-karyawan' element={getProtectedRoute(IzinCutiKaryawan, ['karyawanumum', 'karyawanproduksi', 'karyawanlogistik', 'karyawantransportasi', 'timhybrid'])} />
         <Route path='/absensi-karyawan' element={getProtectedRoute(Absensi, ['karyawanumum', 'karyawanlogistik' ])} />
         <Route path='/absensi-karyawan-transport' element={getProtectedRoute(AbsensiTransport, ['karyawantransportasi' ])} />
+        <Route path='/absensi-tim-hybrid' element={getProtectedRoute(AbsensiTransport, ['timhybrid' ])} />
         <Route path='/absensi-karyawan-produksi' element={getProtectedRoute(AbsensiProduksi, ['karyawanproduksi' ])} />
         <Route path='/absensi-karyawan-produksi/tambah' element={getProtectedRoute(TambahAbsensiProduksi, ['karyawanproduksi' ])} />
 

@@ -40,6 +40,8 @@ export default function EditBarang() {
   const [errorMessage, setErrorMessage] = useState('');
   const [biayaGudangData, setBiayaGudangData] = useState(null);
   const [biayaTokoData, setBiayaTokoData] = useState([]);
+  const [showHargaLogisConfirmation, setShowHargaLogisConfirmation] = useState(false);
+  const [pendingFormSubmission, setPendingFormSubmission] = useState(null);
   const { id } = useParams();
   const toko_id = userData.userId
 
@@ -73,7 +75,6 @@ export default function EditBarang() {
             k.nama_kategori_barang === itemData.kategori.nama_kategori_barang
           )?.kategori_barang_id;
   
-          // Map rincian biaya from API
           const rincianBiayaList = itemData.rincian_biaya ? itemData.rincian_biaya.map((item, index) => ({
             id: item.rincian_biaya_id || index,
             "Nama Biaya": item.nama_biaya,
@@ -131,7 +132,6 @@ export default function EditBarang() {
   
               const biayaList = [];
               
-              // Check if Modal exists
               let hasModal = false;
               
               if (rincian.detail_rincian_biaya && rincian.detail_rincian_biaya.length > 0) {
@@ -176,6 +176,37 @@ export default function EditBarang() {
               initialRincianBiaya[cabangData.nama_cabang] = biayaList;
             }
           });
+
+          dataCabang.forEach(cabang => {
+            const cabangName = cabang.nama_cabang;
+            
+            if (!initialHargaPerCabang[cabangName]) {
+              const biayaToko = biayaTokoData.find(bt => bt.cabang_id === cabang.cabang_id);
+              const persentaseHPP = biayaToko?.persentase || 0;
+              
+              initialHargaPerCabang[cabangName] = {
+                totalHPP: 0,
+                keuntungan: 0,
+                hargaJual: 0,
+                hargaJualIdeal: 0,
+                marginPersentase: 0,
+                marginNominal: 0,
+                hargaLogis: 0,
+                persentaseHPP: persentaseHPP
+              };
+              
+              initialRincianBiaya[cabangName] = [{
+                id: 'modal',
+                "Nama Biaya": "Modal",
+                "Jumlah Biaya": 0,
+                isEditable: {
+                  name: false,
+                  amount: true
+                },
+                isDefault: true
+              }];
+            }
+          });
   
           setRincianBiayaPerCabang(initialRincianBiaya);
           setData(prevData => ({
@@ -190,12 +221,13 @@ export default function EditBarang() {
             hargaPerCabang: initialHargaPerCabang
           }));
 
-          // Set first cabang as selected
           if (detailData.rincian_biaya.length > 0) {
             const firstCabang = dataCabang.find(c => c.cabang_id === detailData.rincian_biaya[0].cabang_id);
             if (firstCabang) {
               setSelectedCabang(firstCabang.nama_cabang);
             }
+          } else if (dataCabang.length > 0) {
+            setSelectedCabang(dataCabang[0].nama_cabang);
           }
         }
       }
@@ -412,8 +444,7 @@ export default function EditBarang() {
       0
     );
 
-    // Using a fixed percentage for harga jual ideal calculation (similar to cabang)
-    const persentaseHPP = 20; // Example percentage, adjust as needed
+    const persentaseHPP = 20; 
     const hargaJualIdeal = totalHPP + (totalHPP * (persentaseHPP / 100));
     
     const hargaLogis = data.hargaLogis || 0;
@@ -491,9 +522,8 @@ export default function EditBarang() {
         const cabangData = [...prevData[type]];
         const currentRow = cabangData[rowIndex];
         
-        // Check if it's the modal row and trying to change name
         if (currentRow.isDefault && key === "Nama Biaya") {
-          return prevData; // Don't allow changing Modal name
+          return prevData; 
         }
         
         cabangData[rowIndex] = {
@@ -507,7 +537,6 @@ export default function EditBarang() {
         };
       });
 
-      // Update calculations when any value changes
       setTimeout(() => updateCabangCalculations(type), 0);
     }
   };
@@ -609,7 +638,7 @@ export default function EditBarang() {
     }));
   };
 
-  const handleHargaLogisChange = (value) => {
+  const handleHargaLogisChange = (value, cabang = null) => {
     if (isAdminGudang) {
       const numValue = Number(value) || 0;
       const totalHPP = data.totalHPP || 0;
@@ -627,10 +656,10 @@ export default function EditBarang() {
         keuntungan: numValue - totalHPP
       }));
     } else {
-      const cabang = selectedCabang;
+      const cabangName = cabang || selectedCabang;
       const numValue = Number(value) || 0;
-      const totalHPP = data.hargaPerCabang[cabang]?.totalHPP || 0;
-      const hargaJualIdeal = data.hargaPerCabang[cabang]?.hargaJualIdeal || 0;
+      const totalHPP = data.hargaPerCabang[cabangName]?.totalHPP || 0;
+      const hargaJualIdeal = data.hargaPerCabang[cabangName]?.hargaJualIdeal || 0;
       
       const marginPersentase = hargaJualIdeal > 0 ? 
         Math.round((numValue / hargaJualIdeal) * 100) : 0;
@@ -640,8 +669,8 @@ export default function EditBarang() {
         ...prevData,
         hargaPerCabang: {
           ...prevData.hargaPerCabang,
-          [cabang]: {
-            ...prevData.hargaPerCabang[cabang],
+          [cabangName]: {
+            ...prevData.hargaPerCabang[cabangName],
             hargaLogis: numValue,
             marginPersentase,
             marginNominal,
@@ -666,6 +695,7 @@ export default function EditBarang() {
   ];
 
   // Check if harga logis is at least 65% higher than harga jual ideal
+// Check if harga logis is greater than 65% higher than harga jual ideal
   const isHargaLogisValid = (cabang) => {
     if (isAdminGudang) {
       const hargaJualIdeal = data.hargaJualIdeal || 0;
@@ -673,17 +703,17 @@ export default function EditBarang() {
       
       if (hargaJualIdeal === 0) return { isValid: true, message: "" };
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const maxAllowedPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
-      }
-      
-      return { isValid: true, message: "" };
+      return { 
+        isValid: true, 
+        percentage: currentPercentage,
+        isGreaterThan65: currentPercentage > maxAllowedPercentage,
+        message: currentPercentage > maxAllowedPercentage ? 
+          `Harga Logis ${Math.round(currentPercentage)}% lebih tinggi dari harga jual ideal, melebihi batas rekomendasi 65%` : 
+          ""
+      };
     } else {
       const cabangData = data.hargaPerCabang[cabang];
       if (!cabangData) return { isValid: true, message: "" };
@@ -693,17 +723,67 @@ export default function EditBarang() {
       
       if (hargaJualIdeal === 0) return { isValid: true, message: "" };
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const maxAllowedPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
-      }
+      // Check if it's higher than 65%
+      return { 
+        isValid: true, 
+        percentage: currentPercentage,
+        isGreaterThan65: currentPercentage > maxAllowedPercentage,
+        message: currentPercentage > maxAllowedPercentage ? 
+          `Harga Logis di cabang ${cabang} ${Math.round(currentPercentage)}% lebih tinggi dari harga jual ideal, melebihi batas rekomendasi 65%` : 
+          ""
+      };
+    }
+  };
+
+  const handleHargaLogisConfirmation = () => {
+    setShowHargaLogisConfirmation(false);
+    if (pendingFormSubmission) {
+      submitFormData(pendingFormSubmission);
+    }
+  };
+
+  const submitFormData = async (formData) => {
+    try {
+      setLoading(true);
       
-      return { isValid: true, message: "" };
+      if (isAdminGudang) {
+        const response = await api.put(`/barang-nonhandmade-gudang/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/non-handmade');
+          }, 2000);
+        }
+      } else {
+        // Submit to API non-admin gudang
+        const response = await api.put(`/barang-non-handmade/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/non-handmade');
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat mengubah data');
+      setErrorAlert(true);
+    } finally {
+      setLoading(false);
+      setPendingFormSubmission(null);
     }
   };
 
@@ -711,28 +791,24 @@ export default function EditBarang() {
     e.preventDefault();
   
     try {
-      setLoading(true);
       const formData = new FormData();
   
       // Validasi data wajib untuk semua role
       if (!data.info_barang.Kategori) {
         setErrorMessage("Kategori harus dipilih");
         setErrorAlert(true);
-        setLoading(false);
         return;
       }
   
-if (!data.info_barang["Nama Barang"]) {
+      if (!data.info_barang["Nama Barang"]) {
         setErrorMessage("Nama barang harus diisi");
         setErrorAlert(true);
-        setLoading(false);
         return;
       }
   
       if (!data.info_barang["Jumlah Minimum Stok"]) {
         setErrorMessage("Jumlah minimum stok harus diisi");
         setErrorAlert(true);
-        setLoading(false);
         return;
       }
   
@@ -741,7 +817,6 @@ if (!data.info_barang["Nama Barang"]) {
         if (!data.hargaLogis) {
           setErrorMessage("Harga logis harus diisi");
           setErrorAlert(true);
-          setLoading(false);
           return;
         }
         
@@ -762,59 +837,39 @@ if (!data.info_barang["Nama Barang"]) {
           formData.append('image', data.info_barang.Foto);
         }
   
-        // Append all rincian biaya
         data.rincianBiaya.forEach((biaya, index) => {
           formData.append(`rincian_biaya[${index}][nama_biaya]`, biaya["Nama Biaya"]);
           formData.append(`rincian_biaya[${index}][jumlah_biaya]`, biaya["Jumlah Biaya"]);
         });
 
-        // For debugging - log formData entries
-        console.log("FormData for admin gudang:");
-        for (let pair of formData.entries()) {
-          console.log(pair[0] + ': ' + pair[1]);
+        const hargaLogisValidation = isHargaLogisValid();
+        if (hargaLogisValidation.isGreaterThan65) {
+          setPendingFormSubmission(formData);
+          setShowHargaLogisConfirmation(true);
+          return;
         }
   
-        // Submit to API admin gudang
-        const response = await api.put(`/barang-nonhandmade-gudang/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-  
-        if (response.data.success) {
-          setAlertSucc(true);
-          setTimeout(() => {
-            navigate('/dataBarang/non-handmade');
-          }, 2000);
-        }
+        await submitFormData(formData);
       } else {
-        // Data untuk non-admin gudang 
         if (Object.keys(data.hargaPerCabang).length === 0) {
           setErrorMessage("Data cabang belum lengkap");
           setErrorAlert(true);
-          setLoading(false);
           return;
         }
 
-        // Check if all cabang have valid harga logis
         let cabangBelumLengkap = [];
+        
         Object.keys(data.hargaPerCabang).forEach(cabangName => {
-          const hargaLogis = data.hargaPerCabang[cabangName]?.hargaLogis;
-
-          if (!hargaLogis || hargaLogis <= 0) {
+          const cabangData = data.hargaPerCabang[cabangName];
+          
+          if (!cabangData || cabangData.totalHPP === 0 || !cabangData.hargaLogis || cabangData.hargaLogis <= 0) {
             cabangBelumLengkap.push(cabangName);
-          }
-
-          const hargaLogisValidation = isHargaLogisValid(cabangName);
-          if (!hargaLogisValidation.isValid) {
-            cabangBelumLengkap.push(cabangName + " (harga logis belum valid)");
           }
         });
 
         if (cabangBelumLengkap.length > 0) {
-          setErrorMessage(`Harga logis pada cabang ${cabangBelumLengkap.join(', ')} belum valid. Mohon lengkapi data tersebut.`);
+          setErrorMessage(`Data pada cabang ${cabangBelumLengkap.join(', ')} belum lengkap. Mohon lengkapi data tersebut.`);
           setErrorAlert(true);
-          setLoading(false);
           return;
         }
 
@@ -829,6 +884,8 @@ if (!data.info_barang["Nama Barang"]) {
         const rincianBiayaData = [];
         let hasError = false;
         let cabangError = "";
+        let showConfirmation = false;
+        let confirmationMessages = [];
       
         Object.entries(data.hargaPerCabang).forEach(([cabangName, cabangData]) => {
           const cabang = dataCabang.find((c) => c.nama_cabang === cabangName);
@@ -841,11 +898,17 @@ if (!data.info_barang["Nama Barang"]) {
           }
       
           if (cabang && cabang.cabang_id) {
+            const hargaLogisValidation = isHargaLogisValid(cabangName);
+            if (hargaLogisValidation.isGreaterThan65) {
+              showConfirmation = true;
+              confirmationMessages.push(hargaLogisValidation.message);
+            }
+            
             const rincianData = {
               cabang_id: cabang.cabang_id,
               total_hpp: cabangData.totalHPP || 0,
               keuntungan: cabangData.keuntungan || 0,
-              harga_jual: cabangData.hargaJualIdeal || 0, // Set to hargaJualIdeal as per requirement
+              harga_jual: cabangData.hargaJualIdeal || 0, 
               harga_jual_ideal: cabangData.hargaJualIdeal || 0,
               margin_persentase: cabangData.marginPersentase || 0,
               margin_nominal: cabangData.marginNominal || 0,
@@ -875,10 +938,8 @@ if (!data.info_barang["Nama Barang"]) {
         if (hasError) {
           setErrorMessage(`Data rincian biaya pada cabang ${cabangError} belum lengkap`);
           setErrorAlert(true);
-          setLoading(false);
           return;
         }
-      
         rincianBiayaData.forEach((biaya, index) => {
           formData.append(`rincian_biaya[${index}][cabang_id]`, biaya.cabang_id);
           formData.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
@@ -907,27 +968,18 @@ if (!data.info_barang["Nama Barang"]) {
             }
           });
         });
-  
-        // Submit to API non-admin gudang
-        const response = await api.put(`/barang-non-handmade/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-  
-        if (response.data.success) {
-          setAlertSucc(true);
-          setTimeout(() => {
-            navigate('/dataBarang/non-handmade');
-          }, 2000);
+
+        if (showConfirmation) {
+          setPendingFormSubmission(formData);
+          setShowHargaLogisConfirmation(true);
+          return;
         }
+        await submitFormData(formData);
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat mengubah data');
+      console.error('Error preparing form submission:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat memproses data');
       setErrorAlert(true);
-    } finally {
-      setLoading(false);
     }
   };
   
@@ -1083,7 +1135,7 @@ if (!data.info_barang["Nama Barang"]) {
 
                 {/* Modified Totals Section for admin gudang - Matching the non-admin layout */}
                 <section className="mt-8 flex justify-end">
-                  <div className="px-5 space-y-2">
+                  <div className="px-5 space-y-2 md:w-1/2 lg:w-1/3">
                     <div className="flex justify-between items-center border-b pb-2">
                       <p className="text-md font-bold">Total HPP</p>
                       <p className="text-md">Rp{formatCurrency(data.totalHPP)}</p>
@@ -1107,7 +1159,7 @@ if (!data.info_barang["Nama Barang"]) {
                     <div className="flex justify-between items-center pt-1">
                       <div>
                         <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                        {!isHargaLogisValid().isValid && (
+                        {!isHargaLogisValid().isHigherThan65 && (
                           <p className="text-red-500 text-sm">{isHargaLogisValid().message}</p>
                         )}
                       </div>
@@ -1145,7 +1197,7 @@ if (!data.info_barang["Nama Barang"]) {
                     </div>
                   </section>
 
-                  {selectedCabang && rincianBiayaPerCabang[selectedCabang] && (
+                  {selectedCabang && (
                     <>
                       <section className="pt-5">
                         <p className="font-bold">Rincian Harga Pokok Penjualan (HPP)</p>
@@ -1223,7 +1275,7 @@ if (!data.info_barang["Nama Barang"]) {
                       </section>
 
                       <section className="mt-8 flex justify-end">
-                        <div className="px-5 space-y-2">
+                        <div className="px-5 space-y-2 md:w-1/2 lg:w-1/3">
                           <div className="flex justify-between items-center border-b pb-2">
                             <p className="text-md font-bold">Total HPP</p>
                             <p className="text-md">Rp{formatCurrency(data.hargaPerCabang[selectedCabang]?.totalHPP)}</p>
@@ -1247,7 +1299,7 @@ if (!data.info_barang["Nama Barang"]) {
                           <div className="flex justify-between items-center pt-1">
                             <div>
                               <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                              {!isHargaLogisValid(selectedCabang).isValid && (
+                              {!isHargaLogisValid(selectedCabang).isHigherThan65 && (
                                 <p className="text-red-500 text-sm">{isHargaLogisValid(selectedCabang).message}</p>
                               )}
                             </div>
@@ -1257,7 +1309,7 @@ if (!data.info_barang["Nama Barang"]) {
                                 type="number"
                                 width="w-40"
                                 value={data.hargaPerCabang[selectedCabang]?.hargaLogis}
-                                onChange={(value) => handleHargaLogisChange(selectedCabang, value)}
+                                onChange={(value) => handleHargaLogisChange(value)}
                               />
                             </div>
                           </div>
@@ -1277,7 +1329,7 @@ if (!data.info_barang["Nama Barang"]) {
                           <h3 className={`text-${themeColor} mb-3 font-medium`}>Cabang {cabangName}</h3>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <p className="text-gray-700 text-sm">Harga Ideal</p>
+<p className="text-gray-700 text-sm">Harga Ideal</p>
                               <p className="font-medium">Rp{formatCurrency(cabangData.hargaJualIdeal)}</p>
                             </div>
                             <div className="flex justify-between items-center">
@@ -1409,6 +1461,54 @@ if (!data.info_barang["Nama Barang"]) {
             confirmLabel="Ok"
             onConfirm={() => setAlertSucc(false)}
         />
+      )}
+
+      {/* Harga Logis Confirmation Alert */}
+      {showHargaLogisConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center">
+                <div className="bg-yellow-100 rounded-full p-2 mr-3">
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">Konfirmasi Harga Logis</h3>
+              </div>
+              <button 
+                onClick={() => setShowHargaLogisConfirmation(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">
+                Harga logis yang Anda masukkan lebih dari 65% di atas harga jual ideal.
+                Apakah Anda yakin ingin melanjutkan dengan harga ini?
+              </p>
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowHargaLogisConfirmation(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleHargaLogisConfirmation}
+                className={`px-4 py-2 rounded-md text-sm font-medium text-white bg-${themeColor} hover:bg-opacity-90`}
+              >
+                Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isLoading && (

@@ -43,27 +43,24 @@ const Table = ({
     location.pathname === '/profile' ||
     location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
     
-  // Get toko_id from userData
-  const toko_id = userData?.tokoId;
+    const toko_id = userData?.tokoId;
+      
+    const themeColor = isAbsensiRoute
+      ? (!toko_id 
+          ? "biruTua" 
+          : toko_id === 1 
+            ? "coklatTua" 
+            : toko_id === 2 
+              ? "primary" 
+              : "hitam")
+      : (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+        ? 'coklatTua' 
+        : (isManajer || isOwner || isFinance) 
+          ? "biruTua" 
+          : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || (toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+            ? "hitam"
+            : "primary";
   
-  // Theme color logic based on route and toko_id
-  const themeColor = isAbsensiRoute
-    ? (!toko_id 
-        ? "biruTua" 
-        : toko_id === 1 
-          ? "coklatTua" 
-          : toko_id === 2 
-            ? "primary" 
-            : "hitam")
-    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-      ? 'coklatTua' 
-      : (isManajer || isOwner || isFinance) 
-        ? "biruTua" 
-        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-          ? "hitam"
-          : "primary";
-  
-  // Map theme colors to header background colors
   const headerBgColorMap = {
     'biruTua': 'bg-biruTua',
     'coklatTua': 'bg-coklatMuda',
@@ -71,7 +68,6 @@ const Table = ({
     'primary': 'bg-pink'
   };
   
-  // Map theme colors to text colors
   const headerTextColorMap = {
     'biruTua': 'text-biruMuda',
     'coklatTua': 'text-coklatTua',
@@ -79,10 +75,8 @@ const Table = ({
     'primary': 'text-primary'
   };
   
-  // Set header background color based on theme
   const headerBgColor = bg_header || headerBgColorMap[themeColor];
   
-  // Set header text color based on theme
   const headerTextColor = text_header || headerTextColorMap[themeColor];
 
   useEffect(() => {

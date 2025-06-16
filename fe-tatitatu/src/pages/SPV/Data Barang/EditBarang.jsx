@@ -14,6 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import AlertError from "../../../components/AlertError";
+import AlertConfirm from "../../../components/AlertConfirm"; 
 
 export default function EditBarang() {
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -41,6 +42,8 @@ export default function EditBarang() {
   const [biayaTokoData, setBiayaTokoData] = useState([]);
   const toko_id = userData.userId
   const { id } = useParams();
+  const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [formData, setFormData] = useState(null);
 
   const themeColor = (isAdminGudang || isHeadGudang) 
   ? 'coklatTua' 
@@ -154,18 +157,15 @@ export default function EditBarang() {
               marginPersentase: rincian.margin_persentase,
               marginNominal: rincian.margin_nominal,
               hargaLogis: rincian.harga_logis,
-              persentaseHPP: 0 // Will be updated when biaya toko is found
+              persentaseHPP: 0 
             };
 
-            const cabang = dataCabang.find(c => c.cabang_id === rincian.cabang_id);
             const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
             if (biayaToko) {
               initialHargaPerCabang[rincian.cabang.nama_cabang].persentaseHPP = biayaToko.persentase || 0;
             }
 
-            // Process detail_rincian_biaya
             const biayaList = rincian.detail_rincian_biaya.map(detail => {
-              // Check if it's Modal entry
               if (detail.nama_biaya === "Modal") {
                 return {
                   id: detail.detail_rincian_biaya_id,
@@ -190,6 +190,39 @@ export default function EditBarang() {
             initialRincianBiaya[rincian.cabang.nama_cabang] = biayaList;
           });
 
+          // Now add entries for any cabang that doesn't already have data
+          dataCabang.forEach(cabang => {
+            const cabangName = cabang.nama_cabang;
+            
+            if (!initialHargaPerCabang[cabangName]) {
+              const biayaToko = biayaTokoData.find(biaya => biaya.cabang_id === cabang.cabang_id);
+              
+              initialHargaPerCabang[cabangName] = {
+                totalHPP: 0,
+                keuntungan: 0,
+                hargaJual: 0,
+                hargaJualIdeal: 0,
+                marginPersentase: 0,
+                marginNominal: 0,
+                hargaLogis: 0,
+                persentaseHPP: biayaToko?.persentase || 0
+              };
+            }
+            
+            if (!initialRincianBiaya[cabangName]) {
+              initialRincianBiaya[cabangName] = [{
+                id: Date.now(),
+                "Nama Biaya": "Modal",
+                "Jumlah Biaya": 0,
+                isEditable: {
+                  name: false,
+                  amount: true, 
+                },
+                isDefault: true 
+              }];
+            }
+          });
+
           setRincianBiayaPerCabang(initialRincianBiaya);
           setData(prevData => ({
             ...prevData,
@@ -199,6 +232,8 @@ export default function EditBarang() {
           // Set first cabang as selected
           if (detailData.rincian_biaya.length > 0) {
             setSelectedCabang(detailData.rincian_biaya[0].cabang.nama_cabang);
+          } else if (dataCabang.length > 0) {
+            setSelectedCabang(dataCabang[0].nama_cabang);
           }
         }
       }
@@ -398,9 +433,75 @@ export default function EditBarang() {
           value: item.nama_cabang,
         }));
         setDataCabangOptions(options);
+
+        const initialHargaPerCabang = { ...data.hargaPerCabang };
+        const initialRincianBiaya = { ...rincianBiayaPerCabang };
+
+        cabangDenganBiaya.forEach(cabang => {
+          const cabangName = cabang.nama_cabang;
+          
+          if (!initialHargaPerCabang[cabangName]) {
+            const biayaToko = biayaData.find(biaya => biaya.cabang_id === cabang.cabang_id);
+            
+            initialHargaPerCabang[cabangName] = {
+              totalHPP: 0,
+              keuntungan: 0,
+              hargaJual: 0,
+              hargaJualIdeal: 0,
+              marginPersentase: 0,
+              marginNominal: 0,
+              hargaLogis: 0,
+              persentaseHPP: biayaToko?.persentase || 0
+            };
+          }
+          
+          if (!initialRincianBiaya[cabangName]) {
+            initialRincianBiaya[cabangName] = [{
+              id: Date.now(),
+              "Nama Biaya": "Modal", 
+              "Jumlah Biaya": 0,
+              isEditable: {
+                name: false, 
+                amount: true,
+              },
+              isDefault: true 
+            }];
+          }
+        });
+
+        setData(prevData => ({
+          ...prevData,
+          hargaPerCabang: initialHargaPerCabang
+        }));
+        
+        setRincianBiayaPerCabang(initialRincianBiaya);
+
+        if (!selectedCabang && cabangDenganBiaya.length > 0) {
+          setSelectedCabang(cabangDenganBiaya[0].nama_cabang);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleCabangChange = (cabangName) => {
+    setSelectedCabang(cabangName);
+    
+    if (!rincianBiayaPerCabang[cabangName] || rincianBiayaPerCabang[cabangName].length === 0) {
+      setRincianBiayaPerCabang(prev => ({
+        ...prev,
+        [cabangName]: [{
+          id: Date.now(),
+          "Nama Biaya": "Modal",
+          "Jumlah Biaya": 0,
+          isEditable: {
+            name: false,
+            amount: true,
+          },
+          isDefault: true
+        }]
+      }));
     }
   };
 
@@ -408,9 +509,8 @@ export default function EditBarang() {
     setRincianBiayaPerCabang(prevData => {
       const cabangData = [...prevData[type]];
       
-      // Check if it's the modal row and trying to change name
       if (cabangData[rowIndex].isDefault && key === "Nama Biaya") {
-        return prevData; // Don't allow changing Modal name
+        return prevData;
       }
       
       cabangData[rowIndex] = {
@@ -424,7 +524,6 @@ export default function EditBarang() {
       };
     });
 
-    // Update calculations when any value changes
     updateCabangCalculations(type);
   };
 
@@ -476,7 +575,7 @@ export default function EditBarang() {
         if (!row) return false;
         
         if (row.isDefault) {
-          return true; // Keep Modal row
+          return true; 
         }
         return row.id !== rowId;
       });
@@ -599,7 +698,7 @@ export default function EditBarang() {
   const materialHeaders = [
     { label: "No", key: "No", align: "text-left" },
     { label: "Foto Produk", key: "Foto", align: "text-left" },
-    { label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
+{ label: "Nama Bahan", key: "Nama Bahan", align: "text-left" },
     { label: "Harga Satuan", key: "Harga Satuan", align: "text-left" },
     { label: "Kuantitas", key: "Kuantitas", align: "text-left", width:'110px' },
     { label: "Total Biaya", key: "Total Biaya", align: "text-left" },
@@ -616,125 +715,78 @@ export default function EditBarang() {
     });
   };
 
-  // Check if harga logis is at least 65% higher than harga jual ideal
-  const isHargaLogisValid = (cabang) => {
+  const isHargaLogisHigherThan65Percent = (cabang) => {
     if (isAdminGudang) {
       const hargaJualIdeal = data.hargaJualIdeal || 0;
       const hargaLogis = data.hargaLogis || 0;
       
-      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      if (hargaJualIdeal === 0) return false;
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const minRequiredPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
-      }
-      
-      return { isValid: true, message: "" };
+      return currentPercentage > minRequiredPercentage;
     } else {
       const cabangData = data.hargaPerCabang[cabang];
-      if (!cabangData) return { isValid: true, message: "" };
+      if (!cabangData) return false;
       
       const hargaJualIdeal = cabangData.hargaJualIdeal || 0;
       const hargaLogis = cabangData.hargaLogis || 0;
       
-      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      if (hargaJualIdeal === 0) return false;
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const minRequiredPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
-      }
-      
-      return { isValid: true, message: "" };
+      return currentPercentage > minRequiredPercentage;
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
+  const getWarningMessage = () => {
+    if (isAdminGudang) {
+      const hargaJualIdeal = data.hargaJualIdeal || 0;
+      const hargaLogis = data.hargaLogis || 0;
+      const currentPercentage = hargaJualIdeal > 0 ? 
+        ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100 : 0;
+      
+      return `Harga Logis saat ini ${Math.round(currentPercentage)}% lebih tinggi dari Harga Jual Ideal. Apakah Anda yakin ingin melanjutkan?`;
+    } else {
+      const overPricedCabang = [];
+      
+      Object.entries(data.hargaPerCabang).forEach(([cabangName, cabangData]) => {
+        const hargaJualIdeal = cabangData.hargaJualIdeal || 0;
+        const hargaLogis = cabangData.hargaLogis || 0;
+        
+        if (hargaJualIdeal > 0) {
+          const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
+          if (currentPercentage > 65) {
+            overPricedCabang.push({
+              name: cabangName,
+              percentage: Math.round(currentPercentage)
+            });
+          }
+        }
+      });
+      
+      if (overPricedCabang.length > 0) {
+        let message = "Harga Logis di cabang berikut melebihi 65% dari Harga Jual Ideal:\n";
+        overPricedCabang.forEach(cabang => {
+          message += `- ${cabang.name}: ${cabang.percentage}%\n`;
+        });
+        message += "\nApakah Anda yakin ingin melanjutkan?";
+        return message;
+      }
+      
+      return "";
+    }
+  };
+
+  const processFormSubmission = async (formDataToSubmit) => {
     try {
       setLoading(true);
-  
-      if (!data.info_barang["Nama Barang"]) {
-        setErrorMessage("Nama barang harus diisi");
-        setErrorAlert(true);
-        return;
-      }
-  
-      if (!data.info_barang.Kategori) {
-        setErrorMessage("Kategori harus dipilih");
-        setErrorAlert(true);
-        return;
-      }
-  
-      if (!data.info_barang["Jumlah Minimum Stok"]) {
-        setErrorMessage("Jumlah minimum stok harus diisi");
-        setErrorAlert(true);
-        return;
-      }
 
-      const formData = new FormData();
-      
       if (isAdminGudang) {
-        if (!data.info_barang["Waktu Pengerjaan"]) {
-          setErrorMessage("Waktu pengerjaan harus diisi");
-          setErrorAlert(true);
-          return;
-        }
-  
-        if (!data.hargaLogis) {
-          setErrorMessage("Harga logis harus diisi");
-          setErrorAlert(true);
-          return;
-        }
-  
-        if (materials.length === 0) {
-          setErrorMessage("Minimal harus memilih 1 bahan mentah");
-          setErrorAlert(true);
-          return;
-        }
-
-        const hargaLogisValidation = isHargaLogisValid();
-        if (!hargaLogisValidation.isValid) {
-          setErrorMessage(hargaLogisValidation.message);
-          setErrorAlert(true);
-          setLoading(false);
-          return;
-        }
-  
-formData.append('nama_barang', data.info_barang["Nama Barang"]);
-        formData.append('kategori_barang_id', data.info_barang.Kategori);
-        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
-        formData.append('keuntungan', data.keuntungan);
-        formData.append('harga_jual', data.hargaJual);
-        formData.append('harga_jual_ideal', data.hargaJualIdeal);
-        formData.append('margin_persentase', data.marginPersentase);
-        formData.append('margin_nominal', data.marginNominal);
-        formData.append('harga_logis', data.hargaLogis);
-        formData.append('total_hpp', data.totalHPP);
-
-        materials.forEach((material, index) => {
-          formData.append(`rincian_bahan[${index}][barang_mentah_id]`, material.id);
-          formData.append(`rincian_bahan[${index}][harga_satuan]`, material["Harga Satuan"]);
-          formData.append(`rincian_bahan[${index}][kuantitas]`, material["Kuantitas"]);
-          formData.append(`rincian_bahan[${index}][total_biaya]`, material["Total Biaya"]);
-        });
-  
-        if (data.info_barang.Foto instanceof File) {
-          formData.append('image', data.info_barang.Foto);
-        }
-
-        const response = await api.put(`/barang-handmade-gudang/${id}`, formData, {
+        const response = await api.put(`/barang-handmade-gudang/${id}`, formDataToSubmit, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -747,6 +799,115 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
           }, 2000);
         }
       } else {
+        const response = await api.put(`/barang-handmade/${id}`, formDataToSubmit, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        if (response.data.success) {
+          setAlertSucc(true);
+          setTimeout(() => {
+            navigate('/dataBarang/handmade');
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data');
+      setErrorAlert(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmHargaLogis = async () => {
+    setConfirmDialogOpen(false);
+    
+    if (formData) {
+      await processFormSubmission(formData);
+    }
+  };
+  
+  const handleCancelHargaLogis = () => {
+    setConfirmDialogOpen(false);
+    setFormData(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    try {
+      setLoading(true);
+  
+      if (!data.info_barang["Nama Barang"]) {
+        setErrorMessage("Nama barang harus diisi");
+        setErrorAlert(true);
+        setLoading(false);
+        return;
+      }
+  
+      if (!data.info_barang.Kategori) {
+        setErrorMessage("Kategori harus dipilih");
+        setErrorAlert(true);
+        setLoading(false);
+        return;
+      }
+  
+      if (!data.info_barang["Jumlah Minimum Stok"]) {
+        setErrorMessage("Jumlah minimum stok harus diisi");
+        setErrorAlert(true);
+        setLoading(false);
+        return;
+      }
+
+      const formDataToSubmit = new FormData();
+      
+      if (isAdminGudang) {
+        if (!data.info_barang["Waktu Pengerjaan"]) {
+          setErrorMessage("Waktu pengerjaan harus diisi");
+          setErrorAlert(true);
+          setLoading(false);
+          return;
+        }
+  
+        if (!data.hargaLogis) {
+          setErrorMessage("Harga logis harus diisi");
+          setErrorAlert(true);
+          setLoading(false);
+          return;
+        }
+  
+        if (materials.length === 0) {
+          setErrorMessage("Minimal harus memilih 1 bahan mentah");
+          setErrorAlert(true);
+          setLoading(false);
+          return;
+        }
+
+        formDataToSubmit.append('nama_barang', data.info_barang["Nama Barang"]);
+        formDataToSubmit.append('kategori_barang_id', data.info_barang.Kategori);
+        formDataToSubmit.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formDataToSubmit.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        formDataToSubmit.append('keuntungan', data.keuntungan);
+        formDataToSubmit.append('harga_jual', data.hargaJual);
+        formDataToSubmit.append('harga_jual_ideal', data.hargaJualIdeal);
+        formDataToSubmit.append('margin_persentase', data.marginPersentase);
+        formDataToSubmit.append('margin_nominal', data.marginNominal);
+        formDataToSubmit.append('harga_logis', data.hargaLogis);
+        formDataToSubmit.append('total_hpp', data.totalHPP);
+
+        materials.forEach((material, index) => {
+          formDataToSubmit.append(`rincian_bahan[${index}][barang_mentah_id]`, material.id);
+          formDataToSubmit.append(`rincian_bahan[${index}][harga_satuan]`, material["Harga Satuan"]);
+          formDataToSubmit.append(`rincian_bahan[${index}][kuantitas]`, material["Kuantitas"]);
+          formDataToSubmit.append(`rincian_bahan[${index}][total_biaya]`, material["Total Biaya"]);
+        });
+  
+        if (data.info_barang.Foto instanceof File) {
+          formDataToSubmit.append('image', data.info_barang.Foto);
+        }
+      } else {
         if (Object.keys(data.hargaPerCabang).length === 0) {
           setErrorMessage("Data cabang belum lengkap");
           setErrorAlert(true);
@@ -754,6 +915,7 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
           return;
         }
 
+        // Check if any cabang has incomplete data
         let cabangBelumLengkap = [];
         Object.keys(data.hargaPerCabang).forEach(cabangName => {
           const hargaLogis = data.hargaPerCabang[cabangName]?.hargaLogis;
@@ -761,26 +923,21 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
           if (!hargaLogis || hargaLogis <= 0) {
             cabangBelumLengkap.push(cabangName);
           }
-
-          const hargaLogisValidation = isHargaLogisValid(cabangName);
-          if (!hargaLogisValidation.isValid) {
-            cabangBelumLengkap.push(cabangName + " (harga logis belum valid)");
-          }
         });
 
         if (cabangBelumLengkap.length > 0) {
-          setErrorMessage(`Harga logis pada cabang ${cabangBelumLengkap.join(', ')} belum valid. Mohon lengkapi data tersebut.`);
+          setErrorMessage(`Harga logis pada cabang ${cabangBelumLengkap.join(', ')} belum diisi. Mohon lengkapi data tersebut.`);
           setErrorAlert(true);
           setLoading(false);
           return;
         }
 
-        formData.append('kategori_barang_id', data.info_barang.Kategori);
-        formData.append('nama_barang', data.info_barang["Nama Barang"]);
-        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formDataToSubmit.append('kategori_barang_id', data.info_barang.Kategori);
+        formDataToSubmit.append('nama_barang', data.info_barang["Nama Barang"]);
+        formDataToSubmit.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
 
         if (data.info_barang.Foto instanceof File) {
-          formData.append('image', data.info_barang.Foto);
+          formDataToSubmit.append('image', data.info_barang.Foto);
         }
   
         const rincianBiayaData = [];
@@ -791,7 +948,7 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
           const cabang = dataCabang.find((c) => c.nama_cabang === cabangName);
           const rincianBiaya = rincianBiayaPerCabang[cabangName];
       
-          if (!rincianBiaya) {
+          if (!rincianBiaya || rincianBiaya.length === 0) {
             hasError = true;
             cabangError = cabangName;
             return;
@@ -829,45 +986,53 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
         }
       
         rincianBiayaData.forEach((biaya, index) => {
-          formData.append(`rincian_biaya[${index}][cabang_id]`, biaya.cabang_id);
-          formData.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
-          formData.append(`rincian_biaya[${index}][keuntungan]`, biaya.keuntungan);
-          formData.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
-          formData.append(`rincian_biaya[${index}][harga_jual_ideal]`, biaya.harga_jual_ideal);
-          formData.append(`rincian_biaya[${index}][margin_persentase]`, biaya.margin_persentase);
-          formData.append(`rincian_biaya[${index}][margin_nominal]`, biaya.margin_nominal);
-          formData.append(`rincian_biaya[${index}][harga_logis]`, biaya.harga_logis);
+          formDataToSubmit.append(`rincian_biaya[${index}][cabang_id]`, biaya.cabang_id);
+          formDataToSubmit.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
+          formDataToSubmit.append(`rincian_biaya[${index}][keuntungan]`, biaya.keuntungan);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_jual_ideal]`, biaya.harga_jual_ideal);
+          formDataToSubmit.append(`rincian_biaya[${index}][margin_persentase]`, biaya.margin_persentase);
+          formDataToSubmit.append(`rincian_biaya[${index}][margin_nominal]`, biaya.margin_nominal);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_logis]`, biaya.harga_logis);
         
           biaya.detail_rincian_biaya.forEach((detail, detailIndex) => {
-            formData.append(
+            formDataToSubmit.append(
               `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][nama_biaya]`,
               detail.nama_biaya || ""
             );
-            formData.append(
+            formDataToSubmit.append(
               `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][jumlah_biaya]`,
               detail.jumlah_biaya || 0
             );
           });
         });
-  
-        const response = await api.put(`/barang-handmade/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      }
+      let needConfirmation = false;
+      
+      if (isAdminGudang) {
+        needConfirmation = isHargaLogisHigherThan65Percent();
+      } else {
+        // Check all cabang
+        Object.keys(data.hargaPerCabang).forEach(cabangName => {
+          if (isHargaLogisHigherThan65Percent(cabangName)) {
+            needConfirmation = true;
+          }
         });
-  
-        if (response.data.success) {
-          setAlertSucc(true);
-          setTimeout(() => {
-            navigate('/dataBarang/handmade');
-          }, 2000);
-        }
+      }
+      
+      if (needConfirmation) {
+        // Store the form data for later use and show confirmation dialog
+        setFormData(formDataToSubmit);
+        setConfirmDialogOpen(true);
+        setLoading(false);
+      } else {
+        // If no confirmation needed, proceed with submission
+        await processFormSubmission(formDataToSubmit);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat memperbarui data');
       setErrorAlert(true);
-    } finally {
       setLoading(false);
     }
   };
@@ -888,7 +1053,6 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
       fetchDetailBarang();
     }
   }, [id, dataCabang, isAdminGudang]);
-
   return (
     <LayoutWithNav
       menuItems={menuItems}
@@ -1107,9 +1271,6 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
                       <div className="flex justify-between items-center pt-1">
                         <div>
                           <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                          {!isHargaLogisValid().isValid && (
-                            <p className="text-red-500 text-sm">{isHargaLogisValid().message}</p>
-                          )}
                         </div>
                         <div className="ps-10">
                           <Input
@@ -1133,7 +1294,7 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
                         <ButtonDropdown
                           label={selectedCabang}
                           options={dataCabangOptions}
-                          onSelect={setSelectedCabang}
+                          onSelect={handleCabangChange}
                           selectedStore={selectedCabang}
                           icon={
                             <svg className={`w-6 h-6 text-${themeColor}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1145,7 +1306,7 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
                     </div>
                   </section>
 
-                  {selectedCabang && rincianBiayaPerCabang[selectedCabang] && (
+                  {selectedCabang && (
                     <>
                      <section className="pt-5">
                         <p className="font-bold">Rincian Harga Pokok Penjualan (HPP)</p>
@@ -1239,9 +1400,6 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
                           <div className="flex justify-between items-center pt-1">
                             <div>
                               <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                              {!isHargaLogisValid(selectedCabang).isValid && (
-                                <p className="text-red-500 text-sm">{isHargaLogisValid(selectedCabang).message}</p>
-                              )}
                             </div>
                             <div className="ps-10">
                               <Input
@@ -1315,7 +1473,7 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
                       </div>
 
                       {/* Selected count */}
-<div className="flex items-center space-x-4 flex-shrink-0">
+                      <div className="flex items-center space-x-4 flex-shrink-0">
                         <div className="flex items-center gap-2">
                           <p className={`text-${themeColor} font-semibold`}>
                             Terpilih {selectedMaterial.reduce((sum, item) => sum + item.count, 0)}
@@ -1417,7 +1575,18 @@ formData.append('nama_barang', data.info_barang["Nama Barang"]);
             onConfirm={() => setErrorAlert(false)}
         />
       )}
+
+      {/* konfirmasi lebih dari 655 */}
+      {isConfirmDialogOpen && (
+        <AlertConfirm
+          title="Konfirmasi Harga Logis"
+          description={getWarningMessage()}
+          confirmLabel="Ya, Saya Yakin"
+          cancelLabel="Batal"
+          onConfirm={handleConfirmHargaLogis}
+          onCancel={handleCancelHargaLogis}
+        />
+      )}
     </LayoutWithNav>
   );
 }
-        

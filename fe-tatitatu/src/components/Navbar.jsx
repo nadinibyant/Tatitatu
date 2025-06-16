@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "./Button";
 import Modal from "../pages/Manajer/Catatan/Modal";
 import api from "../utils/api";
-import { User } from "lucide-react"; // Import User icon from lucide-react
+import { User } from "lucide-react"; 
+import { useMenuTheme } from "../data/menu";
 
 const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = false}) => {
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -28,7 +29,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const [profileImageError, setProfileImageError] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const {updateMenuIcons } = useMenuTheme();
   const isAbsensiRoute = 
     location.pathname === '/absensi-karyawan' || 
     location.pathname === '/absensi-karyawan-transport' || 
@@ -38,7 +39,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
     location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
   
   const toko_id = userData?.tokoId;
-  
+    
   const themeColor = isAbsensiRoute
     ? (!toko_id 
         ? "biruTua" 
@@ -47,11 +48,12 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
           : toko_id === 2 
             ? "primary" 
             : "hitam")
-    : (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
+    : (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
       ? 'coklatTua' 
       : (isManajer || isOwner || isFinance) 
         ? "biruTua" 
-        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+          (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
           ? "hitam"
           : "primary";
     
@@ -200,21 +202,29 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   }, [isOwner, isAdminGudang, isHeadGudang, isAdmin, isKasirToko, userData?.userId, userData?.tokoId]);
 
 
-const getNotificationIcon = () => {
-  if (isAdminGudang || isHeadGudang) {
-    return "/Icon Warna/dataBarang_gudang.svg";
-  }
-  else if (isOwner) {
-    return "/Icon Warna/email_non.svg";
-  }
-  else if (isManajer) {
-    return "/Icon Warna/dataBarang_non.svg";
-  } else if(isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
-    return "/Icon Warna/dataBarang_toko2.svg";
-  } else {
-    return "/Icon Warna/dataBarang.svg";
-  }
-};
+  const getTokoIcon = () => {
+    if (themeColor === 'coklatTua') {
+      return "/Icon Warna/toko_gudang.svg";
+    } else if (themeColor === 'biruTua') {
+      return "/Icon Warna/toko_non.svg";
+    } else if (themeColor === 'hitam') {
+      return "/Icon Warna/toko_toko2.svg";
+    } else {
+      return "/Icon Warna/toko.svg"; 
+    }
+  };
+
+  const getNotificationIcon = () => {
+    if (themeColor === 'coklatTua') {
+      return "/Icon Warna/dataBarang_gudang.svg";
+    } else if (themeColor === 'biruTua') {
+      return "/Icon Warna/dataBarang_non.svg";
+    } else if (themeColor === 'hitam') {
+      return "/Icon Warna/dataBarang_toko2.svg";
+    } else {
+      return "/Icon Warna/dataBarang.svg"; 
+    }
+  };
 
   const toggleNotifModal = () => {
     setNotifModalPosition({
@@ -241,7 +251,6 @@ const getNotificationIcon = () => {
   }, [isNotifModalOpen]);
 
   useEffect(() => {
-    // Update logo based on themeColor
     const getLogoBasedOnTheme = () => {
       if (themeColor === "biruTua") {
         return '/logoDBI.svg';
@@ -250,14 +259,12 @@ const getNotificationIcon = () => {
       } else if (themeColor === "coklatTua") {
         return '/logoDansa.svg';
       } else if (themeColor === "hitam") {
-        // For hitam theme, use the API URL image
         const apiBaseUrl = import.meta.env.VITE_API_URL || '';
         const tokoId = userData?.role === 'admin' 
           ? userData?.userId 
           : userData?.tokoId;
           
         if (tokoId) {
-          // We'll fetch this later in the fetchTokoImage function
           return null;
         } else {
           return '/logo.png';
@@ -268,7 +275,6 @@ const getNotificationIcon = () => {
     };
 
     const fetchTokoImage = async () => {
-      // Only fetch from API if themeColor is "hitam"
       if (themeColor === "hitam") {
         try {
           const tokoId = userData?.role === 'admin' 
@@ -299,7 +305,6 @@ const getNotificationIcon = () => {
           setLogoSrc('/logo.png');
         }
       } else {
-        // For other themes, we can directly set the logo
         setLogoSrc(getLogoBasedOnTheme());
       }
     };
@@ -308,11 +313,10 @@ const getNotificationIcon = () => {
   }, [themeColor, userData?.role, userData?.userId, userData?.tokoId]);
 
   useEffect(() => {
-    // Reset error state when userData changes
     setProfileImageError(false);
     
     if (!userData?.image) {
-      setProfileImage(null); // No image available
+      setProfileImage(null); 
       return;
     }
 
@@ -350,7 +354,6 @@ const getNotificationIcon = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Filter menu options berdasarkan role
   const filteredUserOptions = isLogoutOnly 
     ? userOptions.filter(option => option.label === 'Logout') 
     : userOptions;
@@ -362,6 +365,8 @@ const getNotificationIcon = () => {
       if (response.data.success) {
         localStorage.removeItem('userData');
         localStorage.removeItem('token');
+        
+        updateMenuIcons();
 
         navigate('/login');
       } else {
@@ -433,7 +438,6 @@ const getNotificationIcon = () => {
             ))}
           </div>
         ) : isManajer ? (
-          // Tampilan khusus untuk manager
           <div className="divide-y divide-gray-200">
             {combinedStockNotifications.map((notif, index) => (
               <div key={index} className="py-4 first:pt-0">
@@ -468,11 +472,14 @@ const getNotificationIcon = () => {
                   <div className="flex-shrink-0 mt-1">
                     <div className={`bg-${themeColor} bg-opacity-10 w-6 h-6 rounded-full flex items-center justify-center`}>
                       <img 
-                        src={(isAdminGudang || isHeadGudang) 
-                          ? "/Icon Warna/dataBarang_gudang.svg" 
-                          : (isAdmin && (userData?.userId !== 1 || userData?.userId !== 2))
-                            ? "/Icon Warna/dataBarang_toko2.svg" 
-                            : "/Icon Warna/dataBarang.svg"} 
+                        src={themeColor === "coklatTua"
+                          ? "/Icon Warna/dataBarang_gudang.svg"
+                          : themeColor === "biruTua"
+                            ? "/Icon Warna/dataBarang_non.svg"
+                            : themeColor === "hitam"
+                              ? "/Icon Warna/dataBarang_toko2.svg"
+                              : "/Icon Warna/dataBarang.svg"
+                        } 
                         alt="Stock Alert" 
                         className="w-4 h-4" 
                       />
@@ -615,7 +622,7 @@ const getNotificationIcon = () => {
            {isKasirToko && branchName && (
             <div className="flex items-center mr-4">
               <img 
-                src="/Icon Warna/toko.svg" 
+                src={getTokoIcon()} 
                 alt="Toko Icon" 
                 className="w-6 h-6 mr-2"
               />

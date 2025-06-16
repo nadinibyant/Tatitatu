@@ -38,14 +38,15 @@ export default function MasterKategori() {
     const isManajer = userDataLogin?.role === 'manajer';
     const isAdmin = userDataLogin?.role === 'admin';
     const isFinance = userDataLogin?.role === 'finance'
-    
-    const themeColor = (isAdminGudang || isHeadGudang) 
-    ? 'coklatTua' 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? "hitam"
-        : "primary";
+    const tokoId = userDataLogin?.toko_id;
+
+    const themeColor = (isAdminGudang || isHeadGudang || tokoId === 1) 
+        ? 'coklatTua' 
+        : (isManajer || isOwner || isFinance) 
+        ? "biruTua" 
+        : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || (tokoId && tokoId !== 1 && tokoId !== 2)
+            ? "hitam"
+            : "primary";
 
     const [toko_id, setTokoId] = useState(null);
 

@@ -41,40 +41,45 @@ export default function StokBarang() {
     const [cabangMapping, setCabangMapping] = useState({});
     const [selectedItemDetail, setSelectedItemDetail] = useState(null);
     const toko_id = userData.userId
+    const tokoKasirToko = userData?.tokoId || 0
     const cabang_id = userData.userId
     const [tokoData, setTokoData] = useState([]);
     const [tokoMapping, setTokoMapping] = useState({});
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
 
-    const themeColor = (isAdminGudang || isHeadGudang) 
-    ? 'coklatTua' 
-    : (isManajer || isOwner || isFinance) 
-      ? "biruTua" 
-      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-        ? "hitam"
-        : "primary";
+    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || tokoKasirToko === 1) 
+        ? 'coklatTua' 
+        : (isManajer || isOwner || isFinance) 
+            ? "biruTua" 
+            : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+            (isKasirToko && tokoKasirToko !== undefined && tokoKasirToko !== null && tokoKasirToko !== 1 && tokoKasirToko !== 2))
+            ? "hitam"
+            : "primary";
 
-      const exportIcon = (isAdminGudang || isHeadGudang) ? (
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
-          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
-        </svg>
-      ) : (isManajer || isOwner || isFinance) ? (
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
-          <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
-        </svg>
-      ) : (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)) ? (
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
-        <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#2D2D2D"/>
-        </svg>     
-      ) : (
-        <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
-        </svg>
-      );
+    const exportIcon = themeColor === 'coklatTua' ? (
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+        <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#71503D"/>
+      </svg>
+    ) : themeColor === 'biruTua' ? (
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+        <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#023F80"/>
+      </svg>
+    ) : themeColor === 'hitam' ? (
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+      <path d="M1.37423 20L0 18.6012L2.89571 15.7055H0.687116V13.7423H6.23313V19.2883H4.26994V17.1043L1.37423 20ZM8.19632 19.6319V11.7791H0.343558V0H10.1595L16.0491 5.88957V19.6319H8.19632ZM9.17791 6.87117H14.0859L9.17791 1.96319V6.87117Z" fill="#2D2D2D"/>
+      </svg>     
+    ) : (
+      <svg width="17" height="20" viewBox="0 0 17 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1.44845 20L0.0742188 18.6012L2.96992 15.7055H0.761335V13.7423H6.30735V19.2883H4.34416V17.1043L1.44845 20ZM8.27054 19.6319V11.7791H0.417777V0H10.2337L16.1233 5.88957V19.6319H8.27054ZM9.25213 6.87117H14.1601L9.25213 1.96319V6.87117Z" fill="#7B0C42" />
+      </svg>
+    );
 
     const getTokoIconPath = (baseIconName) => {
-        if (isManajer || isOwner || isFinance) {
+        if (themeColor === 'biruTua') {
             return `/icon/${baseIconName}_non.svg`;
-        } else if (isAdmin && (userData?.userId !== 1 && userData?.userId !== 2)){
+        } else if (themeColor === 'coklatTua') {
+            return `/icon/${baseIconName}_gudang.svg`;
+        } else if (themeColor === 'hitam') {
             return `/icon/${baseIconName}_toko2.svg`;
         } else {
             return `/icon/${baseIconName}.svg`;

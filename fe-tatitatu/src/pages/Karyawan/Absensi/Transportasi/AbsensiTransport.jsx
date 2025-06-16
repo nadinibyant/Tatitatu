@@ -12,15 +12,26 @@ import { useNavigate } from "react-router-dom";
 import api from "../../../../utils/api";
 
 export default function AbsensiKaryawan() {
-    // State Management
     const userData = JSON.parse(localStorage.getItem('userData'))
+    const toko_id = userData?.tokoId
     const karyawan_id = userData.userId
+    
+    const isTimHybird = userData?.role === 'timhybrid';
+    
+    const themeColor = !toko_id 
+        ? "biruTua" 
+        : toko_id === 1 
+            ? "coklatTua" 
+            : toko_id === 2 
+                ? "primary" 
+                : "hitam";
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         foto: null,
         tanggal: '',
         lokasi: 'Lokasi',
-        status: ''
+        status: isTimHybird ? 'Default' : '', 
+        notes: '' 
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -75,7 +86,8 @@ export default function AbsensiKaryawan() {
         { label: "Tanggal", key: "tanggal", align: "text-left" },
         { label: "Foto", key: "foto", align: "text-left" },
         { label: "Lokasi", key: "lokasi", align: "text-left" },
-        { label: "Status", key: "status", align: "text-left" }
+        ...(!isTimHybird ? [{ label: "Status", key: "status", align: "text-left" }] : []),
+        ...(isTimHybird ? [{ label: "Notes", key: "notes", align: "text-left" }] : [])
     ];
 
     const StatusBadge = ({ status }) => {
@@ -83,8 +95,8 @@ export default function AbsensiKaryawan() {
             <span 
                 className={`px-4 py-1 rounded-md text-sm font-medium inline-block min-w-[100px] text-center
                     ${status === 'Antar' 
-                        ? 'bg-pink text-primary border border-red-200' 
-                        : 'bg-primary text-white'
+                        ? `bg-pink text-${themeColor} border border-red-200` 
+                        : `bg-${themeColor} text-white`
                     }`}
             >
                 {status}
@@ -105,7 +117,8 @@ export default function AbsensiKaryawan() {
             foto: null,
             tanggal: '',
             lokasi: '',
-            status: ''
+            status: isTimHybird ? 'Default' : '', 
+            notes: ''
         });
         setShowModal(true);
     };
@@ -117,7 +130,11 @@ export default function AbsensiKaryawan() {
 
     const handleAcc = () => {
         setModalSucc(false);
-        navigate('/absensi-karyawan-transport');
+        if (isTimHybird) {
+            navigate('/absensi-tim-hybrid');
+        } else {
+            navigate('/absensi-karyawan-transport');
+        }
     };
 
     const validateForm = () => {
@@ -131,12 +148,12 @@ export default function AbsensiKaryawan() {
             errors.push('Tanggal harus diisi');
         }
         
-        // if (!formData.lokasi) {
-        //     errors.push('Lokasi harus diisi');
-        // }
-        
-        if (!formData.status) {
+        if (!isTimHybird && !formData.status) {
             errors.push('Status harus dipilih');
+        }
+        
+        if (isTimHybird && !formData.notes) {
+            errors.push('Notes harus diisi');
         }
 
         if (formData.foto && !['image/jpeg', 'image/png', 'image/jpg'].includes(formData.foto.type)) {
@@ -192,7 +209,8 @@ export default function AbsensiKaryawan() {
                             </svg>
                         </a>
                     ),
-                    status: <StatusBadge status={item.status} />
+                    status: <StatusBadge status={item.status} />,
+                    ...(isTimHybird && { notes: item.note || '-' })
                 }));
                 
                 setData(formattedData);
@@ -231,7 +249,12 @@ export default function AbsensiKaryawan() {
             submitData.append('tanggal', formData.tanggal);
             submitData.append('lokasi', "Lokasi");
             submitData.append('status', formData.status);
-            submitData.append('karyawan_id', karyawan_id)
+            submitData.append('karyawan_id', karyawan_id);
+            
+            if (isTimHybird) {
+                submitData.append('note', formData.notes);
+            }
+            
             if (currentLocation && currentLocation.lat && currentLocation.lng) {
                 submitData.append('lat', currentLocation.lat);
                 submitData.append('lng', currentLocation.lng);
@@ -265,7 +288,7 @@ export default function AbsensiKaryawan() {
                 {/* Header Section */}
                 <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
                     <div className="left w-full md:w-auto">
-                        <p className="text-primary text-base font-bold">Data Absensi</p>
+                        <p className={`text-${themeColor} text-base font-bold`}>Data Absensi</p>
                     </div>
 
                     <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
@@ -286,8 +309,8 @@ export default function AbsensiKaryawan() {
                                         />
                                     </svg>
                                 }
-                                bgColor="bg-primary"
-                                hoverColor="hover:bg-opacity-90 hover:border hover:border-primary hover:text-white"
+                                bgColor={`bg-${themeColor}`}
+                                hoverColor={`hover:bg-opacity-90 hover:border hover:border-${themeColor} hover:text-white`}
                                 textColor="text-white"
                                 onClick={handleAdd}
                             />
@@ -363,19 +386,36 @@ export default function AbsensiKaryawan() {
                                                     required={true}
                                                 />
                                             </div>
-                                            <div className="w-full sm:w-1/2">
-                                                <InputDropdown
-                                                    label="Status"
-                                                    options={statusOptions}
-                                                    value={formData.status}
-                                                    onSelect={(selected) => setFormData({...formData, status: selected.value})}
-                                                    required={true}
-                                                    width="w-full"
-                                                    name="status"
-                                                    error={!formData.status && error}
-                                                    errorMessage="Status harus dipilih"
-                                                />
-                                            </div>
+                                            
+                                            {!isTimHybird && (
+                                                <div className="w-full sm:w-1/2">
+                                                    <InputDropdown
+                                                        label="Status"
+                                                        options={statusOptions}
+                                                        value={formData.status}
+                                                        onSelect={(selected) => setFormData({...formData, status: selected.value})}
+                                                        required={true}
+                                                        width="w-full"
+                                                        name="status"
+                                                        error={!formData.status && error}
+                                                        errorMessage="Status harus dipilih"
+                                                    />
+                                                </div>
+                                            )}
+                                            
+                                            {isTimHybird && (
+                                                <div className="w-full sm:w-1/2">
+                                                    <Input
+                                                        label="Notes"
+                                                        value={formData.notes}
+                                                        onChange={(value) => setFormData({...formData, notes: value})}
+                                                        width="w-full"
+                                                        required={true}
+                                                        error={!formData.notes && error}
+                                                        errorMessage="Notes harus diisi"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-6 pt-3 border-t">
@@ -388,7 +428,7 @@ export default function AbsensiKaryawan() {
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 font-medium"
+                                                className={`w-full sm:w-auto px-4 py-2 bg-${themeColor} text-white rounded-lg hover:bg-opacity-90 font-medium`}
                                                 disabled={isLoading}
                                             >
                                                 {isLoading ? 'Menyimpan...' : 'Simpan'}
@@ -401,7 +441,6 @@ export default function AbsensiKaryawan() {
                     </div>
                 )}
 
-                {/* Success Modal */}
                 {isModalSucc && (
                     <AlertSuccess
                         title="Berhasil!!"
@@ -411,10 +450,8 @@ export default function AbsensiKaryawan() {
                     />
                 )}
     
-                {/* Loading Spinner */}
                 {isLoading && <Spinner />}
 
-                {/* Error Alert */}
                 {error && (
                     <AlertError
                         title="Gagal"

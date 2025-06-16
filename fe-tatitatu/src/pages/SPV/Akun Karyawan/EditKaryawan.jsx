@@ -36,7 +36,8 @@ export default function EditKaryawan(){
       const jenisKaryawanOptions = [
         { value: 'Umum', label: 'Umum' },
         { value: 'Produksi', label: 'Produksi' },
-        { value: 'Transportasi', label: 'Khusus' }
+        { value: 'Transportasi', label: 'Khusus' },
+        { value: 'Tim Hybrid', label: 'Tim Hybrid' }
       ];
       const [photoPreview, setPhotoPreview] = useState(null);
       const [branchList, setBranchList] = useState([]);
@@ -109,6 +110,7 @@ export default function EditKaryawan(){
                 email: data.email || '',
                 name: data.nama_karyawan || '',
                 password: data.detail_password, 
+                passwordHash: data.password,
                 division: data.divisi_karyawan_id,  
                 // store: isManajer ? 'DBI' : data.toko_id,
                 store: '',
@@ -143,7 +145,6 @@ export default function EditKaryawan(){
     };
 
     const fetchStore = async () => {
-        // Skip fetching store for manager role
         if (isManajer) {
             setFormData(prev => ({
                 ...prev,
@@ -171,9 +172,7 @@ export default function EditKaryawan(){
         }
     };
 
-    // Fetch cabang
     const fetchBranches = async () => {
-        // Skip fetching branches for manager role
         if (isManajer) {
             return;
         }
@@ -265,18 +264,21 @@ export default function EditKaryawan(){
             try {
                 setLoading(true);
                 const formDataToSend = new FormData();
-    
+
                 if (formData.photo) {
                     formDataToSend.append('image', formData.photo);
                 }
                 
                 formDataToSend.append('email', formData.email);
                 formDataToSend.append('nama_karyawan', formData.name);
-                formDataToSend.append('password', formData.password);
+                
+                if (isPasswordChanged && formData.password) {
+                    formDataToSend.append('password', formData.password);
+                }
+            
                 formDataToSend.append('divisi_karyawan_id', formData.division);
                 formDataToSend.append('jenis_karyawan', formData.jenis_karyawan); 
-    
-                // Only append branch_id and toko_id for non-manager roles
+
                 if (!isManajer) {
                     if (!isHeadGudang) {
                         formDataToSend.append('cabang_id', formData.branch);
@@ -295,19 +297,18 @@ export default function EditKaryawan(){
                     formDataToSend.append('waktu_kerja_sebulan_menit', null);
                 }
                 
-                // Add the label from TimeInput component
                 formDataToSend.append('label', formData.workHours.label || '');
                 
                 formDataToSend.append('nomor_handphone', formData.phone);
-    
+
                 const response = await api.put(`/karyawan/${id}`, formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
                 });
-    
+
                 console.log(response)
-    
+
                 if (response.data.success) {
                     setAlertSucc(true);
                     setTimeout(() => {

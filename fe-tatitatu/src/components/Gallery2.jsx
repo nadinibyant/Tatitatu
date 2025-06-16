@@ -3,19 +3,24 @@ import React, { useState } from "react";
 const GalleryItem = ({ item, onSelect, selectionCount, showStockAlert, enableStockValidation }) => {
   const userData = JSON.parse(localStorage.getItem('userData'))
   const role = userData?.role
-  const getThemeColor = () => {
-    if (role === "admingudang" || role === "headgudang") {
-      return "coklatTua";
-    } else if (role === "manajer" || role === "finance" || role === "owner") {
-      return "biruTua";
-    } else if(role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2))  {
-      return "hitam";
-    } else {
-      return "primary";
-    }
-  };
+  const isAdminGudang = role === 'admingudang';
+  const isHeadGudang = role === 'headgudang';
+  const isKasirToko = role === 'kasirtoko';
+  const isManajer = role === 'manajer';
+  const isOwner = role === 'owner';
+  const isFinance = role === 'finance';
+  const isAdmin = role === 'admin';
+  const isKaryawanProduksi = role === 'karyawanproduksi';
+  const toko_id = userData?.tokoId;
 
-  const themeColor = getThemeColor();
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+         (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+        ? "hitam"
+        : "primary";
   
   const handleSelect = () => {
     const newCount = (selectionCount || 0) + 1;

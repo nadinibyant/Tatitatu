@@ -36,7 +36,7 @@ export default function PembelianStok() {
     const toko_id = userData.userId
 
     const themeColor = (isAdminGudang || isHeadGudang) 
-    ? 'coklatTua' 
+    ? "coklatTua"
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
       : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)

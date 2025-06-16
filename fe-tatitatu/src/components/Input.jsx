@@ -19,17 +19,27 @@ const Input = ({
   const [showPassword, setShowPassword] = useState(false);
   const userData = JSON.parse(localStorage.getItem('userData'))
   const role = userData?.role
+  const isAdminGudang = role === 'admingudang';
+  const isHeadGudang = role === 'headgudang';
+  const isKasirToko = role === 'kasirtoko';
+  const isManajer = role === 'manajer';
+  const isOwner = role === 'owner';
+  const isFinance = role === 'finance';
+  const isAdmin = role === 'admin';
+  const isKaryawanProduksi = role === 'karyawanproduksi';
+  const toko_id = userData?.tokoId;
+
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+         (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+        ? "hitam"
+        : "primary";
 
   const getRingColor = () => {
-    if (role === "admingudang" || role === "headgudang" || role === 'karyawanproduksi') {
-      return "focus:ring-1 focus:ring-coklatTua focus:outline-none";
-    } else if (role === "manajer" || role === "finance" || role === "owner") {
-      return "focus:ring-1 focus:ring-biruTua focus:outline-none";
-    } else if (role === 'admin' && (userData?.userId !== 1 && userData?.userId !== 2)){
-      return "focus:ring-1 focus:ring-hitam focus:outline-none";
-    } else {
-      return "focus:ring-1 focus:ring-primary focus:outline-none";
-    }
+    return `focus:ring-1 focus:ring-${themeColor} focus:outline-none`;
   };
 
   const ringColor = getRingColor();

@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import AlertSuccess from "../../../components/AlertSuccess";
 import Spinner from "../../../components/Spinner";
 import AlertError from "../../../components/AlertError";
+import AlertConfirm from "../../../components/AlertConfirm";
 
 export default function TambahBarang() {
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -39,7 +40,10 @@ export default function TambahBarang() {
   const [errorMessage, setErrorMessage] = useState('');
   const [biayaGudangData, setBiayaGudangData] = useState(null);
   const [biayaTokoData, setBiayaTokoData] = useState([]);
-  const toko_id = userData.userId
+  const toko_id = userData.userId;
+  // New state for confirmation dialog
+  const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [formData, setFormData] = useState(null);
 
 
   const themeColor = (isAdminGudang || isHeadGudang) 
@@ -524,45 +528,97 @@ export default function TambahBarang() {
     setMaterials(updatedMaterials);
   };
 
-  // Function to check if harga logis is at least 65% higher than harga jual ideal
-  const isHargaLogisValid = (cabang) => {
+  const isHargaLogisHigherThan65Percent = (cabang) => {
     if (isAdminGudang) {
       const hargaJualIdeal = data.hargaJualIdeal || 0;
       const hargaLogis = data.hargaLogis || 0;
       
-      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      if (hargaJualIdeal === 0) return false;
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const minRequiredPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
-      }
-      
-      return { isValid: true, message: "" };
+      return currentPercentage > minRequiredPercentage;
     } else {
       const cabangData = data.hargaPerCabang[cabang];
-      if (!cabangData) return { isValid: true, message: "" };
+      if (!cabangData) return false;
       
       const hargaJualIdeal = cabangData.hargaJualIdeal || 0;
       const hargaLogis = cabangData.hargaLogis || 0;
       
-      if (hargaJualIdeal === 0) return { isValid: true, message: "" };
+      if (hargaJualIdeal === 0) return false;
       
-      const minRequiredPercentage = 65; // 65% higher than harga jual ideal
+      const minRequiredPercentage = 65; 
       const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
       
-      if (currentPercentage < minRequiredPercentage) {
-        return { 
-          isValid: false, 
-          message: `*Harga Logis Minimal ${minRequiredPercentage}% lebih tinggi dari harga jual ideal` 
-        };
+      return currentPercentage > minRequiredPercentage;
+    }
+  };
+
+  const getWarningMessage = () => {
+    if (isAdminGudang) {
+      const hargaJualIdeal = data.hargaJualIdeal || 0;
+      const hargaLogis = data.hargaLogis || 0;
+      const currentPercentage = hargaJualIdeal > 0 ? 
+        ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100 : 0;
+      
+      return `Harga Logis berikut melebihi 65% dari Harga Jual Ideal. Apakah Anda yakin ingin melanjutkan?`;
+    } else {
+      const overPricedCabang = [];
+      
+      Object.entries(data.hargaPerCabang).forEach(([cabangName, cabangData]) => {
+        const hargaJualIdeal = cabangData.hargaJualIdeal || 0;
+        const hargaLogis = cabangData.hargaLogis || 0;
+        
+        if (hargaJualIdeal > 0) {
+          const currentPercentage = ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100;
+          if (currentPercentage > 65) {
+            overPricedCabang.push({
+              name: cabangName,
+              percentage: Math.round(currentPercentage)
+            });
+          }
+        }
+      });
+      
+      if (overPricedCabang.length > 0) {
+        let message = "Harga Logis di cabang berikut melebihi 65% dari Harga Jual Ideal:\n";
+        overPricedCabang.forEach(cabang => {
+          message += `- ${cabang.name}: ${cabang.percentage}%\n`;
+        });
+        message += "\nApakah Anda yakin ingin melanjutkan?";
+        return message;
       }
       
-      return { isValid: true, message: "" };
+      return "";
+    }
+  };
+
+  const processFormSubmission = async (formDataToSubmit) => {
+    try {
+      setLoading(true);
+
+      const endpoint = isAdminGudang ? '/barang-handmade-gudang' : '/barang-handmade';
+      
+      const response = await api.post(endpoint, formDataToSubmit, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (response.data.success) {
+        setAlertSucc(true);
+        setTimeout(() => {
+          navigate('/dataBarang/handmade');
+        }, 2000);
+      } else {
+        setErrorMessage(response.data.message);
+        setErrorAlert(true);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat menyimpan data');
+      setErrorAlert(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -570,8 +626,6 @@ export default function TambahBarang() {
     e.preventDefault();
   
     try {
-      setLoading(true);
-  
       if (!data.info_barang.Foto) {
         setErrorMessage("Foto barang belum dipilih. Harap unggah foto terlebih dahulu.");
         setErrorAlert(true);
@@ -596,7 +650,7 @@ export default function TambahBarang() {
         return;
       }
   
-      const formData = new FormData();
+      const formDataToSubmit = new FormData();
       
       if (isAdminGudang) {
         if (!data.info_barang["Waktu Pengerjaan"]) {
@@ -611,46 +665,38 @@ export default function TambahBarang() {
           return;
         }
         
-        // Validate harga logis
-        const hargaLogisValidation = isHargaLogisValid();
-        if (!hargaLogisValidation.isValid) {
-          setErrorMessage(hargaLogisValidation.message);
-          setErrorAlert(true);
-          return;
-        }
-  
         if (materials.length === 0) {
           setErrorMessage("Minimal harus memilih 1 bahan mentah");
           setErrorAlert(true);
           return;
         }
   
-        formData.append('image', data.info_barang.Foto);
-        formData.append('nama_barang', data.info_barang["Nama Barang"]);
-        formData.append('kategori_barang_id', data.info_barang.Kategori);
-        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-        formData.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
-        formData.append('keuntungan', data.keuntungan);
-        formData.append('harga_jual', data.hargaJualIdeal); // Set to hargaJualIdeal as per requirement
-        formData.append('total_hpp', data.totalHPP);
-        formData.append('harga_jual_ideal', data.hargaJualIdeal);
-        formData.append('margin_persentase', data.marginPersentase);
-        formData.append('margin_nominal', data.marginNominal);
-        formData.append('harga_logis', data.hargaLogis);
+        formDataToSubmit.append('image', data.info_barang.Foto);
+        formDataToSubmit.append('nama_barang', data.info_barang["Nama Barang"]);
+        formDataToSubmit.append('kategori_barang_id', data.info_barang.Kategori);
+        formDataToSubmit.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formDataToSubmit.append('waktu_pengerjaan', data.info_barang["Waktu Pengerjaan"]);
+        formDataToSubmit.append('keuntungan', data.keuntungan);
+        formDataToSubmit.append('harga_jual', data.hargaJualIdeal); 
+        formDataToSubmit.append('total_hpp', data.totalHPP);
+        formDataToSubmit.append('harga_jual_ideal', data.hargaJualIdeal);
+        formDataToSubmit.append('margin_persentase', data.marginPersentase);
+        formDataToSubmit.append('margin_nominal', data.marginNominal);
+        formDataToSubmit.append('harga_logis', data.hargaLogis);
   
         materials.forEach((material, index) => {
-          formData.append(`rincian_bahan[${index}][barang_mentah_id]`, material.id);
-          formData.append(`rincian_bahan[${index}][harga_satuan]`, material["Harga Satuan"]);
-          formData.append(`rincian_bahan[${index}][kuantitas]`, material["Kuantitas"]);
-          formData.append(`rincian_bahan[${index}][total_biaya]`, material["Total Biaya"]);
+          formDataToSubmit.append(`rincian_bahan[${index}][barang_mentah_id]`, material.id);
+          formDataToSubmit.append(`rincian_bahan[${index}][harga_satuan]`, material["Harga Satuan"]);
+          formDataToSubmit.append(`rincian_bahan[${index}][kuantitas]`, material["Kuantitas"]);
+          formDataToSubmit.append(`rincian_bahan[${index}][total_biaya]`, material["Total Biaya"]);
         });
   
       } else {
-        formData.append('image', data.info_barang.Foto);
-        formData.append('kategori_barang_id', data.info_barang.Kategori);
-        formData.append('nama_barang', data.info_barang["Nama Barang"]);
-        formData.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
-        formData.append('toko_id', toko_id)
+formDataToSubmit.append('image', data.info_barang.Foto);
+        formDataToSubmit.append('kategori_barang_id', data.info_barang.Kategori);
+        formDataToSubmit.append('nama_barang', data.info_barang["Nama Barang"]);
+        formDataToSubmit.append('jumlah_minimum_stok', data.info_barang["Jumlah Minimum Stok"]);
+        formDataToSubmit.append('toko_id', toko_id)
   
         const rincianBiayaData = [];
         let hasError = false;
@@ -679,7 +725,7 @@ export default function TambahBarang() {
               cabang_id: cabang.cabang_id,
               total_hpp: cabangData.totalHPP || 0,
               keuntungan: cabangData.keuntungan || 0,
-              harga_jual: cabangData.hargaJualIdeal || 0, // Set to hargaJualIdeal as per requirement
+              harga_jual: cabangData.hargaJualIdeal || 0,
               harga_jual_ideal: cabangData.hargaJualIdeal || 0,
               margin_persentase: cabangData.marginPersentase || 0,
               margin_nominal: cabangData.marginNominal || 0,
@@ -700,53 +746,67 @@ export default function TambahBarang() {
         }
       
         rincianBiayaData.forEach((biaya, index) => {
-          formData.append(`rincian_biaya[${index}][cabang_id]`, biaya.cabang_id);
-          formData.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
-          formData.append(`rincian_biaya[${index}][keuntungan]`, biaya.keuntungan);
-          formData.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
-          formData.append(`rincian_biaya[${index}][harga_jual_ideal]`, biaya.harga_jual_ideal);
-          formData.append(`rincian_biaya[${index}][margin_persentase]`, biaya.margin_persentase);
-          formData.append(`rincian_biaya[${index}][margin_nominal]`, biaya.margin_nominal);
-          formData.append(`rincian_biaya[${index}][harga_logis]`, biaya.harga_logis);
+          formDataToSubmit.append(`rincian_biaya[${index}][cabang_id]`, biaya.cabang_id);
+          formDataToSubmit.append(`rincian_biaya[${index}][total_hpp]`, biaya.total_hpp);
+          formDataToSubmit.append(`rincian_biaya[${index}][keuntungan]`, biaya.keuntungan);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_jual]`, biaya.harga_jual);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_jual_ideal]`, biaya.harga_jual_ideal);
+          formDataToSubmit.append(`rincian_biaya[${index}][margin_persentase]`, biaya.margin_persentase);
+          formDataToSubmit.append(`rincian_biaya[${index}][margin_nominal]`, biaya.margin_nominal);
+          formDataToSubmit.append(`rincian_biaya[${index}][harga_logis]`, biaya.harga_logis);
         
           biaya.detail_rincian_biaya.forEach((detail, detailIndex) => {
-            formData.append(
+            formDataToSubmit.append(
               `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][nama_biaya]`,
               detail.nama_biaya
             );
-            formData.append(
+            formDataToSubmit.append(
               `rincian_biaya[${index}][detail_rincian_biaya][${detailIndex}][jumlah_biaya]`,
               detail.jumlah_biaya
             );
           });
         });
       }
-  
-      const endpoint = isAdminGudang ? '/barang-handmade-gudang' : '/barang-handmade';
+
+      let needConfirmation = false;
       
-      const response = await api.post(endpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-  
-      if (response.data.success) {
-        setAlertSucc(true);
-        setTimeout(() => {
-          navigate('/dataBarang/handmade');
-        }, 2000);
+      if (isAdminGudang) {
+        needConfirmation = isHargaLogisHigherThan65Percent();
       } else {
-        setErrorMessage(response.data.message);
-        setErrorAlert(true);
+        Object.keys(data.hargaPerCabang).forEach(cabangName => {
+          if (isHargaLogisHigherThan65Percent(cabangName)) {
+            needConfirmation = true;
+          }
+        });
+      }
+      
+      if (needConfirmation) {
+        setFormData(formDataToSubmit);
+        setConfirmDialogOpen(true);
+      } else {
+        await processFormSubmission(formDataToSubmit);
       }
   
     } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat menyimpan data');
+      console.error('Error preparing form:', error);
+      setErrorMessage(error.response?.data?.message || 'Terjadi kesalahan saat memproses data');
       setErrorAlert(true);
-    } finally {
       setLoading(false);
     }
   };
 
+  const handleConfirmHargaLogis = async () => {
+    setConfirmDialogOpen(false);
+    
+    if (formData) {
+      await processFormSubmission(formData);
+    }
+  };
+  
+  const handleCancelHargaLogis = () => {
+    setConfirmDialogOpen(false);
+    setFormData(null);
+  };
 
   const navigate = useNavigate()
   const handleBtnCancel = () => {
@@ -773,7 +833,6 @@ export default function TambahBarang() {
                 />
               </div>
 
-              {/* Basic Info Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5">
                 <Input 
                   label={"Nomor"} 
@@ -820,7 +879,6 @@ export default function TambahBarang() {
 
               {isAdminGudang ? (
                 <>
-                  {/* Admin Gudang: Rincian Jumlah dan Bahan langsung */}
                   <section className="pt-5">
                     <p className="font-bold">Rincian Jumlah dan Bahan</p>
                     <div className="pt-3">
@@ -934,7 +992,6 @@ export default function TambahBarang() {
                     </div>
                   </section>
 
-                  {/* Admin Gudang Summary Section */}
                   <section className="mt-8 flex justify-end">
                     <div className="px-5 space-y-2">
                       <div className="flex justify-between items-center border-b pb-2">
@@ -960,9 +1017,6 @@ export default function TambahBarang() {
                       <div className="flex justify-between items-center pt-1">
                         <div>
                           <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                          {!isHargaLogisValid().isValid && (
-                            <p className="text-red-500 text-sm">{isHargaLogisValid().message}</p>
-                          )}
                         </div>
                         <div className="ps-10">
                           <Input
@@ -1092,9 +1146,6 @@ export default function TambahBarang() {
                           <div className="flex justify-between items-center pt-1">
                             <div>
                               <p className="text-md text-red-600 font-bold">Harga Logis (Harga Jual Akhir)</p>
-                              {!isHargaLogisValid(selectedCabang).isValid && (
-                                <p className="text-red-500 text-sm">{isHargaLogisValid(selectedCabang).message}</p>
-                              )}
                             </div>
                             <div className="ps-10">
                               <Input
@@ -1266,6 +1317,18 @@ export default function TambahBarang() {
           description={errorMessage}
           confirmLabel="Ok"
           onConfirm={() => setErrorAlert(false)}
+        />
+      )}  
+      
+      {/* konfirmasi harga logis besar dari 65 */}
+      {isConfirmDialogOpen && (
+        <AlertConfirm
+          title="Konfirmasi Harga Logis"
+          description={getWarningMessage()}
+          confirmLabel="Ya, Saya Yakin"
+          cancelLabel="Batal"
+          onConfirm={handleConfirmHargaLogis}
+          onCancel={handleCancelHargaLogis}
         />
       )}
     </LayoutWithNav>

@@ -3,6 +3,7 @@ import { Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import InputDropdown from '../components/InputDropdown';
+
 const AuthPages = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -21,7 +22,8 @@ const AuthPages = () => {
     { value: '7', label: 'Kasir', storedRole: 'kasirtoko' },
     { value: '8', label: 'Karyawan Umum', storedRole: 'karyawanumum' },
     { value: '10', label: 'Karyawan Produksi', storedRole: 'karyawanproduksi' },
-    { value: '11', label: 'Karyawan Khusus', storedRole: 'karyawantransportasi' }
+    { value: '11', label: 'Karyawan Khusus', storedRole: 'karyawantransportasi' },
+    { value: '9', label: 'Tim Hybrid', storedRole: 'timhybrid' },
   ];
 
   // Route mapping based on roles
@@ -35,7 +37,8 @@ const AuthPages = () => {
     'karyawantransportasi': '/absensi-karyawan-transport',
     'owner': '/dashboard',
     'finance': '/laporanKeuangan',
-    'manajer': '/dashboard'
+    'manajer': '/dashboard',
+    'timhybrid': '/absensi-tim-hybrid'
   };
 
   const handleRoleSelect = (selectedOption) => {
@@ -49,12 +52,12 @@ const AuthPages = () => {
 
     const selectedRoleObj = roles.find(r => r.value === selectedRole);
     const storedRoleName = selectedRoleObj?.storedRole || '';
-
+    
     try {
       const response = await api.post('/login', {
         email,
         password,
-        role: selectedRole 
+        role: parseInt(selectedRole, 10) // Convert string to number
       });
 
       const { data } = response;
@@ -63,8 +66,23 @@ const AuthPages = () => {
         ...data.data, 
         role: storedRoleName 
       };
+      
+      // Store user data in localStorage
       localStorage.setItem('userData', JSON.stringify(userData));
-      localStorage.setItem('token', data.data.token); 
+      localStorage.setItem('token', data.data.token);
+      
+      // Reset icon timestamp to force refresh of themed icons
+      localStorage.setItem('iconTimestamp', Date.now());
+      
+      // Dispatch a custom event to notify listeners that userData has changed
+      // This will trigger theme updates in components that listen for this event
+      window.dispatchEvent(new Event('userLogin'));
+      
+      // Also dispatch menuThemeChanged event to ensure all components update
+      const themeColor = calculateThemeColor(userData);
+      window.dispatchEvent(new CustomEvent('menuThemeChanged', { 
+        detail: themeColor 
+      }));
 
       const targetRoute = routeMapping[storedRoleName];
       if (targetRoute) {
@@ -74,16 +92,58 @@ const AuthPages = () => {
       }
       
     } catch (err) {
-      console.error(err)
+      console.error(err);
       setError('Username atau kata sandi tidak valid');
+    }
+  };
+
+  // Function to calculate theme color based on user data
+  // This should match the same logic from your menu.js file
+  const calculateThemeColor = (userData) => {
+    if (!userData) return 'primary';
+
+    const userId = userData?.userId ? Number(userData.userId) : null;
+    const isManajer = userData?.role === 'manajer';
+    const isKasirToko = userData?.role === 'kasirtoko';
+    const isAdminGudang = userData?.role === 'admingudang';
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isOwner = userData?.role === 'owner';
+    const isAdmin = userData?.role === 'admin';
+    const isFinance = userData?.role === 'finance';
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+    
+    const currentPath = window.location.pathname;
+    const isAbsensiRoute = 
+      currentPath === '/absensi-karyawan' || 
+      currentPath === '/absensi-karyawan-transport' || 
+      currentPath === '/absensi-karyawan-produksi' ||
+      currentPath.startsWith('/absensi-karyawan-produksi/tambah');
+
+    const toko_id = userData?.tokoId;
+
+    if (isAbsensiRoute) {
+      if (!toko_id) return "biruTua";
+      if (toko_id === 1) return "coklatTua";
+      if (toko_id === 2) return "primary";
+      return "hitam";
+    } else {
+      if (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) {
+        return 'coklatTua';
+      } else if (isManajer || isOwner || isFinance) {
+        return "biruTua";
+      } else if ((isAdmin && userId !== 1 && userId !== 2) || 
+                (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2)) {
+        return "hitam";
+      } else {
+        return "primary";
+      }
     }
   };
 
   return (
     <div className="min-h-screen w-full bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-4xl min-h-[600px] bg-white rounded-2xl shadow-2xl flex overflow-hidden">
-        {/* Left Side - Image/Brand Section */}
-        <div className="hidden md:flex md:w-1/2 bg-[#2D2D2D] flex-col justify-between p-12">
+        <div className="hidden md:flex md:w-1/2 bg-biruTua flex-col justify-between p-12">
           <div className="flex items-center gap-3">
             <ShoppingBag className="w-10 h-10 text-white" />
           </div>
@@ -161,7 +221,7 @@ const AuthPages = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 bg-[#2D2D2D] hover:bg-white hover:border hover:border-[#2D2D2D] hover:text-[#2D2D2D] text-white font-medium rounded-lg transition-colors duration-200"
+                className="w-full py-3 px-4 bg-biruTua hover:bg-white hover:border hover:border-biruTua hover:text-biruTua text-white font-medium rounded-lg transition-colors duration-200"
               >
                 Masuk
               </button>

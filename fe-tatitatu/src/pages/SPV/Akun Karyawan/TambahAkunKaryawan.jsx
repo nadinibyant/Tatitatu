@@ -41,7 +41,8 @@ export default function TambahAkunKaryawan(){
       const jenisKaryawanOptions = [
         { value: 'Umum', label: 'Umum' },
         { value: 'Produksi', label: 'Produksi' },
-        { value: 'Transportasi', label: 'Khusus' }
+        { value: 'Transportasi', label: 'Khusus' },
+        { value: 'Tim Hybrid', label: 'Tim Hybrid' }
       ];
 
   const [errors, setErrors] = useState({});
@@ -78,7 +79,6 @@ export default function TambahAkunKaryawan(){
     };
 
     const fetchStore = async () => {
-        // Skip fetching store data for manager role
         if (isManajer) {
             setFormData(prev => ({
                 ...prev,
@@ -107,7 +107,6 @@ export default function TambahAkunKaryawan(){
     };
 
       const fetchBranches = async () => {
-        // Skip fetching branches for manager role
         if (isManajer) {
             return;
         }
@@ -132,7 +131,6 @@ export default function TambahAkunKaryawan(){
       const fetchDivisi = async () => {
         try {
             setLoading(true)
-            // For manajer role, fetch without toko_id
             const url = isManajer ? `/divisi-karyawan` : `/divisi-karyawan?toko_id=${toko_id}`;
             const response = await api.get(url);
             if (response.data.success) {

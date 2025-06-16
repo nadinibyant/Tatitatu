@@ -49,9 +49,24 @@ export default function TambahPenjualanKasir() {
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
-    const cabang_id = userData.userId
-    const toko_id = userData.tokoId
+    const isHeadGudang = userData?.role === 'headgudang';
+    const isKasirToko = userData?.role === 'kasirtoko';
+    const isManajer = userData?.role === 'manajer';
+    const isOwner = userData?.role === 'owner';
+    const isFinance = userData?.role === 'finance';
+    const isAdmin = userData?.role === 'admin';
+    const isKaryawanProduksi = userData?.role === 'karyawanproduksi';
+    const cabang_id = userData.userId;
+    const toko_id = userData?.tokoId;
 
+    const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+         (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+        ? "hitam"
+        : "primary";
 
     const fetchPackaging = async () => {
         try {
@@ -859,8 +874,8 @@ export default function TambahPenjualanKasir() {
                                                         : btnAddBaris(index)
                                                 }
                                                 bgColor=""
-                                                hoverColor="hover:border-primary hover:border"
-                                                textColor="text-primary"
+                                                hoverColor={`hover:border-${themeColor} hover:border`}
+                                                textColor={`text-${themeColor}`}
                                             />
                                         </div>
                                     </div>
@@ -923,8 +938,8 @@ export default function TambahPenjualanKasir() {
                                         <div>
                                             <Button
                                                 label="Simpan"
-                                                bgColor="bg-primary w-full"
-                                                hoverColor="hover:bg-white hover:border-primary hover:text-black hover:border"
+                                                bgColor={`bg-${themeColor} w-full`}
+                                                hoverColor={`hover:bg-white hover:border-${themeColor} hover:text-black hover:border`}
                                                 textColor="text-white"
                                                 type="submit"
                                             />
@@ -937,7 +952,7 @@ export default function TambahPenjualanKasir() {
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                                     <div className="flex flex-col space-y-4 mb-4">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                             <div className="relative w-full sm:max-w-md">
@@ -979,7 +994,7 @@ export default function TambahPenjualanKasir() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
                                                 </button>
-                                                <p className="text-primary font-semibold">
+                                                <p className={`text-${themeColor} font-semibold`}>
                                                     Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
                                                 </p>
                                             </div>
@@ -999,7 +1014,7 @@ export default function TambahPenjualanKasir() {
                                             />
                                             <Button
                                                 label="Pilih"
-                                                bgColor="bg-primary"
+                                                bgColor={`bg-${themeColor}`}
                                                 hoverColor="hover:bg-opacity-90"
                                                 textColor="text-white"
                                                 onClick={handleModalSubmit}
@@ -1014,7 +1029,7 @@ export default function TambahPenjualanKasir() {
                                                 key={jenis}
                                                 onClick={() => setSelectedJenis(jenis)}
                                                 className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
-                                                    selectedJenis === jenis ? "text-primary border-b-2 border-primary" : "text-gray-400"
+                                                    selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
                                                 }`}
                                             >
                                                 {jenis}
@@ -1030,7 +1045,7 @@ export default function TambahPenjualanKasir() {
                                                 onClick={() => setSelectedCategory(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedCategory === kategori
-                                                        ? "bg-primary text-white"
+                                                        ? `bg-${themeColor} text-white`
                                                         : "border border-gray-300"
                                                 }`}
                                             >
@@ -1054,7 +1069,7 @@ export default function TambahPenjualanKasir() {
 
                         {isPackagingModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
                                     <div className="flex flex-col space-y-4 mb-4">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                             <div className="relative w-full sm:max-w-md">
@@ -1096,7 +1111,7 @@ export default function TambahPenjualanKasir() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
                                                 </button>
-                                                <p className="text-primary font-semibold">
+                                                <p className={`text-${themeColor} font-semibold`}>
                                                     Terpilih {selectedPackagingItems.reduce((sum, item) => sum + item.count, 0)}
                                                 </p>
                                             </div>
@@ -1116,7 +1131,7 @@ export default function TambahPenjualanKasir() {
                                             />
                                             <Button
                                                 label="Pilih"
-                                                bgColor="bg-primary"
+                                                bgColor={`bg-${themeColor}`}
                                                 hoverColor="hover:bg-opacity-90"
                                                 textColor="text-white"
                                                 onClick={handlePackagingModalSubmit}
@@ -1132,7 +1147,7 @@ export default function TambahPenjualanKasir() {
                                                 onClick={() => setSelectedPackagingCategory(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedPackagingCategory === kategori
-                                                        ? "bg-primary text-white"
+                                                        ? `bg-${themeColor} text-white`
                                                         : "border border-gray-300"
                                                 }`}
                                             >

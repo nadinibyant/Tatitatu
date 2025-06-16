@@ -9,14 +9,17 @@ const Spinner = () => {
   const isAdmin = userData?.role === 'admin';
   const isFinance = userData?.role === 'finance'
   const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+  const isKasirToko = userData?.role === 'kasirtoko';
+  const toko_id = userData?.tokoId;
 
-  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
-  ? 'coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? "biruTua" 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? "hitam"
-      : "primary";
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+         (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+        ? "hitam"
+        : "primary";
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">
