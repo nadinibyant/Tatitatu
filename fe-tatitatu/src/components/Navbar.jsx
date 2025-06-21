@@ -19,6 +19,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
   const isKaryawanTransportasi = userData?.role === 'karyawantransportasi';
   const isKaryawanUmum = userData?.role === 'karyawanumum';
   const isKaryawanLogistik = userData?.role === 'karyawanlogistik';
+  const isTimHybrid = userData?.role === 'timhybrid'
   
   const isLogoutOnly = ['admingudang', 'headgudang', 'manajer', 'finance', 'admin', 'owner'].includes(userData?.role);
   
@@ -34,6 +35,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
     location.pathname === '/absensi-karyawan' || 
     location.pathname === '/absensi-karyawan-transport' || 
     location.pathname === '/absensi-karyawan-produksi' ||
+    location.pathname === '/absensi-tim-hybrid' ||
     location.pathname === '/izin-cuti-karyawan' ||
     location.pathname === '/profile' ||
     location.pathname.startsWith('/absensi-karyawan-produksi/tambah');
@@ -56,6 +58,8 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
           (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
           ? "hitam"
           : "primary";
+
+          // console.log(themeColor)
     
   const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
   const notifButtonRef = useRef(null);
@@ -326,10 +330,10 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
       setProfileImage(`${apiBaseUrl}/images-toko/${userData.image}`);
     } else if (['owner', 'manajer', 'finance'].includes(userData?.role)) {
       setProfileImage(`${apiBaseUrl}/images-authentication/${userData.image}`);
-    } else if (['karyawanumum', 'karyawanproduksi', 'karyawantransportasi'].includes(userData?.role)) {
+    } else if (['karyawanumum', 'karyawanproduksi', 'karyawantransportasi', 'timhybrid'].includes(userData?.role)) {
       setProfileImage(`${apiBaseUrl}/images-karyawan/${userData.image}`);
     } else {
-      setProfileImage(null); // No valid role for image
+      setProfileImage(null); 
     }
   }, [userData?.role, userData?.image]);
 
@@ -365,6 +369,7 @@ const Navbar = ({ menuItems, userOptions, children, label, showAddNoteButton = f
       if (response.data.success) {
         localStorage.removeItem('userData');
         localStorage.removeItem('token');
+        localStorage.removeItem('role_name')
         
         updateMenuIcons();
 

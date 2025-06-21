@@ -22,6 +22,7 @@ export const calculateThemeColor = () => {
     currentPath === '/absensi-karyawan' || 
     currentPath === '/absensi-karyawan-transport' || 
     currentPath === '/absensi-karyawan-produksi' ||
+    currentPath === '/absensi-tim-hybrid' ||
     currentPath === '/izin-cuti-karyawan' ||
     currentPath.startsWith('/absensi-karyawan-produksi/tambah');
 
@@ -61,7 +62,7 @@ export const getIconWarna = (basePath, currentTheme) => {
   const extension = iconName.substring(lastDotIndex);
   
   let themedPath;
-  console.log(theme)
+  // console.log(theme)
   if (theme === 'biruTua') {
     themedPath = `${baseIconPath}${nameWithoutExt}_non${extension}`;
   } else if (theme === 'coklatTua') {

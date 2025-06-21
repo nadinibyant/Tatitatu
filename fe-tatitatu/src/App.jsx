@@ -297,7 +297,7 @@ function App() {
         <Route path='/toko' element={getProtectedRoute(Toko, ['manajer'])} />
 
 
-        <Route path='/profile' element={getProtectedRoute(Profile, ['kasirtoko', 'karyawanumum', 'karyawanproduksi', 'karyawantransportasi'])} />
+        <Route path='/profile' element={getProtectedRoute(Profile, ['kasirtoko', 'karyawanumum', 'karyawanproduksi', 'karyawantransportasi', 'timhybrid'])} />
         <Route path='/profile/:id' element={getProtectedRoute(Profile, ['admin', 'owner', 'finance', 'manajer', 'headgudang', 'admingudang',])} />
         
         {/* kelola akun kerja */}

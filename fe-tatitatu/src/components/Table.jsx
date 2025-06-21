@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-// Enhanced Table component with fixed mobile dropdowns and route-specific theming
 const Table = ({
   bg_header,
   text_header,
@@ -501,6 +500,7 @@ const Table = ({
           <div className="flex justify-center items-center gap-2 flex-wrap">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
+              type="button"
               disabled={currentPage === 1}
               className={`
                 py-1 px-3 rounded-md text-sm transition-colors
@@ -518,6 +518,7 @@ const Table = ({
                   key={index}
                   onClick={() => page !== "..." && handlePageChange(page)}
                   disabled={page === "..."}
+                  type="button"
                   className={`
                     py-1 px-3 rounded-md text-sm transition-colors
                     ${page === currentPage
@@ -535,6 +536,7 @@ const Table = ({
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
+              type="button"
               className={`
                 py-1 px-3 rounded-md text-sm transition-colors
                 ${currentPage === totalPages

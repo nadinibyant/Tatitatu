@@ -401,7 +401,7 @@ export default function EditBarang() {
   const fetchCabangAndBiayaData = async () => {
     try {
       const [cabangResponse, biayaResponse] = await Promise.all([
-        api.get('/cabang'),
+        api.get(`/cabang?toko_id=${toko_id}`),
         api.get('/biaya-toko'),
       ]);
   

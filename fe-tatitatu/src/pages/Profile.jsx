@@ -19,6 +19,7 @@ export default function Profile() {
   const isFinance = userRole === 'finance';
   const isManajer = userRole === 'manajer';
   const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
+  const isTimHybrid = userRole === 'timhybrid'
 
 
   const role_name = localStorage.getItem('role_name')
@@ -66,6 +67,7 @@ export default function Profile() {
     oldPassword: "",
     newPassword: "",
     confirmPassword: "",
+    detailPassword: ""
   });
 
   const [selectedImage, setSelectedImage] = useState(null);
@@ -103,7 +105,7 @@ export default function Profile() {
 
       if (isKasirToko) {
         endpoint = `/cabang/${userId}`;
-      } else if(isKaryawan){
+      } else if(isKaryawan || isTimHybrid){
         endpoint = `/karyawan-user/${userId}`;
       } else if(isManajer){
         if (role_name == 'Admin Gudang') {
@@ -122,9 +124,11 @@ export default function Profile() {
       
       if (response.data.success) {
         const profileData = response.data.data;
-        console.log("Profile data fetched:", profileData);
+        // console.log("Profile data fetched:", profileData);
 
         if (isKasirToko || role_name == 'Admin Gudang') {
+          console.log(profileData.nama_karyawan)
+
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -133,8 +137,11 @@ export default function Profile() {
             oldPassword: '',
             newPassword: '',
             confirmPassword: '',
+            detailPassword: profileData.detail_password || ''
           });
         } else if (role_name == 'SPV' || role_name == 'Head Gudang'){
+          console.log(profileData.nama_karyawan)
+
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -143,8 +150,11 @@ export default function Profile() {
             oldPassword: '',
             newPassword: '',
             confirmPassword: '',
+            detailPassword: profileData.detail_password || ''
           });
         } else if (role_name == 'Owner' || role_name == 'Finance' || role_name == 'Manager'){
+          console.log(profileData.nama_karyawan)
+
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -153,8 +163,10 @@ export default function Profile() {
             oldPassword: '',
             newPassword: '',
             confirmPassword: '',
+            detailPassword: profileData.detail_password || ''
           });
-        } else if (isKaryawan){
+        } else if (isKaryawan || isTimHybrid){
+          console.log(profileData.nama_karyawan)
           setFormData({
             ...formData,
             email: profileData.email || '',
@@ -164,51 +176,9 @@ export default function Profile() {
             oldPassword: '',
             newPassword: '',
             confirmPassword: '',
+            detailPassword: profileData.detail_password || ''
           });
         }
-
-        // if (isKasirToko || isAdminGudang) {
-        //   setFormData({
-        //     ...formData,
-        //     email: profileData.email || '',
-        //     nama: profileData.nama_cabang || '',
-        //     password: '', 
-        //     oldPassword: '',
-        //     newPassword: '',
-        //     confirmPassword: '',
-        //   });
-        // } else if (isAdmin || isHeadGudang) {
-        //   setFormData({
-        //     ...formData,
-        //     email: profileData.email || '',
-        //     nama: profileData.nama_toko || '',
-        //     password: '',  
-        //     oldPassword: '',
-        //     newPassword: '',
-        //     confirmPassword: '',
-        //   });
-        // } else if (isOwner || isFinance || isManajer) {
-        //   setFormData({
-        //     ...formData,
-        //     email: profileData.email || '',
-        //     nama: profileData.nama || '',
-        //     password: '',  
-        //     oldPassword: '',
-        //     newPassword: '',
-        //     confirmPassword: '',
-        //   });
-        // } else if (isKaryawan) {
-        //   setFormData({
-        //     ...formData,
-        //     email: profileData.email || '',
-        //     nama: profileData.nama_karyawan || '',
-        //     noHandphone: profileData.nomor_handphone || '',
-        //     password: '',  
-        //     oldPassword: '',
-        //     newPassword: '',
-        //     confirmPassword: '',
-        //   });
-        // }
 
         if (profileData.image) {
           setImageFilename(profileData.image);
@@ -254,6 +224,8 @@ export default function Profile() {
       setCurrentImageUrl(objectUrl);
     }
   };
+
+  // console.log(formData)
 
   const handleSubmit = async () => {
     try {
@@ -473,11 +445,11 @@ export default function Profile() {
             />
             <Input
               label="Password"
-              value={formData.password}
+              value={formData.detailPassword}
               onChange={handleInputChange('password')}
               type1="password"
               required={true}
-              placeholder="********"
+              // placeholder="********"
               disabled={true}
             />
             <Input
