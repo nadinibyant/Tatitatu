@@ -181,13 +181,12 @@ const ActionButtons = ({ id, status }) => {
 
         let badgeClass = "";
         let displayStatus = status;
-        
         switch (status) {
-            case "Diterima":
+            case "diterima":
                 badgeClass = "bg-green-100 text-green-800";
                 displayStatus = "Diterima";
                 break;
-            case "Ditolak":
+            case "ditolak":
                 badgeClass = "bg-red-100 text-red-800";
                 displayStatus = "Ditolak";
                 break;

@@ -208,20 +208,16 @@ export default function Karyawan(){
         const navigate = useNavigate()
         const handleRowClick = (row) => {
             const employeeData = data.find(item => item.id === row.id);
+            console.log(employeeData.jenis_karyawan)
             
             let divisiType;
             if (employeeData.toko_id === 1) {
-                // if (employeeData.waktu_kerja_sebulan_antar === null) {
-                //     divisiType = "Produksi";
-                // } else if (employeeData.waktu_kerja_sebulan_menit === null) {
-                //     divisiType = "Transportasi";
-                // } else {
-                //     divisiType = "Umum"
-                // }
                 if (employeeData.jenis_karyawan == 'Umum') {
                     divisiType = "Umum"
                 } else  if(employeeData.jenis_karyawan == 'Transportasi'){
                     divisiType = "Transportasi"
+                } else if(employeeData.jenis_karyawan == 'Tim Hybrid'){
+                    divisiType = "timhybrid"
                 } else {
                     divisiType = "Produksi"
                 }
@@ -230,10 +226,11 @@ export default function Karyawan(){
                     divisiType = "Umum"
                 } else  if(employeeData.jenis_karyawan == 'Transportasi'){
                     divisiType = "Transportasi"
+                } else if (employeeData.jenis_karyawan == 'Tim Hybrid'){
+                    divisiType = 'timhybrid'
                 } else {
                     divisiType = "Produksi"
                 }
-                // divisiType = employeeData.waktu_kerja_sebulan_antar === null ? "Umum" : "Transportasi";
             }
             
             navigate('/dataKaryawanAbsenGaji/detail', { 

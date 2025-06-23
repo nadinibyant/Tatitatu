@@ -384,7 +384,7 @@ export default function Absensi() {
                 submitData.append('total_menit', totalMenit.toString());
             } else {
                 submitData.append('jam_keluar', '');
-                submitData.append('total_menit', '0');
+                submitData.append('total_menit', 0);
             }
             
             if (currentLocation && currentLocation.lat && currentLocation.lng) {
@@ -395,6 +395,8 @@ export default function Absensi() {
                 submitData.append('lat', '0');
                 submitData.append('lng', '0');
             }
+
+            console.log(submitData)
 
             const response = await api.post('/absensi-karyawan', submitData, {
                 headers: {

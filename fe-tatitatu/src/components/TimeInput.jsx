@@ -14,11 +14,10 @@ const TimeInput = ({
   const dropdownRef = useRef(null);
   const location = useLocation();
   
-  // Define options as array of objects with label and value
   const timeOptions = [
     { label: 'APM', value: 'Menit' },
     { label: 'API', value: 'Antar' },
-    { label: 'APH', value: 'Antar' }  // This option has same value as API but different label
+    { label: 'APH', value: 'Antar' }  
   ];
 
   // Mendapatkan data pengguna untuk theming

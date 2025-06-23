@@ -16,7 +16,6 @@ export default function DetailKaryawan(){
     const [isLoading, setLoading] = useState(false)
     const location = useLocation()
     const {id, divisi} = location.state || {}
-    console.log(divisi)
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
     const monthValue = `${selectedYear}-${selectedMonth}`;
@@ -225,6 +224,14 @@ function formatNumberWithDots(number) {
         ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
     ];
 
+    const headersTimHybrid = [
+        { label: "Tanggal", key: "Tanggal", align: "text-left" },
+        { label: "Foto", key: "Foto", align: "text-left"},
+        { label: "Lokasi", key: "Lokasi", align: "text-left" },
+        { label: "Note", key: "Note", align: "text-left" },
+        ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
+    ];
+
     // Updated handleEdit to pass the full data structure
     const handleEdit = (item) => {
         setSelectedAbsensi(item);
@@ -258,10 +265,14 @@ function formatNumberWithDots(number) {
         ]
     })
 
+    console.log(id)
+    console.log(selectedMonth)
+    console.log(selectedYear)
     const fetchProfile = async () => {
         try {
             setLoading(true);
             const response = await api.get(`/data-absensi-karyawan/${id}/${selectedMonth}/${selectedYear}/karyawan`);
+            console.log(response)
             const { 
                 karyawan, 
                 kehadiran, 
@@ -357,7 +368,7 @@ function formatNumberWithDots(number) {
                 
                 if (filteredData.length > 0) {
                     const totalMinutes = filteredData.reduce((sum, item) => {
-                        const minutes = parseInt(item["Total Menit"].split(' ')[0].replace(/,/g, ''), 10);
+                        const minutes = parseInt(item["Total Menit"].split(' ')[0].replace(/\./g, '').replace(/,/g, ''), 10);
                         return sum + (isNaN(minutes) ? 0 : minutes);
                     }, 0);
                     
@@ -434,8 +445,30 @@ function formatNumberWithDots(number) {
                         ) : '-',
                     }))
                 }));
-            } 
-            else {
+            } else if(divisi === 'timhybrid'){
+                setData(prevData => ({
+                    ...prevData,
+                    "Total Menit Kerja": totalMenit || 0,
+                    "Gaji Pokok": totalGajiPokok || 0,
+                    data: absensiRecord.map(item => ({
+                        id: item.absensi_karyawan_id,
+                        Tanggal: item.tanggal,
+                        Foto: `${import.meta.env.VITE_API_URL}/images-absensi-karyawan/${item.image}`,
+                        note: item.note,
+                        "Gaji Pokok Perhari": item.gaji_pokok_perhari || 0,
+                        "Lokasi": item.gmaps ? (
+                            <a
+                                href={item.gmaps}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                                Lokasi
+                            </a>
+                        ) : '-',
+                    }))
+                }));
+            } else {
                 setData(prevData => ({
                   ...prevData,
                   "Total Menit Kerja": totalMenit || 0,
@@ -561,8 +594,8 @@ function formatNumberWithDots(number) {
                         Tanggal: formatDate2(item.Tanggal),
                         Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
                         Status: <span className={`px-3 py-1 rounded-lg ${
-                            item.Status === 'Diterima' ? 'bg-green-100 text-green-800' : 
-                            item.Status === 'Ditolak' ? 'bg-red-100 text-red-800' : 
+                            item.Status === 'diterima' ? 'bg-green-100 text-green-800' : 
+                            item.Status === 'ditolak' ? 'bg-red-100 text-red-800' : 
                             item.Status === 'proses' ? 'bg-yellow-100 text-yellow-800' : 
                             ''
                         }`}>{item.Status}</span>,
@@ -599,6 +632,46 @@ function formatNumberWithDots(number) {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             // Pass full item instead of just ID
+                                            handleDelete(item);
+                                        }}
+                                        className="p-1 text-red-600 hover:text-red-800"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )
+                        })
+                    }))}
+                />
+            );
+        } else if(divisi == 'timhybrid'){
+            return (
+                <Table
+                    headers={headersTimHybrid}
+                    data={data.data.map((item, index) => ({
+                        ...item,
+                        Tanggal: formatDate2(item.Tanggal),
+                        Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
+                        Note: item.note || '-',
+                        ...(isManager && {
+                            Aksi: (
+                                <div className="flex items-center justify-center space-x-2">
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEdit(item);
+                                        }}
+                                        className="p-1 text-blue-600 hover:text-blue-800"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             handleDelete(item);
                                         }}
                                         className="p-1 text-red-600 hover:text-red-800"
