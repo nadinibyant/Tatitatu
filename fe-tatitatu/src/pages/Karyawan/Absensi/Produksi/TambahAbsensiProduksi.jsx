@@ -501,12 +501,11 @@ export default function TambahAbsensiProduksi() {
                             </div>
                         </form>
     
-                        {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50 p-2 sm:p-4">
-                                <div className={`bg-white border border-${themeColor} rounded-md p-3 sm:p-4 md:p-6 w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden`}>
+                                <div className={`bg-white border border-${themeColor} rounded-md p-3 sm:p-4 md:p-6 w-full max-w-7xl h-[90vh] flex flex-col`}>
                                     {/* Header Section - Search, Clear, Buttons */}
-                                    <div className="flex flex-col space-y-3 mb-3 sm:mb-4">
+                                    <div className="flex-shrink-0 flex flex-col space-y-3 mb-3 sm:mb-4">
                                         {/* Input Search */}
                                         <div className="relative w-full">
                                             <span className="absolute inset-y-0 left-3 flex items-center">
@@ -528,9 +527,7 @@ export default function TambahAbsensiProduksi() {
                                             />
                                         </div>
 
-                                        {/* Controls Row - Clear/Count and Buttons */}
                                         <div className="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
-                                            {/* Clear and Selected Count */}
                                             <div className="flex items-center space-x-4">
                                                 <button
                                                     onClick={() => {
@@ -585,9 +582,8 @@ export default function TambahAbsensiProduksi() {
                                             <Spinner />
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col flex-grow">
-                                            {/* Tabs for Barang Types */}
-                                            <div className="flex border-b border-gray-300 mb-3 overflow-x-auto hide-scrollbar">
+                                        <div className="flex flex-col flex-grow overflow-hidden">
+                                            <div className="flex-shrink-0 flex border-b border-gray-300 mb-3 overflow-x-auto hide-scrollbar">
                                                 {["Barang Handmade"].map((jenis) => (
                                                     <button
                                                         key={jenis}
@@ -601,8 +597,7 @@ export default function TambahAbsensiProduksi() {
                                                 ))}
                                             </div>
 
-                                            {/* Kategori Buttons - FIXED */}
-                                            <div className="overflow-x-auto hide-scrollbar mb-3">
+                                            <div className="flex-shrink-0 overflow-x-auto hide-scrollbar mb-3">
                                                 <div className="flex flex-nowrap gap-2 pb-1">
                                                     {categories.map((kategori) => (
                                                         <button
@@ -620,7 +615,7 @@ export default function TambahAbsensiProduksi() {
                                                 </div>
                                             </div>
 
-                                            <div className="flex-grow overflow-y-auto hide-scrollbar">
+                                            <div className="flex-grow overflow-y-auto" style={{ minHeight: 0 }}>
                                                 <Gallery2
                                                     items={filteredItems || []}
                                                     onSelect={handleSelectItem}
@@ -631,7 +626,6 @@ export default function TambahAbsensiProduksi() {
                                     )}
                                 </div>
 
-                                {/* Add this style to hide scrollbars while maintaining scroll functionality */}
                                 <style jsx>{`
                                     .hide-scrollbar {
                                         -ms-overflow-style: none;  /* IE and Edge */
