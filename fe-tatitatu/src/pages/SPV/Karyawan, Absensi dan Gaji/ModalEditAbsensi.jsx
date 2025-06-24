@@ -6,6 +6,7 @@ import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
 
 const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) => {
+  console.log(divisi)
   const [formData, setFormData] = useState({
     jamMasuk: '',
     jamKeluar: '',
@@ -13,6 +14,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
     totalMenitRaw: 0, 
     lokasi: '',
     status: '',
+    note: '',
     id_masuk: null,
     id_keluar: null
   });
@@ -23,7 +25,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
   
   useEffect(() => {
     if (isOpen && absensiData) {
-      console.log("Received absensiData:", absensiData);
+      // console.log("Received absensiData:", absensiData);
       
       if (divisi === 'Umum') {
         let jamMasuk = '';
@@ -68,7 +70,9 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
           totalMenit: totalMenitValue.toLocaleString('id-ID'),
           totalMenitRaw: totalMenitValue,
           id_masuk: idMasuk,
-          id_keluar: idKeluar
+          id_keluar: idKeluar,
+          status: '',
+          note: ''
         });
         
         setTimeError('');
@@ -78,7 +82,25 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
           status: typeof absensiData.Status === 'string' 
             ? absensiData.Status 
             : (absensiData.Status && absensiData.Status.props ? absensiData.Status.props.children : ''),
-          id_masuk: absensiData.id || null
+          id_masuk: absensiData.id || null,
+          jamMasuk: '',
+          jamKeluar: '',
+          totalMenit: '',
+          totalMenitRaw: 0,
+          note: ''
+        });
+      } else if (divisi === 'timhybrid') {
+        setFormData({
+          lokasi: 'Lokasi',
+          note: typeof absensiData.Note === 'string' 
+            ? absensiData.Note 
+            : (absensiData.note || ''),
+          id_masuk: absensiData.id || null,
+          jamMasuk: '',
+          jamKeluar: '',
+          totalMenit: '',
+          totalMenitRaw: 0,
+          status: ''
         });
       } else if (divisi === 'Produksi') {
         // Handle Produksi if needed in the future
@@ -178,6 +200,16 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
         };
   
         await api.put(`/absensi-karyawan/${formData.id_masuk}`, requestData);
+      } else if (divisi === 'timhybrid') {
+        if (!formData.note) {
+          throw new Error('Note wajib diisi');
+        }
+        
+        let requestData = {
+          note: formData.note
+        };
+  
+        await api.put(`/absensi-karyawan/${formData.id_masuk}`, requestData);
       } else if (divisi === 'Produksi') {
         // Handle Produksi API if needed
       }
@@ -205,7 +237,7 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
         {/* Header Modal */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">
-            Edit {divisi === 'Umum' ? 'Absensi Karyawan' : divisi === 'Transportasi' ? 'Transportasi' : 'Produksi'}
+            Edit {divisi === 'Umum' ? 'Absensi Karyawan' : divisi === 'Transportasi' ? 'Transportasi' : divisi === 'timhybrid' ? 'Tim Hybrid' : 'Produksi'}
           </h2>
           <button 
             onClick={onClose}
@@ -278,6 +310,31 @@ const ModalEditAbsensi = ({ isOpen, onClose, divisi, absensiData, onSuccess }) =
                 options={statusOptions}
                 value={formData.status}
                 onSelect={(option) => handleInputChange(option.value, 'status')}
+                required={true}
+              />
+            </>
+          )}
+          
+          {divisi === 'timhybrid' && (
+            <>
+              {/* Lokasi */}
+              <Input
+                label="Lokasi"
+                type1="text"
+                value={formData.lokasi}
+                onChange={(value) => handleInputChange(value, 'lokasi')}
+                placeholder="Masukkan Lokasi"
+                required={true}
+                disabled={true}
+              />
+              
+              {/* Note */}
+              <Input
+                label="Note"
+                type1="text"
+                value={formData.note}
+                onChange={(value) => handleInputChange(value, 'note')}
+                placeholder="Masukkan Note"
                 required={true}
               />
             </>

@@ -183,6 +183,7 @@ export default function KaryawanGaji() {
                         id: item.karyawan.karyawan_id,
                         No: index + 1,
                         Nama: item.karyawan.nama_karyawan,
+                        jenis_karyawan: item.karyawan.jenis_karyawan,
                         toko_id: item.karyawan.toko_id,
                         Divisi: item.karyawan.divisi?.nama_divisi || "-",
                         Toko: item.karyawan.toko?.nama_toko || "-", 
@@ -211,17 +212,13 @@ export default function KaryawanGaji() {
         fetchData();
     }, [selectedMonth, selectedYear]);
 
-    // Effect to sync selectedStore with selectedCabang
     useEffect(() => {
-        // Update selectedCabang when selectedStore changes
         if (selectedStore !== "Semua") {
             setSelectedCabang(selectedStore);
         }
     }, [selectedStore]);
 
-    // Effect to sync selectedCabang with selectedStore
     useEffect(() => {
-        // Update selectedStore when selectedCabang changes
         if (selectedCabang !== "Semua") {
             setSelectedStore(selectedCabang);
         }
@@ -253,7 +250,7 @@ export default function KaryawanGaji() {
     const handlePotongGajiChange = (id, value) => {
         const potongan = parseInt(value.replace(/\D/g, '')) || 0;
         const item = data.find(item => item.id === id);
-        const gajiAwal = item["Total Gaji Akhir"]; // existing total salary
+        const gajiAwal = item["Total Gaji Akhir"]; 
         
         setEditedPotongan(prev => ({
             ...prev,
@@ -281,17 +278,40 @@ export default function KaryawanGaji() {
 
     const handleRowClick = (row) => {
         const employeeData = data.find(item => item.id === row.id);
-        console.log(employeeData);
+        console.log(employeeData)
         let divisiType;
-        if (employeeData.toko_id === 1) {
-            if (employeeData.waktu_kerja_sebulan_antar === null) {
-                divisiType = "Produksi";
-            } else if (employeeData.waktu_kerja_sebulan_menit === null) {
-                divisiType = "Transportasi";
+        // if (employeeData.toko_id === 1) {
+        //     if (employeeData.waktu_kerja_sebulan_antar === null) {
+        //         divisiType = "Produksi";
+        //     } else if (employeeData.waktu_kerja_sebulan_menit === null) {
+        //         divisiType = "Transportasi";
+        //     }
+        // } else {
+        //     divisiType = employeeData.waktu_kerja_sebulan_antar === null || employeeData.waktu_kerja_sebulan_antar === "null" ? "Umum" : "Transportasi";
+        // }
+
+            if (employeeData.toko_id === 1) {
+                if (employeeData.jenis_karyawan == 'Umum') {
+                    divisiType = "Umum"
+                } else  if(employeeData.jenis_karyawan == 'Transportasi'){
+                    divisiType = "Transportasi"
+                } else if(employeeData.jenis_karyawan == 'Tim Hybrid'){
+                    divisiType = "timhybrid"
+                } else {
+                    divisiType = "Produksi"
+                }
+            } else {
+                console.log(employeeData.jenis_karyawan)
+                if (employeeData.jenis_karyawan == 'Umum') {
+                    divisiType = "Umum"
+                } else  if(employeeData.jenis_karyawan == 'Transportasi'){
+                    divisiType = "Transportasi"
+                } else if (employeeData.jenis_karyawan == 'Tim Hybrid'){
+                    divisiType = 'timhybrid'
+                } else {
+                    divisiType = "Produksi"
+                }
             }
-        } else {
-            divisiType = employeeData.waktu_kerja_sebulan_antar === null || employeeData.waktu_kerja_sebulan_antar === "null" ? "Umum" : "Transportasi";
-        }
         
         navigate('/dataKaryawanAbsenGaji/detail', { 
             state: { 

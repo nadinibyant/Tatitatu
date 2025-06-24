@@ -232,7 +232,6 @@ function formatNumberWithDots(number) {
         ...(isManager ? [{ label: "Aksi", key: "Aksi", align: "text-center" }] : []), 
     ];
 
-    // Updated handleEdit to pass the full data structure
     const handleEdit = (item) => {
         setSelectedAbsensi(item);
         setIsEditModalOpen(true);

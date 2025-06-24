@@ -55,6 +55,13 @@ export default function DetailKaryawanGaji(){
             { label: "Status", key: "Status", align: "text-center" },
         ];
 
+        const headersTimHybrid = [
+            { label: "Tanggal", key: "Tanggal", align: "text-left" },
+            { label: "Foto", key: "Foto", align: "text-left" },
+            { label: "Lokasi", key: "Lokasi", align: "text-left" },
+            { label: "Note", key: "Note", align: "text-center" },
+        ];
+
         const [data, setData] = useState({
             "Gaji Pokok": 0,
             "Total Menit Kerja": 0,
@@ -114,6 +121,18 @@ export default function DetailKaryawanGaji(){
         ]
     };
 
+    const dataTimHybrid = {
+        ...data,
+        data: [
+            {
+                Tanggal: '',
+                Foto: '',
+                Lokasi: "",
+                Note: ""
+            },
+        ]
+    };
+
     const renderTable = () => {
         if (divisi === 'Produksi') {
           return (
@@ -141,6 +160,18 @@ export default function DetailKaryawanGaji(){
                 Status: <span className={`px-3 py-1 rounded-lg ${
                   item.Status === 'Antar' ? 'bg-pink text-primary' : 'bg-primary text-white'
                 }`}>{item.Status}</span>,
+              }))}
+            />
+          );
+        } else if (divisi === 'timhybrid') {
+          return (
+            <Table
+              headers={headersTimHybrid}
+              data={dataTimHybrid.data.map((item, index) => ({
+                ...item,
+                Tanggal: formatDate2(item.Tanggal),
+                Foto: <img src={item.Foto} className="w-12 h-12 object-cover" />,
+                Note: item.note || "-" // Use the note field from the API, with fallback
               }))}
             />
           );
