@@ -125,13 +125,11 @@ useEffect(() => {
                     .filter(Boolean)
                     .join(', ');
 
-                // Calculate total quantity
                 const jumlahBarang = penjualan.produk.reduce(
                     (sum, produk) => sum + produk.kuantitas,
                     0
                 );
 
-                // Check if any product is custom
                 const hasCustom = penjualan.produk.some(
                     produk => produk.barang_custom
                 );
@@ -143,7 +141,7 @@ useEffect(() => {
                     "Nama Barang": namaBarang,
                     "Jumlah Barang": jumlahBarang.toLocaleString('id-ID'),
                     Diskon: penjualan.diskon,
-                    Pajak: penjualan.pajak.toLocaleString('id-ID'),
+                    Pajak: penjualan.pajak?.toLocaleString('id-ID') || 0,
                     "Total Transaksi": penjualan.total_penjualan,
                     tipe: hasCustom ? 'custom' : 'non-custom'
                 };

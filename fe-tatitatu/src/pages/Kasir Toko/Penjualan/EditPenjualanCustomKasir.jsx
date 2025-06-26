@@ -515,7 +515,7 @@ const EditPenjualanCustomKasir = () => {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (formData.diskon / 100) * subtotal;
-        return subtotal - diskonNominal + Number(formData.pajak);
+        return subtotal - diskonNominal - Number(formData.pajak);
     };
 
     const handleSubmit = async (e) => {

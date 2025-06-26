@@ -55,14 +55,12 @@ export default function EditPenjualanNon() {
     const isAdminGudang = userData?.role === 'admingudang';
     const toko_id = userData.userId;
 
-    // UI state
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     
-    // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPackagingModalOpen, setIsPackagingModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(0);
@@ -76,7 +74,6 @@ export default function EditPenjualanNon() {
     const [searchTerm, setSearchTerm] = useState("");
     const [packagingSearchTerm, setPackagingSearchTerm] = useState("");
 
-    // Data state
     const [kategoriBarang, setKategoriBarang] = useState({
         "Barang Handmade": ["Semua"],
         "Barang Non-Handmade": ["Semua"]
@@ -95,7 +92,6 @@ export default function EditPenjualanNon() {
     ]);
     const [dataMetode, setDataMetode] = useState([]);
 
-    // Fetch data functions
     const fetchPackaging = async () => {
         try {
             const response = await api.get(`/packaging?toko_id=${toko_id}`);
@@ -412,7 +408,7 @@ export default function EditPenjualanNon() {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal + Number(pajak);
+        return subtotal - diskonNominal - Number(pajak);
     };
 
 

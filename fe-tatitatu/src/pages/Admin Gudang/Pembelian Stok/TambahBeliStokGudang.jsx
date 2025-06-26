@@ -18,7 +18,7 @@ export default function TambahBeliStokGudang() {
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("");
-    const [namaPembeli, setNamaPembeli] = useState(""); // Added nama pembeli state
+    const [namaPembeli, setNamaPembeli] = useState(""); 
     const [selectBayar, setSelectedBayar] = useState("");
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0);
@@ -164,7 +164,6 @@ export default function TambahBeliStokGudang() {
         fetchProducts();
     }, [isAdminGudang]);
 
-    // Helper functions
     const getCategories = () => {
         if (isAdminGudang && (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade")) {
             return ["Semua", ...categories.map(cat => cat.name)];
@@ -192,7 +191,7 @@ export default function TambahBeliStokGudang() {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal;
-        return subtotal - diskonNominal + pajak;
+        return subtotal - diskonNominal - pajak;
     };
 
     // Event handlers

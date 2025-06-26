@@ -232,7 +232,7 @@ export default function TambahPembelianStok() {
     
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal + parseInt(pajak);
+        return subtotal - diskonNominal - parseInt(pajak);
     };
 
     const handleSelectBayar = (selectedOption) => {

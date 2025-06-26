@@ -138,7 +138,6 @@ export default function TambahPenjualanKasir() {
     
     const calculateSubtotal = () => {
         return dataCabang.reduce((acc, cabang) => {
-            // Jumlahkan rawTotalBiaya dari setiap cabang
             const totalCabang = cabang.data.reduce((cabAcc, row) => {
                 return cabAcc + (row.rawTotalBiaya || 0);
             }, 0);
@@ -148,7 +147,7 @@ export default function TambahPenjualanKasir() {
 
     const calculateTotalPenjualan = (subtotal) => {
         const diskonNominal = (diskon / 100) * subtotal; 
-        return subtotal - diskonNominal + pajak;
+        return subtotal - diskonNominal - pajak;
     };
 
     const handleSelectBayar = (selectedOption) => {
