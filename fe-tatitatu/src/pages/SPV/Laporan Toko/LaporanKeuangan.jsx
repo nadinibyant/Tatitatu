@@ -252,7 +252,7 @@ export default function LaporanKeuangan() {
                                             tanggal: item.tanggal,
                                             deskripsi: item.deskripsi,
                                             cabang: item.nama_cabang,
-                                            toko: item.nama_toko || '-',
+                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
                                             kategori: item.kategori_pengeluaran,
                                             total: item.jumlah_pengeluaran,
                                             jenis: jenis 
