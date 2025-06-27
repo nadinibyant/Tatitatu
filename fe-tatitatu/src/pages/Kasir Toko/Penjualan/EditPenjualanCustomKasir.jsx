@@ -506,10 +506,8 @@ const EditPenjualanCustomKasir = () => {
     };
 
     const calculateSubtotal = () => {
-        // Only include custom products and biaya products in calculation
         const customTotal = detailData.customProducts.reduce((sum, item) => sum + (item.total_biaya || 0), 0);
         const biayaTotal = detailData.biayaProducts.reduce((sum, item) => sum + (Number(item.jumlah_biaya) || 0), 0);
-        // Packaging is excluded from calculation
         return customTotal + biayaTotal;
     };
 
@@ -534,9 +532,9 @@ const EditPenjualanCustomKasir = () => {
             const packagingProducts = detailData.packagingProducts.map(item => ({
                 produk_penjualan_id: item.produk_penjualan_id,
                 packaging_id: item.packaging?.packaging_id || item.packaging_id,
-                harga_satuan: 0, // Set to 0 as per requirement
+                harga_satuan: 0,
                 kuantitas: item.kuantitas,
-                total_biaya: 0 // Set to 0 as per requirement
+                total_biaya: 0
             }));
 
             const allBiaya = detailData.biayaProducts.map(item => ({

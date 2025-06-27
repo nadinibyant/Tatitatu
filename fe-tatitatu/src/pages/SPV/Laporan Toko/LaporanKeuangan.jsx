@@ -42,7 +42,6 @@ export default function LaporanKeuangan() {
         ]
     });
     
-    // Store and category options state
     const [tokoOptions, setTokoOptions] = useState([{ label: "Semua", value: "Semua" }]);
     const [kategoriOptions, setKategoriOptions] = useState([{ label: "Semua", value: "Semua" }]);
 
@@ -194,6 +193,7 @@ export default function LaporanKeuangan() {
                 
                 if (response.data.success) {
                     const apiData = response.data.data;
+                    console.log(apiData)
                     
                     const transformedData = {
                         keuntungan: apiData.keuntungan || 0,
@@ -211,7 +211,7 @@ export default function LaporanKeuangan() {
                                             tanggal: item.tanggal,
                                             deskripsi: item.deskripsi,
                                             cabang: item.nama_cabang,
-                                            toko: item.nama_toko,
+                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
                                             kategori: item.kategori_pemasukan,
                                             total: item.total_pemasukan || item.jumlah_pemasukan,
                                             jenis: 'pemasukan'
@@ -226,7 +226,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.produk && item.produk.length > 0 
                                                 ? item.produk[0].nama_cabang
                                                 : '',
-                                            toko: item.nama_toko,
+                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
                                             kategori: item.kategori_pemasukan,
                                             total: item.total_pemasukan, 
                                             jenis: 'penjualan'
@@ -252,7 +252,7 @@ export default function LaporanKeuangan() {
                                             tanggal: item.tanggal,
                                             deskripsi: item.deskripsi,
                                             cabang: item.nama_cabang,
-                                            toko: item.nama_toko,
+                                            toko: item.nama_toko || '-',
                                             kategori: item.kategori_pengeluaran,
                                             total: item.jumlah_pengeluaran,
                                             jenis: jenis 
@@ -267,7 +267,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.produk && item.produk.length > 0 
                                                 ? item.produk[0].nama_cabang
                                                 : '',
-                                            toko: item.nama_toko,
+                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
                                             kategori: item.kategori_pengeluaran,
                                             total: item.total_pengeluaran,
                                             jenis: 'pembelian'
@@ -708,7 +708,6 @@ export default function LaporanKeuangan() {
                 </section>
             </div>
 
-            {/* Filter Modal */}
             {isFilterModalOpen && (
                 <>
                     <div 

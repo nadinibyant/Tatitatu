@@ -91,9 +91,7 @@ import AkunKerja from './pages/Manajer/Kelola Akun Kerja/AkunKerja';
 
 
 function App() {
-  // Helper function untuk menentukan allowed roles
   const getProtectedRoute = (Component, specificRoles = null) => {
-    // Jika specificRoles tidak diset, berarti route hanya untuk admin
     const allowedRoles = specificRoles || ['admin'];
     return (
       <ProtectedRoute allowedRoles={allowedRoles}>
