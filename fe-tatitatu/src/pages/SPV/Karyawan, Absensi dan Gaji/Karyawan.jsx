@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
 import ButtonDropdown from "../../../components/ButtonDropdown";
-import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import moment from "moment";
 import Table from "../../../components/Table";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import LayoutWithNav from "../../../components/LayoutWithNav";
 import InputDropdown from "../../../components/InputDropdown";
 import api from "../../../utils/api";
@@ -31,6 +30,33 @@ export default function Karyawan(){
     const [divisions, setDivisions] = useState([])
     const [filterFields, setFilterFields] = useState([]);
 
+    // URL query parameter state management
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = Number(searchParams.get('page')) || 1;
+    const perPage = Number(searchParams.get('perPage')) || 10;
+    const searchQuery = searchParams.get('search') || '';
+    const activeSubMenu = searchParams.get('category') || 'Semua';
+
+    const setPage = (newPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        page: newPage
+    });
+    const setPerPage = (newPerPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        perPage: newPerPage,
+        page: 1
+    });
+    const setSearchQuery = (newSearch) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        search: newSearch,
+        page: 1
+    });
+    const setActiveSubMenu = (newCategory) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        category: newCategory,
+        page: 1
+    });
+
     const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
@@ -39,7 +65,6 @@ export default function Karyawan(){
         ? "hitam"
         : "primary";
 
-    const monthValue = `${selectedYear}-${selectedMonth}`;
     const toko_id = userData.userId
 
     useEffect(() => {
@@ -64,14 +89,6 @@ export default function Karyawan(){
     
         initializeFilters();
     }, [branchList, divisions, isHeadGudang]);
-
-
-    const handleMonthChange = (e) => {
-        const value = e.target.value; 
-        const [year, month] = value.split('-');
-        setSelectedMonth(month);
-        setSelectedYear(year);
-    };
 
     const handleFilterClick = (event) => {
       const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -208,16 +225,20 @@ export default function Karyawan(){
         const navigate = useNavigate()
         const handleRowClick = (row) => {
             const employeeData = data.find(item => item.id === row.id);
-            console.log(employeeData.jenis_karyawan)
             
+            if (!employeeData) {
+                console.error('Employee data not found');
+                return;
+            }
+
             let divisiType;
-            if (employeeData.toko_id === 1) {
+            if (isHeadGudang) {
                 if (employeeData.jenis_karyawan == 'Umum') {
                     divisiType = "Umum"
                 } else  if(employeeData.jenis_karyawan == 'Transportasi'){
                     divisiType = "Transportasi"
-                } else if(employeeData.jenis_karyawan == 'Tim Hybrid'){
-                    divisiType = "timhybrid"
+                } else if (employeeData.jenis_karyawan == 'Tim Hybrid'){
+                    divisiType = 'timhybrid'
                 } else {
                     divisiType = "Produksi"
                 }
@@ -233,10 +254,12 @@ export default function Karyawan(){
                 }
             }
             
+            // Preserve pagination state when navigating to detail
             navigate('/dataKaryawanAbsenGaji/detail', { 
                 state: { 
                     id: row.id, 
-                    divisi: divisiType 
+                    divisi: divisiType,
+                    returnUrl: window.location.pathname + window.location.search
                 } 
             });
         };
@@ -370,6 +393,15 @@ export default function Karyawan(){
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
                                 onRowClick={handleRowClick}
+                                // Controlled pagination props
+                                page={page}
+                                itemsPerPage={perPage}
+                                searchQuery={searchQuery}
+                                activeSubMenu={activeSubMenu}
+                                setPage={setPage}
+                                setItemsPerPage={setPerPage}
+                                setSearchQuery={setSearchQuery}
+                                setActiveSubMenu={setActiveSubMenu}
                             />
                     </div>
 

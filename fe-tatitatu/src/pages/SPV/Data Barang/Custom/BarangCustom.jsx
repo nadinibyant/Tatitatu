@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Button from "../../../../components/Button";
-import Navbar from "../../../../components/Navbar";
 import { menuItems, userOptions } from "../../../../data/menu";
 import Gallery from "../../../../components/Gallery";
 import FileInput from "../../../../components/FileInput";
@@ -14,6 +13,7 @@ import InputDropdown from "../../../../components/InputDropdown";
 import api from "../../../../utils/api";
 import Spinner from "../../../../components/Spinner";
 import AlertError from "../../../../components/AlertError";
+import { useSearchParams } from "react-router-dom";
 
 export default function BarangCustom() {
   const [isModal, setModal] = useState(false);
@@ -52,6 +52,7 @@ export default function BarangCustom() {
         const url = isAdminGudang ? endpoint : `${endpoint}?toko_id=${toko_id}`;
         
         const response = await api.get(url);
+        console.log(response.data.data)
         
         if (response.data.success) {
           const transformedData = response.data.data.map(item => ({
@@ -324,31 +325,54 @@ const handleAddBtn = () => {
     setModalSucc(false);
   };
 
-  const handleDetail = (itemId) => {
-    setId(itemId.id);
+  const handleDetail = (item) => {
+    setId(item.id);
     setModalDetail(true);
-    
-    const itemToShow = data.find(item => item.id === itemId.id);
-    const priceNumber = parseInt(itemToShow.price.replace(/\D/g, ''));
-    
+    const priceNumber = parseInt(item.price.replace(/\D/g, ''));
     setData2({
       info_barang: {
-        Nomor: itemToShow.id.toString(),
-        "Nama Barang": itemToShow.title,
-        "Jumlah Minimum Stok": itemToShow.jumlah_minimum_stok,
-        Kategori: itemToShow.category,
-        Foto: itemToShow.image,
+        Nomor: item.id.toString(),
+        "Nama Barang": item.title,
+        "Jumlah Minimum Stok": item.jumlah_minimum_stok,
+        Kategori: item.category,
+        Foto: item.image,
       },
       rincian_biaya: [
         {
           Harga: priceNumber,
-          Isi: itemToShow.isi,
-          HargaSatuan: itemToShow.harga_satuan,
-          HargaJual: itemToShow.harga_jual
+          Isi: item.isi,
+          HargaSatuan: item.harga_satuan,
+          HargaJual: item.harga_jual
         },
       ],
     });
   }
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get('page')) || 1;
+  const perPage = Number(searchParams.get('perPage')) || 15;
+  const searchQuery = searchParams.get('search') || '';
+  const activeSubMenu = searchParams.get('category') || 'Semua';
+
+  const setPage = (newPage) => setSearchParams({
+      ...Object.fromEntries(searchParams),
+      page: newPage
+  });
+  const setPerPage = (newPerPage) => setSearchParams({
+      ...Object.fromEntries(searchParams),
+      perPage: newPerPage,
+      page: 1
+  });
+  const setSearchQuery = (newSearch) => setSearchParams({
+      ...Object.fromEntries(searchParams),
+      search: newSearch,
+      page: 1
+  });
+  const setActiveSubMenu = (newCategory) => setSearchParams({
+      ...Object.fromEntries(searchParams),
+      category: newCategory,
+      page: 1
+  });
 
   return (
     <>
@@ -390,7 +414,20 @@ const handleAddBtn = () => {
 
           <section className="mt-5 bg-white rounded-xl">
             <div className="p-1">
-              <Gallery data={data} onEdit={handleEdit} onDelete={handleBtnDelete} onItemClick={handleDetail}/>
+              <Gallery 
+                data={data} 
+                onEdit={handleEdit} 
+                onDelete={handleBtnDelete} 
+                onItemClick={handleDetail}
+                page={page}
+                itemsPerPage={perPage}
+                searchQuery={searchQuery}
+                activeSubMenu={activeSubMenu}
+                setPage={setPage}
+                setItemsPerPage={setPerPage}
+                setSearchQuery={setSearchQuery}
+                setActiveSubMenu={setActiveSubMenu}
+              />
             </div>
           </section>
         </div>
@@ -608,8 +645,8 @@ const handleAddBtn = () => {
                   textColor={'text-oren'}
                   icon={
                     <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.32 3.17554H2C0.895 3.17554 0 4.12454 0 5.29354V15.8815C0 17.0515 0.895 17.9995 2 17.9995H13C14.105 17.9995 15 17.0515 15 15.8815V8.13154L11.086 12.2755C10.7442 12.641 10.2991 12.8936 9.81 12.9995L7.129 13.5675C5.379 13.9375 3.837 12.3045 4.187 10.4525L4.723 7.61354C4.82 7.10154 5.058 6.63054 5.407 6.26154L8.32 3.17554Z" fill="#DA5903"/>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16.8457 1.31753C16.7446 1.06156 16.5964 0.826833 16.4087 0.62553C16.2242 0.428659 16.0017 0.271165 15.7547 0.16253C15.5114 0.0556667 15.2485 0.000488281 14.9827 0.000488281C14.7169 0.000488281 14.454 0.0556667 14.2107 0.16253C13.9637 0.271165 13.7412 0.428659 13.5567 0.62553L13.0107 1.20353L15.8627 4.22353L16.4087 3.64453C16.5983 3.44476 16.7468 3.20962 16.8457 2.95253C17.0517 2.427 17.0517 1.84306 16.8457 1.31753ZM14.4497 5.72053L11.5967 2.69953L6.8197 7.75953C6.74922 7.83462 6.70169 7.92831 6.6827 8.02953L6.1467 10.8695C6.0767 11.2395 6.3857 11.5655 6.7347 11.4915L9.4167 10.9245C9.51429 10.9028 9.60311 10.8523 9.6717 10.7795L14.4497 5.72053Z" fill="#DA5903"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M8.32 3.17554H2C0.895 3.17554 0 4.12454 0 5.29354V15.8815C0 17.0515 0.895 17.9995 2 17.9995H13C14.105 17.9995 15 17.0515 15 15.8815V8.13154L11.086 12.2755C10.7442 12.641 10.2991 12.8936 9.81 12.9995L7.129 13.5675C5.379 13.9375 3.837 12.3045 4.187 10.4525L4.723 7.61354C4.82 7.10154 5.058 6.63054 5.407 6.26154L8.32 3.17554Z" fill="#DA5903"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M16.8457 1.31753C16.7446 1.06156 16.5964 0.826833 16.4087 0.62553C16.2242 0.428659 16.0017 0.271165 15.7547 0.16253C15.5114 0.0556667 15.2485 0.000488281 14.9827 0.000488281C14.7169 0.000488281 14.454 0.0556667 14.2107 0.16253C13.9637 0.271165 13.7412 0.428659 13.5567 0.62553L13.0107 1.20353L15.8627 4.22353L16.4087 3.64453C16.5983 3.44476 16.7468 3.20962 16.8457 2.95253C17.0517 2.427 17.0517 1.84306 16.8457 1.31753ZM14.4497 5.72053L11.5967 2.69953L6.8197 7.75953C6.74922 7.83462 6.70169 7.92831 6.6827 8.02953L6.1467 10.8695C6.0767 11.2395 6.3857 11.5655 6.7347 11.4915L9.4167 10.9245C9.51429 10.9028 9.60311 10.8523 9.6717 10.7795L14.4497 5.72053Z" fill="#DA5903"/>
                     </svg>
                   } 
                   hoverColor="hover:bg-gray-100"

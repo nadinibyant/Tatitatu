@@ -14,6 +14,7 @@ import InputDropdown from "../../../../components/InputDropdown";
 import api from "../../../../utils/api";
 import Spinner from "../../../../components/Spinner";
 import AlertError from "../../../../components/AlertError";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function Packaging() {
   const [isModal, setModal] = useState(false);
@@ -44,6 +45,35 @@ export default function Packaging() {
 
   const [isAlertSUcc, setAlertSucc] = useState(false)
   const [data,setData] = useState([])
+
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // State dari URL query param
+  const page = Number(searchParams.get('page')) || 1;
+  const perPage = Number(searchParams.get('perPage')) || 15;
+  const searchQuery = searchParams.get('search') || '';
+  const activeSubMenu = searchParams.get('category') || 'Semua';
+
+  const setPage = (newPage) => setSearchParams({
+    ...Object.fromEntries(searchParams),
+    page: newPage
+  });
+  const setPerPage = (newPerPage) => setSearchParams({
+    ...Object.fromEntries(searchParams),
+    perPage: newPerPage,
+    page: 1
+  });
+  const setSearchQuery = (newSearch) => setSearchParams({
+    ...Object.fromEntries(searchParams),
+    search: newSearch,
+    page: 1
+  });
+  const setActiveSubMenu = (newCategory) => setSearchParams({
+    ...Object.fromEntries(searchParams),
+    category: newCategory,
+    page: 1
+  });
 
   const fetchDataBarang = async () => {
     try {
@@ -338,13 +368,11 @@ const handleEdit = (itemId) => {
     setModalSucc(false);
   };
 
-  const handleDetail = (itemId) => {
-    setId(itemId.id);
+  const handleDetail = (itemId, searchQuery) => {
+    setId(itemId);
     setModalDetail(true);
-    
-    const itemToShow = data.find(item => item.id === itemId.id);
+    const itemToShow = data.find(item => item.id === itemId);
     const priceNumber = parseInt(itemToShow.price.replace(/\D/g, ''));
-    
     setData2({
       info_barang: {
         Nomor: itemToShow.id.toString(),
@@ -363,6 +391,7 @@ const handleEdit = (itemId) => {
         },
       ],
     });
+    // navigate(`/packaging/detail?id=${itemId}&search=${searchQuery}`);
   };
 
   return (
@@ -405,7 +434,20 @@ const handleEdit = (itemId) => {
 
           <section className="mt-5 bg-white rounded-xl">
             <div className="p-1">
-              <Gallery data={data} onEdit={handleEdit} onDelete={handleBtnDelete} onItemClick={handleDetail}/>
+              <Gallery 
+                data={data} 
+                onEdit={handleEdit} 
+                onDelete={handleBtnDelete} 
+                onItemClick={(item) => handleDetail(item.id, window.location.search)}
+                page={page}
+                itemsPerPage={perPage}
+                searchQuery={searchQuery}
+                activeSubMenu={activeSubMenu}
+                setPage={setPage}
+                setItemsPerPage={setPerPage}
+                setSearchQuery={setSearchQuery}
+                setActiveSubMenu={setActiveSubMenu}
+              />
             </div>
           </section>
         </div>

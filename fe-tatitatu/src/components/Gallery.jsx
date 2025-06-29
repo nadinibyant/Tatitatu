@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MoreVertical, Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 
 const Gallery = ({ 
   data = [],
@@ -13,62 +12,185 @@ const Gallery = ({
   className = '',
   onItemClick = () => {},
   url='',
+  // Controlled props
+  page,
+  itemsPerPage,
+  searchQuery,
+  activeSubMenu,
+  setPage,
+  setItemsPerPage,
+  setSearchQuery,
+  setActiveSubMenu,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSubMenu, setActiveSubMenu] = useState('Semua')
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  // Internal state fallback
+  const [internalSearchQuery, setInternalSearchQuery] = useState("");
+  const [internalActiveSubMenu, setInternalActiveSubMenu] = useState(defaultSubMenu || 'Semua');
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
+  const [internalItemsPerPage, setInternalItemsPerPage] = useState(15);
   const [selectedItem, setSelectedItem] = useState(null);
-  const userData = JSON.parse(localStorage.getItem('userData'))
-  const isAdminGudang = userData?.role === 'admingudang'
+  
+  // Safely get userData from localStorage
+  let userData;
+  try {
+    userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  } catch (error) {
+    console.error('Error parsing userData:', error);
+    userData = {};
+  }
+  
+  const isAdminGudang = userData?.role === 'admingudang';
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
-  const isFinance = userData?.role === 'finance'
-  const role = userData?.role
+  const isFinance = userData?.role === 'finance';
+  const role = userData?.role;
   
-  // Determine the color theme based on role
   const themeColor = (isAdminGudang || isHeadGudang) 
-  ? 'coklatTua' 
-  : (isManajer || isOwner || isFinance) 
-    ? "biruTua" 
-    : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
-      ? "hitam"
-      : "primary";
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
+        ? "hitam"
+        : "primary";
+
+  // Gunakan controlled props jika ada, jika tidak fallback ke state internal
+  const currentPage = page !== undefined ? page : internalCurrentPage;
+  const perPage = itemsPerPage !== undefined ? itemsPerPage : internalItemsPerPage;
+  const search = searchQuery !== undefined ? searchQuery : internalSearchQuery;
+  const activeMenu = activeSubMenu !== undefined ? activeSubMenu : internalActiveSubMenu;
+
+  // Debug logs
+  console.log('Gallery received props:', { page, itemsPerPage, searchQuery, activeSubMenu });
+  console.log('Gallery using values:', { currentPage, perPage, search, activeMenu });
+
+  // Handler setter with proper function references
+  const handleSetPage = (newPage) => {
+    if (setPage) {
+      setPage(newPage);
+    } else {
+      setInternalCurrentPage(newPage);
+    }
+  };
+  
+  const handleSetItemsPerPage = (newPerPage) => {
+    console.log('handleSetItemsPerPage called with:', newPerPage);
+    
+    if (setItemsPerPage) {
+      // For controlled component
+      setItemsPerPage(newPerPage);
+    } else {
+      // For uncontrolled component
+      setInternalItemsPerPage(newPerPage);
+      try {
+        localStorage.setItem('galleryItemsPerPage', newPerPage.toString());
+      } catch (error) {
+        console.error('Error saving itemsPerPage to localStorage:', error);
+      }
+    }
+  };
+  
+  const handleSetSearchQuery = (newQuery) => {
+    if (setSearchQuery) {
+      setSearchQuery(newQuery);
+    } else {
+      setInternalSearchQuery(newQuery);
+    }
+  };
+  
+  const handleSetActiveSubMenu = (newMenu) => {
+    if (setActiveSubMenu) {
+      setActiveSubMenu(newMenu);
+    } else {
+      setInternalActiveSubMenu(newMenu);
+    }
+  };
+
+  // Load saved itemsPerPage from localStorage on mount (for uncontrolled mode)
+  useEffect(() => {
+    if (itemsPerPage === undefined) {
+      try {
+        const savedPerPage = localStorage.getItem('galleryItemsPerPage');
+        if (savedPerPage) {
+          setInternalItemsPerPage(Number(savedPerPage));
+        }
+      } catch (error) {
+        console.error('Error loading saved items per page:', error);
+      }
+    }
+  }, []);
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
       const matchesSearch = (
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.type.toLowerCase().includes(searchQuery.toLowerCase()) 
+        item.title?.toLowerCase().includes(search?.toLowerCase() || '') ||
+        item.type?.toLowerCase().includes(search?.toLowerCase() || '') 
       );
   
       const matchesCategory = enableSubMenus
-      ? !searchQuery
-          ? (!activeSubMenu || activeSubMenu === 'Semua' || item.category === activeSubMenu)
+        ? !search
+          ? (!activeMenu || activeMenu === 'Semua' || item.category === activeMenu)
           : true
-      : true; 
+        : true; 
   
       return matchesSearch && matchesCategory;
     });
-  }, [data, searchQuery, activeSubMenu, enableSubMenus]);
+  }, [data, search, activeMenu, enableSubMenus]);
   
+  const totalPages = Math.ceil(filteredData.length / perPage);
+  const startIndex = (currentPage - 1) * perPage;
+  const displayedData = filteredData.slice(startIndex, startIndex + perPage);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  // Jika currentPage lebih besar dari totalPages (misal setelah filter/data berubah), auto-fix ke page terakhir yang valid
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      handleSetPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  // Tambahkan ref untuk deteksi perubahan pertama kali
+  const isFirstSearch = useRef(true);
+  const isFirstSubMenu = useRef(true);
+  const isFirstPerPageChange = useRef(true);
+
+  // Reset page ke 1 hanya jika user benar-benar mengubah searchQuery
+  useEffect(() => {
+    if (setPage) return; // controlled, biarkan parent yang atur
+    if (isFirstSearch.current) {
+      isFirstSearch.current = false;
+      return;
+    }
+    handleSetPage(1);
+  }, [search]);
+
+  // Reset page ke 1 hanya jika user benar-benar mengubah activeSubMenu
+  useEffect(() => {
+    if (setPage) return; // controlled, biarkan parent yang atur
+    if (isFirstSubMenu.current) {
+      isFirstSubMenu.current = false;
+      return;
+    }
+    handleSetPage(1);
+  }, [activeMenu]);
+  
+  // Reset page ke 1 saat itemsPerPage berubah
+  useEffect(() => {
+    if (setPage) return; // controlled, biarkan parent yang atur
+    if (isFirstPerPageChange.current) {
+      isFirstPerPageChange.current = false;
+      return;
+    }
+    handleSetPage(1);
+  }, [perPage]);
 
   const handlePreviousPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
+    if (currentPage > 1) handleSetPage(currentPage - 1);
   };
 
   const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    if (currentPage < totalPages) handleSetPage(currentPage + 1);
   };
 
-  
   const getVisiblePages = () => {
     let pages = [];
     if (totalPages <= 3) {
@@ -83,10 +205,6 @@ const Gallery = ({
     return pages;
   };
 
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
   const handleItemClick = (e, item) => {
     if (e.target.closest('.more-button')) {
       return;
@@ -94,19 +212,28 @@ const Gallery = ({
     onItemClick(item);
   };
 
-  const navigate = useNavigate()
+  // Pemisahan event handler untuk itemsPerPage agar tidak konflik dengan page reset
+  const handleItemsPerPageChange = (e) => {
+    const newValue = Number(e.target.value);
+    console.log('handleItemsPerPageChange called with:', newValue);
+    handleSetItemsPerPage(newValue);
+    
+    // Parent component akan menangani reset page jika diperlukan
+    // (Karena DataBarang.jsx sudah melakukan reset page saat perPage berubah)
+  };
+
+  const navigate = useNavigate();
 
   return (
     <div className="w-full mx-auto p-4">
-      {/* Search Bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
             placeholder="Cari Barang"
             className="w-full p-2 pl-10 border rounded-lg bg-white"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={search}
+            onChange={(e) => handleSetSearchQuery(e.target.value)}
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
         </div>
@@ -114,11 +241,8 @@ const Gallery = ({
           <span className="mr-2 text-gray-600">Page</span>
           <select 
             className="border rounded-lg p-1.5 bg-white"
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
+            value={perPage}
+            onChange={handleItemsPerPageChange}
           >
             <option value={10}>10</option>
             <option value={15}>15</option>
@@ -128,7 +252,6 @@ const Gallery = ({
         </div>
       </div>
 
-      {/* Sub Menus */}
       {enableSubMenus && (
         <div className="relative mb-6 border-b">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:gap-6">
@@ -136,13 +259,12 @@ const Gallery = ({
               <button
                 key={menu}
                 className={`pb-2 px-1 text-sm ${
-                  activeSubMenu === menu 
+                  activeMenu === menu 
                     ? `border-b-2 border-${themeColor} text-${themeColor} font-medium`
                     : 'text-gray-500'
                 }`}
                 onClick={() => {
-                  setActiveSubMenu(menu);
-                  setCurrentPage(1);
+                  handleSetActiveSubMenu(menu);
                 }}
               >
                 {menu}
@@ -161,17 +283,22 @@ const Gallery = ({
                 src={item.image}
                 onClick={(e) => handleItemClick(e, item)}
                 alt={item.title}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover rounded-lg cursor-pointer"
               />
             </div>
             <div className="p-3">
               <p className={`text-${themeColor} text-sm mb-1`}>{item.type}</p>
-              <h3 className="text-base font-bold text-gray-900 mb-1">{item.title}</h3>
+              <h3 
+                className="text-base font-bold text-gray-900 mb-1 cursor-pointer"
+                onClick={(e) => handleItemClick(e, item)}
+              >
+                {item.title}
+              </h3>
               <div className="flex items-center justify-between">
                 <p className="text-gray-600 text-sm">{item.price}</p>
                 <button
                   onClick={() => setSelectedItem(item)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 more-button"
                 >
                   <MoreHorizontal size={18} color={(role === "admingudang" || role === "headgudang") ? '#5D4037' : '#7B0C42'} />
                 </button>
@@ -195,7 +322,6 @@ const Gallery = ({
               <button
                 onClick={() => {
                   onEdit(selectedItem);
-                  // navigate(`${url}/${selectedItem.id}`)
                   setSelectedItem(null);
                 }}
                 className="w-full border border-oren text-oren font-semibold py-2 text-left px-4 hover:bg-gray-100 rounded"
@@ -237,7 +363,7 @@ const Gallery = ({
                 <span className="px-3 py-1">...</span>
               ) : (
                 <button
-                  onClick={() => setCurrentPage(page)}
+                  onClick={() => handleSetPage(page)}
                   className={`px-3 py-1 rounded-md min-w-[32px] ${
                     currentPage === page
                       ? `bg-${themeColor} text-white`
@@ -263,6 +389,7 @@ const Gallery = ({
           </button>
         </div>
       )}
+      
     </div>
   );
 };

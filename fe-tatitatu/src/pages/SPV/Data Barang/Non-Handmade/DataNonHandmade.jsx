@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../../../utils/api";
 import LayoutWithNav from "../../../../components/LayoutWithNav";
 import Button from "../../../../components/Button";
@@ -22,10 +22,9 @@ export default function DataBarangNonHandmade() {
     const isManajer = userData?.role === 'manajer';
     const isAdmin = userData?.role === 'admin';
     const isFinance = userData?.role === 'finance'
-
     const toko_id = userData.userId
-    
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
@@ -34,6 +33,32 @@ export default function DataBarangNonHandmade() {
       : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
         ? "hitam"
         : "primary";
+
+    // State dari URL query param
+    const page = Number(searchParams.get('page')) || 1;
+    const perPage = Number(searchParams.get('perPage')) || 15;
+    const searchQuery = searchParams.get('search') || '';
+    const activeSubMenu = searchParams.get('category') || 'Semua';
+
+    const setPage = (newPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        page: newPage
+    });
+    const setPerPage = (newPerPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        perPage: newPerPage,
+        page: 1
+    });
+    const setSearchQuery = (newSearch) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        search: newSearch,
+        page: 1
+    });
+    const setActiveSubMenu = (newCategory) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        category: newCategory,
+        page: 1
+    });
 
     const fetchSubMenus = async () => {
         try {
@@ -118,7 +143,6 @@ export default function DataBarangNonHandmade() {
                 ? `/barang-nonhandmade-gudang/${selectedId}`
                 : `/barang-non-handmade/${selectedId}`;
             
-            console.log(selectedId)
             const response = await api.delete(endpoint);
             
             if (response.data.success) {
@@ -176,7 +200,15 @@ export default function DataBarangNonHandmade() {
                             enableSubMenus={true} 
                             onEdit={handleBtnEdit} 
                             onDelete={handleBtnDelete} 
-                            onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}`)}
+                            onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}${window.location.search}`)}
+                            page={page}
+                            itemsPerPage={perPage}
+                            searchQuery={searchQuery}
+                            activeSubMenu={activeSubMenu}
+                            setPage={setPage}
+                            setItemsPerPage={setPerPage}
+                            setSearchQuery={setSearchQuery}
+                            setActiveSubMenu={setActiveSubMenu}
                         />
                     </div>
                 </section>
@@ -203,10 +235,7 @@ export default function DataBarangNonHandmade() {
                     />
                 )}
 
-                {isLoading && (
-                    <Spinner
-                    />
-                )}
+                {isLoading && (<Spinner/>) }
             </div>
         </LayoutWithNav>
     );

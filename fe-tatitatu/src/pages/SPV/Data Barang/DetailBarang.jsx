@@ -4,7 +4,7 @@ import Button from "../../../components/Button";
 import Table from "../../../components/Table";
 import ButtonDropdown from "../../../components/ButtonDropdown";
 import { menuItems, userOptions } from "../../../data/menu";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
@@ -14,6 +14,7 @@ import Spinner from "../../../components/Spinner";
 export default function DetailBarang() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedCabang, setSelectedCabang] = useState("");
     const [isModalDel, setModalDel] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
@@ -210,7 +211,9 @@ export default function DetailBarang() {
     const handleCancelDel = () => setModalDel(false);
     const handleConfirmSucc = () => {
         setModalSucc(false);
-        navigate('/dataBarang/handmade');
+        const page = getQueryParam('page') || 1;
+        const perPage = getQueryParam('perPage') || 15;
+        navigate(`/dataBarang/handmade?page=${page}&perPage=${perPage}`);
     };
     const handleBtnEdit = () => navigate(`/dataBarang/handmade/edit/${id}`);
 
@@ -248,6 +251,19 @@ export default function DetailBarang() {
             "Total Keuntungan": data["Total Keuntungan"],
             "Harga Jual": data["Harga Jual"]
         };
+    };
+
+    // Helper untuk ambil query param tertentu
+    function getQueryParam(param) {
+      const params = new URLSearchParams(location.search);
+      return params.get(param);
+    }
+
+    // Contoh tombol kembali:
+    const handleBack = () => {
+      const page = getQueryParam('page') || 1;
+      const perPage = getQueryParam('perPage') || 15;
+      navigate(`/dataBarang/handmade?page=${page}&perPage=${perPage}`);
     };
 
     if (isLoading) return <Spinner />;

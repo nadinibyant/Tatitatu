@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 const Table = ({
   bg_header,
@@ -15,12 +15,37 @@ const Table = ({
   hasSubmenu = false,
   submenuItems = [],
   defaultSubmenu = 'semua',
-  additionalButton
+  additionalButton,
+  // Controlled props for pagination state
+  page,
+  itemsPerPage,
+  searchQuery,
+  activeSubMenu,
+  setPage,
+  setItemsPerPage,
+  setSearchQuery,
+  setActiveSubMenu,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pageSize, setPageSize] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeSubmenu, setActiveSubmenu] = useState(defaultSubmenu);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // State dari URL query param (fallback jika tidak ada controlled props)
+  const urlPage = Number(searchParams.get('page')) || 1;
+  const urlItemsPerPage = Number(searchParams.get('perPage')) || 10;
+  const urlSearchQuery = searchParams.get('search') || '';
+  const urlActiveSubMenu = searchParams.get('category') || defaultSubmenu;
+  
+  // Gunakan controlled props jika ada, jika tidak fallback ke URL params
+  const currentPage = page !== undefined ? page : urlPage;
+  const pageSize = itemsPerPage !== undefined ? itemsPerPage : urlItemsPerPage;
+  const searchTerm = searchQuery !== undefined ? searchQuery : urlSearchQuery;
+  const activeSubmenu = activeSubMenu !== undefined ? activeSubMenu : urlActiveSubMenu;
+  
+  // Internal state fallback untuk uncontrolled mode
+  const [internalSearchTerm, setInternalSearchTerm] = useState(searchTerm);
+  const [internalPageSize, setInternalPageSize] = useState(pageSize);
+  const [internalCurrentPage, setInternalCurrentPage] = useState(currentPage);
+  const [internalActiveSubmenu, setInternalActiveSubmenu] = useState(activeSubmenu);
+  
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const userData = JSON.parse(localStorage.getItem('userData'));
   const userRole = userData?.role;
@@ -78,6 +103,60 @@ const Table = ({
   
   const headerTextColor = text_header || headerTextColorMap[themeColor];
 
+  // Handler setter functions
+  const handleSetPage = (newPage) => {
+    if (setPage) {
+      setPage(newPage);
+    } else {
+      setInternalCurrentPage(newPage);
+      // Update URL params for uncontrolled mode
+      setSearchParams({
+        ...Object.fromEntries(searchParams),
+        page: newPage
+      });
+    }
+  };
+  
+  const handleSetItemsPerPage = (newItemsPerPage) => {
+    if (setItemsPerPage) {
+      setItemsPerPage(newItemsPerPage);
+    } else {
+      setInternalPageSize(newItemsPerPage);
+      // Update URL params for uncontrolled mode
+      setSearchParams({
+        ...Object.fromEntries(searchParams),
+        perPage: newItemsPerPage,
+        page: 1
+      });
+    }
+  };
+  
+  const handleSetSearchQuery = (newQuery) => {
+    if (setSearchQuery) {
+      setSearchQuery(newQuery);
+    } else {
+      setInternalSearchTerm(newQuery);
+      setSearchParams({
+        ...Object.fromEntries(searchParams),
+        search: newQuery,
+        page: 1
+      });
+    }
+  };
+  
+  const handleSetActiveSubMenu = (newSubMenu) => {
+    if (setActiveSubMenu) {
+      setActiveSubMenu(newSubMenu);
+    } else {
+      setInternalActiveSubmenu(newSubMenu);
+      setSearchParams({
+        ...Object.fromEntries(searchParams),
+        category: newSubMenu,
+        page: 1
+      });
+    }
+  };
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 640);
@@ -88,10 +167,11 @@ const Table = ({
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
+    if (!setPage && searchTerm !== internalSearchTerm) {
+      setInternalCurrentPage(1);
+    }
   }, [searchTerm]);
 
-  // Add CSS to make dropdowns display properly on mobile
   useEffect(() => {
     if (isMobile) {
       const styleElement = document.createElement('style');
@@ -181,19 +261,26 @@ const Table = ({
     currentPage * pageSize
   );
 
+  // Auto-fix current page if it's out of bounds
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      handleSetPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+      handleSetPage(newPage);
     }
   };
 
   const handlePageSizeChange = (event) => {
-    setPageSize(Number(event.target.value));
-    setCurrentPage(1);
+    const newPageSize = Number(event.target.value);
+    handleSetItemsPerPage(newPageSize);
   };
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
+    handleSetSearchQuery(e.target.value);
   };
 
   const generatePages = () => {
@@ -214,15 +301,12 @@ const Table = ({
     return pages;
   };
 
-  // Check if the content is a dropdown that needs special handling
   const isDropdown = (content) => {
     if (!content || typeof content !== 'object') return false;
     
-    // Check if it's a React element with specific props that suggest it's a dropdown
     const isReactElement = React.isValidElement(content);
     if (!isReactElement) return false;
     
-    // Check for common dropdown attributes
     const hasDropdownProps = 
       content.props && (
         content.props.className?.includes('select') || 
@@ -239,12 +323,10 @@ const Table = ({
     return hasDropdownProps;
   };
 
-  // Enhance the cell content with additional props for dropdowns
   const enhanceDropdownCell = (content, fieldName) => {
     if (!React.isValidElement(content)) return content;
     
     if (isDropdown(content) || fieldName === 'waktu') {
-      // Clone the element and add enhanced props for better mobile display
       return React.cloneElement(content, {
         className: `${content.props.className || ''} mobile-enhanced-dropdown`,
         style: { 
@@ -253,7 +335,6 @@ const Table = ({
           width: '100%',
           zIndex: 50
         },
-        // Add a data attribute to target this field with CSS
         'data-field': fieldName
       });
     }
@@ -438,7 +519,7 @@ const Table = ({
               onChange={handlePageSizeChange}
               className={`border border-gray-300 rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
             >
-              {[5, 10, 15, 20].map((size) => (
+              {[3, 10, 15, 20].map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>
@@ -453,7 +534,7 @@ const Table = ({
       {hasSubmenu && submenuItems.length > 0 && (
         <div className="flex overflow-x-auto space-x-6 border-b border-gray-200 mb-4 pb-1">
           <button
-            onClick={() => setActiveSubmenu('semua')}
+            onClick={() => handleSetActiveSubMenu('semua')}
             className={`pb-3 px-1 text-sm font-medium whitespace-nowrap relative ${
               activeSubmenu === 'semua'
                 ? `text-${themeColor} border-b-2 border-${themeColor}`
@@ -465,7 +546,7 @@ const Table = ({
           {submenuItems.map((item) => (
             <button
               key={item.value}
-              onClick={() => setActiveSubmenu(item.value)}
+              onClick={() => handleSetActiveSubMenu(item.value)}
               className={`pb-3 px-1 text-sm font-medium whitespace-nowrap relative ${
                 activeSubmenu === item.value
                   ? `text-${themeColor} border-b-2 border-${themeColor}`

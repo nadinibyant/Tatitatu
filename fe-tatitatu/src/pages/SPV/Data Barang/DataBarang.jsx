@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Button from "../../../components/Button";
 import { menuItems, userOptions } from "../../../data/menu";
 import Gallery from "../../../components/Gallery";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
@@ -18,6 +18,7 @@ export default function DataBarang() {
     const [subMenus, setSubMenus] = useState([]);
     
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang'
     const isHeadGudang = userData?.role === 'headgudang';
@@ -35,6 +36,32 @@ export default function DataBarang() {
         ? "hitam"
         : "primary";
 
+    // State dari URL query param
+    const page = Number(searchParams.get('page')) || 1;
+    const perPage = Number(searchParams.get('perPage')) || 15;
+    const searchQuery = searchParams.get('search') || '';
+    const activeSubMenu = searchParams.get('category') || 'Semua';
+    console.log('perPage in parent:', perPage);
+
+    const setPage = (newPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        page: newPage
+    });
+    const setItemsPerPage = (newPerPage) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        perPage: newPerPage,
+        page: 1
+    });
+    const setSearchQuery = (newSearch) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        search: newSearch,
+        page: 1
+    });
+    const setActiveSubMenu = (newCategory) => setSearchParams({
+        ...Object.fromEntries(searchParams),
+        category: newCategory,
+        page: 1
+    });
 
     const fetchSubMenus = async () => {
         try {
@@ -138,7 +165,6 @@ export default function DataBarang() {
         setModalSucc(false);
     };
 
-
     return (
         <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
             <div className="p-5">
@@ -172,7 +198,15 @@ export default function DataBarang() {
                             enableSubMenus={true} 
                             onEdit={handleBtnEdit} 
                             onDelete={handleBtnDelete} 
-                            onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}`)}
+                            onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}${window.location.search}`)}
+                            page={page}
+                            itemsPerPage={perPage}
+                            searchQuery={searchQuery}
+                            activeSubMenu={activeSubMenu}
+                            setPage={setPage}
+                            setItemsPerPage={setItemsPerPage}
+                            setSearchQuery={setSearchQuery}
+                            setActiveSubMenu={setActiveSubMenu}
                         />
                     </div>
                 </section>
@@ -199,7 +233,7 @@ export default function DataBarang() {
                     />
                 )}
 
-                {isLoading && (<Spinner/>)}
+                {isLoading && (<Spinner/>) }
             </div>
         </LayoutWithNav>
     );
