@@ -358,6 +358,7 @@ export default function PenilaianKPI() {
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
                                 onRowClick={handleRowClick}
+                                syncWithUrl={true}
                             />
                         </div>
                     </section>

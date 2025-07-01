@@ -192,22 +192,25 @@ export default function DataBarang() {
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="py-5 px-1">
-                        <Gallery 
-                            data={data} 
-                            subMenus={subMenus} 
-                            enableSubMenus={true} 
-                            onEdit={handleBtnEdit} 
-                            onDelete={handleBtnDelete} 
-                            onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}${window.location.search}`)}
-                            page={page}
-                            itemsPerPage={perPage}
-                            searchQuery={searchQuery}
-                            activeSubMenu={activeSubMenu}
-                            setPage={setPage}
-                            setItemsPerPage={setItemsPerPage}
-                            setSearchQuery={setSearchQuery}
-                            setActiveSubMenu={setActiveSubMenu}
-                        />
+                    <Gallery 
+                        data={data} 
+                        subMenus={subMenus} 
+                        enableSubMenus={true} 
+                        onEdit={handleBtnEdit} 
+                        onDelete={handleBtnDelete} 
+                        onItemClick={(item) => {
+                            const currentSearch = window.location.search;
+                            navigate(`/dataBarang/handmade/detail/${item.id}${currentSearch}`);
+                        }}
+                        page={page}
+                        itemsPerPage={perPage}
+                        searchQuery={searchQuery}
+                        activeSubMenu={activeSubMenu}
+                        setPage={setPage}
+                        setItemsPerPage={setItemsPerPage}
+                        setSearchQuery={setSearchQuery}
+                        setActiveSubMenu={setActiveSubMenu}
+                    />
                     </div>
                 </section>
 

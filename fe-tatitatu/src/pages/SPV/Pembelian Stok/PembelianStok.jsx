@@ -303,6 +303,7 @@ return (
                         hasSubmenu={true}
                         submenuItems={submenuItems}
                         defaultSubmenu="semua"
+                        syncWithUrl={true}
                     />
                 {/* Modal for More Options */}
                 {isModalMore && selectedItem && (

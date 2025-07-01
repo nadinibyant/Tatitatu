@@ -202,6 +202,7 @@ export default function KPISeluruhDivisi() {
                             position={modalPosition}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
+                            syncWithUrl={true}
                         />
                         </div>
                     </section>

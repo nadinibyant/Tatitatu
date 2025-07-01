@@ -307,6 +307,7 @@ useEffect(() => {
                                 />
                             }))}
                             onRowClick={handleRowClick}
+                            syncWithUrl={true}
                         />
                         </div>
                     </section>

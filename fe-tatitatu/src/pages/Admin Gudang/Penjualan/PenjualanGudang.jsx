@@ -229,6 +229,7 @@ export default function PenjualanGudang() {
                                 )
                             }))}
                             onRowClick={handleRowClick}
+                            syncWithUrl={true}
                         />
                     </div>
                 </section>

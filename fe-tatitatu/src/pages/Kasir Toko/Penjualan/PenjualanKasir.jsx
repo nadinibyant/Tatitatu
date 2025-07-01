@@ -222,19 +222,11 @@ export default function PenjualanKasir() {
                             data={data.map(item => ({
                                 ...item,
                                 "Nama Barang": formatNamaBarang(item["Nama Barang"]),
-                                // aksi: <ActionMenu 
-                                //     onEdit={() => handleEdit(item)} 
-                                //     onDelete={() => {
-                                //         setSelectedItem({
-                                //             id: item.Nomor
-                                //         });
-                                //         handleDelete();
-                                //     }} 
-                                // />
                             }))}
                             hasSearch={true}
                             hasPagination={true}
                             onRowClick={handleRowClick}
+                            syncWithUrl={true}
                         />
                     </div>
                 </section>

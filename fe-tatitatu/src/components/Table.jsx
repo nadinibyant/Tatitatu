@@ -25,26 +25,28 @@ const Table = ({
   setItemsPerPage,
   setSearchQuery,
   setActiveSubMenu,
+  // New prop to control URL syncing
+  syncWithUrl = false,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // State dari URL query param (fallback jika tidak ada controlled props)
+  // State dari URL query param
   const urlPage = Number(searchParams.get('page')) || 1;
   const urlItemsPerPage = Number(searchParams.get('perPage')) || 10;
   const urlSearchQuery = searchParams.get('search') || '';
   const urlActiveSubMenu = searchParams.get('category') || defaultSubmenu;
   
-  // Gunakan controlled props jika ada, jika tidak fallback ke URL params
-  const currentPage = page !== undefined ? page : urlPage;
-  const pageSize = itemsPerPage !== undefined ? itemsPerPage : urlItemsPerPage;
-  const searchTerm = searchQuery !== undefined ? searchQuery : urlSearchQuery;
-  const activeSubmenu = activeSubMenu !== undefined ? activeSubMenu : urlActiveSubMenu;
+  // Internal state untuk uncontrolled mode
+  const [internalSearchTerm, setInternalSearchTerm] = useState(urlSearchQuery);
+  const [internalPageSize, setInternalPageSize] = useState(urlItemsPerPage);
+  const [internalCurrentPage, setInternalCurrentPage] = useState(urlPage);
+  const [internalActiveSubmenu, setInternalActiveSubmenu] = useState(urlActiveSubMenu);
   
-  // Internal state fallback untuk uncontrolled mode
-  const [internalSearchTerm, setInternalSearchTerm] = useState(searchTerm);
-  const [internalPageSize, setInternalPageSize] = useState(pageSize);
-  const [internalCurrentPage, setInternalCurrentPage] = useState(currentPage);
-  const [internalActiveSubmenu, setInternalActiveSubmenu] = useState(activeSubmenu);
+  // Determine which values to use based on controlled props and syncWithUrl
+  const currentPage = page !== undefined ? page : syncWithUrl ? urlPage : internalCurrentPage;
+  const pageSize = itemsPerPage !== undefined ? itemsPerPage : syncWithUrl ? urlItemsPerPage : internalPageSize;
+  const searchTerm = searchQuery !== undefined ? searchQuery : syncWithUrl ? urlSearchQuery : internalSearchTerm;
+  const activeSubmenu = activeSubMenu !== undefined ? activeSubMenu : syncWithUrl ? urlActiveSubMenu : internalActiveSubmenu;
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const userData = JSON.parse(localStorage.getItem('userData'));
@@ -58,7 +60,6 @@ const Table = ({
   const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
   const location = useLocation();
   
-  // Check if current route is an absensi route
   const isAbsensiRoute = 
     location.pathname === '/absensi-karyawan' || 
     location.pathname === '/absensi-karyawan-transport' || 
@@ -103,17 +104,18 @@ const Table = ({
   
   const headerTextColor = text_header || headerTextColorMap[themeColor];
 
-  // Handler setter functions
   const handleSetPage = (newPage) => {
     if (setPage) {
       setPage(newPage);
     } else {
       setInternalCurrentPage(newPage);
-      // Update URL params for uncontrolled mode
-      setSearchParams({
-        ...Object.fromEntries(searchParams),
-        page: newPage
-      });
+      if (syncWithUrl) {
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('page', newPage.toString());
+          return newParams;
+        });
+      }
     }
   };
   
@@ -122,12 +124,15 @@ const Table = ({
       setItemsPerPage(newItemsPerPage);
     } else {
       setInternalPageSize(newItemsPerPage);
-      // Update URL params for uncontrolled mode
-      setSearchParams({
-        ...Object.fromEntries(searchParams),
-        perPage: newItemsPerPage,
-        page: 1
-      });
+      setInternalCurrentPage(1); 
+      if (syncWithUrl) {
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('perPage', newItemsPerPage.toString());
+          newParams.set('page', '1');
+          return newParams;
+        });
+      }
     }
   };
   
@@ -136,11 +141,15 @@ const Table = ({
       setSearchQuery(newQuery);
     } else {
       setInternalSearchTerm(newQuery);
-      setSearchParams({
-        ...Object.fromEntries(searchParams),
-        search: newQuery,
-        page: 1
-      });
+      setInternalCurrentPage(1);
+      if (syncWithUrl) {
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('search', newQuery);
+          newParams.set('page', '1');
+          return newParams;
+        });
+      }
     }
   };
   
@@ -149,11 +158,15 @@ const Table = ({
       setActiveSubMenu(newSubMenu);
     } else {
       setInternalActiveSubmenu(newSubMenu);
-      setSearchParams({
-        ...Object.fromEntries(searchParams),
-        category: newSubMenu,
-        page: 1
-      });
+      setInternalCurrentPage(1); 
+      if (syncWithUrl) {
+        setSearchParams((prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('category', newSubMenu);
+          newParams.set('page', '1');
+          return newParams;
+        });
+      }
     }
   };
 
@@ -261,7 +274,6 @@ const Table = ({
     currentPage * pageSize
   );
 
-  // Auto-fix current page if it's out of bounds
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       handleSetPage(totalPages);
@@ -519,7 +531,7 @@ const Table = ({
               onChange={handlePageSizeChange}
               className={`border border-gray-300 rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-${themeColor}`}
             >
-              {[3, 10, 15, 20].map((size) => (
+              {[2, 10, 15, 20].map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>

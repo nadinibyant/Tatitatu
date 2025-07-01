@@ -19,7 +19,6 @@ const [isModalDel, setModalDel] = useState(false)
 const [isModelSucc, setModalSucc] = useState(false)
 
 const userData = JSON.parse(localStorage.getItem('userData'));
-// Check if we should treat this as a gudang purchase based on the flag or user role
 const isAdminGudang = userData?.role === 'admingudang' || gudang;
 const isHeadGudang = userData?.role === 'headgudang' || gudang;
 const [pembelianData, setPembelianData] = useState(null);
@@ -29,7 +28,6 @@ const [paymentMethods, setPaymentMethods] = useState([]);
 
 const fetchPaymentMethods = async () => {
     try {
-        // Use the gudang flag or check user role
         const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
         
         const endpoint = isGudangMode 
@@ -50,7 +48,6 @@ useEffect(() => {
 useEffect(() => {
     const fetchData = async () => {
         try {
-            // Use the gudang flag or check user role
             const isGudangMode = gudang || userData?.role === 'headgudang' || userData?.role === 'admingudang';
             
             if (isGudangMode) {
@@ -74,7 +71,6 @@ useEffect(() => {
     fetchData();
 }, [id, isAdminGudang, isHeadGudang, gudang]);
 
-console.log(pembelianData)
 
 const processedData = useMemo(() => {
     if (!pembelianData || !cabangData) return [];

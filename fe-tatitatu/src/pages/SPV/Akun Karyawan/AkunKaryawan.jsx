@@ -379,6 +379,7 @@ export default function AkunKaryawan() {
                                 onRowClick={handleDetail}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
+                                syncWithUrl={true}
                             />
                         </div>
                     </section>

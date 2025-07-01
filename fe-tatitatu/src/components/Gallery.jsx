@@ -106,7 +106,6 @@ const Gallery = ({
     }
   };
 
-  // Load saved itemsPerPage from localStorage on mount (for uncontrolled mode)
   useEffect(() => {
     if (itemsPerPage === undefined) {
       try {
@@ -153,9 +152,8 @@ const Gallery = ({
   const isFirstSubMenu = useRef(true);
   const isFirstPerPageChange = useRef(true);
 
-  // Reset page ke 1 hanya jika user benar-benar mengubah searchQuery
   useEffect(() => {
-    if (setPage) return; // controlled, biarkan parent yang atur
+    if (setPage) return; 
     if (isFirstSearch.current) {
       isFirstSearch.current = false;
       return;
@@ -163,9 +161,8 @@ const Gallery = ({
     handleSetPage(1);
   }, [search]);
 
-  // Reset page ke 1 hanya jika user benar-benar mengubah activeSubMenu
   useEffect(() => {
-    if (setPage) return; // controlled, biarkan parent yang atur
+    if (setPage) return;
     if (isFirstSubMenu.current) {
       isFirstSubMenu.current = false;
       return;
@@ -212,14 +209,10 @@ const Gallery = ({
     onItemClick(item);
   };
 
-  // Pemisahan event handler untuk itemsPerPage agar tidak konflik dengan page reset
   const handleItemsPerPageChange = (e) => {
     const newValue = Number(e.target.value);
     console.log('handleItemsPerPageChange called with:', newValue);
     handleSetItemsPerPage(newValue);
-    
-    // Parent component akan menangani reset page jika diperlukan
-    // (Karena DataBarang.jsx sudah melakukan reset page saat perPage berubah)
   };
 
   const navigate = useNavigate();
@@ -244,7 +237,7 @@ const Gallery = ({
             value={perPage}
             onChange={handleItemsPerPageChange}
           >
-            <option value={10}>10</option>
+            <option value={5}>5</option>
             <option value={15}>15</option>
             <option value={30}>30</option>
             <option value={50}>50</option>

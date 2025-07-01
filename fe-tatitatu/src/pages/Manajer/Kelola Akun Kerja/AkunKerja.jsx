@@ -120,6 +120,7 @@ export default function AkunKerja() {
                                 hasFilter={false}
                                 bg_header={getBgHeaderColor()}
                                 text_header={getTextHeaderColor()}
+                                syncWithUrl={true}
                             />
                         )}
                     </div>

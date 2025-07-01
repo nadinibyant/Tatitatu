@@ -193,7 +193,6 @@ export default function LaporanKeuangan() {
                 
                 if (response.data.success) {
                     const apiData = response.data.data;
-                    console.log(apiData)
                     
                     const transformedData = {
                         keuntungan: apiData.keuntungan || 0,
@@ -217,6 +216,7 @@ export default function LaporanKeuangan() {
                                             jenis: 'pemasukan'
                                         };
                                     } else if (item.penjualan_id) {
+                                        console.log(item)
                                         return {
                                             nomor: item.penjualan_id,
                                             tanggal: item.tanggal,
@@ -226,7 +226,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.produk && item.produk.length > 0 
                                                 ? item.produk[0].nama_cabang
                                                 : '',
-                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
+                                            toko: item.nama_toko?.nama_toko || item.nama_toko || '-',
                                             kategori: item.kategori_pemasukan,
                                             total: item.total_pemasukan, 
                                             jenis: 'penjualan'
@@ -267,7 +267,7 @@ export default function LaporanKeuangan() {
                                             cabang: item.produk && item.produk.length > 0 
                                                 ? item.produk[0].nama_cabang
                                                 : '',
-                                            toko: item.nama_toko || item.nama_toko.nama_toko || '-',
+                                            toko: item.nama_toko?.nama_toko || item.nama_toko || '-',
                                             kategori: item.kategori_pengeluaran,
                                             total: item.total_pengeluaran,
                                             jenis: 'pembelian'
@@ -294,7 +294,6 @@ export default function LaporanKeuangan() {
         fetchLaporanKeuangan();
     }, [selectedMonth, selectedYear, isAdmin, toko_id, selectedStore]);
 
-    console.log(data)
 
     const headers = [
         { label: "Nomor", key: "nomor", align: "text-left" },
@@ -315,6 +314,7 @@ export default function LaporanKeuangan() {
     const navigate = useNavigate();
     
     const handleRowClick = async (row) => {
+        console.log(row)
         if (row.jenis === 'pemasukan') {
             navigate('/laporanKeuangan/pemasukan-non-penjualan/detail', { 
                 state: { 
@@ -375,9 +375,9 @@ export default function LaporanKeuangan() {
                 } 
             });
         } else if (row.jenis === 'pembelian') {
-            console.log(toko_id)
-            const isGudang = toko_id === 1 || row.toko === 'Rumah Produksi' || row.toko == 'Dansa' || row.toko == 'dansa' || 
-                            (typeof row.toko === 'object' && row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko_lama === 'Rumah produksi' || row.toko.nama_toko === 'Dansa' || row.toko.nama_toko === 'dansa');
+            const isGudang = row.toko === 'Rumah Produksi' || row.toko === 'Rumah produksi' || row.toko == 'Dansa' || row.toko == 'dansa' ||
+            (typeof row.toko === 'object' && 
+             (row.toko.nama_toko === 'Rumah Produksi' || row.toko.nama_toko === 'Rumah produksi' || row.toko.nama_toko_lama === 'Rumah Produksi' || row.toko.nama_toko == 'Dansa' || row.toko.nama_toko == 'dansa'));
             
             navigate('/pembelianStok/detail', { 
                 state: { 
@@ -697,11 +697,13 @@ export default function LaporanKeuangan() {
                                     ...item,
                                     tanggal: moment(item.tanggal).format('DD MMMM YYYY'),
                                     total: `Rp${Number(item.total).toLocaleString('id-ID')}`,
+                                    cabang: item.cabang || item.toko || '-',
                                     toko: typeof item.toko === 'object' ? item.toko.nama_toko : item.toko
                                 }))}
                                 onRowClick={handleRowClick}
                                 hasFilter={true}
                                 onFilterClick={handleFilterClick}
+                                syncWithUrl={true}
                             />
                         )}
                     </div>

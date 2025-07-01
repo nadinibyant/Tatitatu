@@ -581,6 +581,7 @@ export default function KaryawanGaji() {
                                 </div>
                             )}
                             onRowClick={handleRowClick}
+                            syncWithUrl={true}
                         />
                     </div>
                 </section>

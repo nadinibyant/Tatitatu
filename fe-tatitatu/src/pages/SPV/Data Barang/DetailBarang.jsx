@@ -49,11 +49,6 @@ export default function DetailBarang() {
                             "Harga Logis": itemData.harga_logis,
                             "Margin Persentase": itemData.margin_persentase,
                             "Margin Nominal": itemData.margin_nominal,
-                            
-                            // "rincian_biaya": itemData.rincian_biaya.map(biaya => ({
-                            //     "Nama Biaya": biaya.nama_biaya,
-                            //     "Jumlah Biaya": biaya.jumlah_biaya
-                            // })),
                             "rincian_bahan": itemData.rincian_bahan.map(bahan => ({
                                 "Nama Bahan": bahan.barang_mentah.nama_barang,
                                 "Harga Satuan": bahan.harga_satuan,
@@ -91,19 +86,9 @@ export default function DetailBarang() {
                                 hargaLogis: rincian.harga_logis,
                                 marginPersentase: rincian.margin_persentase,
                                 marginNominal: rincian.margin_nominal
-
                             });
 
                             const branchRincianBiaya = [];
-
-                            // if (biayaToko) {
-                            //     branchRincianBiaya.push({
-                            //         id: biayaToko.biaya_toko_id,
-                            //         "Nama Biaya": `Biaya Operasional dan Staff ${cabangName}`,
-                            //         "Jumlah Biaya": biayaToko.total_biaya,
-                            //         isEditable: false
-                            //     });
-                            // }
 
                             rincian.detail_rincian_biaya.forEach(detail => {
                                 if (!detail.biaya_toko_id && !detail.is_deleted) {
@@ -133,7 +118,6 @@ export default function DetailBarang() {
                             "dataCabang": dataCabang
                         });
 
-  
                         if (dataCabang.length > 0) {
                             setSelectedCabang(dataCabang[0].nama);
                         }
@@ -156,8 +140,12 @@ export default function DetailBarang() {
         return rincianBiayaPerCabang[selectedCabang] || [];
     };
 
+    // Use correct navigation for breadcrumbs
     const breadcrumbItems = [
-        { label: "List Data Barang Handmade", href: "/dataBarang/handmade" },
+        { 
+            label: "List Data Barang Handmade", 
+            href: `/dataBarang/handmade${location.search}` // Preserve the query parameters
+        },
         { label: "Detail Barang", href: "" },
     ];
 
@@ -175,12 +163,6 @@ export default function DetailBarang() {
         { label: "Nama Biaya", key: "Nama Biaya", align: "text-left" },
         { label: "Jumlah Biaya", key: "Jumlah Biaya", align: "text-left" },
     ];
-
-    // const dataCabang = data?.rincian_biaya?.map(rb => ({
-    //     nama: `Cabang ${rb.cabang_id}`,
-    //     totalHPP: rb.total_hpp,
-    //     hargaJual: rb.harga_jual
-    // })) || [];
 
     function formatNumberWithDots(number) {
         return number?.toLocaleString('id-ID') || '0';
@@ -209,13 +191,19 @@ export default function DetailBarang() {
     };
 
     const handleCancelDel = () => setModalDel(false);
+    
     const handleConfirmSucc = () => {
         setModalSucc(false);
-        const page = getQueryParam('page') || 1;
-        const perPage = getQueryParam('perPage') || 15;
-        navigate(`/dataBarang/handmade?page=${page}&perPage=${perPage}`);
+        // Navigate back with preserved URL params
+        navigate(`/dataBarang/handmade${location.search}`);
     };
+    
     const handleBtnEdit = () => navigate(`/dataBarang/handmade/edit/${id}`);
+
+    // Improved back button handler - preserves all URL parameters
+    const handleBack = () => {
+        navigate(`/dataBarang/handmade${location.search}`);
+    };
 
     const getCurrentBranchData = () => {
         if (isAdminGudang) {
@@ -241,7 +229,6 @@ export default function DetailBarang() {
                 "Harga Logis": branchData.hargaLogis,
                 "Margin Persentase": branchData.marginPersentase,
                 "Margin Nominal": branchData.marginNominal
-                
             };
         }
         
@@ -251,19 +238,6 @@ export default function DetailBarang() {
             "Total Keuntungan": data["Total Keuntungan"],
             "Harga Jual": data["Harga Jual"]
         };
-    };
-
-    // Helper untuk ambil query param tertentu
-    function getQueryParam(param) {
-      const params = new URLSearchParams(location.search);
-      return params.get(param);
-    }
-
-    // Contoh tombol kembali:
-    const handleBack = () => {
-      const page = getQueryParam('page') || 1;
-      const perPage = getQueryParam('perPage') || 15;
-      navigate(`/dataBarang/handmade?page=${page}&perPage=${perPage}`);
     };
 
     if (isLoading) return <Spinner />;
