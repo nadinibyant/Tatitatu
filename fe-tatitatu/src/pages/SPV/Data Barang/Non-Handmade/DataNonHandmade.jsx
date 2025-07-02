@@ -14,6 +14,8 @@ export default function DataBarangNonHandmade() {
     const [isModalSucc, setModalSucc] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [data, setData] = useState([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [subMenus, setSubMenus] = useState([]);
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang'
@@ -80,11 +82,16 @@ export default function DataBarangNonHandmade() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : `/barang-non-handmade?toko_id=${toko_id}`;
-            const response = await api.get(endpoint);
-            
+            let endpoint = isAdminGudang ? '/barang-nonhandmade-gudang' : `/barang-non-handmade`;
+            let params = isAdminGudang ? {} : { toko_id };
+            params = { ...params, page, limit: perPage };
+            if (searchQuery) params.search = searchQuery;
+            if (activeSubMenu && activeSubMenu !== 'Semua') params.category = activeSubMenu;
+            const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+            const response = await api.get(`${endpoint}?${queryString}`);
             if (response.data.success) {
-                const transformedData = response.data.data.map(item => {
+                const apiData = response.data.data;
+                const transformedData = apiData.map(item => {
                     if (isAdminGudang) {
                         return {
                             id: item.barang_nonhandmade_id,
@@ -110,6 +117,13 @@ export default function DataBarangNonHandmade() {
                     }
                 });
                 setData(transformedData);
+                if (response.data.pagination) {
+                    setTotalItems(response.data.pagination.totalItems || 0);
+                    setTotalPages(response.data.pagination.totalPages || 1);
+                } else {
+                    setTotalItems(transformedData.length);
+                    setTotalPages(1);
+                }
             }
         } catch (error) {
             console.error('Error fetching data barang:', error);
@@ -120,8 +134,11 @@ export default function DataBarangNonHandmade() {
 
     useEffect(() => {
         fetchSubMenus();
-        fetchDataBarang();
     }, []);
+
+    useEffect(() => {
+        fetchDataBarang();
+    }, [page, perPage, searchQuery, activeSubMenu]);
 
     const handleAdd = () => {
         navigate('/dataBarang/non-handmade/tambah');
@@ -200,7 +217,7 @@ export default function DataBarangNonHandmade() {
                             enableSubMenus={true} 
                             onEdit={handleBtnEdit} 
                             onDelete={handleBtnDelete} 
-                            onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}${window.location.search}`)}
+                            onItemClick={(item) => navigate(`/dataBarang/non-handmade/detail/${item.id}?${searchParams.toString()}`)}
                             page={page}
                             itemsPerPage={perPage}
                             searchQuery={searchQuery}
@@ -209,6 +226,8 @@ export default function DataBarangNonHandmade() {
                             setItemsPerPage={setPerPage}
                             setSearchQuery={setSearchQuery}
                             setActiveSubMenu={setActiveSubMenu}
+                            totalItems={totalItems}
+                            totalPages={totalPages}
                         />
                     </div>
                 </section>

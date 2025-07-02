@@ -1,18 +1,14 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { MoreVertical, Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import PropTypes from 'prop-types';
 
 const Gallery = ({ 
   data = [],
   enableSubMenus = false,
   subMenus = [],
-  defaultSubMenu = '',
   onEdit = () => {},
   onDelete = () => {},
-  className = '',
   onItemClick = () => {},
-  url='',
-  // Controlled props
   page,
   itemsPerPage,
   searchQuery,
@@ -21,15 +17,11 @@ const Gallery = ({
   setItemsPerPage,
   setSearchQuery,
   setActiveSubMenu,
+  totalPages: propTotalPages,
 }) => {
-  // Internal state fallback
-  const [internalSearchQuery, setInternalSearchQuery] = useState("");
-  const [internalActiveSubMenu, setInternalActiveSubMenu] = useState(defaultSubMenu || 'Semua');
-  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
-  const [internalItemsPerPage, setInternalItemsPerPage] = useState(15);
+  // Semua state dikontrol parent
   const [selectedItem, setSelectedItem] = useState(null);
   
-  // Safely get userData from localStorage
   let userData;
   try {
     userData = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -54,70 +46,29 @@ const Gallery = ({
         ? "hitam"
         : "primary";
 
-  // Gunakan controlled props jika ada, jika tidak fallback ke state internal
-  const currentPage = page !== undefined ? page : internalCurrentPage;
-  const perPage = itemsPerPage !== undefined ? itemsPerPage : internalItemsPerPage;
-  const search = searchQuery !== undefined ? searchQuery : internalSearchQuery;
-  const activeMenu = activeSubMenu !== undefined ? activeSubMenu : internalActiveSubMenu;
+  // Semua state dikontrol parent
+  const currentPage = page;
+  const perPage = itemsPerPage;
+  const search = searchQuery;
+  const activeMenu = activeSubMenu;
 
   // Debug logs
   console.log('Gallery received props:', { page, itemsPerPage, searchQuery, activeSubMenu });
   console.log('Gallery using values:', { currentPage, perPage, search, activeMenu });
 
   // Handler setter with proper function references
-  const handleSetPage = (newPage) => {
-    if (setPage) {
-      setPage(newPage);
-    } else {
-      setInternalCurrentPage(newPage);
-    }
-  };
-  
-  const handleSetItemsPerPage = (newPerPage) => {
-    console.log('handleSetItemsPerPage called with:', newPerPage);
-    
-    if (setItemsPerPage) {
-      // For controlled component
-      setItemsPerPage(newPerPage);
-    } else {
-      // For uncontrolled component
-      setInternalItemsPerPage(newPerPage);
-      try {
-        localStorage.setItem('galleryItemsPerPage', newPerPage.toString());
-      } catch (error) {
-        console.error('Error saving itemsPerPage to localStorage:', error);
-      }
-    }
-  };
-  
-  const handleSetSearchQuery = (newQuery) => {
-    if (setSearchQuery) {
-      setSearchQuery(newQuery);
-    } else {
-      setInternalSearchQuery(newQuery);
-    }
-  };
-  
-  const handleSetActiveSubMenu = (newMenu) => {
-    if (setActiveSubMenu) {
-      setActiveSubMenu(newMenu);
-    } else {
-      setInternalActiveSubMenu(newMenu);
-    }
-  };
+  const handleSetPage = (newPage) => setPage && setPage(newPage);
+  const handleSetItemsPerPage = (newPerPage) => setItemsPerPage && setItemsPerPage(newPerPage);
+  const handleSetSearchQuery = (newQuery) => setSearchQuery && setSearchQuery(newQuery);
+  const handleSetActiveSubMenu = (newMenu) => setActiveSubMenu && setActiveSubMenu(newMenu);
 
+  // State lokal untuk input search
+  const [localSearch, setLocalSearch] = useState(search);
+
+  // Sync localSearch jika searchQuery dari parent berubah (misal reset filter)
   useEffect(() => {
-    if (itemsPerPage === undefined) {
-      try {
-        const savedPerPage = localStorage.getItem('galleryItemsPerPage');
-        if (savedPerPage) {
-          setInternalItemsPerPage(Number(savedPerPage));
-        }
-      } catch (error) {
-        console.error('Error loading saved items per page:', error);
-      }
-    }
-  }, []);
+    setLocalSearch(search);
+  }, [search]);
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
@@ -125,20 +76,22 @@ const Gallery = ({
         item.title?.toLowerCase().includes(search?.toLowerCase() || '') ||
         item.type?.toLowerCase().includes(search?.toLowerCase() || '') 
       );
-  
       const matchesCategory = enableSubMenus
         ? !search
           ? (!activeMenu || activeMenu === 'Semua' || item.category === activeMenu)
           : true
         : true; 
-  
       return matchesSearch && matchesCategory;
     });
   }, [data, search, activeMenu, enableSubMenus]);
-  
-  const totalPages = Math.ceil(filteredData.length / perPage);
-  const startIndex = (currentPage - 1) * perPage;
-  const displayedData = filteredData.slice(startIndex, startIndex + perPage);
+
+  let displayedData = data;
+  let totalPages = propTotalPages;
+  if (propTotalPages === undefined) {
+    totalPages = Math.ceil(filteredData.length / perPage);
+    const startIndex = (currentPage - 1) * perPage;
+    displayedData = filteredData.slice(startIndex, startIndex + perPage);
+  }
 
   // Jika currentPage lebih besar dari totalPages (misal setelah filter/data berubah), auto-fix ke page terakhir yang valid
   useEffect(() => {
@@ -146,39 +99,6 @@ const Gallery = ({
       handleSetPage(totalPages);
     }
   }, [totalPages, currentPage]);
-
-  // Tambahkan ref untuk deteksi perubahan pertama kali
-  const isFirstSearch = useRef(true);
-  const isFirstSubMenu = useRef(true);
-  const isFirstPerPageChange = useRef(true);
-
-  useEffect(() => {
-    if (setPage) return; 
-    if (isFirstSearch.current) {
-      isFirstSearch.current = false;
-      return;
-    }
-    handleSetPage(1);
-  }, [search]);
-
-  useEffect(() => {
-    if (setPage) return;
-    if (isFirstSubMenu.current) {
-      isFirstSubMenu.current = false;
-      return;
-    }
-    handleSetPage(1);
-  }, [activeMenu]);
-  
-  // Reset page ke 1 saat itemsPerPage berubah
-  useEffect(() => {
-    if (setPage) return; // controlled, biarkan parent yang atur
-    if (isFirstPerPageChange.current) {
-      isFirstPerPageChange.current = false;
-      return;
-    }
-    handleSetPage(1);
-  }, [perPage]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) handleSetPage(currentPage - 1);
@@ -215,8 +135,6 @@ const Gallery = ({
     handleSetItemsPerPage(newValue);
   };
 
-  const navigate = useNavigate();
-
   return (
     <div className="w-full mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
@@ -225,8 +143,13 @@ const Gallery = ({
             type="text"
             placeholder="Cari Barang"
             className="w-full p-2 pl-10 border rounded-lg bg-white"
-            value={search}
-            onChange={(e) => handleSetSearchQuery(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSetSearchQuery(localSearch);
+              }
+            }}
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
         </div>
@@ -237,7 +160,7 @@ const Gallery = ({
             value={perPage}
             onChange={handleItemsPerPageChange}
           >
-            <option value={5}>5</option>
+            <option value={3}>3</option>
             <option value={15}>15</option>
             <option value={30}>30</option>
             <option value={50}>50</option>
@@ -385,6 +308,24 @@ const Gallery = ({
       
     </div>
   );
+};
+
+Gallery.propTypes = {
+  data: PropTypes.array,
+  enableSubMenus: PropTypes.bool,
+  subMenus: PropTypes.array,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onItemClick: PropTypes.func,
+  page: PropTypes.number,
+  itemsPerPage: PropTypes.number,
+  searchQuery: PropTypes.string,
+  activeSubMenu: PropTypes.string,
+  setPage: PropTypes.func,
+  setItemsPerPage: PropTypes.func,
+  setSearchQuery: PropTypes.func,
+  setActiveSubMenu: PropTypes.func,
+  totalPages: PropTypes.number,
 };
 
 export default Gallery;

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Button from "../../../components/Button";
 import { menuItems, userOptions } from "../../../data/menu";
 import Gallery from "../../../components/Gallery";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
 import LayoutWithNav from "../../../components/LayoutWithNav";
@@ -15,9 +15,13 @@ export default function DataBarang() {
     const [isModalSucc, setModalSucc] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [data, setData] = useState([]);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
     const [subMenus, setSubMenus] = useState([]);
+    const isInitialMount = useRef(true);
     
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang'
@@ -42,26 +46,37 @@ export default function DataBarang() {
     const searchQuery = searchParams.get('search') || '';
     const activeSubMenu = searchParams.get('category') || 'Semua';
     console.log('perPage in parent:', perPage);
+    console.log('current page:', page);
 
+    // Pengaturan parameter URL dengan perlindungan untuk mencegah reset page
     const setPage = (newPage) => setSearchParams({
         ...Object.fromEntries(searchParams),
         page: newPage
     });
+    
     const setItemsPerPage = (newPerPage) => setSearchParams({
         ...Object.fromEntries(searchParams),
         perPage: newPerPage,
-        page: 1
+        page: 1  // Reset ke halaman 1 saat jumlah item per halaman berubah
     });
-    const setSearchQuery = (newSearch) => setSearchParams({
-        ...Object.fromEntries(searchParams),
-        search: newSearch,
-        page: 1
-    });
-    const setActiveSubMenu = (newCategory) => setSearchParams({
-        ...Object.fromEntries(searchParams),
-        category: newCategory,
-        page: 1
-    });
+    
+    const setSearchQuery = (newSearch) => {
+        // Jika search berubah, kita reset page ke 1
+        setSearchParams({
+            ...Object.fromEntries(searchParams),
+            search: newSearch,
+            page: 1
+        });
+    };
+    
+    const setActiveSubMenu = (newCategory) => {
+        // Jika kategori berubah, kita reset page ke 1
+        setSearchParams({
+            ...Object.fromEntries(searchParams),
+            category: newCategory,
+            page: 1
+        });
+    };
 
     const fetchSubMenus = async () => {
         try {
@@ -83,19 +98,28 @@ export default function DataBarang() {
     const fetchDataBarang = async () => {
         try {
             setIsLoading(true);
-            const endpoint = isAdminGudang ? '/barang-handmade-gudang' : `/barang-handmade?toko_id=${toko_id}`;
-            const response = await api.get(endpoint);
+            let endpoint = isAdminGudang ? '/barang-handmade-gudang' : `/barang-handmade`;
+            let params = isAdminGudang ? {} : { toko_id };
+            // Tambahkan page & limit
+            params = { ...params, page, limit: perPage };
+            // Tambahkan search & category jika ada
+            if (searchQuery) params.search = searchQuery;
+            if (activeSubMenu && activeSubMenu !== 'Semua') params.category = activeSubMenu;
+            // Build query string
+            const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
             
+            console.log('Fetching data with params:', params);
+            
+            const response = await api.get(`${endpoint}?${queryString}`);
             if (response.data.success) {
-                const transformedData = response.data.data.map(item => {
+                const apiData = response.data.data;
+                const transformedData = apiData.map(item => {
                     const hargaJual = isAdminGudang 
                         ? item.harga_logis 
                         : item.rincian_biaya?.[0]?.harga_logis;
-                    
                     const kategoriNama = isAdminGudang
                         ? item.kategori?.nama_kategori_barang
                         : item.kategori_barang?.nama_kategori_barang;
-
                     return {
                         id: item.barang_handmade_id,
                         title: item.nama_barang,
@@ -108,18 +132,40 @@ export default function DataBarang() {
                     };
                 });
                 setData(transformedData);
+                // Set pagination info
+                if (response.data.pagination) {
+                    setTotalItems(response.data.pagination.totalItems || 0);
+                    setTotalPages(response.data.pagination.totalPages || 1);
+                    
+                    // Jika halaman saat ini lebih besar dari total halaman yang ada, 
+                    // arahkan ke halaman terakhir yang valid
+                    if (page > response.data.pagination.totalPages && !isInitialMount.current) {
+                        setSearchParams({
+                            ...Object.fromEntries(searchParams),
+                            page: response.data.pagination.totalPages
+                        });
+                    }
+                } else {
+                    setTotalItems(transformedData.length);
+                    setTotalPages(1);
+                }
             }
         } catch (error) {
             console.error('Error fetching data barang:', error);
         } finally {
             setIsLoading(false);
+            // Setelah fetch pertama, tandai bahwa ini bukan initial mount lagi
+            isInitialMount.current = false;
         }
     };
     
     useEffect(() => {
         fetchSubMenus();
-        fetchDataBarang();
     }, []);
+    
+    useEffect(() => {
+        fetchDataBarang();
+    }, [location.key, page, perPage, searchQuery, activeSubMenu]);
 
     const handleAdd = () => {
         navigate('/dataBarang/handmade/tambah');
@@ -198,10 +244,7 @@ export default function DataBarang() {
                         enableSubMenus={true} 
                         onEdit={handleBtnEdit} 
                         onDelete={handleBtnDelete} 
-                        onItemClick={(item) => {
-                            const currentSearch = window.location.search;
-                            navigate(`/dataBarang/handmade/detail/${item.id}${currentSearch}`);
-                        }}
+                        onItemClick={(item) => navigate(`/dataBarang/handmade/detail/${item.id}?${searchParams.toString()}`)}
                         page={page}
                         itemsPerPage={perPage}
                         searchQuery={searchQuery}
@@ -210,6 +253,8 @@ export default function DataBarang() {
                         setItemsPerPage={setItemsPerPage}
                         setSearchQuery={setSearchQuery}
                         setActiveSubMenu={setActiveSubMenu}
+                        totalItems={totalItems}
+                        totalPages={totalPages}
                     />
                     </div>
                 </section>

@@ -32,11 +32,18 @@ export default function BarangCustom() {
   const [isLoading, setIsLoading] = useState(false)
   const [isAlertSUcc, setAlertSucc] = useState(false)
   const [data,setData] = useState([])
-    const [isErrorAlert, setErrorAlert] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const toko_id = userData.userId
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isErrorAlert, setErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const toko_id = userData.userId
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get('page')) || 1;
+  const perPage = Number(searchParams.get('perPage')) || 15;
+  const searchQuery = searchParams.get('search') || '';
+  const activeSubMenu = searchParams.get('category') || 'Semua';
 
-    const themeColor = (isAdminGudang || isHeadGudang) 
+  const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
       ? "biruTua" 
@@ -44,40 +51,49 @@ export default function BarangCustom() {
         ? "hitam"
         : "primary";
 
-    const fetchDataBarang = async () => {
-      try {
-        setIsLoading(true);
-        const endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
-
-        const url = isAdminGudang ? endpoint : `${endpoint}?toko_id=${toko_id}`;
-        
-        const response = await api.get(url);
-        console.log(response.data.data)
-        
-        if (response.data.success) {
-          const transformedData = response.data.data.map(item => ({
-            id: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
-            title: item.nama_barang,
-            price: `Rp${item.harga.toLocaleString('id-ID')}`,
-            image: item.image 
-              ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${item.image}` 
-              : "https://via.placeholder.com/50",
-            type: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
-            category: item.kategori_barang_id,
-            jumlah_minimum_stok: item.jumlah_minimum_stok,
-            isi: item.isi,
-            harga_satuan: item.harga_satuan,
-            harga_jual: item.harga_jual
-          }));
-          
-          setData(transformedData);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
+  const fetchDataBarang = async () => {
+    try {
+      setIsLoading(true);
+      let endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
+      let url = '';
+      if (isAdminGudang) {
+        url = endpoint;
+      } else {
+        const params = { toko_id, page, limit: perPage };
+        const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+        url = `${endpoint}?${queryString}`;
       }
-    };
+      const response = await api.get(url);
+      if (response.data.success) {
+        const transformedData = response.data.data.map(item => ({
+          id: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
+          title: item.nama_barang,
+          price: `Rp${item.harga.toLocaleString('id-ID')}`,
+          image: item.image 
+            ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${item.image}` 
+            : "https://via.placeholder.com/50",
+          type: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
+          category: item.kategori_barang_id,
+          jumlah_minimum_stok: item.jumlah_minimum_stok,
+          isi: item.isi,
+          harga_satuan: item.harga_satuan,
+          harga_jual: item.harga_jual
+        }));
+        setData(transformedData);
+        if (response.data.pagination) {
+          setTotalItems(response.data.pagination.totalItems || 0);
+          setTotalPages(response.data.pagination.totalPages || 1);
+        } else {
+          setTotalItems(transformedData.length);
+          setTotalPages(1);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 const [categoryOptions, setCategoryOptions] = useState([]);
 
@@ -117,8 +133,11 @@ const fetchCategories = async () => {
 
 useEffect(() => {
   fetchCategories();
-  fetchDataBarang(); 
 }, []);
+
+useEffect(() => {
+  fetchDataBarang();
+}, [page, perPage, searchQuery, activeSubMenu]);
 
 const handleAddBtn = () => {
   setModalMode("add");
@@ -348,12 +367,6 @@ const handleAddBtn = () => {
     });
   }
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = Number(searchParams.get('page')) || 1;
-  const perPage = Number(searchParams.get('perPage')) || 15;
-  const searchQuery = searchParams.get('search') || '';
-  const activeSubMenu = searchParams.get('category') || 'Semua';
-
   const setPage = (newPage) => setSearchParams({
       ...Object.fromEntries(searchParams),
       page: newPage
@@ -427,6 +440,8 @@ const handleAddBtn = () => {
                 setItemsPerPage={setPerPage}
                 setSearchQuery={setSearchQuery}
                 setActiveSubMenu={setActiveSubMenu}
+                totalItems={totalItems}
+                totalPages={totalPages}
               />
             </div>
           </section>

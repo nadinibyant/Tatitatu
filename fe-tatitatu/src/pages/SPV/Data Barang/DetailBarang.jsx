@@ -194,13 +194,11 @@ export default function DetailBarang() {
     
     const handleConfirmSucc = () => {
         setModalSucc(false);
-        // Navigate back with preserved URL params
         navigate(`/dataBarang/handmade${location.search}`);
     };
     
     const handleBtnEdit = () => navigate(`/dataBarang/handmade/edit/${id}`);
 
-    // Improved back button handler - preserves all URL parameters
     const handleBack = () => {
         navigate(`/dataBarang/handmade${location.search}`);
     };
@@ -213,7 +211,6 @@ export default function DetailBarang() {
                 "Harga Jual": data["Harga Jual"],
                 "Harga Jual Ideal": data["Harga Jual Ideal"],
                 "Harga Logis": data["Harga Logis"],
-                "Margin Persentase": data["Margin Persentase"],
                 "Margin Nominal": data["Margin Nominal"]
             };
         }
