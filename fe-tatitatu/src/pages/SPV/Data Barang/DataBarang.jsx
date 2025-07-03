@@ -44,7 +44,7 @@ export default function DataBarang() {
     const page = Number(searchParams.get('page')) || 1;
     const perPage = Number(searchParams.get('perPage')) || 15;
     const searchQuery = searchParams.get('search') || '';
-    const activeSubMenu = searchParams.get('category') || 'Semua';
+    const activeSubMenu = searchParams.get('category') || null; // null artinya Semua
     console.log('perPage in parent:', perPage);
     console.log('current page:', page);
 
@@ -69,13 +69,14 @@ export default function DataBarang() {
         });
     };
     
-    const setActiveSubMenu = (newCategory) => {
-        // Jika kategori berubah, kita reset page ke 1
-        setSearchParams({
-            ...Object.fromEntries(searchParams),
-            category: newCategory,
-            page: 1
-        });
+    const setActiveSubMenu = (newCategoryId) => {
+        const params = { ...Object.fromEntries(searchParams), page: 1 };
+        if (newCategoryId == null) {
+            delete params.category;
+        } else {
+            params.category = newCategoryId;
+        }
+        setSearchParams(params);
     };
 
     const fetchSubMenus = async () => {
@@ -85,8 +86,11 @@ export default function DataBarang() {
             const response = await api.get(endpoint);
             
             if (response.data.success) {
-                const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
-                setSubMenus(['Semua', ...subMenuOptions]);
+                const subMenuOptions = response.data.data.map(item => ({
+                    id: item.kategori_barang_id,
+                    nama: item.nama_kategori_barang
+                }));
+                setSubMenus([{ id: null, nama: 'Semua' }, ...subMenuOptions]);
             }
         } catch (error) {
             console.error('Error fetching sub menus:', error);
@@ -104,7 +108,7 @@ export default function DataBarang() {
             params = { ...params, page, limit: perPage };
             // Tambahkan search & category jika ada
             if (searchQuery) params.search = searchQuery;
-            if (activeSubMenu && activeSubMenu !== 'Semua') params.category = activeSubMenu;
+            if (activeSubMenu && activeSubMenu !== 'null' && activeSubMenu !== null) params.category = activeSubMenu;
             // Build query string
             const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
             
@@ -135,14 +139,13 @@ export default function DataBarang() {
                 // Set pagination info
                 if (response.data.pagination) {
                     setTotalItems(response.data.pagination.totalItems || 0);
-                    setTotalPages(response.data.pagination.totalPages || 1);
-                    
-                    // Jika halaman saat ini lebih besar dari total halaman yang ada, 
-                    // arahkan ke halaman terakhir yang valid
-                    if (page > response.data.pagination.totalPages && !isInitialMount.current) {
+                    const safeTotalPages = response.data.pagination.totalPages > 0 ? response.data.pagination.totalPages : 1;
+                    setTotalPages(safeTotalPages);
+                    // Hanya update page jika totalPages > 0 dan page > totalPages
+                    if (safeTotalPages > 0 && page > safeTotalPages && !isInitialMount.current) {
                         setSearchParams({
                             ...Object.fromEntries(searchParams),
-                            page: response.data.pagination.totalPages
+                            page: safeTotalPages
                         });
                     }
                 } else {

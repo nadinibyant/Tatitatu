@@ -173,17 +173,17 @@ const Gallery = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:gap-6">
             {subMenus.map(menu => (
               <button
-                key={menu}
+                key={menu.id}
                 className={`pb-2 px-1 text-sm ${
-                  activeMenu === menu 
+                  (activeMenu == menu.id || (activeMenu == null && menu.id == null))
                     ? `border-b-2 border-${themeColor} text-${themeColor} font-medium`
                     : 'text-gray-500'
                 }`}
                 onClick={() => {
-                  handleSetActiveSubMenu(menu);
+                  handleSetActiveSubMenu(menu.id);
                 }}
               >
-                {menu}
+                {menu.nama}
               </button>
             ))}
           </div>

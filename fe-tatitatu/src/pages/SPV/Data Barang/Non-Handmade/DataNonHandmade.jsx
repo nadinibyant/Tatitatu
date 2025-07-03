@@ -40,7 +40,7 @@ export default function DataBarangNonHandmade() {
     const page = Number(searchParams.get('page')) || 1;
     const perPage = Number(searchParams.get('perPage')) || 15;
     const searchQuery = searchParams.get('search') || '';
-    const activeSubMenu = searchParams.get('category') || 'Semua';
+    const activeSubMenu = searchParams.get('category') || null; // null artinya Semua
 
     const setPage = (newPage) => setSearchParams({
         ...Object.fromEntries(searchParams),
@@ -56,11 +56,15 @@ export default function DataBarangNonHandmade() {
         search: newSearch,
         page: 1
     });
-    const setActiveSubMenu = (newCategory) => setSearchParams({
-        ...Object.fromEntries(searchParams),
-        category: newCategory,
-        page: 1
-    });
+    const setActiveSubMenu = (newCategoryId) => {
+        const params = { ...Object.fromEntries(searchParams), page: 1 };
+        if (newCategoryId == null) {
+            delete params.category;
+        } else {
+            params.category = newCategoryId;
+        }
+        setSearchParams(params);
+    };
 
     const fetchSubMenus = async () => {
         try {
@@ -69,8 +73,11 @@ export default function DataBarangNonHandmade() {
             const response = await api.get(endpoint);
             
             if (response.data.success) {
-                const subMenuOptions = response.data.data.map(item => item.nama_kategori_barang);
-                setSubMenus(['Semua', ...subMenuOptions]);
+                const subMenuOptions = response.data.data.map(item => ({
+                    id: item.kategori_barang_id,
+                    nama: item.nama_kategori_barang
+                }));
+                setSubMenus([{ id: null, nama: 'Semua' }, ...subMenuOptions]);
             }
         } catch (error) {
             console.error('Error fetching sub menus:', error);
@@ -86,7 +93,7 @@ export default function DataBarangNonHandmade() {
             let params = isAdminGudang ? {} : { toko_id };
             params = { ...params, page, limit: perPage };
             if (searchQuery) params.search = searchQuery;
-            if (activeSubMenu && activeSubMenu !== 'Semua') params.category = activeSubMenu;
+            if (activeSubMenu && activeSubMenu !== 'null' && activeSubMenu !== null) params.category = activeSubMenu;
             const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
             const response = await api.get(`${endpoint}?${queryString}`);
             if (response.data.success) {
@@ -101,7 +108,7 @@ export default function DataBarangNonHandmade() {
                                 `${import.meta.env.VITE_API_URL}/images-barang-non-handmade-gudang/${item.image}` : 
                                 "https://via.placeholder.com/50",
                             type: item.barang_nonhandmade_id,
-                            category: item.kategori.nama_kategori_barang
+                            category: item.kategori.kategori_barang_id // simpan id kategori
                         };
                     } else {
                         return {
@@ -112,14 +119,15 @@ export default function DataBarangNonHandmade() {
                                 `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}` : 
                                 "https://via.placeholder.com/50",
                             type: item.barang_non_handmade_id,
-                            category: item.kategori.nama_kategori_barang
+                            category: item.kategori.kategori_barang_id // simpan id kategori
                         };
                     }
                 });
                 setData(transformedData);
                 if (response.data.pagination) {
                     setTotalItems(response.data.pagination.totalItems || 0);
-                    setTotalPages(response.data.pagination.totalPages || 1);
+                    const safeTotalPages = response.data.pagination.totalPages > 0 ? response.data.pagination.totalPages : 1;
+                    setTotalPages(safeTotalPages);
                 } else {
                     setTotalItems(transformedData.length);
                     setTotalPages(1);

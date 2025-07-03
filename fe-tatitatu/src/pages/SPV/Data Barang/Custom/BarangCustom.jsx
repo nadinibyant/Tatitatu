@@ -55,14 +55,15 @@ export default function BarangCustom() {
     try {
       setIsLoading(true);
       let endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
-      let url = '';
-      if (isAdminGudang) {
-        url = endpoint;
-      } else {
-        const params = { toko_id, page, limit: perPage };
-        const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-        url = `${endpoint}?${queryString}`;
+      const params = {};
+      if (!isAdminGudang) {
+        params.toko_id = toko_id;
       }
+      params.page = page;
+      params.limit = perPage;
+      if (searchQuery) params.search = searchQuery;
+      const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+      const url = `${endpoint}?${queryString}`;
       const response = await api.get(url);
       if (response.data.success) {
         const transformedData = response.data.data.map(item => ({
