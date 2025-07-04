@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
 import Navbar from "../../../components/Navbar";
@@ -37,6 +37,7 @@ export default function TambahPembelianStok() {
     const [selectedCategory, setSelectedCategory] = useState("Semua");
     const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     const [selectedItems, setSelectedItems] = useState([]);
+    const [searchTermInput, setSearchTermInput] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setLoading] = useState(false)
     const [isModalSucc, setModalSucc] = useState(false)
@@ -44,7 +45,6 @@ export default function TambahPembelianStok() {
     
     const [dataBarang, setDataBarang] = useState([]);
     const [kategoriList, setKategoriList] = useState([]);
-    const [isLoadingBarang, setLoadingBarang] = useState(false);
     const [errorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -110,7 +110,7 @@ export default function TambahPembelianStok() {
 
     const fetchData = async () => {
         try {
-            setLoadingBarang(true);
+            setLoading(true);
             const [handmadeRes, nonHandmadeRes, customRes, packagingRes, kategoriRes] = await Promise.all([
                 api.get(`/barang-handmade?toko_id=${toko_id}`),
                 api.get(`/barang-non-handmade?toko_id=${toko_id}`),
@@ -179,7 +179,7 @@ export default function TambahPembelianStok() {
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
-            setLoadingBarang(false);
+            setLoading(false);
         }
     };
 
@@ -613,6 +613,149 @@ const handleModalSubmit = () => {
         navigate('/pembelianStok')
     }
 
+    // PAGINATION STATE
+    const [pagination, setPagination] = useState({
+        "Barang Handmade": { page: 1, limit: 12, total: 0 },
+        "Barang Non-Handmade": { page: 1, limit: 12, total: 0 },
+        "Bahan Custom": { page: 1, limit: 12, total: 0 },
+        "Packaging": { page: 1, limit: 12, total: 0 },
+    });
+    const [barangData, setBarangData] = useState({
+        "Barang Handmade": { items: [], total: 0 },
+        "Barang Non-Handmade": { items: [], total: 0 },
+        "Bahan Custom": { items: [], total: 0 },
+        "Packaging": { items: [], total: 0 },
+    });
+
+    // Fetch paginated data for the selected jenis
+    const fetchBarangPaginated = async (jenis, { page, limit, category, search }) => {
+        setLoading(true);
+        let endpoint = '';
+        let typeKey = '';
+        switch (jenis) {
+            case 'Barang Handmade': endpoint = '/barang-handmade'; typeKey = 'barang_handmade'; break;
+            case 'Barang Non-Handmade': endpoint = '/barang-non-handmade'; typeKey = 'barang_non_handmade'; break;
+            case 'Bahan Custom': endpoint = '/barang-custom'; typeKey = 'barang_custom'; break;
+            case 'Packaging': endpoint = '/packaging'; typeKey = 'packaging'; break;
+            default: return;
+        }
+        const params = [
+            `toko_id=${toko_id}`,
+            `page=${page}`,
+            `limit=${limit}`
+        ];
+        if (category && category !== 'Semua') params.push(`category=${category}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        try {
+            const res = await api.get(`${endpoint}?${params.join('&')}`);
+            const items = res.data.data.map(item => {
+                let price = 0;
+                if ((typeKey === 'barang_handmade' || typeKey === 'barang_non_handmade') && item.rincian_biaya) {
+                    const currentCabangId = dataCabang[activeCabang]?.id;
+                    const rincianBiaya = item.rincian_biaya.find(
+                        rincian => rincian.cabang_id === currentCabangId
+                    );
+                    if (rincianBiaya?.detail_rincian_biaya) {
+                        const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
+                            detail => detail.nama_biaya === "Modal"
+                        );
+                        if (modalBiaya) {
+                            price = modalBiaya.jumlah_biaya;
+                        }
+                    }
+                } else if (typeKey === 'packaging') {
+                    price = item.harga_satuan;
+                } else if (typeKey === 'barang_custom') {
+                    price = item.harga_satuan;
+                }
+                return {
+                    id: item[`${typeKey}_id`],
+                    image: item.image,
+                    code: item[`${typeKey}_id`],
+                    name: typeKey === 'packaging' ? item.nama_packaging : item.nama_barang,
+                    rincian_biaya: item.rincian_biaya,
+                    price: price,
+                    kategori_id: item.kategori_barang_id || item.kategori_barang?.kategori_barang_id
+                };
+            });
+            setBarangData(prev => ({
+                ...prev,
+                [jenis]: {
+                    items,
+                    total: res.data.pagination?.totalItems || items.length
+                }
+            }));
+            setPagination(prev => ({
+                ...prev,
+                [jenis]: {
+                    ...prev[jenis],
+                    total: res.data.pagination?.totalItems || items.length
+                }
+            }));
+        } catch (e) {
+            setBarangData(prev => ({ ...prev, [jenis]: { items: [], total: 0 } }));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch on modal open, jenis, category, search, page, or limit change
+    useEffect(() => {
+        if (!isModalOpen) return;
+        fetchBarangPaginated(selectedJenis, {
+            page: pagination[selectedJenis].page,
+            limit: pagination[selectedJenis].limit,
+            category: selectedCategory,
+            search: searchTerm
+        });
+    }, [isModalOpen, selectedJenis, selectedCategory, searchTerm, pagination[selectedJenis].page, pagination[selectedJenis].limit]);
+
+    // Handler for page change
+    const handlePageChange = useCallback((page) => {
+        console.log('Page change requested:', page);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page
+            }
+        }));
+    }, [selectedJenis]);
+
+    // Handler for limit change (optional, not shown in UI yet)
+    const handleLimitChange = (limit) => {
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                limit,
+                page: 1
+            }
+        }));
+    };
+    // Handler for category change
+    const handleCategoryChange = (cat) => {
+        setSelectedCategory(cat);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page: 1
+            }
+        }));
+    };
+    // Handler for search change
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page: 1
+            }
+        }));
+    };
+
     return (
         <>
             <LayoutWithNav menuItems={menuItems} userOptions={userOptions}>
@@ -739,7 +882,7 @@ const handleModalSubmit = () => {
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden pb-8`}>
                                     <div className="flex flex-col space-y-4 mb-4">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                             <div className="relative w-full sm:max-w-md">
@@ -756,8 +899,20 @@ const handleModalSubmit = () => {
                                                 <input
                                                     type="text"
                                                     placeholder="Cari Barang yang mau dibeli"
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    value={searchTermInput}
+                                                    onChange={e => setSearchTermInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            setSearchTerm(searchTermInput);
+                                                            setPagination(prev => ({
+                                                                ...prev,
+                                                                [selectedJenis]: {
+                                                                    ...prev[selectedJenis],
+                                                                    page: 1
+                                                                }
+                                                            }));
+                                                        }
+                                                    }}
                                                     className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                                 />
                                             </div>
@@ -824,7 +979,7 @@ const handleModalSubmit = () => {
                                         ))}
                                     </div>
 
-                                    {isLoadingBarang ? (
+                                    {isLoading ? (
                                         <div className="flex justify-center items-center h-64">
                                             <Spinner />
                                         </div>
@@ -846,7 +1001,7 @@ const handleModalSubmit = () => {
                                                 {kategoriList.map((kategori) => (
                                                     <button
                                                         key={kategori.kategori_barang_id}
-                                                        onClick={() => setSelectedCategory(kategori.kategori_barang_id.toString())}
+                                                        onClick={() => handleCategoryChange(kategori.kategori_barang_id.toString())}
                                                         className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                             selectedCategory === kategori.kategori_barang_id.toString()
                                                                 ? `bg-${themeColor} text-white`
@@ -860,14 +1015,40 @@ const handleModalSubmit = () => {
 
                                             {/* Gallery */}
                                             <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                                <Gallery2
-                                                    items={filteredItems.map(item => ({
-                                                        ...item,
-                                                        image: getImageUrl(item, selectedJenis)
-                                                    }))}
-                                                    onSelect={handleSelectItem}
-                                                    selectedItems={selectedItems}
-                                                />
+                                                {/* Dropdown Items Per Page */}
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-sm">Tampilkan</span>
+                                                    <select
+                                                        value={pagination[selectedJenis].limit}
+                                                        onChange={e => handleLimitChange(Number(e.target.value))}
+                                                        className="border rounded px-2 py-1 text-sm"
+                                                    >
+                                                        {[5, 10, 15, 30, 50].map(opt => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+                                                    <span className="text-sm">per halaman</span>
+                                                </div>
+                                                {(() => {
+                                                    const currentPagination = pagination[selectedJenis];
+                                                    const totalPages = Math.ceil((currentPagination.total || 1) / currentPagination.limit);
+                                                    return (
+                                                        <Gallery2
+                                                            items={barangData[selectedJenis].items.map(item => ({
+                                                                ...item,
+                                                                image: getImageUrl(item, selectedJenis)
+                                                            }))}
+                                                            onSelect={handleSelectItem}
+                                                            selectedItems={selectedItems}
+                                                            currentPage={currentPagination.page}
+                                                            totalPages={totalPages}
+                                                            totalItems={currentPagination.total}
+                                                            itemsPerPage={currentPagination.limit}
+                                                            onPageChange={handlePageChange}
+                                                            showPagination={totalPages > 1}
+                                                        />
+                                                    );
+                                                })()}
                                             </div>
                                         </>
                                     )}

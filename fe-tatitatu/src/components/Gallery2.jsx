@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Pagination from "./Pagination";
 
 const GalleryItem = ({ item, onSelect, selectionCount, showStockAlert, enableStockValidation }) => {
   const userData = JSON.parse(localStorage.getItem('userData'))
@@ -80,7 +81,13 @@ const Gallery2 = ({
   onSelect, 
   selectedItems, 
   role = "",
-  enableStockValidation = false 
+  enableStockValidation = false,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  itemsPerPage = 15,
+  onPageChange = () => {},
+  showPagination = false
 }) => {
   const [stockAlert, setStockAlert] = useState({ show: false, itemName: '' });
   
@@ -90,6 +97,27 @@ const Gallery2 = ({
       setStockAlert({ show: false, itemName: '' });
     }, 3000); 
   };
+
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const userRole = userData?.role
+  const isAdminGudang = userRole === 'admingudang';
+  const isHeadGudang = userRole === 'headgudang';
+  const isKasirToko = userRole === 'kasirtoko';
+  const isManajer = userRole === 'manajer';
+  const isOwner = userRole === 'owner';
+  const isFinance = userRole === 'finance';
+  const isAdmin = userRole === 'admin';
+  const isKaryawanProduksi = userRole === 'karyawanproduksi';
+  const toko_id = userData?.tokoId;
+
+  const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi || toko_id === 1) 
+    ? 'coklatTua' 
+    : (isManajer || isOwner || isFinance) 
+      ? "biruTua" 
+      : ((isAdmin && userData?.userId !== 1 && userData?.userId !== 2) || 
+         (isKasirToko && toko_id !== undefined && toko_id !== null && toko_id !== 1 && toko_id !== 2))
+        ? "hitam"
+        : "primary";
   
   return (
     <div className="relative">
@@ -125,6 +153,18 @@ const Gallery2 = ({
           />
         ))}
       </div>
+
+      {/* Pagination */}
+      {showPagination && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          itemsPerPage={itemsPerPage}
+          totalItems={totalItems}
+          themeColor={themeColor}
+        />
+      )}
     </div>
   );
 };
