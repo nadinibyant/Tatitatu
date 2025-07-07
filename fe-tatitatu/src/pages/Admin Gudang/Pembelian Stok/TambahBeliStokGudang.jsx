@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
 import InputDropdown from "../../../components/InputDropdown";
@@ -31,10 +31,24 @@ export default function TambahBeliStokGudang() {
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
-    const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
+    const [selectedJenis, setSelectedJenis] = useState("Barang Non-Handmade");
     const [formattedProducts, setFormattedProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
+    
+    // PAGINATION STATE
+    const [pagination, setPagination] = useState({
+        // "Barang Handmade": { page: 1, limit: 15, total: 0 },
+        "Barang Non-Handmade": { page: 1, limit: 15, total: 0 },
+        "Barang Mentah": { page: 1, limit: 15, total: 0 },
+        "Packaging": { page: 1, limit: 15, total: 0 },
+    });
+    const [barangData, setBarangData] = useState({
+        // "Barang Handmade": { items: [], total: 0 },
+        "Barang Non-Handmade": { items: [], total: 0 },
+        "Barang Mentah": { items: [], total: 0 },
+        "Packaging": { items: [], total: 0 },
+    });
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
@@ -84,6 +98,171 @@ export default function TambahBeliStokGudang() {
         fetchPaymentMethods();
     }, []); 
 
+    // Fetch paginated data for the selected jenis
+    const fetchBarangPaginated = async (jenis, { page, limit, category, search }) => {
+        setLoading(true);
+        let endpoint = '';
+        let typeKey = '';
+        switch (jenis) {
+            // case 'Barang Handmade': endpoint = '/barang-handmade-gudang'; typeKey = 'barang_handmade'; break;
+            case 'Barang Non-Handmade': endpoint = '/barang-nonhandmade-gudang'; typeKey = 'barang_nonhandmade'; break;
+            case 'Barang Mentah': endpoint = '/barang-mentah'; typeKey = 'barang_mentah'; break;
+            case 'Packaging': endpoint = '/packaging-gudang'; typeKey = 'packaging'; break;
+            default: return;
+        }
+        const params = [
+            `page=${page}`,
+            `limit=${limit}`
+        ];
+        if (category && category !== 'Semua') params.push(`category=${category}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        try {
+            const res = await api.get(`${endpoint}?${params.join('&')}`);
+            const baseUrl = import.meta.env.VITE_API_URL;
+            
+            const items = res.data.data.map(item => {
+                let price = 0;
+                let image = '';
+                let name = '';
+                
+                switch (typeKey) {
+                    // case 'barang_handmade':
+                    //     price = item.harga_jual;
+                    //     image = item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg';
+                    //     name = item.nama_barang;
+                    //     break;
+                    case 'barang_nonhandmade':
+                        price = item.harga_jual;
+                        image = item.image ? `${baseUrl}/images-barang-non-handmade-gudang/${item.image}` : '/placeholder.jpg';
+                        name = item.nama_barang;
+                        break;
+                    case 'barang_mentah':
+                        price = item.harga_satuan;
+                        image = item.image ? `${baseUrl}/images-barang-mentah/${item.image}` : '/placeholder.jpg';
+                        name = item.nama_barang;
+                        break;
+                    case 'packaging':
+                        price = item.harga_satuan;
+                        image = item.image ? `${baseUrl}/images-packaging-gudang/${item.image}` : '/placeholder.jpg';
+                        name = item.nama_packaging;
+                        break;
+                }
+                
+                return {
+                    id: item[`${typeKey}_id`],
+                    image: image,
+                    name: name,
+                    price: price,
+                    kategori: item.kategori?.nama_kategori_barang,
+                    jenis: jenis,
+                    imagePrefix: `images-${typeKey}-gudang`
+                };
+            });
+            
+            setBarangData(prev => ({
+                ...prev,
+                [jenis]: {
+                    items,
+                    total: res.data.pagination?.totalItems || items.length
+                }
+            }));
+            setPagination(prev => ({
+                ...prev,
+                [jenis]: {
+                    ...prev[jenis],
+                    total: res.data.pagination?.totalItems || items.length
+                }
+            }));
+        } catch (e) {
+            console.error('Error fetching paginated data:', e);
+            setBarangData(prev => ({ ...prev, [jenis]: { items: [], total: 0 } }));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch when modal opens (Tambah Baris clicked)
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchBarangPaginated(selectedJenis, {
+                page: pagination[selectedJenis].page,
+                limit: pagination[selectedJenis].limit,
+                category: selectedCategory,
+                search: searchTerm
+            });
+        }
+    }, [isModalOpen]);
+
+    // Fetch when jenis, category, search, page, or limit changes
+    useEffect(() => {
+        if (!isModalOpen) return;
+        fetchBarangPaginated(selectedJenis, {
+            page: pagination[selectedJenis].page,
+            limit: pagination[selectedJenis].limit,
+            category: selectedCategory,
+            search: searchTerm
+        });
+    }, [selectedJenis, selectedCategory, searchTerm, pagination[selectedJenis].page, pagination[selectedJenis].limit]);
+
+    // Handler for page change
+    const handlePageChange = useCallback((page) => {
+        console.log('Page change requested:', page);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page
+            }
+        }));
+    }, [selectedJenis]);
+
+    // Handler for limit change
+    const handleLimitChange = (limit) => {
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                limit: Number(limit),
+                page: 1
+            }
+        }));
+    };
+
+    // Handler for category change
+    const handleCategoryChange = (cat) => {
+        setSelectedCategory(cat);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page: 1
+            }
+        }));
+    };
+
+    // Handler for search change
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+    };
+
+    // Handler for search submit (on Enter)
+    const handleSearchSubmit = () => {
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page: 1
+            }
+        }));
+        // Trigger API call with new search term
+        fetchBarangPaginated(selectedJenis, {
+            page: 1,
+            limit: pagination[selectedJenis].limit,
+            category: selectedCategory,
+            search: searchTerm
+        });
+    };
+
     const headers = [
         { label: "No", key: "No", align: "text-left" },
         { label: "Foto Produk", key: "Foto Produk", align: "text-left" },
@@ -98,26 +277,26 @@ export default function TambahBeliStokGudang() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const [handmadeRes, nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
-                    api.get('/barang-handmade-gudang'),
-                    api.get('/barang-nonhandmade-gudang'),
-                    api.get('/barang-mentah'),
-                    api.get('/packaging-gudang'),
-                    api.get('/kategori-barang-gudang')
-                ]);
+                            const [nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
+                // api.get('/barang-handmade-gudang'),
+                api.get('/barang-nonhandmade-gudang'),
+                api.get('/barang-mentah'),
+                api.get('/packaging-gudang'),
+                api.get('/kategori-barang-gudang')
+            ]);
 
                 const baseUrl = import.meta.env.VITE_API_URL;
 
                 const allFormattedProducts = [
-                    ...handmadeRes.data.data.map(item => ({
-                        id: item.barang_handmade_id,
-                        image: item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg',
-                        name: item.nama_barang,
-                        price: item.harga_jual,
-                        kategori: item.kategori?.nama_kategori_barang,
-                        jenis: "Barang Handmade",
-                        imagePrefix: 'images-barang-handmade-gudang'
-                    })),
+                    // ...handmadeRes.data.data.map(item => ({
+                    //     id: item.barang_handmade_id,
+                    //     image: item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg',
+                    //     name: item.nama_barang,
+                    //     price: item.harga_jual,
+                    //     kategori: item.kategori?.nama_kategori_barang,
+                    //     jenis: "Barang Handmade",
+                    //     imagePrefix: 'images-barang-handmade-gudang'
+                    // })),
                     ...nonhandmadeRes.data.data.map(item => ({
                         id: item.barang_nonhandmade_id,
                         image: item.image ? `${baseUrl}/images-barang-non-handmade-gudang/${item.image}` : '/placeholder.jpg',
@@ -165,24 +344,17 @@ export default function TambahBeliStokGudang() {
     }, [isAdminGudang]);
 
     const getCategories = () => {
-        if (isAdminGudang && (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade")) {
-            return ["Semua", ...categories.map(cat => cat.name)];
+        if (isAdminGudang && (selectedJenis === "Barang Non-Handmade")) {
+            return [
+                { id: "Semua", name: "Semua" },
+                ...categories.map(cat => ({ id: cat.id.toString(), name: cat.name }))
+            ];
         }
-        return ["Semua"];
+        return [{ id: "Semua", name: "Semua" }];
     };
 
     const getFilteredItems = () => {
-        return formattedProducts.filter(item => {
-            const nameMatch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const jenisMatch = item.jenis === selectedJenis;
-            const categoryMatch = selectedCategory === "Semua" || item.kategori === selectedCategory;
-            
-            if (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") {
-                return nameMatch && jenisMatch && categoryMatch;
-            }
-            
-            return nameMatch && jenisMatch;
-        });
+        return barangData[selectedJenis]?.items || [];
     };
 
     const calculateSubtotal = () => {
@@ -307,6 +479,7 @@ export default function TambahBeliStokGudang() {
             "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
             "Aksi": (
                 <button
+                    type="button"
                     onClick={() => handleDeleteItem(product.id)}
                     className="py-1 text-merah font-semibold"
                 >
@@ -633,7 +806,12 @@ export default function TambahBeliStokGudang() {
                                                 type="text"
                                                 placeholder="Cari Barang yang mau dibeli"
                                                 value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                onChange={handleSearchChange}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        handleSearchSubmit();
+                                                    }
+                                                }}
                                                 className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                             />
                                         </div>
@@ -701,29 +879,55 @@ export default function TambahBeliStokGudang() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 mt-4">
-                                    {(selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") && 
+                                    {(selectedJenis === "Barang Non-Handmade") && 
                                         getCategories().map((kategori) => (
                                             <button
-                                                key={kategori}
-                                                onClick={() => setSelectedCategory(kategori)}
+                                                key={kategori.id}
+                                                onClick={() => handleCategoryChange(kategori.id)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
-                                                    selectedCategory === kategori
+                                                    selectedCategory === kategori.id
                                                         ? `bg-${themeColor} text-white`
                                                         : "border border-gray-300"
                                                 }`}
                                             >
-                                                {kategori}
+                                                {kategori.name}
                                             </button>
                                         ))
                                     }
                                 </div>
 
-                                <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                    <Gallery2
-                                        items={getFilteredItems()}
-                                        onSelect={handleSelectItem}
-                                        selectedItems={selectedItems}
-                                    />
+                                <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar pb-4">
+                                    {/* Dropdown Items Per Page */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm">Tampilkan</span>
+                                        <select
+                                            value={pagination[selectedJenis].limit}
+                                            onChange={e => handleLimitChange(Number(e.target.value))}
+                                            className="border rounded px-2 py-1 text-sm"
+                                        >
+                                            {[5, 10, 15, 30, 50].map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                        <span className="text-sm">per halaman</span>
+                                    </div>
+                                    {(() => {
+                                        const currentPagination = pagination[selectedJenis];
+                                        const totalPages = Math.ceil((currentPagination.total || 1) / currentPagination.limit);
+                                        return (
+                                            <Gallery2
+                                                items={getFilteredItems()}
+                                                onSelect={handleSelectItem}
+                                                selectedItems={selectedItems}
+                                                currentPage={currentPagination.page}
+                                                totalPages={totalPages}
+                                                totalItems={currentPagination.total}
+                                                itemsPerPage={currentPagination.limit}
+                                                onPageChange={handlePageChange}
+                                                showPagination={totalPages > 1}
+                                            />
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </section>

@@ -521,6 +521,7 @@ const handleModalSubmit = () => {
                 rawTotalBiaya: totalBiaya,
                 Aksi: (
                     <button
+                        type="button"
                         className="text-red-500 hover:text-red-700"
                         onClick={() => handleDeleteItem(activeCabang, item.id)}
                     >
