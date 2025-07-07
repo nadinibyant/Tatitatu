@@ -382,28 +382,37 @@ const handleEdit = (itemId) => {
   };
 
   const handleDetail = (itemId) => {
-    setId(itemId);
+    // Check if itemId is an object (from Gallery component) or just an ID
+    const id = typeof itemId === 'object' ? itemId.id : itemId;
+    setId(id);
     setModalDetail(true);
-    const itemToShow = data.find(item => item.id === itemId);
-    const priceNumber = parseInt(itemToShow.price.replace(/\D/g, ''));
-    setData2({
-      info_barang: {
-        Nomor: itemToShow.id.toString(),
-        "Nama Barang": itemToShow.title,
-        "Ukuran": itemToShow.ukuran,
-        "Jumlah Minimum Stok": itemToShow.jumlah_minimum_stok,
-        Kategori: itemToShow.category,
-        Foto: itemToShow.image,
-      },
-      rincian_biaya: [
-        {
-          Harga: priceNumber,
-          Isi: itemToShow.isi,
-          HargaSatuan: itemToShow.harga_satuan,
-          HargaJual: isAdminGudang ? itemToShow.harga_jual : ""
+    
+    // Find the item in data array
+    const itemToShow = data.find(item => item.id === id);
+    
+    if (itemToShow) {
+      const priceNumber = parseInt(itemToShow.price.replace(/\D/g, ''));
+      setData2({
+        info_barang: {
+          Nomor: itemToShow.id.toString(),
+          "Nama Barang": itemToShow.title,
+          "Ukuran": itemToShow.ukuran,
+          "Jumlah Minimum Stok": itemToShow.jumlah_minimum_stok,
+          Kategori: itemToShow.category,
+          Foto: itemToShow.image,
         },
-      ],
-    });
+        rincian_biaya: [
+          {
+            Harga: priceNumber,
+            Isi: itemToShow.isi,
+            HargaSatuan: itemToShow.harga_satuan,
+            HargaJual: isAdminGudang ? itemToShow.harga_jual : ""
+          },
+        ],
+      });
+    } else {
+      console.error('Item not found with id:', id);
+    }
   };
 
   return (
@@ -560,6 +569,7 @@ const handleEdit = (itemId) => {
                       <p className="font-bold">Rincian Biaya</p>
                       <div className="pt-3">
                         <Table
+                          searchQuery=""
                           hasPagination={false}
                           hasSearch={false}
                           headers={headers}
@@ -673,6 +683,8 @@ const handleEdit = (itemId) => {
                 <div className="mt-5">
                   <p className="font-bold">Rincian Biaya</p>
                   <Table
+                    searchQuery=""
+                    hasSearch={false}
                     headers={headers}
                     data={data2.rincian_biaya.map((item, index) => ({
                         ...item,
@@ -683,7 +695,6 @@ const handleEdit = (itemId) => {
                         HargaJual: `Rp${formatCurrency(item.HargaJual.toLocaleString('id-ID') || 0)}`,
                     }))}
                     hasPagination={false}
-                    hasSearch={false}
                   />
                 </div>
               </div>

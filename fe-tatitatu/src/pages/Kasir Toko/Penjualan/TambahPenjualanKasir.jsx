@@ -34,7 +34,12 @@ export default function TambahPenjualanKasir() {
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0);
     const [pajak, setPajak] = useState(0);
-    const [kategoriPackaging, setKategoriPackaging] = useState(["Semua"]);
+    const [kategoriPackaging, setKategoriPackaging] = useState([
+        { nama_kategori_barang: "Semua", kategori_barang_id: "Semua" },
+        { nama_kategori_barang: "Dus", kategori_barang_id: "Dus" },
+        { nama_kategori_barang: "Plastik", kategori_barang_id: "Plastik" },
+        { nama_kategori_barang: "Kardus", kategori_barang_id: "Kardus" }
+    ]);
     const [dataCabang, setDataCabang] = useState([
         { nama: "Rincian Produk", data: [] },
         { nama: "Packaging", data: [] } 
@@ -82,13 +87,21 @@ export default function TambahPenjualanKasir() {
                         name: `${item.nama_packaging} - ${item.ukuran}`,
                         price: item.harga_jual,
                         kategori: item.kategori_barang.nama_kategori_barang,
+                        kategori_id: item.kategori_barang.kategori_barang_id,
                         stock: item.stok_barang?.jumlah_stok
                     }));
 
-                const kategoriBaru = [
-                    "Semua", 
-                    ...new Set(packagingItems.map(item => item.kategori))
-                ];
+                // Ambil unique kategori sebagai array objek
+                const kategoriSet = new Map();
+                packagingItems.forEach(item => {
+                    if (!kategoriSet.has(item.kategori_id)) {
+                        kategoriSet.set(item.kategori_id, {
+                            nama_kategori_barang: item.kategori,
+                            kategori_barang_id: item.kategori_id
+                        });
+                    }
+                });
+                const kategoriBaru = [{ nama_kategori_barang: "Semua", kategori_barang_id: "Semua" }, ...Array.from(kategoriSet.values())];
 
                 setKategoriPackaging(kategoriBaru);
 
@@ -123,6 +136,19 @@ export default function TambahPenjualanKasir() {
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     
+    const [pagination, setPagination] = useState({
+        "Barang Handmade": { page: 1, limit: 12, total: 0 },
+        "Barang Non-Handmade": { page: 1, limit: 12, total: 0 },
+        "Packaging": { page: 1, limit: 12, total: 0 },
+    });
+    const [barangData, setBarangData] = useState({
+        "Barang Handmade": { items: [], total: 0 },
+        "Barang Non-Handmade": { items: [], total: 0 },
+        "Packaging": { items: [], total: 0 },
+    });
+
+    const [searchTermInput, setSearchTermInput] = useState("");
+    const [packagingSearchTermInput, setPackagingSearchTermInput] = useState("");
 
     useEffect(() => {
         if (isModalOpen) {
@@ -196,6 +222,17 @@ export default function TambahPenjualanKasir() {
     const btnAddPackagingBaris = (cabangIndex) => {
         setActiveCabang(cabangIndex);
         setIsPackagingModalOpen(true);
+        // Reset search and filter when opening modal
+        setPackagingSearchTerm("");
+        setPackagingSearchTermInput("");
+        setSelectedPackagingCategory("Semua");
+        // Fetch packaging data with pagination
+        fetchBarangPaginated("Packaging", {
+            page: pagination["Packaging"].page,
+            limit: pagination["Packaging"].limit,
+            category: "Semua",
+            search: ""
+        });
     };
 
     const handleSelectPackagingItem = (item, count) => {
@@ -346,34 +383,21 @@ export default function TambahPenjualanKasir() {
     const btnAddBaris = (cabangIndex) => {
         setActiveCabang(cabangIndex);
         setIsModalOpen(true);
+        // Reset search and filter when opening modal
+        setSearchTerm("");
+        setSearchTermInput("");
+        setSelectedCategory("Semua");
+        // Fetch product data with pagination
+        fetchBarangPaginated(selectedJenis, {
+            page: pagination[selectedJenis].page,
+            limit: pagination[selectedJenis].limit,
+            category: "Semua",
+            search: ""
+        });
     };
-
-    // const [dataPackaging, setDataPackaging] = useState([
-    //     {
-    //         jenis: "Packaging Makanan",
-    //         kategori: ["Semua", "Dus", "Plastik", "Kardus"],
-    //         items: [
-    //             { 
-    //                 id: 1, 
-    //                 image: "https://via.placeholder.com/150", 
-    //                 name: "Dus Kecil", 
-    //                 price: 5000, 
-    //                 kategori: "Dus" 
-    //             },
-    //             { 
-    //                 id: 2, 
-    //                 image: "https://via.placeholder.com/150", 
-    //                 name: "Plastik Besar", 
-    //                 price: 3000, 
-    //                 kategori: "Plastik" 
-    //             },
-    //         ],
-    //     },
-    // ]);
 
     const [isPackagingModalOpen, setIsPackagingModalOpen] = useState(false);
     const [selectedPackagingCategory, setSelectedPackagingCategory] = useState("Semua");
-    const [selectedPackagingJenis, setSelectedPackagingJenis] = useState("Packaging");
     const [selectedPackagingItems, setSelectedPackagingItems] = useState([]);
     const [packagingSearchTerm, setPackagingSearchTerm] = useState("");
 
@@ -388,11 +412,14 @@ export default function TambahPenjualanKasir() {
             if (response.data.success) {
                 const kategoriBaru = response.data.data
                     .filter(kategori => !kategori.is_deleted)
-                    .map(kategori => kategori.nama_kategori_barang);
+                    .map(kategori => ({
+                        nama_kategori_barang: kategori.nama_kategori_barang,
+                        kategori_barang_id: kategori.kategori_barang_id
+                    }));
 
                 setKategoriBarang({
-                    "Barang Handmade": ["Semua", ...kategoriBaru],
-                    "Barang Non-Handmade": ["Semua", ...kategoriBaru]
+                    "Barang Handmade": [{ nama_kategori_barang: "Semua", kategori_barang_id: "Semua" }, ...kategoriBaru],
+                    "Barang Non-Handmade": [{ nama_kategori_barang: "Semua", kategori_barang_id: "Semua" }, ...kategoriBaru]
                 });
             }
         } catch (error) {
@@ -497,22 +524,6 @@ export default function TambahPenjualanKasir() {
             return updated;
         });
     };
-
-    const filteredItems = dataBarang
-        .find((data) => data.jenis === selectedJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
-                item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        const filteredPackagingItems = dataPackaging
-        .find((data) => data.jenis === selectedPackagingJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedPackagingCategory === "Semua" || item.kategori === selectedPackagingCategory) &&
-                item.name.toLowerCase().includes(packagingSearchTerm.toLowerCase())
-        );
 
     const resetSelection = () => {
         setSelectedItems([]);
@@ -813,6 +824,260 @@ export default function TambahPenjualanKasir() {
         navigate(isAdminGudang ? '/penjualan-admin-gudang' : '/penjualan-kasir');
     };
 
+    // Fungsi fetch data barang dengan pagination, category, search
+    const fetchBarangPaginated = async (jenis, { page, limit, category, search }) => {
+        let endpoint = '';
+        let typeKey = '';
+        let params = [];
+        setLoading(true);
+        if (jenis === 'Barang Handmade') {
+            endpoint = '/barang-handmade';
+            typeKey = 'barang_handmade';
+            params.push(`cabang=${cabang_id}`);
+        } else if (jenis === 'Barang Non-Handmade') {
+            endpoint = '/barang-non-handmade';
+            typeKey = 'barang_non_handmade';
+            params.push(`cabang=${cabang_id}`);
+        } else if (jenis === 'Packaging') {
+            endpoint = '/packaging';
+            typeKey = 'packaging';
+            params.push(`toko_id=${toko_id}`);
+        } else {
+            setLoading(false);
+            return;
+        }
+        params.push(`page=${page}`);
+        params.push(`limit=${limit}`);
+        if (category && category !== 'Semua') {
+            params.push(`category=${category}`);
+        }
+        if (search) {
+            params.push(`search=${encodeURIComponent(search)}`);
+        }
+        try {
+            const res = await api.get(`${endpoint}?${params.join('&')}`);
+            let items = [];
+            let totalItems = 0;
+            if (res.data.success) {
+                // Perbaiki di sini: data dan total dari struktur response API
+                items = Array.isArray(res.data.data) ? res.data.data : [];
+                totalItems = res.data.pagination?.totalItems ?? items.length;
+                const mappedItems = items
+                    .filter(item => !item.is_deleted)
+                    .map(item => {
+                        let price = 0;
+                        if ((typeKey === 'barang_handmade' || typeKey === 'barang_non_handmade') && item.rincian_biaya && item.rincian_biaya.length > 0) {
+                            price = item.rincian_biaya[0]?.harga_logis || 0;
+                        } else if (typeKey === 'packaging') {
+                            price = item.harga_jual || 0;
+                        }
+                        let kategoriName = '';
+                        let kategoriId = '';
+                        if (typeKey === 'packaging' && item.kategori_barang) {
+                            kategoriName = item.kategori_barang.nama_kategori_barang;
+                            kategoriId = item.kategori_barang.kategori_barang_id;
+                        } else if (typeKey === 'barang_handmade' && item.kategori_barang) {
+                            kategoriName = item.kategori_barang.nama_kategori_barang;
+                            kategoriId = item.kategori_barang.kategori_barang_id;
+                        } else if (typeKey === 'barang_non_handmade' && item.kategori) {
+                            kategoriName = item.kategori.nama_kategori_barang;
+                            kategoriId = item.kategori.kategori_barang_id;
+                        }
+                        return {
+                            id: item[`${typeKey}_id`] || item.id,
+                            image: typeKey === 'packaging'
+                                ? (item.image ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : '/placeholder-image.jpg')
+                                : (item.image ? `${import.meta.env.VITE_API_URL}/images-barang-${typeKey === 'barang_handmade' ? 'handmade' : 'non-handmade'}/${item.image}` : '/placeholder-image.jpg'),
+                            code: item[`${typeKey}_id`] || item.id,
+                            name: typeKey === 'packaging' ? `${item.nama_packaging} - ${item.ukuran}` : item.nama_barang,
+                            price: price,
+                            kategori: kategoriName,
+                            kategori_id: kategoriId,
+                            stock: item.stok_barang?.jumlah_stok || 0,
+                            formattedPrice: `Rp${price.toLocaleString('id-ID')}`
+                        };
+                    });
+                setBarangData(prev => ({
+                    ...prev,
+                    [jenis]: {
+                        items: mappedItems,
+                        total: totalItems
+                    }
+                }));
+                setPagination(prev => ({
+                    ...prev,
+                    [jenis]: {
+                        ...prev[jenis],
+                        total: totalItems
+                    }
+                }));
+            }
+        } catch (error) {
+            console.error(`Error fetching ${jenis}:`, error);
+            setBarangData(prev => ({
+                ...prev,
+                [jenis]: {
+                    items: [],
+                    total: 0
+                }
+            }));
+            setPagination(prev => ({
+                ...prev,
+                [jenis]: {
+                    ...prev[jenis],
+                    total: 0
+                }
+            }));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handler untuk pagination dan filter
+    const handlePageChange = (jenis, page) => {
+        setPagination(prev => ({
+            ...prev,
+            [jenis]: {
+                ...prev[jenis],
+                page
+            }
+        }));
+    };
+    
+    const handleLimitChange = (jenis, limit) => {
+        setPagination(prev => ({
+            ...prev,
+            [jenis]: {
+                ...prev[jenis],
+                limit,
+                page: 1
+            }
+        }));
+    };
+    
+    const handleCategoryChange = (categoryId) => {
+        setSelectedCategory(categoryId);
+        setPagination(prev => ({
+            ...prev,
+            [selectedJenis]: {
+                ...prev[selectedJenis],
+                page: 1
+            }
+        }));
+        
+        // Fetch data with new category
+        fetchBarangPaginated(selectedJenis, {
+            page: 1,
+            limit: pagination[selectedJenis].limit,
+            category: categoryId,
+            search: searchTerm
+        });
+    };
+    
+    const handlePackagingCategoryChange = (categoryId) => {
+        setSelectedPackagingCategory(categoryId);
+        setPagination(prev => ({
+            ...prev,
+            "Packaging": {
+                ...prev["Packaging"],
+                page: 1
+            }
+        }));
+        
+        // Fetch data with new category
+        fetchBarangPaginated("Packaging", {
+            page: 1,
+            limit: pagination["Packaging"].limit,
+            category: categoryId,
+            search: packagingSearchTerm
+        });
+    };
+    
+    const handleSearchInputChange = (e) => {
+        setSearchTermInput(e.target.value);
+    };
+    
+    const handleSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchTerm(searchTermInput);
+            setPagination(prev => ({
+                ...prev,
+                [selectedJenis]: {
+                    ...prev[selectedJenis],
+                    page: 1
+                }
+            }));
+            
+            // Fetch data with search term
+            fetchBarangPaginated(selectedJenis, {
+                page: 1,
+                limit: pagination[selectedJenis].limit,
+                category: selectedCategory,
+                search: searchTermInput
+            });
+        }
+    };
+    
+    const handlePackagingSearchInputChange = (e) => {
+        setPackagingSearchTermInput(e.target.value);
+    };
+    
+    const handlePackagingSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setPackagingSearchTerm(packagingSearchTermInput);
+            setPagination(prev => ({
+                ...prev,
+                "Packaging": {
+                    ...prev["Packaging"],
+                    page: 1
+                }
+            }));
+            
+            // Fetch packaging data with search term
+            fetchBarangPaginated("Packaging", {
+                page: 1,
+                limit: pagination["Packaging"].limit,
+                category: selectedPackagingCategory,
+                search: packagingSearchTermInput
+            });
+        }
+    };
+    
+    // Effect to fetch data when pagination changes for products
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchBarangPaginated(selectedJenis, {
+                page: pagination[selectedJenis].page,
+                limit: pagination[selectedJenis].limit,
+                category: selectedCategory,
+                search: searchTerm
+            });
+        }
+    }, [isModalOpen, selectedJenis, pagination[selectedJenis].page, pagination[selectedJenis].limit]);
+    
+    // Effect to fetch data when pagination changes for packaging
+    useEffect(() => {
+        if (isPackagingModalOpen) {
+            fetchBarangPaginated("Packaging", {
+                page: pagination["Packaging"].page,
+                limit: pagination["Packaging"].limit,
+                category: selectedPackagingCategory,
+                search: packagingSearchTerm
+            });
+        }
+    }, [isPackagingModalOpen, pagination["Packaging"].page, pagination["Packaging"].limit]);
+    
+    // Effect to fetch new data when changing product type tab
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchBarangPaginated(selectedJenis, {
+                page: 1,
+                limit: pagination[selectedJenis].limit,
+                category: selectedCategory,
+                search: searchTerm
+            });
+        }
+    }, [isModalOpen, selectedJenis]);
 
     return (
         <>
@@ -948,80 +1213,84 @@ export default function TambahPenjualanKasir() {
                             </section>
                         </form>
     
-                        {/* Modal Tambah Baris */}
+                        {/* Modal Tambah Baris - Products */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                                 <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
-                                    <div className="flex flex-col space-y-4 mb-4">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                            <div className="relative w-full sm:max-w-md">
-                                                <span className="absolute inset-y-0 left-3 flex items-center">
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        className="w-5 h-5 text-gray-400"
-                                                        fill="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                                    </svg>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Cari Barang yang mau dibeli"
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center space-x-4 self-end sm:self-auto">
-                                                <button
-                                                    onClick={() => {
-                                                        setSearchTerm("");
-                                                        setSelectedItems([]);
-                                                    }}
-                                                    className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                    {/* 1. Pencarian, X, Terpilih */}
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                                        <div className="relative w-full sm:max-w-md">
+                                            <span className="absolute inset-y-0 left-3 flex items-center">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-5 h-5 text-gray-400"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 24 24"
                                                 >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        className="h-6 w-6"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        strokeWidth={2}
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                                <p className={`text-${themeColor} font-semibold`}>
-                                                    Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
-                                                </p>
-                                            </div>
+                                                    <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                                </svg>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                placeholder="Cari Barang yang mau dibeli"
+                                                value={searchTermInput}
+                                                onChange={handleSearchInputChange}
+                                                onKeyDown={handleSearchInputKeyDown}
+                                                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                            />
                                         </div>
-
-                                        {/* Bottom row: Action buttons */}
-                                        <div className="flex justify-end gap-4">
-                                            <Button
-                                                label="Batal"
-                                                bgColor="border border-secondary"
-                                                hoverColor="hover:bg-gray-100"
-                                                textColor="text-black"
+                                        <div className="flex items-center space-x-4 self-end sm:self-auto">
+                                            <button
                                                 onClick={() => {
-                                                    resetSelection();
+                                                    setSearchTerm("");
+                                                    setSearchTermInput("");
                                                     setSelectedItems([]);
+                                                    fetchBarangPaginated(selectedJenis, {
+                                                        page: 1,
+                                                        limit: pagination[selectedJenis].limit,
+                                                        category: selectedCategory,
+                                                        search: ""
+                                                    });
                                                 }}
-                                            />
-                                            <Button
-                                                label="Pilih"
-                                                bgColor={`bg-${themeColor}`}
-                                                hoverColor="hover:bg-opacity-90"
-                                                textColor="text-white"
-                                                onClick={handleModalSubmit}
-                                            />
+                                                className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-6 w-6"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                            <p className={`text-${themeColor} font-semibold`}>
+                                                Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                            </p>
                                         </div>
                                     </div>
-
-                                    {/* Tabs for Barang Types */}
+                                    {/* 2. Batal & Pilih */}
+                                    <div className="flex justify-end gap-4 mb-4">
+                                        <Button
+                                            label="Batal"
+                                            bgColor="border border-secondary"
+                                            hoverColor="hover:bg-gray-100"
+                                            textColor="text-black"
+                                            onClick={() => {
+                                                resetSelection();
+                                                setSelectedItems([]);
+                                            }}
+                                        />
+                                        <Button
+                                            label="Pilih"
+                                            bgColor={`bg-${themeColor}`}
+                                            hoverColor="hover:bg-opacity-90"
+                                            textColor="text-white"
+                                            onClick={handleModalSubmit}
+                                        />
+                                    </div>
+                                    {/* 3. Jenis Barang (Tabs) */}
                                     <div className="flex border-b border-gray-300 mb-4 overflow-x-auto">
                                         {["Barang Handmade", "Barang Non-Handmade"].map((jenis) => (
                                             <button
@@ -1035,142 +1304,218 @@ export default function TambahPenjualanKasir() {
                                             </button>
                                         ))}
                                     </div>
-
-                                    {/* Kategori Buttons */}
-                                    <div className="flex flex-wrap gap-2 mt-4">
+                                    {/* 4. Kategori Barang */}
+                                    <div className="flex flex-wrap gap-2 mt-4 mb-2">
                                         {kategoriBarang[selectedJenis].map((kategori) => (
                                             <button
-                                                key={kategori}
-                                                onClick={() => setSelectedCategory(kategori)}
-                                                className={`px-3 py-1 text-sm md:text-base rounded-md ${
-                                                    selectedCategory === kategori
-                                                        ? `bg-${themeColor} text-white`
-                                                        : "border border-gray-300"
-                                                }`}
+                                                key={kategori.kategori_barang_id}
+                                                onClick={() => handleCategoryChange(kategori.kategori_barang_id)}
+                                                className={`px-3 py-1 text-sm md:text-base rounded-md ${selectedCategory === kategori.kategori_barang_id ? `bg-${themeColor} text-white` : "border border-gray-300"}`}
                                             >
-                                                {kategori}
+                                                {kategori.nama_kategori_barang}
                                             </button>
                                         ))}
                                     </div>
-
-                                    {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                        <Gallery2
-                                            items={filteredItems || []}
-                                            onSelect={handleSelectItem}
-                                            selectedItems={selectedItems}
-                                            enableStockValidation={true}
-                                        />
+                                    {/* 5. Items per page */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm">Items per page:</span>
+                                        <select
+                                            value={pagination[selectedJenis].limit}
+                                            onChange={e => handleLimitChange(selectedJenis, Number(e.target.value))}
+                                            className="border rounded px-2 py-1 text-sm"
+                                        >
+                                            {[3, 12, 24, 48].map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {/* 6. Data Barang (Gallery) */}
+                                    <div className="mt-2 h-[calc(100%-320px)] overflow-y-auto no-scrollbar">
+                                        {isLoading ? (
+                                            <div className="flex justify-center items-center h-40">
+                                                <Spinner />
+                                            </div>
+                                        ) : (
+                                            <Gallery2
+                                                items={barangData[selectedJenis].items || []}
+                                                onSelect={handleSelectItem}
+                                                selectedItems={selectedItems}
+                                                enableStockValidation={true}
+                                            />
+                                        )}
+                                    </div>
+                                    {/* 7. Pagination */}
+                                    <div className="flex gap-2 items-center mt-2 justify-center">
+                                        <button
+                                            disabled={pagination[selectedJenis].page === 1}
+                                            onClick={() => handlePageChange(selectedJenis, pagination[selectedJenis].page - 1)}
+                                            className="px-2 py-1 border rounded disabled:opacity-50"
+                                        >
+                                            Prev
+                                        </button>
+                                        <span className="text-sm">Halaman {pagination[selectedJenis].page} dari {Math.max(1, Math.ceil((pagination[selectedJenis].total || 1) / pagination[selectedJenis].limit))}</span>
+                                        <button
+                                            disabled={pagination[selectedJenis].page >= Math.ceil((pagination[selectedJenis].total || 1) / pagination[selectedJenis].limit)}
+                                            onClick={() => handlePageChange(selectedJenis, pagination[selectedJenis].page + 1)}
+                                            className="px-2 py-1 border rounded disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
                                     </div>
                                 </div>
                             </section>
                         )}
 
+                        {/* Modal for Packaging with Pagination */}
                         {isPackagingModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                                 <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
-                                    <div className="flex flex-col space-y-4 mb-4">
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                            <div className="relative w-full sm:max-w-md">
-                                                <span className="absolute inset-y-0 left-3 flex items-center">
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        className="w-5 h-5 text-gray-400"
-                                                        fill="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                                    </svg>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Cari Packaging"
-                                                    value={packagingSearchTerm}
-                                                    onChange={(e) => setPackagingSearchTerm(e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center space-x-4 self-end sm:self-auto">
-                                                <button
-                                                    onClick={() => {
-                                                        setPackagingSearchTerm("");
-                                                        setSelectedPackagingItems([]);
-                                                    }}
-                                                    className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                    {/* 1. Search, X, Selected Count */}
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                                        <div className="relative w-full sm:max-w-md">
+                                            <span className="absolute inset-y-0 left-3 flex items-center">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-5 h-5 text-gray-400"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 24 24"
                                                 >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        className="h-6 w-6"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        strokeWidth={2}
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                                <p className={`text-${themeColor} font-semibold`}>
-                                                    Terpilih {selectedPackagingItems.reduce((sum, item) => sum + item.count, 0)}
-                                                </p>
-                                            </div>
+                                                    <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                                </svg>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                placeholder="Cari Packaging"
+                                                value={packagingSearchTermInput}
+                                                onChange={handlePackagingSearchInputChange}
+                                                onKeyDown={handlePackagingSearchInputKeyDown}
+                                                className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                            />
                                         </div>
 
-                                        {/* Bottom row: Action buttons */}
-                                        <div className="flex justify-end gap-4">
-                                            <Button
-                                                label="Batal"
-                                                bgColor="border border-secondary"
-                                                hoverColor="hover:bg-gray-100"
-                                                textColor="text-black"
+                                        <div className="flex items-center space-x-4 self-end sm:self-auto">
+                                            <button
                                                 onClick={() => {
-                                                    setIsPackagingModalOpen(false);
+                                                    setPackagingSearchTerm("");
+                                                    setPackagingSearchTermInput("");
                                                     setSelectedPackagingItems([]);
+                                                    fetchBarangPaginated("Packaging", {
+                                                        page: 1,
+                                                        limit: pagination["Packaging"].limit,
+                                                        category: selectedPackagingCategory,
+                                                        search: ""
+                                                    });
                                                 }}
-                                            />
-                                            <Button
-                                                label="Pilih"
-                                                bgColor={`bg-${themeColor}`}
-                                                hoverColor="hover:bg-opacity-90"
-                                                textColor="text-white"
-                                                onClick={handlePackagingModalSubmit}
-                                            />
+                                                className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="h-6 w-6"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                            <p className={`text-${themeColor} font-semibold`}>
+                                                Terpilih {selectedPackagingItems.reduce((sum, item) => sum + item.count, 0)}
+                                            </p>
                                         </div>
                                     </div>
 
-                                    {/* Kategori Buttons */}
-                                    <div className="flex flex-wrap gap-2 mt-4">
+                                    {/* 2. Action buttons */}
+                                    <div className="flex justify-end gap-4 mb-4">
+                                        <Button
+                                            label="Batal"
+                                            bgColor="border border-secondary"
+                                            hoverColor="hover:bg-gray-100"
+                                            textColor="text-black"
+                                            onClick={() => {
+                                                setIsPackagingModalOpen(false);
+                                                setSelectedPackagingItems([]);
+                                            }}
+                                        />
+                                        <Button
+                                            label="Pilih"
+                                            bgColor={`bg-${themeColor}`}
+                                            hoverColor="hover:bg-opacity-90"
+                                            textColor="text-white"
+                                            onClick={handlePackagingModalSubmit}
+                                        />
+                                    </div>
+
+                                    {/* 3. Kategori Buttons */}
+                                    <div className="flex flex-wrap gap-2 mt-4 mb-2">
                                         {kategoriPackaging.map((kategori) => (
                                             <button
-                                                key={kategori}
-                                                onClick={() => setSelectedPackagingCategory(kategori)}
+                                                key={kategori.kategori_barang_id}
+                                                onClick={() => handlePackagingCategoryChange(kategori.kategori_barang_id)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
-                                                    selectedPackagingCategory === kategori
+                                                    selectedPackagingCategory === kategori.kategori_barang_id
                                                         ? `bg-${themeColor} text-white`
                                                         : "border border-gray-300"
                                                 }`}
                                             >
-                                                {kategori}
+                                                {kategori.nama_kategori_barang}
                                             </button>
                                         ))}
                                     </div>
 
-                                    {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                        <Gallery2
-                                            items={filteredPackagingItems?.map(item => ({
-                                                ...item,
-                                                formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
-                                            })) || []}
-                                            onSelect={handleSelectPackagingItem}
-                                            selectedItems={selectedPackagingItems}
-                                            enableStockValidation={true}
-                                        />
+                                    {/* 4. Items per page */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm">Items per page:</span>
+                                        <select
+                                            value={pagination["Packaging"].limit}
+                                            onChange={e => handleLimitChange("Packaging", Number(e.target.value))}
+                                            className="border rounded px-2 py-1 text-sm"
+                                        >
+                                            {[3, 12, 24, 48].map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* 5. Gallery */}
+                                    <div className="mt-2 h-[calc(100%-320px)] overflow-y-auto no-scrollbar">
+                                        {isLoading ? (
+                                            <div className="flex justify-center items-center h-40">
+                                                <Spinner />
+                                            </div>
+                                        ) : (
+                                            <Gallery2
+                                                items={barangData["Packaging"].items || []}
+                                                onSelect={handleSelectPackagingItem}
+                                                selectedItems={selectedPackagingItems}
+                                                enableStockValidation={true}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* 6. Pagination */}
+                                    <div className="flex gap-2 items-center mt-2 justify-center">
+                                        <button
+                                            disabled={pagination["Packaging"].page === 1}
+                                            onClick={() => handlePageChange("Packaging", pagination["Packaging"].page - 1)}
+                                            className="px-2 py-1 border rounded disabled:opacity-50"
+                                        >
+                                            Prev
+                                        </button>
+                                        <span className="text-sm">
+                                            Halaman {pagination["Packaging"].page} dari {Math.max(1, Math.ceil((pagination["Packaging"].total || 1) / pagination["Packaging"].limit))}
+                                        </span>
+                                        <button
+                                            disabled={pagination["Packaging"].page >= Math.ceil((pagination["Packaging"].total || 1) / pagination["Packaging"].limit)}
+                                            onClick={() => handlePageChange("Packaging", pagination["Packaging"].page + 1)}
+                                            className="px-2 py-1 border rounded disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
                                     </div>
                                 </div>
                             </section>
                         )}
-
                     </section>
                 </div>
                 {/* modal success */}

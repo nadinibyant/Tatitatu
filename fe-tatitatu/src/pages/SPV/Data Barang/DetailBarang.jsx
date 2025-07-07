@@ -23,17 +23,32 @@ export default function DetailBarang() {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState(null);
     const [rincianBiayaPerCabang, setRincianBiayaPerCabang] = useState({});
+    
+    // Tambahan state untuk tracking rincian bahan sudah di-fetch atau belum
+    const [rincianBahanFetched, setRincianBahanFetched] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
                 
+                // Log URL untuk debugging
+                console.log('Detail page URL:', location.pathname + location.search);
+                
                 if (isAdminGudang) {
+                    // Fetch data barang handmade gudang
                     const response = await api.get(`/barang-handmade-gudang/${id}`);
                     
                     if (response.data.success) {
                         const itemData = response.data.data;
+                        
+                        // Log respons API untuk debugging
+                        console.log('Detail API response for admin gudang:', itemData);
+                        console.log('Rincian bahan exists:', !!itemData.rincian_bahan);
+                        console.log('Rincian bahan length:', itemData.rincian_bahan ? itemData.rincian_bahan.length : 0);
+                        
+                        // Pastikan rincian_bahan ada dan berbentuk array
+                        const rincianBahan = Array.isArray(itemData.rincian_bahan) ? itemData.rincian_bahan : [];
                         
                         setData({
                             "Nama Barang": itemData.nama_barang,
@@ -49,7 +64,7 @@ export default function DetailBarang() {
                             "Harga Logis": itemData.harga_logis,
                             "Margin Persentase": itemData.margin_persentase,
                             "Margin Nominal": itemData.margin_nominal,
-                            "rincian_bahan": itemData.rincian_bahan.map(bahan => ({
+                            "rincian_bahan": rincianBahan.map(bahan => ({
                                 "Nama Bahan": bahan.barang_mentah.nama_barang,
                                 "Harga Satuan": bahan.harga_satuan,
                                 "Kuantitas": bahan.kuantitas,
@@ -58,6 +73,13 @@ export default function DetailBarang() {
                                        `${import.meta.env.VITE_API_URL}/images-barang-mentah/${bahan.barang_mentah.image}` : null
                             }))
                         });
+                        
+                        // Jika rincian bahan kosong, coba fetch ulang
+                        if (rincianBahan.length === 0) {
+                            console.log('Rincian bahan empty, will try to fetch separately');
+                        } else {
+                            setRincianBahanFetched(true);
+                        }
                     }
                 } else {
                     // Untuk non-admin gudang
@@ -68,42 +90,57 @@ export default function DetailBarang() {
     
                     if (itemResponse.data.success) {
                         const itemData = itemResponse.data.data;
+                        console.log('API response for non-admin gudang:', itemData);
+                        
                         const biayaTokoData = biayaTokoResponse.data.success ? biayaTokoResponse.data.data : [];
 
                         const rincianBiayaMap = {};
                         const dataCabang = [];
 
-                        itemData.rincian_biaya.forEach(rincian => {
-                            const cabangName = rincian.cabang.nama_cabang;
-                            const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
-                            
-                            dataCabang.push({
-                                nama: cabangName,
-                                totalHPP: rincian.total_hpp,
-                                keuntungan: rincian.keuntungan,
-                                hargaJual: rincian.harga_jual,
-                                hargaIdeal: rincian.harga_jual_ideal,
-                                hargaLogis: rincian.harga_logis,
-                                marginPersentase: rincian.margin_persentase,
-                                marginNominal: rincian.margin_nominal
-                            });
-
-                            const branchRincianBiaya = [];
-
-                            rincian.detail_rincian_biaya.forEach(detail => {
-                                if (!detail.biaya_toko_id && !detail.is_deleted) {
-                                    branchRincianBiaya.push({
-                                        id: detail.detail_rincian_biaya_id,
-                                        "Nama Biaya": detail.nama_biaya,
-                                        "Jumlah Biaya": detail.jumlah_biaya,
-                                        isEditable: true
+                        if (itemData.rincian_biaya && itemData.rincian_biaya.length > 0) {
+                            itemData.rincian_biaya.forEach(rincian => {
+                                // Make sure cabang exists
+                                if (rincian.cabang) {
+                                    const cabangName = rincian.cabang.nama_cabang;
+                                    const biayaToko = biayaTokoData.find(bt => bt.cabang_id === rincian.cabang_id);
+                                    
+                                    dataCabang.push({
+                                        nama: cabangName,
+                                        totalHPP: rincian.total_hpp,
+                                        keuntungan: rincian.keuntungan,
+                                        hargaJual: rincian.harga_jual,
+                                        hargaIdeal: rincian.harga_jual_ideal,
+                                        hargaLogis: rincian.harga_logis,
+                                        marginPersentase: rincian.margin_persentase,
+                                        marginNominal: rincian.margin_nominal
                                     });
+
+                                    const branchRincianBiaya = [];
+
+                                    // Check if detail_rincian_biaya exists and is an array
+                                    if (rincian.detail_rincian_biaya && Array.isArray(rincian.detail_rincian_biaya)) {
+                                        rincian.detail_rincian_biaya.forEach(detail => {
+                                            if (!detail.biaya_toko_id && !detail.is_deleted) {
+                                                branchRincianBiaya.push({
+                                                    id: detail.detail_rincian_biaya_id,
+                                                    "Nama Biaya": detail.nama_biaya,
+                                                    "Jumlah Biaya": detail.jumlah_biaya,
+                                                    isEditable: true
+                                                });
+                                            }
+                                        });
+                                    } else {
+                                        console.warn(`No detail_rincian_biaya found for cabang: ${cabangName}`);
+                                    }
+
+                                    rincianBiayaMap[cabangName] = branchRincianBiaya;
                                 }
                             });
+                        } else {
+                            console.warn('No rincian_biaya data found in API response');
+                        }
 
-                            rincianBiayaMap[cabangName] = branchRincianBiaya;
-                        });
-
+                        console.log('Rincian Biaya Map:', rincianBiayaMap);
                         setRincianBiayaPerCabang(rincianBiayaMap);
 
                         setData({
@@ -131,7 +168,58 @@ export default function DetailBarang() {
         };
     
         fetchData();
-    }, [id, isAdminGudang]);
+    }, [id, isAdminGudang, location.search]); // Tambahkan location.search sebagai dependency
+
+    // UseEffect tambahan untuk fetch rincian bahan jika diperlukan
+    useEffect(() => {
+        // Jika admin gudang, data sudah ada, dan rincian bahan belum di-fetch atau kosong
+        if (isAdminGudang && data && !rincianBahanFetched && 
+            (!data.rincian_bahan || data.rincian_bahan.length === 0)) {
+            
+            const fetchRincianBahan = async () => {
+                try {
+                    console.log('Fetching rincian bahan separately...');
+                    setLoading(true);
+                    
+                    // Coba fetch dengan endpoint khusus untuk rincian bahan
+                    // Catatan: Endpoint ini mungkin perlu disesuaikan dengan API Anda
+                    const response = await api.get(`/barang-handmade-gudang/${id}`);
+                    
+                    if (response.data.success && response.data.data) {
+                        const itemData = response.data.data;
+                        
+                        // Pastikan rincian_bahan ada dan berbentuk array
+                        if (itemData.rincian_bahan && Array.isArray(itemData.rincian_bahan)) {
+                            console.log('Successfully fetched rincian bahan:', itemData.rincian_bahan.length, 'items');
+                            
+                            setData(prevData => ({
+                                ...prevData,
+                                "rincian_bahan": itemData.rincian_bahan.map(bahan => ({
+                                    "Nama Bahan": bahan.barang_mentah.nama_barang,
+                                    "Harga Satuan": bahan.harga_satuan,
+                                    "Kuantitas": bahan.kuantitas,
+                                    "Total Biaya": bahan.total_biaya,
+                                    "Foto": bahan.barang_mentah.image ? 
+                                           `${import.meta.env.VITE_API_URL}/images-barang-mentah/${bahan.barang_mentah.image}` : null
+                                }))
+                            }));
+                        } else {
+                            console.warn('Rincian bahan still not found in second fetch attempt');
+                        }
+                    }
+                    
+                    // Tandai bahwa kita sudah mencoba fetch rincian bahan
+                    setRincianBahanFetched(true);
+                } catch (error) {
+                    console.error('Error fetching rincian bahan:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            fetchRincianBahan();
+        }
+    }, [isAdminGudang, data, id, rincianBahanFetched]);
 
     const getCurrentBranchRincianBiaya = () => {
         if (isAdminGudang) {
@@ -211,7 +299,8 @@ export default function DetailBarang() {
                 "Harga Jual": data["Harga Jual"],
                 "Harga Jual Ideal": data["Harga Jual Ideal"],
                 "Harga Logis": data["Harga Logis"],
-                "Margin Nominal": data["Margin Nominal"]
+                "Margin Nominal": data["Margin Nominal"],
+                "Margin Persentase": data["Margin Persentase"] || 0
             };
         }
         
@@ -233,7 +322,8 @@ export default function DetailBarang() {
         return {
             "Total HPP": data["Total HPP"],
             "Total Keuntungan": data["Total Keuntungan"],
-            "Harga Jual": data["Harga Jual"]
+            "Harga Jual": data["Harga Jual"],
+            "Margin Persentase": 0
         };
     };
 
@@ -378,13 +468,28 @@ export default function DetailBarang() {
                         {!isAdminGudang && (
                             <div className="mb-6">
                                 <h3 className="font-bold mb-4">Rincian Biaya</h3>
+                                {/* Debug info untuk rincian biaya */}
+                                {process.env.NODE_ENV !== 'production' && (
+                                    <div className="text-xs text-gray-500 mb-2">
+                                        Rincian biaya cabang {selectedCabang}: {getCurrentBranchRincianBiaya().length} items
+                                    </div>
+                                )}
                                 <Table
+                                    searchQuery=""
+                                    hasSearch={false}
                                     headers={headers}
-                                    data={getCurrentBranchRincianBiaya().map((item, index) => ({
-                                        No: index + 1,
-                                        "Nama Biaya": item["Nama Biaya"],
-                                        "Jumlah Biaya": `Rp${formatNumberWithDots(item["Jumlah Biaya"])}`
-                                    }))}
+                                    data={getCurrentBranchRincianBiaya().length > 0 ? 
+                                        getCurrentBranchRincianBiaya().map((item, index) => ({
+                                            No: index + 1,
+                                            "Nama Biaya": item["Nama Biaya"],
+                                            "Jumlah Biaya": `Rp${formatNumberWithDots(item["Jumlah Biaya"])}`
+                                        })) :
+                                        [{
+                                            No: "-",
+                                            "Nama Biaya": "Tidak ada data rincian biaya",
+                                            "Jumlah Biaya": "-"
+                                        }]
+                                    }
                                 />
                             </div>
                         )}
@@ -392,24 +497,42 @@ export default function DetailBarang() {
                         {isAdminGudang && (
                             <div>
                                 <h3 className="font-bold mb-4">Rincian Jumlah dan Bahan</h3>
+                                {/* Debug info untuk rincian bahan */}
+                                {process.env.NODE_ENV !== 'production' && (
+                                    <div className="text-xs text-gray-500 mb-2">
+                                        Rincian bahan: {data.rincian_bahan ? data.rincian_bahan.length : 0} items
+                                    </div>
+                                )}
                                 <Table
+                                    searchQuery=""
+                                    hasSearch={false}
                                     headers={materialHeaders}
-                                    data={data.rincian_bahan?.map((item, index) => ({
-                                        No: index + 1,
-                                        Foto: (
-                                            <div className="w-12 h-12">
-                                                <img
-                                                    src={item.Foto}
-                                                    alt={item["Nama Bahan"]}
-                                                    className="w-full h-full object-cover rounded"
-                                                />
-                                            </div>
-                                        ),
-                                        "Nama Bahan": item["Nama Bahan"],
-                                        "Harga Satuan": `Rp${formatNumberWithDots(item["Harga Satuan"])}`,
-                                        "Kuantitas": item["Kuantitas"],
-                                        "Total Biaya": `Rp${formatNumberWithDots(item["Total Biaya"])}`
-                                    })) || []}
+                                    data={(data.rincian_bahan && data.rincian_bahan.length > 0) ? 
+                                        data.rincian_bahan.map((item, index) => ({
+                                            No: index + 1,
+                                            Foto: (
+                                                <div className="w-12 h-12">
+                                                    <img
+                                                        src={item.Foto}
+                                                        alt={item["Nama Bahan"]}
+                                                        className="w-full h-full object-cover rounded"
+                                                    />
+                                                </div>
+                                            ),
+                                            "Nama Bahan": item["Nama Bahan"],
+                                            "Harga Satuan": `Rp${formatNumberWithDots(item["Harga Satuan"])}`,
+                                            "Kuantitas": item["Kuantitas"],
+                                            "Total Biaya": `Rp${formatNumberWithDots(item["Total Biaya"])}`
+                                        })) : 
+                                        [{
+                                            No: "-",
+                                            Foto: "-",
+                                            "Nama Bahan": "Tidak ada data rincian bahan",
+                                            "Harga Satuan": "-",
+                                            "Kuantitas": "-",
+                                            "Total Biaya": "-"
+                                        }]
+                                    }
                                 />
                             </div>
                         )}

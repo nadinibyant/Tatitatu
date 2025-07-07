@@ -360,6 +360,8 @@ export default function DetailBarang() {
                         <div className="mb-6">
                                 <h3 className="font-bold mb-4">Rincian Biaya</h3>
                                 <Table
+                                    searchQuery=""
+                                    hasSearch={false}
                                     headers={headers}
                                     data={getCurrentBranchRincianBiaya().map((item, index) => ({
                                         No: index + 1,

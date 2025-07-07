@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Breadcrumbs from '../../../components/Breadcrumbs';
 import Input from '../../../components/Input';
 import InputDropdown from '../../../components/InputDropdown';
@@ -48,7 +48,6 @@ const TambahPenjualanCustom = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTable, setActiveTable] = useState(null);
     const [selectedItems, setSelectedItems] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
@@ -56,6 +55,16 @@ const TambahPenjualanCustom = () => {
     const isAdminGudang = userData?.role === 'admingudang';
     const toko_id = userData.tokoId
     const cabang_id = userData.userId
+
+    // Tambahkan state untuk pagination dan search produk custom dan packaging
+    const [paginationProduk, setPaginationProduk] = useState({ page: 1, limit: 12, total: 0 });
+    const [paginationPackaging, setPaginationPackaging] = useState({ page: 1, limit: 12, total: 0 });
+    const [searchProdukInput, setSearchProdukInput] = useState("");
+    const [searchProduk, setSearchProduk] = useState("");
+    const [searchPackagingInput, setSearchPackagingInput] = useState("");
+    const [searchPackaging, setSearchPackaging] = useState("");
+    const [dataBarangPaginated, setDataBarangPaginated] = useState([]);
+    const [dataPackagingPaginated, setDataPackagingPaginated] = useState([]);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -220,55 +229,69 @@ const TambahPenjualanCustom = () => {
         }
     };
 
-    const [dataBarang, setDataBarang] = useState([]);
-
-    const fetchBarangCustom = async () => {
+    // Refactor fetchBarangCustom untuk support pagination dan search
+    const fetchBarangCustom = async ({ page, limit, search }) => {
         try {
-            const response = await api.get(`/barang-custom?toko_id=${toko_id}`);
+            setLoading(true);
+            let params = [`toko_id=${toko_id}`, `page=${page}`, `limit=${limit}`];
+            if (search) params.push(`search=${encodeURIComponent(search)}`);
+            const response = await api.get(`/barang-custom?${params.join('&')}`);
             if (response.data.success) {
-                const transformedData = response.data.data
-                    .filter(item => !item.is_deleted)
-                    .map(item => ({
-                        id: item.barang_custom_id,
-                        image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
-                        name: item.nama_barang,
-                        code: item.barang_custom_id,
-                        price: item.harga_jual,
-                        jenis: item.jenis_barang.nama_jenis_barang,
-                        kategori: item.kategori.nama_kategori_barang,
-                        stock: item.stok_barang?.jumlah_stok || 0
-                    }));
-                setDataBarang(transformedData);
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.barang_custom_id,
+                    image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+                    name: item.nama_barang,
+                    code: item.barang_custom_id,
+                    price: item.harga_jual,
+                    jenis: item.jenis_barang.nama_jenis_barang,
+                    kategori: item.kategori.nama_kategori_barang,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setDataBarangPaginated(items);
+                setPaginationProduk(prev => ({
+                    ...prev,
+                    total: response.data.pagination?.totalItems ?? items.length
+                }));
             }
-        } catch (error) {
-            console.error('Error fetching barang custom:', error);
+        } catch {
+            setDataBarangPaginated([]);
+            setPaginationProduk(prev => ({ ...prev, total: 0 }));
+        } finally {
+            setLoading(false);
         }
     };
 
-    const [dataPackaging, setDataPackaging] = useState([]);
-
-    const fetchPackaging = async () => {
+    // Refactor fetchPackaging untuk support pagination dan search
+    const fetchPackagingPaginated = async ({ page, limit, search }) => {
         try {
-            const response = await api.get(`/packaging?toko_id=${toko_id}`);
+            setLoading(true);
+            let params = [`toko_id=${toko_id}`, `page=${page}`, `limit=${limit}`];
+            if (search) params.push(`search=${encodeURIComponent(search)}`);
+            const response = await api.get(`/packaging?${params.join('&')}`);
             if (response.data.success) {
-                const transformedData = response.data.data
-                    .filter(item => !item.is_deleted)
-                    .map(item => ({
-                        id: item.packaging_id,
-                        name: item.nama_packaging,
-                        price: 0,
-                        image: item.image 
-                            ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
-                            : "/placeholder-image.jpg",
-                        jenis: item.jenis_barang.nama_jenis_barang,
-                        kategori: item.kategori_barang.nama_kategori_barang,
-                        ukuran: item.ukuran,
-                        stock: item.stok_barang?.jumlah_stok || 0
-                    }));
-                setDataPackaging(transformedData);
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.packaging_id,
+                    name: item.nama_packaging,
+                    price: 0,
+                    image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
+                        : "/placeholder-image.jpg",
+                    jenis: item.jenis_barang.nama_jenis_barang,
+                    kategori: item.kategori_barang.nama_kategori_barang,
+                    ukuran: item.ukuran,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setDataPackagingPaginated(items);
+                setPaginationPackaging(prev => ({
+                    ...prev,
+                    total: response.data.pagination?.totalItems ?? items.length
+                }));
             }
-        } catch (error) {
-            console.error('Error fetching packaging:', error);
+        } catch {
+            setDataPackagingPaginated([]);
+            setPaginationPackaging(prev => ({ ...prev, total: 0 }));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -289,16 +312,6 @@ const TambahPenjualanCustom = () => {
         });
     };
 
-    const filteredItems = dataBarang.filter(
-        (item) =>
-            item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const resetSelection = () => {
-        setSelectedItems([]);
-        setIsModalOpen(false);
-    };
-
     const handleBarangChange = (tableIndex, itemId, selectedOption) => {
         const updatedTables = [...dataProduk];
         const itemIndex = updatedTables[tableIndex].data.findIndex(
@@ -306,7 +319,7 @@ const TambahPenjualanCustom = () => {
         );
     
         if (itemIndex !== -1) {
-            const selectedBarang = dataBarang.find(barang => barang.id === selectedOption.value);
+            const selectedBarang = dataBarangPaginated.find(barang => barang.id === selectedOption.value);
             
             if (selectedBarang) {
                 const currentQuantity = updatedTables[tableIndex].data[itemIndex].quantity || 1;
@@ -324,7 +337,7 @@ const TambahPenjualanCustom = () => {
                     "Nama Barang": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataBarang.map(prod => ({
+                            options={dataBarangPaginated.map(prod => ({
                                 value: prod.id,
                                 label: prod.name
                             }))}
@@ -347,8 +360,6 @@ const TambahPenjualanCustom = () => {
             const updatedTables = [...dataProduk];
             const newItems = selectedItems.map((item) => {
                 const isPackaging = activeTable === 2;
-                const dropdownOptions = isPackaging ? dataPackaging : dataBarang;
-                const handleChange = isPackaging ? handlePackagingChange : handleBarangChange;
                 
                 // Create a base item with common properties
                 const baseItem = {
@@ -378,7 +389,7 @@ const TambahPenjualanCustom = () => {
                         "Nama Barang": (
                             <InputDropdown
                                 showRequired={false}
-                                options={dataPackaging.map(pkg => ({
+                                options={dataPackagingPaginated.map(pkg => ({
                                     value: pkg.id,
                                     label: `${pkg.name} - ${pkg.ukuran}`
                                 }))}
@@ -413,7 +424,7 @@ const TambahPenjualanCustom = () => {
                         "Nama Barang": (
                             <InputDropdown
                                 showRequired={false}
-                                options={dataBarang.map(prod => ({
+                                options={dataBarangPaginated.map(prod => ({
                                     value: prod.id,
                                     label: prod.name
                                 }))}
@@ -497,8 +508,6 @@ const TambahPenjualanCustom = () => {
     };
 
     useEffect(() => {
-        fetchBarangCustom();
-        fetchPackaging();
         fetchMetodePembayaran();
     }, []);
 
@@ -509,7 +518,7 @@ const TambahPenjualanCustom = () => {
         );
     
         if (itemIndex !== -1) {
-            const selectedPackaging = dataPackaging.find(pkg => pkg.id === selectedOption.value);
+            const selectedPackaging = dataPackagingPaginated.find(pkg => pkg.id === selectedOption.value);
             
             if (selectedPackaging) {
                 const currentQuantity = updatedTables[tableIndex].data[itemIndex].quantity || 1;
@@ -527,7 +536,7 @@ const TambahPenjualanCustom = () => {
                     "Nama Barang": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataPackaging.map(pkg => ({
+                            options={dataPackagingPaginated.map(pkg => ({
                                 value: pkg.id,
                                 label: `${pkg.name} - ${pkg.ukuran}`
                             }))}
@@ -699,6 +708,58 @@ const TambahPenjualanCustom = () => {
         navigate('/penjualan-kasir');
     };
 
+    // Handler untuk search, limit, page produk custom
+    const handleProdukSearchInputChange = (e) => setSearchProdukInput(e.target.value);
+    const handleProdukSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchProduk(searchProdukInput);
+            setPaginationProduk(prev => ({ ...prev, page: 1 }));
+            fetchBarangCustom({ page: 1, limit: paginationProduk.limit, search: searchProdukInput });
+        }
+    };
+    const handleProdukLimitChange = (limit) => {
+        setPaginationProduk(prev => ({ ...prev, limit, page: 1 }));
+        fetchBarangCustom({ page: 1, limit, search: searchProduk });
+    };
+    const handleProdukPageChange = (page) => {
+        setPaginationProduk(prev => ({ ...prev, page }));
+        fetchBarangCustom({ page, limit: paginationProduk.limit, search: searchProduk });
+    };
+
+    // Handler untuk search, limit, page packaging
+    const handlePackagingSearchInputChange = (e) => setSearchPackagingInput(e.target.value);
+    const handlePackagingSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchPackaging(searchPackagingInput);
+            setPaginationPackaging(prev => ({ ...prev, page: 1 }));
+            fetchPackagingPaginated({ page: 1, limit: paginationPackaging.limit, search: searchPackagingInput });
+        }
+    };
+    const handlePackagingLimitChange = (limit) => {
+        setPaginationPackaging(prev => ({ ...prev, limit, page: 1 }));
+        fetchPackagingPaginated({ page: 1, limit, search: searchPackaging });
+    };
+    const handlePackagingPageChange = (page) => {
+        setPaginationPackaging(prev => ({ ...prev, page }));
+        fetchPackagingPaginated({ page, limit: paginationPackaging.limit, search: searchPackaging });
+    };
+
+    // Fetch data on modal open or pagination change
+    useEffect(() => {
+        if (isModalOpen && modalContent === 'produk') {
+            fetchBarangCustom({ page: paginationProduk.page, limit: paginationProduk.limit, search: searchProduk });
+        }
+    }, [isModalOpen, modalContent, paginationProduk.page, paginationProduk.limit]);
+    useEffect(() => {
+        if (isModalOpen && modalContent === 'packaging') {
+            fetchPackagingPaginated({ page: paginationPackaging.page, limit: paginationPackaging.limit, search: searchPackaging });
+        }
+    }, [isModalOpen, modalContent, paginationPackaging.page, paginationPackaging.limit]);
+
+    const resetSelection = () => {
+        setSelectedItems([]);
+        setIsModalOpen(false);
+    };
 
     return (
         <LayoutWithNav>
@@ -836,97 +897,125 @@ const TambahPenjualanCustom = () => {
                 {isModalOpen && (
                 <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                     <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
-                        <div className="flex flex-col space-y-4 mb-4">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div className="relative w-full sm:max-w-md">
-                                    <span className="absolute inset-y-0 left-3 flex items-center">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-5 h-5 text-gray-400"
-                                            fill="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                        </svg>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        placeholder="Cari Barang yang mau dibeli"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                    />
-                                </div>
-
-                                <div className="flex items-center space-x-4 self-end sm:self-auto">
-                                    <button
-                                        onClick={() => {
-                                            setSearchTerm("");
-                                            setSelectedItems([]);
-                                        }}
-                                        className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                        {/* Search, X, Terpilih */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                            <div className="relative w-full sm:max-w-md">
+                                <span className="absolute inset-y-0 left-3 flex items-center">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="w-5 h-5 text-gray-400"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
                                     >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-6 w-6"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            strokeWidth={2}
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                    <p className="text-primary font-semibold">
-                                        Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
-                                    </p>
-                                </div>
+                                        <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder={modalContent === 'packaging' ? "Cari Packaging" : "Cari Barang yang mau dibeli"}
+                                    value={modalContent === 'packaging' ? searchPackagingInput : searchProdukInput}
+                                    onChange={modalContent === 'packaging' ? handlePackagingSearchInputChange : handleProdukSearchInputChange}
+                                    onKeyDown={modalContent === 'packaging' ? handlePackagingSearchInputKeyDown : handleProdukSearchInputKeyDown}
+                                    className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                />
                             </div>
-
-                            {/* Bottom row: Action buttons */}
-                            <div className="flex justify-end gap-4">
-                                <Button
-                                    label="Batal"
-                                    bgColor="border border-secondary"
-                                    hoverColor="hover:bg-gray-100"
-                                    textColor="text-black"
+                            <div className="flex items-center space-x-4 self-end sm:self-auto">
+                                <button
                                     onClick={() => {
-                                        resetSelection();
+                                        if (modalContent === 'packaging') {
+                                            setSearchPackaging("");
+                                            setSearchPackagingInput("");
+                                        } else {
+                                            setSearchProduk("");
+                                            setSearchProdukInput("");
+                                        }
                                         setSelectedItems([]);
                                     }}
-                                />
-                                <Button
-                                    label="Pilih"
-                                    bgColor="bg-primary"
-                                    hoverColor="hover:bg-opacity-90"
-                                    textColor="text-white"
-                                    onClick={handleModalSubmit}
-                                />
+                                    className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-6 w-6"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                <p className="text-primary font-semibold">
+                                    Terpilih {selectedItems.reduce((sum, item) => sum + item.count, 0)}
+                                </p>
                             </div>
                         </div>
-
-                        {/* Gallery */}
-                        <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                            <Gallery2
-                                items={modalContent === 'packaging' 
-                                    ? dataPackaging.filter(item =>
-                                        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                    ).map(item => ({
-                                        ...item,
-                                        price: item.price,
-                                        formattedPrice: modalContent === 'packaging' ? '' : `Rp${item.price.toLocaleString('id-ID')}`
-                                    }))
-                                    : dataBarang.filter(item =>
-                                        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                    ).map(item => ({
-                                        ...item,
-                                        formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
-                                    }))
-                                }
-                                onSelect={handleSelectItem}
-                                selectedItems={selectedItems}
-                                enableStockValidation={true}
+                        {/* Action buttons */}
+                        <div className="flex justify-end gap-4 mb-4">
+                            <Button
+                                label="Batal"
+                                bgColor="border border-secondary"
+                                hoverColor="hover:bg-gray-100"
+                                textColor="text-black"
+                                onClick={() => {
+                                    resetSelection();
+                                    setSelectedItems([]);
+                                }}
                             />
+                            <Button
+                                label="Pilih"
+                                bgColor="bg-primary"
+                                hoverColor="hover:bg-opacity-90"
+                                textColor="text-white"
+                                onClick={handleModalSubmit}
+                            />
+                        </div>
+                        {/* Items per page */}
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm">Items per page:</span>
+                            <select
+                                value={modalContent === 'packaging' ? paginationPackaging.limit : paginationProduk.limit}
+                                onChange={e => (modalContent === 'packaging' ? handlePackagingLimitChange(Number(e.target.value)) : handleProdukLimitChange(Number(e.target.value)))}
+                                className="border rounded px-2 py-1 text-sm"
+                            >
+                                {[3, 12, 24, 48].map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* Gallery */}
+                        <div className="mt-2 h-[calc(100%-250px)] overflow-y-auto no-scrollbar">
+                            {isLoading ? (
+                                <div className="flex justify-center items-center h-40">
+                                    <Spinner />
+                                </div>
+                            ) : (
+                                <Gallery2
+                                    items={modalContent === 'packaging' ? dataPackagingPaginated : dataBarangPaginated}
+                                    onSelect={handleSelectItem}
+                                    selectedItems={selectedItems}
+                                    enableStockValidation={true}
+                                />
+                            )}
+                        </div>
+                        {/* Pagination */}
+                        <div className="flex gap-2 items-center mt-2 justify-center">
+                            <button
+                                disabled={(modalContent === 'packaging' ? paginationPackaging.page : paginationProduk.page) === 1}
+                                onClick={() => (modalContent === 'packaging' ? handlePackagingPageChange(paginationPackaging.page - 1) : handleProdukPageChange(paginationProduk.page - 1))}
+                                className="px-2 py-1 border rounded disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+                            <span className="text-sm">
+                                Halaman {(modalContent === 'packaging' ? paginationPackaging.page : paginationProduk.page)} dari {Math.max(1, Math.ceil((modalContent === 'packaging' ? paginationPackaging.total : paginationProduk.total) / (modalContent === 'packaging' ? paginationPackaging.limit : paginationProduk.limit)))}
+                            </span>
+                            <button
+                                disabled={(modalContent === 'packaging' ? paginationPackaging.page : paginationProduk.page) >= Math.ceil((modalContent === 'packaging' ? paginationPackaging.total : paginationProduk.total) / (modalContent === 'packaging' ? paginationPackaging.limit : paginationProduk.limit))}
+                                onClick={() => (modalContent === 'packaging' ? handlePackagingPageChange(paginationPackaging.page + 1) : handleProdukPageChange(paginationProduk.page + 1))}
+                                className="px-2 py-1 border rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
                         </div>
                     </div>
                 </section>

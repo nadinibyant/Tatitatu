@@ -16,33 +16,41 @@ import AlertError from "../../../../components/AlertError";
 import { useSearchParams } from "react-router-dom";
 
 export default function BarangCustom() {
+  // State management
   const [isModal, setModal] = useState(false);
+  const [isModalDelete, setModalDelete] = useState(false);
+  const [isModalSucc, setModalSucc] = useState(false);
+  const [modalMode, setModalMode] = useState("add");
+  const [isModalDetail, setModalDetail] = useState(false);
+  const [id, setId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAlertSUcc, setAlertSucc] = useState(false);
+  const [data, setData] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isErrorAlert, setErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  
+  // User data and roles
   const userData = JSON.parse(localStorage.getItem('userData'));
+  const toko_id = userData?.userId;
   const isAdminGudang = userData?.role === 'admingudang';
   const isHeadGudang = userData?.role === 'headgudang';
   const isOwner = userData?.role === 'owner';
   const isManajer = userData?.role === 'manajer';
   const isAdmin = userData?.role === 'admin';
-  const isFinance = userData?.role === 'finance'
-  const [isModalDelete, setModalDelete] = useState(false)
-  const [isModalSucc, setModalSucc] = useState(false)
-  const [modalMode, setModalMode] = useState("add");
-  const [isModalDetail, setModalDetail] = useState(false)
-  const [id, setId] = useState("");
-  const [isLoading, setIsLoading] = useState(false)
-  const [isAlertSUcc, setAlertSucc] = useState(false)
-  const [data,setData] = useState([])
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isErrorAlert, setErrorAlert] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const toko_id = userData.userId
+  const isFinance = userData?.role === 'finance';
+
+  // URL params for pagination and filtering
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get('page')) || 1;
   const perPage = Number(searchParams.get('perPage')) || 15;
   const searchQuery = searchParams.get('search') || '';
   const activeSubMenu = searchParams.get('category') || 'Semua';
 
+  // Theme color based on user role
   const themeColor = (isAdminGudang || isHeadGudang) 
     ? 'coklatTua' 
     : (isManajer || isOwner || isFinance) 
@@ -51,99 +59,25 @@ export default function BarangCustom() {
         ? "hitam"
         : "primary";
 
-  const fetchDataBarang = async () => {
-    try {
-      setIsLoading(true);
-      let endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
-      const params = {};
-      if (!isAdminGudang) {
-        params.toko_id = toko_id;
-      }
-      params.page = page;
-      params.limit = perPage;
-      if (searchQuery) params.search = searchQuery;
-      const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-      const url = `${endpoint}?${queryString}`;
-      const response = await api.get(url);
-      if (response.data.success) {
-        const transformedData = response.data.data.map(item => ({
-          id: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
-          title: item.nama_barang,
-          price: `Rp${item.harga.toLocaleString('id-ID')}`,
-          image: item.image 
-            ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${item.image}` 
-            : "https://via.placeholder.com/50",
-          type: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
-          category: item.kategori_barang_id,
-          jumlah_minimum_stok: item.jumlah_minimum_stok,
-          isi: item.isi,
-          harga_satuan: item.harga_satuan,
-          harga_jual: item.harga_jual
-        }));
-        setData(transformedData);
-        if (response.data.pagination) {
-          setTotalItems(response.data.pagination.totalItems || 0);
-          setTotalPages(response.data.pagination.totalPages || 1);
-        } else {
-          setTotalItems(transformedData.length);
-          setTotalPages(1);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const headerBgColorMap = {
+    'biruTua': 'bg-biruTua',
+    'coklatTua': 'bg-coklatMuda',
+    'hitam': 'bg-hitam',
+    'primary': 'bg-pink'
   };
+  
+  const headerTextColorMap = {
+    'biruTua': 'text-biruMuda',
+    'coklatTua': 'text-coklatTua',
+    'hitam': 'text-white',
+    'primary': 'text-primary'
+  };
+  
+  const headerBgColor = headerBgColorMap[themeColor];  
+  const headerTextColor = headerTextColorMap[themeColor];
 
-const [categoryOptions, setCategoryOptions] = useState([]);
-
-const [data2, setData2] = useState({
-  info_barang: {
-    Nomor: "",
-    "Nama Barang": "",
-    "Jumlah Minimum Stok": "",
-    Kategori: "",
-    Foto: null,
-  },
-  rincian_biaya: [
-    {
-      Harga: "",
-      Isi: "",
-      HargaSatuan: "",
-      HargaJual: ""
-    },
-  ],
-});
-
-const fetchCategories = async () => {
- try {
-   const endpoint = isAdminGudang ? '/kategori-barang-gudang' : `/kategori-barang?toko_id=${toko_id}`;
-   const response = await api.get(endpoint);
-   if (response.data.success) {
-     const options = response.data.data.map(item => ({
-       value: item.kategori_barang_id.toString(),
-       label: item.nama_kategori_barang
-     }));
-     setCategoryOptions(options);
-   }
- } catch (error) {
-   console.error('Error fetching categories:', error);
- }
-};
-
-useEffect(() => {
-  fetchCategories();
-}, []);
-
-useEffect(() => {
-  fetchDataBarang();
-}, [page, perPage, searchQuery, activeSubMenu]);
-
-const handleAddBtn = () => {
-  setModalMode("add");
-  setModal(true);
-  setData2({
+  // Form data state with initial values
+  const [data2, setData2] = useState({
     info_barang: {
       Nomor: "",
       "Nama Barang": "",
@@ -160,35 +94,252 @@ const handleAddBtn = () => {
       },
     ],
   });
-};
 
-  const handleEdit = (itemId) => {
-    setModalMode("edit");
-    setId(itemId.id);
+  // Table headers for rincian biaya
+  const headers = [
+    { label: "No", key: "No", align: "text-left" },
+    { label: "Harga", key: "Harga", align: "text-left" },
+    { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
+    { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
+    { label: "Harga Jual", key: "HargaJual", align: "text-left" },
+  ];
+
+  // Format currency helper
+  const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null || amount === '') return 'Rp0';
+    
+    // Convert to number if it's not already
+    const numAmount = typeof amount === 'number' ? amount : Number(amount);
+    
+    // Check if it's a valid number
+    if (isNaN(numAmount)) return 'Rp0';
+    
+    return numAmount.toLocaleString('id-ID', {
+      style: 'currency',
+      currency: 'IDR'
+    });
+  };
+
+  // Fetch data from API
+  const fetchDataBarang = async () => {
+    try {
+      setIsLoading(true);
+      let endpoint = isAdminGudang ? '/barang-mentah' : '/barang-custom';
+      const params = {};
+      
+      if (!isAdminGudang) {
+        params.toko_id = toko_id;
+      }
+      
+      params.page = page;
+      params.limit = perPage;
+      
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      
+      const queryString = Object.entries(params)
+        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+        .join('&');
+      
+      const url = `${endpoint}?${queryString}`;
+      console.log('Fetching data from URL:', url);
+      
+      const response = await api.get(url);
+      
+      if (response.data.success) {
+        console.log('API Response:', response.data);
+        
+        const transformedData = response.data.data.map(item => ({
+          id: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
+          title: item.nama_barang,
+          price: `Rp${item.harga.toLocaleString('id-ID')}`,
+          image: item.image 
+            ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${item.image}` 
+            : "https://via.placeholder.com/50",
+          type: isAdminGudang ? item.barang_mentah_id : item.barang_custom_id,
+          category: item.kategori_barang_id,
+          jumlah_minimum_stok: item.jumlah_minimum_stok,
+          isi: item.isi,
+          harga_satuan: item.harga_satuan,
+          harga_jual: item.harga_jual,
+          harga: item.harga
+        }));
+        
+        console.log('Transformed Data:', transformedData);
+        
+        setData(transformedData);
+        
+        if (response.data.pagination) {
+          setTotalItems(response.data.pagination.totalItems || 0);
+          setTotalPages(response.data.pagination.totalPages || 1);
+        } else {
+          setTotalItems(transformedData.length);
+          setTotalPages(1);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch category options
+  const fetchCategories = async () => {
+    try {
+      const endpoint = isAdminGudang 
+        ? '/kategori-barang-gudang' 
+        : `/kategori-barang?toko_id=${toko_id}`;
+      
+      const response = await api.get(endpoint);
+      
+      if (response.data.success) {
+        const options = response.data.data.map(item => ({
+          value: item.kategori_barang_id.toString(),
+          label: item.nama_kategori_barang
+        }));
+        
+        setCategoryOptions(options);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Effect hooks for initialization
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchDataBarang();
+  }, [page, perPage, searchQuery, activeSubMenu]);
+
+  // Handle add button click
+  const handleAddBtn = () => {
+    setModalMode("add");
     setModal(true);
-    
-    const itemToEdit = data.find(item => item.id === itemId.id);
-    const priceNumber = parseInt(itemToEdit.price.replace(/\D/g, ''));
-    
     setData2({
       info_barang: {
-        Nomor: itemToEdit.id.toString(),
-        "Nama Barang": itemToEdit.title,
-        "Jumlah Minimum Stok": itemToEdit.jumlah_minimum_stok,
-        Kategori: itemToEdit.category,
-        Foto: itemToEdit.image,
+        Nomor: "",
+        "Nama Barang": "",
+        "Jumlah Minimum Stok": "",
+        Kategori: "",
+        Foto: null,
       },
       rincian_biaya: [
         {
-          Harga: priceNumber,
-          Isi: itemToEdit.isi,
-          HargaSatuan: itemToEdit.harga_satuan,
-          HargaJual: itemToEdit.harga_jual
+          Harga: "",
+          Isi: "",
+          HargaSatuan: "",
+          HargaJual: ""
         },
       ],
     });
   };
 
+  // Fetch a single item directly from API
+  const fetchSingleItem = async (itemId) => {
+    try {
+      const endpoint = isAdminGudang 
+        ? `/barang-mentah/${itemId}` 
+        : `/barang-custom/${itemId}`;
+      
+      console.log('Fetching single item from endpoint:', endpoint);
+      const response = await api.get(endpoint);
+      
+      if (response.data.success && response.data.data) {
+        console.log('Single item data:', response.data.data);
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching single item:', error);
+      return null;
+    }
+  };
+
+  // Handle edit button click
+  const handleEdit = async (itemId) => {
+    console.log('handleEdit dipanggil dengan item ID:', itemId.id);
+    setModalMode("edit");
+    setId(itemId.id);
+    setModal(true);
+    setIsLoading(true);
+    
+    try {
+      // Fetch data langsung untuk satu item
+      const detailItem = await fetchSingleItem(itemId.id);
+      
+      if (detailItem) {
+        // Pastikan semua nilai numerik ada dan valid
+        const harga = detailItem.harga !== undefined ? detailItem.harga : 0;
+        const isi = detailItem.isi !== undefined ? detailItem.isi : 0;
+        const hargaSatuan = detailItem.harga_satuan !== undefined ? detailItem.harga_satuan : 0;
+        const hargaJual = detailItem.harga_jual !== undefined ? detailItem.harga_jual : 0;
+        
+        // Set data dengan nilai dari API response
+        setData2({
+          info_barang: {
+            Nomor: itemId.id.toString(),
+            "Nama Barang": detailItem.nama_barang,
+            "Jumlah Minimum Stok": detailItem.jumlah_minimum_stok || 0,
+            Kategori: detailItem.kategori_barang_id,
+            Foto: detailItem.image 
+              ? `${import.meta.env.VITE_API_URL}/images-${isAdminGudang ? 'barang-mentah' : 'barang-custom'}/${detailItem.image}` 
+              : "https://via.placeholder.com/50",
+          },
+          rincian_biaya: [
+            {
+              Harga: harga,
+              Isi: isi,
+              HargaSatuan: hargaSatuan,
+              HargaJual: hargaJual
+            },
+          ],
+        });
+      } else {
+        // Fallback ke data yang ada
+        const itemToEdit = data.find(item => item.id === itemId.id);
+        
+        if (!itemToEdit) {
+          console.error('Item tidak ditemukan:', itemId);
+          setIsLoading(false);
+          return;
+        }
+        
+        const priceNumber = typeof itemToEdit.price === 'string' 
+          ? parseInt(itemToEdit.price.replace(/\D/g, '')) 
+          : (itemToEdit.harga || 0);
+        
+        setData2({
+          info_barang: {
+            Nomor: itemToEdit.id.toString(),
+            "Nama Barang": itemToEdit.title,
+            "Jumlah Minimum Stok": itemToEdit.jumlah_minimum_stok || 0,
+            Kategori: itemToEdit.category,
+            Foto: itemToEdit.image,
+          },
+          rincian_biaya: [
+            {
+              Harga: priceNumber,
+              Isi: itemToEdit.isi || 0,
+              HargaSatuan: itemToEdit.harga_satuan || 0,
+              HargaJual: itemToEdit.harga_jual || 0
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching edit data:', error);
+      alert('Terjadi kesalahan saat mengambil data. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle info barang change
   const handleInfoBarangChange = (key, value) => {
     setData2((prevData) => ({
       ...prevData,
@@ -203,11 +354,10 @@ const handleAddBtn = () => {
     setData2((prevData) => {
       const updatedRincian = { ...prevData.rincian_biaya[0], [key]: value };
 
-      // Kalkulasi Harga Satuan jika Harga dan Isi valid
       if (key === "Harga" || key === "Isi") {
         const harga = parseFloat(updatedRincian.Harga) || 0;
         const isi = parseFloat(updatedRincian.Isi) || 0;
-        updatedRincian.HargaSatuan = isi > 0 ? (harga / isi) : "";
+        updatedRincian.HargaSatuan = isi > 0 ? (harga / isi) : 0;
       }
 
       return {
@@ -217,23 +367,89 @@ const handleAddBtn = () => {
     });
   };
 
-  const headers = [
-    { label: "No", key: "No", align: "text-left" },
-    { label: "Harga", key: "Harga", align: "text-left" },
-    { label: "Isi", key: "Isi", align: "text-left", width: '110px' },
-    { label: "Harga Satuan", key: "HargaSatuan", align: "text-left" },
-    { label: "Harga Jual", key: "HargaJual", align: "text-left" },
-  ];
-
-  const formatCurrency = (amount) => {
-      if (!amount || amount === 0) return 0;
-      return amount.toLocaleString('id-ID', {
-          style: 'currency',
-          currency: 'IDR'
+  // Handle detail button click
+  const handleDetail = async (item) => {
+    setId(item.id);
+    setModalDetail(true);
+    setIsLoading(true);
+    
+    try {
+      // Fetch data langsung untuk satu item
+      const detailItem = await fetchSingleItem(item.id);
+      
+      if (detailItem) {
+        // Set data dengan nilai dari API response
+        setData2({
+          info_barang: {
+            Nomor: item.id.toString(),
+            "Nama Barang": detailItem.nama_barang,
+            "Jumlah Minimum Stok": detailItem.jumlah_minimum_stok || 0,
+            Kategori: detailItem.kategori_barang_id,
+            Foto: item.image, // Gunakan URL image yang sudah ditransformasi
+          },
+          rincian_biaya: [
+            {
+              Harga: detailItem.harga || 0,
+              Isi: detailItem.isi || 0,
+              HargaSatuan: detailItem.harga_satuan || 0,
+              HargaJual: detailItem.harga_jual || 0
+            },
+          ],
+        });
+      } else {
+        // Fallback ke data yang ada
+        const priceNumber = typeof item.price === 'string' 
+          ? parseInt(item.price.replace(/\D/g, '')) 
+          : (item.harga || 0);
+        
+        setData2({
+          info_barang: {
+            Nomor: item.id.toString(),
+            "Nama Barang": item.title,
+            "Jumlah Minimum Stok": item.jumlah_minimum_stok || 0,
+            Kategori: item.category,
+            Foto: item.image,
+          },
+          rincian_biaya: [
+            {
+              Harga: priceNumber,
+              Isi: item.isi || 0,
+              HargaSatuan: item.harga_satuan || 0,
+              HargaJual: item.harga_jual || 0
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching detail:', error);
+      // Fallback ke data yang ada
+      const priceNumber = typeof item.price === 'string' 
+        ? parseInt(item.price.replace(/\D/g, '')) 
+        : (item.harga || 0);
+      
+      setData2({
+        info_barang: {
+          Nomor: item.id.toString(),
+          "Nama Barang": item.title,
+          "Jumlah Minimum Stok": item.jumlah_minimum_stok || 0,
+          Kategori: item.category,
+          Foto: item.image,
+        },
+        rincian_biaya: [
+          {
+            Harga: priceNumber,
+            Isi: item.isi || 0,
+            HargaSatuan: item.harga_satuan || 0,
+            HargaJual: item.harga_jual || 0
+          },
+        ],
       });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-
+  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -250,7 +466,6 @@ const handleAddBtn = () => {
         return;
       }
     }
-
 
     setIsLoading(true);
     try {
@@ -280,8 +495,8 @@ const handleAddBtn = () => {
         formData.append('harga', data2.rincian_biaya[0].Harga);
         formData.append('isi', data2.rincian_biaya[0].Isi);
         formData.append('harga_satuan', data2.rincian_biaya[0].HargaSatuan);
-        formData.append('harga_jual', data2.rincian_biaya[0].HargaJual)
-        formData.append('toko_id', toko_id)
+        formData.append('harga_jual', data2.rincian_biaya[0].HargaJual);
+        formData.append('toko_id', toko_id);
       }
   
       const endpoint = isAdminGudang 
@@ -302,16 +517,13 @@ const handleAddBtn = () => {
         fetchDataBarang();
       }
     } catch (error) {
-      setErrorMessage(error.response.data.message);
+      setErrorMessage(error.response?.data?.message || 'An error occurred');
       setErrorAlert(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-
-  const [selectedId, setSelectedId] = useState(null);
-  
   const handleBtnDelete = (item) => {
     setSelectedId(item.id);
     setModalDelete(true);
@@ -333,59 +545,43 @@ const handleAddBtn = () => {
     } finally {
       setIsLoading(false);
     }
-   };
+  };
   
+  // Handle delete cancel
   const handleBtnDelCancel = () => {
     setSelectedId(null);
     setModalDelete(false);
   };
   
+  // Handle success confirmation
   const handleConfirmSucc = () => {
     setSelectedId(null);
     setModalSucc(false);
+    setAlertSucc(false);
   };
 
-  const handleDetail = (item) => {
-    setId(item.id);
-    setModalDetail(true);
-    const priceNumber = parseInt(item.price.replace(/\D/g, ''));
-    setData2({
-      info_barang: {
-        Nomor: item.id.toString(),
-        "Nama Barang": item.title,
-        "Jumlah Minimum Stok": item.jumlah_minimum_stok,
-        Kategori: item.category,
-        Foto: item.image,
-      },
-      rincian_biaya: [
-        {
-          Harga: priceNumber,
-          Isi: item.isi,
-          HargaSatuan: item.harga_satuan,
-          HargaJual: item.harga_jual
-        },
-      ],
-    });
-  }
-
+  // URL parameter handlers
   const setPage = (newPage) => setSearchParams({
-      ...Object.fromEntries(searchParams),
-      page: newPage
+    ...Object.fromEntries(searchParams),
+    page: newPage
   });
+  
   const setPerPage = (newPerPage) => setSearchParams({
-      ...Object.fromEntries(searchParams),
-      perPage: newPerPage,
-      page: 1
+    ...Object.fromEntries(searchParams),
+    perPage: newPerPage,
+    page: 1
   });
+  
   const setSearchQuery = (newSearch) => setSearchParams({
-      ...Object.fromEntries(searchParams),
-      search: newSearch,
-      page: 1
+    ...Object.fromEntries(searchParams),
+    search: newSearch,
+    page: 1
   });
+  
   const setActiveSubMenu = (newCategory) => setSearchParams({
-      ...Object.fromEntries(searchParams),
-      category: newCategory,
-      page: 1
+    ...Object.fromEntries(searchParams),
+    category: newCategory,
+    page: 1
   });
 
   return (
@@ -395,13 +591,15 @@ const handleAddBtn = () => {
           <section className="flex flex-wrap md:flex-nowrap items-center justify-between space-y-2 md:space-y-0">
             {/* Left Section */}
             <div className="left w-full md:w-auto">
-              <p className={`text-${themeColor} text-base font-bold`}>{isAdminGudang ? "Daftar Barang Mentah" : "Daftar Bahan Custom"}</p>
+              <p className={`text-${themeColor} text-base font-bold`}>
+                {isAdminGudang ? "Daftar Barang Mentah" : "Daftar Bahan Custom"}
+              </p>
             </div>
 
             {/* Right Section */}
             <div className="right flex flex-wrap md:flex-nowrap items-center space-x-0 md:space-x-4 w-full md:w-auto space-y-2 md:space-y-0">
               <div className="w-full md:w-auto">
-              <Button
+                <Button
                   label="Tambah"
                   icon={
                     <svg
@@ -448,7 +646,7 @@ const handleAddBtn = () => {
           </section>
         </div>
 
-        {/* Modal */}
+        {/* Add/Edit Modal */}
         {isModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg w-full md:w-1/2 max-h-[90vh] overflow-y-auto scrollbar-hide">
@@ -529,14 +727,21 @@ const handleAddBtn = () => {
                     <div className="pt-5">
                       <p className="font-bold">Rincian Biaya</p>
                       <div className="pt-3">
-                        <Table
-                          hasPagination={false}
-                          hasSearch={false}
-                          headers={headers}
-                          data={[
-                            {
-                              No: 1,
-                              Harga: (
+                        
+                        <table className="w-full border-collapse">
+                          <thead className={headerBgColor}>
+                            <tr>
+                              <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left rounded-tl-lg`}>No</th>
+                              <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Harga</th>
+                              <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Isi</th>
+                              <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Harga Satuan</th>
+                              <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left rounded-tr-lg`}>Harga Jual</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="py-4 px-4 text-sm border-b">1</td>
+                              <td className="py-4 px-4 text-sm border-b">
                                 <Input
                                   showRequired={false}
                                   type={'number'}
@@ -544,29 +749,32 @@ const handleAddBtn = () => {
                                   value={data2.rincian_biaya[0].Harga}
                                   onChange={(value) => handleInputChange("Harga", value)}
                                 />
-                              ),
-                              Isi: (
+                              </td>
+                              <td className="py-4 px-4 text-sm border-b">
                                 <Input
-                                showRequired={false}
+                                  showRequired={false}
                                   type={'number'}
                                   width="w-full"
                                   value={data2.rincian_biaya[0].Isi}
                                   onChange={(value) => handleInputChange("Isi", value)}
                                 />
-                              ),
-                              HargaJual: (
+                              </td>
+                              <td className="py-4 px-4 text-sm border-b">
+                                {formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}
+                              </td>
+                              <td className="py-4 px-4 text-sm border-b">
                                 <Input
-                                showRequired={false}
+                                  showRequired={false}
+                                  required={false}
                                   type={'number'}
                                   width="w-full"
                                   value={data2.rincian_biaya[0].HargaJual}
                                   onChange={(value) => handleInputChange("HargaJual", value)}
                                 />
-                              ),
-                              HargaSatuan: `${formatCurrency(data2.rincian_biaya[0].HargaSatuan) || "-"}`,
-                            },
-                          ]}
-                        />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </section>
@@ -592,6 +800,7 @@ const handleAddBtn = () => {
           </div>
         )}
 
+        {/* Detail Modal */}
         {isModalDetail && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
             <div className="bg-white rounded-lg w-full max-w-2xl">
@@ -624,7 +833,9 @@ const handleAddBtn = () => {
                     
                     <div>
                       <p className="text-gray-500">Jumlah Minimum Stok</p>
-                      <p className="font-medium">{data2.info_barang["Jumlah Minimum Stok"].toLocaleString('id-ID')}</p>
+                      <p className="font-medium">
+                        {Number(data2.info_barang["Jumlah Minimum Stok"]).toLocaleString('id-ID')}
+                      </p>
                     </div>
       
                     <div>
@@ -634,22 +845,41 @@ const handleAddBtn = () => {
                   </div>
                 </div>
     
-
                 <div className="mt-5">
-                  <p className="font-bold">Rincian Biaya</p>
-                  <Table
-                    headers={headers}
-                    data={data2.rincian_biaya.map((item, index) => ({
-                        ...item,
-                        No: index + 1,
-                        Harga: `${formatCurrency(item.Harga)}`,
-                        Isi: formatCurrency(item.Isi),
-                        HargaSatuan: `${formatCurrency(item.HargaSatuan)}`,
-                        HargaJual: `${formatCurrency(item.HargaJual)}`
-                    }))}
-                    hasPagination={false}
-                    hasSearch={false}
-                  />
+                  <p className="font-bold pb-5">Rincian Biaya</p>
+                                    
+                  {data2.rincian_biaya && data2.rincian_biaya.length > 0 ? (
+                    <table className="w-full border-collapse">
+                      <thead className={headerBgColor}>
+                        <tr>
+                          <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left rounded-tl-lg`}>No</th>
+                          <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Harga</th>
+                          <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Isi</th>
+                          <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left`}>Harga Satuan</th>
+                          <th className={`text-sm font-semibold ${headerTextColor} py-3 px-4 text-left rounded-tr-lg`}>Harga Jual</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="py-4 px-4 text-sm border-b">1</td>
+                          <td className="py-4 px-4 text-sm border-b">
+                            {formatCurrency(Number(data2.rincian_biaya[0].Harga) || 0)}
+                          </td>
+                          <td className="py-4 px-4 text-sm border-b">
+                            {(data2.rincian_biaya[0].Isi || 0).toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-4 text-sm border-b">
+                            {formatCurrency(Number(data2.rincian_biaya[0].HargaSatuan) || 0)}
+                          </td>
+                          <td className="py-4 px-4 text-sm border-b">
+                            {formatCurrency(Number(data2.rincian_biaya[0].HargaJual) || 0)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-gray-500 italic">No data available</p>
+                  )}
                 </div>
               </div>
       
@@ -676,11 +906,12 @@ const handleAddBtn = () => {
           </div>
         )}
 
+        {/* Loading Spinner */}
         {isLoading && (<Spinner/>)}
 
-        {/* modal delete */}
+        {/* Delete Confirmation Modal */}
         {isModalDelete && (
-            <Alert
+          <Alert
             title="Hapus Data"
             description="Apakah kamu yakin ingin menghapus data ini?"
             confirmLabel="Hapus"
@@ -689,30 +920,32 @@ const handleAddBtn = () => {
             onCancel={handleBtnDelCancel}
             open={isModalDelete}
             onClose={() => setModalDelete(false)}
-            />
+          />
         )} 
 
-        {/* modal success */}
-        {isModalSucc&& (
-            <AlertSuccess
+        {/* Success Delete Modal */}
+        {isModalSucc && (
+          <AlertSuccess
             title="Berhasil!!"
             description="Data berhasil dihapus"
             confirmLabel="Ok"
             onConfirm={handleConfirmSucc}
-            />
+          />
         )}
 
-        {isAlertSUcc&& (
-            <AlertSuccess
+        {/* Success Add/Edit Modal */}
+        {isAlertSUcc && (
+          <AlertSuccess
             title="Berhasil!!"
             description="Data berhasil ditambahkan/diperbaharui"
             confirmLabel="Ok"
             onConfirm={handleConfirmSucc}
-            />
+          />
         )}
 
+        {/* Error Alert */}
         {isErrorAlert && (
-            <AlertError
+          <AlertError
             title="Gagal!!"
             description={errorMessage}
             confirmLabel="Ok"
