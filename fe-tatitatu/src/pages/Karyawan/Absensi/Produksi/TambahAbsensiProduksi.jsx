@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import InputDropdown from "../../../../components/InputDropdown";
 import Input from "../../../../components/Input";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import Gallery2 from "../../../../components/Gallery2";
 import AlertSuccess from "../../../../components/AlertSuccess";
 import Spinner from "../../../../components/Spinner";
 import FileInput from "../../../../components/FileInput";
+import Pagination from "../../../../components/Pagination";
 import api from "../../../../utils/api";
 import AlertError from "../../../../components/AlertError";
 
@@ -39,11 +40,20 @@ export default function TambahAbsensiProduksi() {
     const [error, setError] = useState(null);
     const isKaryawanProduksi = userData?.role === 'karyawanproduksi'
     const isManajer = userData?.role === 'manajer';
-    const isKasirToko = userData?.role === 'kasirtoko';
     const isHeadGudang = userData?.role === 'headgudang';
     const isOwner = userData?.role === 'owner';
     const isAdmin = userData?.role === 'admin';
     const isFinance = userData?.role === 'finance';
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(12);
+    const [searchTimeout, setSearchTimeout] = useState(null);
+
+    // Tambahkan state untuk input page
+    const [inputPage, setInputPage] = useState(1);
 
     const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
     ? 'coklatTua' 
@@ -52,9 +62,6 @@ export default function TambahAbsensiProduksi() {
       : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
         ? "hitam"
         : "primary";
-
-    const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
-    const [geoError, setGeoError] = useState(null);
 
     const getCurrentLocation = () => {
         return new Promise((resolve, reject) => {
@@ -91,46 +98,104 @@ export default function TambahAbsensiProduksi() {
         });
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoadingData(true);
-                const [handmadeRes, categoriesRes] = await Promise.all([
-                    api.get('/barang-handmade-gudang'),
-                    api.get('/kategori-barang-gudang')
-                ]);
-    
-                const processedHandmadeItems = handmadeRes.data.data.map(item => ({
-                    id: item.barang_handmade_id,
-                    image: item.image ? `${import.meta.env.VITE_API_URL}/images-barang-handmade-gudang/${item.image}` : `https://via.placeholder.com/150?text=${encodeURIComponent(item.nama_barang)}`,
-                    name: item.nama_barang,
-                    code: item.barang_handmade_id,
-                    price: item.harga_jual || 0,
-                    kategori: item.kategori.nama_kategori_barang
-                }));
-    
-                // Process categories
-                const processedCategories = ["Semua", ...categoriesRes.data.data.map(cat => 
-                    cat.nama_kategori_barang
-                )];
-    
-                setHandmadeItems(processedHandmadeItems);
-                setCategories(processedCategories);
-            } catch (err) {
-                setError(err.message);
-                console.error('Error fetching data:', err);
-            } finally {
-                setIsLoadingData(false);
+    // Function to fetch data with pagination and filters
+    const fetchHandmadeData = useCallback(async (page = 1, search = "", category = "Semua") => {
+        try {
+            setIsLoadingData(true);
+            
+            // Build query parameters
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: itemsPerPage.toString()
+            });
+
+            // Add search parameter if not empty
+            if (search.trim()) {
+                params.append('search', search.trim());
             }
-        };
-    
-        fetchData();
+
+            if (category !== "Semua") {
+                const categoryData = categories.find(cat => cat.nama_kategori_barang === category);
+                if (categoryData) {
+                    params.append('category', categoryData.kategori_barang_id.toString());
+                }
+            }
+
+            const response = await api.get(`/barang-handmade-gudang?${params.toString()}`);
+            
+            const processedHandmadeItems = response.data.data.map(item => ({
+                id: item.barang_handmade_id,
+                image: item.image ? `${import.meta.env.VITE_API_URL}/images-barang-handmade-gudang/${item.image}` : `https://via.placeholder.com/150?text=${encodeURIComponent(item.nama_barang)}`,
+                name: item.nama_barang,
+                code: item.barang_handmade_id,
+                price: item.harga_jual || 0,
+                kategori: item.kategori.nama_kategori_barang
+            }));
+
+            setHandmadeItems(processedHandmadeItems);
+            
+            // Update pagination info
+            if (response.data.pagination) {
+                setTotalPages(response.data.pagination.totalPages);
+                setTotalItems(response.data.pagination.totalItems);
+                setCurrentPage(response.data.pagination.currentPage);
+                setItemsPerPage(response.data.pagination.itemsPerPage);
+            }
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching data:', err);
+        } finally {
+            setIsLoadingData(false);
+        }
+    }, [itemsPerPage, categories]);
+
+    // Function to fetch categories
+    const fetchCategories = useCallback(async () => {
+        try {
+            const categoriesRes = await api.get('/kategori-barang-gudang');
+            const processedCategories = ["Semua", ...categoriesRes.data.data];
+            setCategories(processedCategories);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching categories:', err);
+        }
     }, []);
 
-    const dataBarang = {
-        kategori: categories,
-        items: handmadeItems,
-    };
+    // Initial data fetch
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // Fetch data when modal opens or filters change
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchHandmadeData(currentPage, searchTerm, selectedCategory);
+        }
+    }, [isModalOpen, currentPage, selectedCategory, fetchHandmadeData]);
+
+    // Debounced search
+    useEffect(() => {
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        const timeout = setTimeout(() => {
+            if (isModalOpen) {
+                setCurrentPage(1); // Reset to first page when searching
+                fetchHandmadeData(1, searchTerm, selectedCategory);
+            }
+        }, 500); // 500ms delay
+
+        setSearchTimeout(timeout);
+
+        return () => {
+            if (timeout) {
+                clearTimeout(timeout);
+            }
+        };
+    }, [searchTerm, selectedCategory, isModalOpen, fetchHandmadeData]);
+
+
 
     const getAllItems = () => {
         return handmadeItems.map(item => ({
@@ -190,16 +255,53 @@ export default function TambahAbsensiProduksi() {
         });
     };
 
-    const filteredItems = isLoadingData ? [] : dataBarang.items.filter(
-        (item) =>
-            (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
-            item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredItems = isLoadingData ? [] : handmadeItems;
     
 
     const resetSelection = () => {
         setSelectedItems([]);
         setIsModalOpen(false);
+        setCurrentPage(1);
+        setSearchTerm("");
+        setSelectedCategory("Semua");
+    };
+
+    // Update handlePageChange agar sinkron dengan inputPage
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        setInputPage(newPage);
+    };
+
+    // Handler untuk input page manual
+    const handleInputPageChange = (e) => {
+        let val = e.target.value.replace(/[^0-9]/g, '');
+        if (val === '') val = 1;
+        val = Math.max(1, Math.min(Number(val), totalPages));
+        setInputPage(val);
+    };
+    const handleInputPageEnter = (e) => {
+        if (e.key === 'Enter') {
+            let val = Number(inputPage);
+            if (val < 1) val = 1;
+            if (val > totalPages) val = totalPages;
+            setCurrentPage(val);
+        }
+    };
+
+    // Handler untuk items per page
+    const handleItemsPerPageChange = (e) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1);
+        setInputPage(1);
+    };
+
+    const handleCategoryChange = (category) => {
+        setSelectedCategory(category);
+        setCurrentPage(1); // Reset to first page when changing category
+    };
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
     };
 
     const handleModalSubmit = () => {
@@ -379,7 +481,7 @@ export default function TambahAbsensiProduksi() {
             try {
                 currentLocation = await getCurrentLocation();
             } catch (geoErr) {
-                setGeoError(geoErr.message);
+                setError(geoErr.message);
                 throw new Error(`Gagal mendapatkan lokasi: ${geoErr.message}. Mohon izinkan akses lokasi.`);
             }
     
@@ -396,7 +498,6 @@ export default function TambahAbsensiProduksi() {
             if (currentLocation && currentLocation.lat && currentLocation.lng) {
                 formData.append('lat', currentLocation.lat);
                 formData.append('lng', currentLocation.lng);
-                setCoordinates(currentLocation);
             } else {
                 formData.append('lat', '0');
                 formData.append('lng', '0');
@@ -522,7 +623,7 @@ export default function TambahAbsensiProduksi() {
                                                 type="text"
                                                 placeholder="Cari Barang yang mau dibeli"
                                                 value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                onChange={handleSearchChange}
                                                 className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                             />
                                         </div>
@@ -577,6 +678,38 @@ export default function TambahAbsensiProduksi() {
                                         </div>
                                     </div>
 
+                                    {/* Tambahkan: Items per page & input page */}
+                                    <div className="flex flex-wrap items-center gap-4 mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm">Tampilkan</span>
+                                            <select
+                                                className="border rounded px-2 py-1 text-sm"
+                                                value={itemsPerPage}
+                                                onChange={handleItemsPerPageChange}
+                                            >
+                                                {[4, 12, 24, 48].map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                            <span className="text-sm">/ halaman</span>
+                                        </div>
+                                        {/* {totalPages > 1 && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm">Halaman</span>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={totalPages}
+                                                    value={inputPage}
+                                                    onChange={handleInputPageChange}
+                                                    onKeyDown={handleInputPageEnter}
+                                                    className="border rounded px-2 py-1 w-16 text-sm"
+                                                />
+                                                <span className="text-sm">dari {totalPages}</span>
+                                            </div>
+                                        )} */}
+                                    </div>
+
                                     {isLoadingData ? (
                                         <div className="flex justify-center items-center flex-grow">
                                             <Spinner />
@@ -601,15 +734,15 @@ export default function TambahAbsensiProduksi() {
                                                 <div className="flex flex-nowrap gap-2 pb-1">
                                                     {categories.map((kategori) => (
                                                         <button
-                                                            key={kategori}
-                                                            onClick={() => setSelectedCategory(kategori)}
+                                                            key={kategori === "Semua" ? kategori : kategori.kategori_barang_id}
+                                                            onClick={() => handleCategoryChange(kategori === "Semua" ? kategori : kategori.nama_kategori_barang)}
                                                             className={`px-3 py-1 text-sm rounded-md whitespace-nowrap flex-shrink-0 ${
-                                                                selectedCategory === kategori
+                                                                selectedCategory === (kategori === "Semua" ? kategori : kategori.nama_kategori_barang)
                                                                     ? `bg-${themeColor} text-white`
                                                                     : "border border-gray-300"
                                                             }`}
                                                         >
-                                                            {kategori}
+                                                            {kategori === "Semua" ? kategori : kategori.nama_kategori_barang}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -622,11 +755,25 @@ export default function TambahAbsensiProduksi() {
                                                     selectedItems={selectedItems}
                                                 />
                                             </div>
+
+                                            {/* Pagination */}
+                                            {totalPages > 1 && (
+                                                <div className="flex-shrink-0 mt-4">
+                                                    <Pagination
+                                                        currentPage={currentPage}
+                                                        totalPages={totalPages}
+                                                        onPageChange={handlePageChange}
+                                                        itemsPerPage={itemsPerPage}
+                                                        totalItems={totalItems}
+                                                        themeColor={themeColor}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
 
-                                <style jsx>{`
+                                <style>{`
                                     .hide-scrollbar {
                                         -ms-overflow-style: none;  /* IE and Edge */
                                         scrollbar-width: none;  /* Firefox */
