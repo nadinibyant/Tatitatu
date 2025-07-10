@@ -70,6 +70,14 @@ export default function EditBeliStokGudang() {
         { value: 2, label: "Non-Cash" }
     ];
 
+    // Tambahkan utility untuk reindex nomor tabel
+    const reindexTableRows = (rows) => {
+        return rows.map((row, idx) => ({
+            ...row,
+            No: idx + 1
+        }));
+    };
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -163,37 +171,29 @@ export default function EditBeliStokGudang() {
                 setDiskon(data.diskon);
                 setPajak(data.pajak);
         
-                const tableRows = data.produk.map((item, index) => {
+                const tableRows = data.produk.map((item) => {
                     const baseUrl = import.meta.env.VITE_API_URL;
                     let imagePath;
-                    
-                    switch(item.jenis) {
-                        case 'Barang Handmade':
-                            imagePath = 'images-barang-handmade-gudang';
-                            break;
-                        case 'Barang Non handmade':
-                            imagePath = 'images-barang-non-handmade-gudang';
-                            break;
-                        case 'Barang Mentah':
-                            imagePath = 'images-barang-mentah';
-                            break;
-                        case 'Packaging':
-                            imagePath = 'images-packaging-gudang';
-                            break;
-                    }
+                    let jenis = item.jenis;
+                    // Normalisasi jenis agar konsisten dengan handleEditSubmit
+                    if (jenis === "Barang Non handmade") jenis = "Barang Non-Handmade";
+                    if (jenis === "Barang Handmade") imagePath = 'images-barang-handmade-gudang';
+                    else if (jenis === "Barang Non-Handmade") imagePath = 'images-barang-non-handmade-gudang';
+                    else if (jenis === "Barang Mentah") imagePath = 'images-barang-mentah';
+                    else if (jenis === "Packaging") imagePath = 'images-packaging-gudang';
         
                     const product = {
                         id: item.barang_id,
                         name: item.nama_barang,
                         price: item.harga_satuan,
-                        jenis: item.jenis,
+                        jenis,
                         image: `${baseUrl}/${imagePath}/${item.image}`
                     };
         
                     return createTableRow(product, item.kuantitas);
                 });
         
-                setItemData(tableRows);
+                setItemData(reindexTableRows(tableRows));
         
                 if (methodsRes.data.success) {
                     const formattedMethods = methodsRes.data.data
@@ -321,18 +321,19 @@ export default function EditBeliStokGudang() {
     // Event handlers
     const handleDropdownChange = (itemId, selectedOption) => {
         setItemData(prevData => {
-            return prevData.map(row => {
+            const updated = prevData.map(row => {
                 if (row.id === itemId) {
                     return createTableRow(selectedOption.fullData, row.quantity);
                 }
                 return row;
             });
+            return reindexTableRows(updated);
         });
     };
 
     const handleQuantityChange = (itemId, newQuantity) => {
         setItemData(prevData => {
-            return prevData.map(row => {
+            const updated = prevData.map(row => {
                 if (row.id === itemId) {
                     const currentProduct = {
                         id: row.id,
@@ -345,16 +346,14 @@ export default function EditBeliStokGudang() {
                 }
                 return row;
             });
+            return reindexTableRows(updated);
         });
     };
 
     const handleDeleteItem = (itemId) => {
         setItemData(prevData => {
             const filteredData = prevData.filter(item => item.id !== itemId);
-            return filteredData.map((item, index) => ({
-                ...item,
-                No: index + 1
-            }));
+            return reindexTableRows(filteredData);
         });
     };
 
@@ -408,10 +407,7 @@ export default function EditBeliStokGudang() {
 
         setItemData(prevData => {
             const updatedData = [...prevData, ...newItems];
-            return updatedData.map((item, index) => ({
-                ...item,
-                No: index + 1
-            }));
+            return reindexTableRows(updatedData);
         });
 
         setIsModalOpen(false);
