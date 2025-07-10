@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
@@ -16,10 +16,11 @@ export default function EditBeliStokGudang() {
     const navigate = useNavigate();
     const location = useLocation();
     const { id, fromLaporanKeuangan } = location.state || {};
+    // Form states
     const [nomor, setNomor] = useState("");
     const [tanggal, setTanggal] = useState(null);
     const [note, setNote] = useState("");
-    const [namaPembeli, setNamaPembeli] = useState(""); 
+    const [namaPembeli, setNamaPembeli] = useState(""); // Added nama pembeli state
     const [selectBayar, setSelectedBayar] = useState("");
     const [selectMetode, setSelectMetode] = useState("");
     const [diskon, setDiskon] = useState(0);
@@ -33,17 +34,12 @@ export default function EditBeliStokGudang() {
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
-    const [selectedJenis, setSelectedJenis] = useState("Barang Non-Handmade");
+    const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     
-    const [modalCurrentPage, setModalCurrentPage] = useState(1);
-    const [modalItemsPerPage, setModalItemsPerPage] = useState(12);
-    const [modalItems, setModalItems] = useState([]);
-    const [modalTotalPages, setModalTotalPages] = useState(1);
-    const [modalTotalItems, setModalTotalItems] = useState(0);
-    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-    
+    const [formattedProducts, setFormattedProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [paymentMethods, setPaymentMethods] = useState([]);
+    const [isProductsLoaded, setIsProductsLoaded] = useState(false);
     
     const userData = JSON.parse(localStorage.getItem('userData'));
     const isAdminGudang = userData?.role === 'admingudang';
@@ -61,8 +57,9 @@ export default function EditBeliStokGudang() {
         ? "hitam"
         : "primary";
 
+
     const productTypes = [
-        // "Barang Handmade",
+        "Barang Handmade",
         "Barang Non-Handmade",
         "Barang Mentah",
         "Packaging"
@@ -73,54 +70,90 @@ export default function EditBeliStokGudang() {
         { value: 2, label: "Non-Cash" }
     ];
 
-    const [formattedProducts, setFormattedProducts] = useState([]);
-
-    function getPageNumbers(current, total) {
-        const delta = 2;
-        const range = [];
-        for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
-            range.push(i);
-        }
-        if (current - delta > 2) range.unshift('...');
-        if (current + delta < total - 1) range.push('...');
-        range.unshift(1);
-        if (total > 1) range.push(total);
-        return [...new Set(range)];
-    }
-
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchProducts = async () => {
             try {
-                if (isAdminGudang) {
-                    const categoriesRes = await api.get('/kategori-barang-gudang');
-                    if (categoriesRes.data.success) {
-                        const apiCategories = categoriesRes.data.data
-                            .filter(cat => !cat.is_deleted)
-                            .map(cat => ({
-                                id: cat.kategori_barang_id,
-                                name: cat.nama_kategori_barang
-                            }));
-                        setCategories(apiCategories);
-                    }
+                setLoading(true);
+                const [handmadeRes, nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
+                    api.get('/barang-handmade-gudang'),
+                    api.get('/barang-nonhandmade-gudang'),
+                    api.get('/barang-mentah'),
+                    api.get('/packaging-gudang'),
+                    api.get('/kategori-barang-gudang')
+                ]);
+
+                const baseUrl = import.meta.env.VITE_API_URL;
+                
+                const allFormattedProducts = [
+                    ...handmadeRes.data.data.map(item => ({
+                        id: item.barang_handmade_id,
+                        image: item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang || "Barang Handmade",
+                        price: item.harga_jual,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        jenis: "Barang Handmade"
+                    })),
+                    ...nonhandmadeRes.data.data.map(item => ({
+                        id: item.barang_nonhandmade_id,
+                        image: item.image ? `${baseUrl}/images-barang-non-handmade-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang,
+                        price: item.harga_jual,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        jenis: "Barang Non-Handmade"
+                    })),
+                    ...mentahRes.data.data.map(item => ({
+                        id: item.barang_mentah_id,
+                        image: item.image ? `${baseUrl}/images-barang-mentah/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_barang,
+                        price: item.harga_satuan,
+                        kategori: item.kategori?.nama_kategori_barang,
+                        jenis: "Barang Mentah"
+                    })),
+                    ...packagingRes.data.data.map(item => ({
+                        id: item.packaging_id,
+                        image: item.image ? `${baseUrl}/images-packaging-gudang/${item.image}` : '/placeholder.jpg',
+                        name: item.nama_packaging,
+                        price: item.harga_satuan,
+                        kategori: null,
+                        jenis: "Packaging"
+                    }))
+                ];
+
+                setFormattedProducts(allFormattedProducts);
+                setIsProductsLoaded(true);
+
+                if (isAdminGudang && categoriesRes.data.success) {
+                    const apiCategories = categoriesRes.data.data
+                        .filter(cat => !cat.is_deleted)
+                        .map(cat => ({
+                            id: cat.kategori_barang_id,
+                            name: cat.nama_kategori_barang
+                        }));
+                    setCategories(apiCategories);
                 }
             } catch (error) {
-                console.error('Error fetching categories:', error);
+                console.error('Error fetching products:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchCategories();
+        fetchProducts();
     }, [isAdminGudang]);
 
     useEffect(() => {
         const fetchPurchaseDetail = async () => {
-            if (!id) return;
+            if (!id || !isProductsLoaded || formattedProducts.length === 0) return;
+        
             try {
                 setLoading(true);
                 const [detailRes, methodsRes] = await Promise.all([
                     api.get(`/pembelian-gudang/${id}`),
                     api.get('/metode-pembayaran-gudang')
                 ]);
+        
                 const { data } = detailRes.data;
+                
                 setNomor(data.pembelian_id);
                 setTanggal(new Date(data.tanggal).toISOString().split('T')[0]);
                 setNote(data.catatan || "");
@@ -129,43 +162,39 @@ export default function EditBeliStokGudang() {
                 setSelectMetode(data.cash_or_non ? 0 : data.metode_id);
                 setDiskon(data.diskon);
                 setPajak(data.pajak);
-                const tableRows = data.produk.map((item) => {
-                    // Standarisasi: cari referensi dari formattedProducts
-                    const found = formattedProducts.find(
-                        p => p.id === item.barang_id && p.jenis === (item.jenis === 'Barang Non handmade' ? 'Barang Non-Handmade' : item.jenis)
-                    );
-                    let product;
-                    if (found) {
-                        product = { ...found };
-                    } else {
-                        // fallback jika tidak ketemu di formattedProducts
-                        const baseUrl = import.meta.env.VITE_API_URL;
-                        let imagePath;
-                        switch(item.jenis) {
-                            case 'Barang Handmade':
-                                imagePath = 'images-barang-handmade-gudang';
-                                break;
-                            case 'Barang Non handmade':
-                                imagePath = 'images-barang-non-handmade-gudang';
-                                break;
-                            case 'Barang Mentah':
-                                imagePath = 'images-barang-mentah';
-                                break;
-                            case 'Packaging':
-                                imagePath = 'images-packaging-gudang';
-                                break;
-                        }
-                        product = {
-                            id: item.barang_id,
-                            name: item.nama_barang,
-                            price: item.harga_satuan,
-                            jenis: item.jenis === 'Barang Non handmade' ? 'Barang Non-Handmade' : item.jenis,
-                            image: `${baseUrl}/${imagePath}/${item.image}`
-                        };
+        
+                const tableRows = data.produk.map((item, index) => {
+                    const baseUrl = import.meta.env.VITE_API_URL;
+                    let imagePath;
+                    
+                    switch(item.jenis) {
+                        case 'Barang Handmade':
+                            imagePath = 'images-barang-handmade-gudang';
+                            break;
+                        case 'Barang Non handmade':
+                            imagePath = 'images-barang-non-handmade-gudang';
+                            break;
+                        case 'Barang Mentah':
+                            imagePath = 'images-barang-mentah';
+                            break;
+                        case 'Packaging':
+                            imagePath = 'images-packaging-gudang';
+                            break;
                     }
+        
+                    const product = {
+                        id: item.barang_id,
+                        name: item.nama_barang,
+                        price: item.harga_satuan,
+                        jenis: item.jenis,
+                        image: `${baseUrl}/${imagePath}/${item.image}`
+                    };
+        
                     return createTableRow(product, item.kuantitas);
                 });
+        
                 setItemData(tableRows);
+        
                 if (methodsRes.data.success) {
                     const formattedMethods = methodsRes.data.data
                         .filter(method => !method.is_deleted)
@@ -173,130 +202,32 @@ export default function EditBeliStokGudang() {
                             value: method.metode_id,
                             label: method.nama_metode
                         }));
+
                     const matchingMethod = formattedMethods.find(
                         method => method.label === data.metode
                     );
+                
                     setPaymentMethods([
                         { value: 0, label: "-" },
                         ...formattedMethods
                     ]);
+
                     if (matchingMethod && !data.cash_or_non) {
                         setSelectMetode(matchingMethod.value);
                     }
                 }
+        
             } catch (error) {
                 console.error('Error fetching purchase detail:', error);
             } finally {
                 setLoading(false);
             }
         };
+
         fetchPurchaseDetail();
-    }, [id, formattedProducts]);
+    }, [id, isProductsLoaded, formattedProducts]);
 
-    useEffect(() => {
-        if (!isModalOpen) return;
-        
-        const fetchModalItems = async () => {
-            try {
-                setLoading(true);
-                let endpoint = '';
-                let imagePath = '';
-                
-                switch(selectedJenis) {
-                    case 'Barang Handmade':
-                        endpoint = '/barang-handmade-gudang';
-                        imagePath = 'images-barang-handmade-gudang';
-                        break;
-                    case 'Barang Non-Handmade':
-                        endpoint = '/barang-nonhandmade-gudang';
-                        imagePath = 'images-barang-non-handmade-gudang';
-                        break;
-                    case 'Barang Mentah':
-                        endpoint = '/barang-mentah';
-                        imagePath = 'images-barang-mentah';
-                        break;
-                    case 'Packaging':
-                        endpoint = '/packaging-gudang';
-                        imagePath = 'images-packaging-gudang';
-                        break;
-                    default:
-                        return;
-                }
-
-                const params = {
-                    page: modalCurrentPage,
-                    limit: modalItemsPerPage,
-                };
-                
-                if (selectedCategoryId) {
-                    params.kategori_id = selectedCategoryId;
-                }
-                
-                if (searchTerm) {
-                    params.search = searchTerm;
-                }
-
-                const res = await api.get(endpoint, { params });
-                const baseUrl = import.meta.env.VITE_API_URL;
-                
-                const items = res.data.data.map(item => {
-                    let price = 0;
-                    let name = '';
-                    let kategori = null;
-                    
-                    switch(selectedJenis) {
-                        case 'Barang Handmade':
-                            price = item.harga_jual || 0;
-                            name = item.nama_barang;
-                            kategori = item.kategori?.nama_kategori_barang;
-                            break;
-                        case 'Barang Non-Handmade':
-                            price = item.harga_jual || 0;
-                            name = item.nama_barang;
-                            kategori = item.kategori?.nama_kategori_barang;
-                            break;
-                        case 'Barang Mentah':
-                            price = item.harga_satuan || 0;
-                            name = item.nama_barang;
-                            kategori = item.kategori?.nama_kategori_barang;
-                            break;
-                        case 'Packaging':
-                            price = item.harga_satuan || 0;
-                            name = item.nama_packaging;
-                            kategori = null;
-                            break;
-                    }
-                    
-                    return {
-                        id: item.barang_handmade_id || item.barang_nonhandmade_id || item.barang_mentah_id || item.packaging_id,
-                        image: item.image ? `${baseUrl}/${imagePath}/${item.image}` : '/placeholder.jpg',
-                        name: name,
-                        price: price,
-                        kategori: kategori,
-                        jenis: selectedJenis
-                    };
-                });
-                
-                setModalItems(items);
-                setModalTotalPages(res.data.pagination?.totalPages || 1);
-                setModalTotalItems(res.data.pagination?.totalItems || 0);
-            } catch (error) {
-                console.error('Error fetching modal items:', error);
-                setModalItems([]);
-                setModalTotalPages(1);
-                setModalTotalItems(0);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchModalItems();
-    }, [selectedJenis, selectedCategoryId, searchTerm, modalCurrentPage, modalItemsPerPage, isModalOpen]);
-
-    useEffect(() => {
-        setModalCurrentPage(1);
-    }, [selectedJenis, selectedCategoryId, searchTerm, isModalOpen]);
-
+    // Helper functions
     const getCategories = () => {
         if (isAdminGudang && (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade")) {
             return ["Semua", ...categories.map(cat => cat.name)];
@@ -304,15 +235,18 @@ export default function EditBeliStokGudang() {
         return ["Semua"];
     };
 
-    const handleCategoryChange = (kategoriNama) => {
-        if (kategoriNama === 'Semua') {
-            setSelectedCategoryId(null);
-        } else {
-            const found = categories.find(cat => cat.name === kategoriNama);
-            setSelectedCategoryId(found?.id || null);
-        }
-        setModalCurrentPage(1);
-        setSelectedCategory(kategoriNama);
+    const getFilteredItems = () => {
+        return formattedProducts.filter(item => {
+            const nameMatch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const jenisMatch = item.jenis === selectedJenis;
+            const categoryMatch = selectedCategory === "Semua" || item.kategori === selectedCategory;
+            
+            if (selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") {
+                return nameMatch && jenisMatch && categoryMatch;
+            }
+            
+            return nameMatch && jenisMatch;
+        });
     };
 
     const calculateSubtotal = () => {
@@ -324,15 +258,20 @@ export default function EditBeliStokGudang() {
         return subtotal - diskonNominal - pajak;
     };
 
+    // Create table row
     const createTableRow = (product, quantity) => {
         const totalBiaya = product.price * quantity;
+
+        // Create dropdown options from all products
         const dropdownOptions = formattedProducts.map(item => ({
             value: item.id,
             label: `${item.name} (${item.jenis})`,
             fullData: item
         }));
+
         return {
             id: product.id,
+            No: itemData.length + 1,
             "Foto Produk": (
                 <img 
                     src={product.image}
@@ -370,7 +309,6 @@ export default function EditBeliStokGudang() {
             "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
             "Aksi": (
                 <button
-                    type="button"
                     onClick={() => handleDeleteItem(product.id)}
                     className="py-1 text-merah font-semibold"
                 >
@@ -380,6 +318,7 @@ export default function EditBeliStokGudang() {
         };
     };
 
+    // Event handlers
     const handleDropdownChange = (itemId, selectedOption) => {
         setItemData(prevData => {
             return prevData.map(row => {
@@ -460,11 +399,13 @@ export default function EditBeliStokGudang() {
 
     const handleModalSubmit = () => {
         if (selectedItems.length === 0) return;
+
         const newItems = selectedItems.map((item) => {
             const product = formattedProducts.find(p => p.id === item.id);
             if (!product) return null;
             return createTableRow(product, item.count);
         }).filter(Boolean);
+
         setItemData(prevData => {
             const updatedData = [...prevData, ...newItems];
             return updatedData.map((item, index) => ({
@@ -472,6 +413,7 @@ export default function EditBeliStokGudang() {
                 No: index + 1
             }));
         });
+
         setIsModalOpen(false);
         setSelectedItems([]);
     };
@@ -486,6 +428,7 @@ export default function EditBeliStokGudang() {
                     kuantitas: item.quantity,
                     total_biaya: item.rawTotalBiaya
                 };
+    
                 switch (item["Jenis Barang"]) {
                     case "Barang Handmade":
                         return {
@@ -511,8 +454,10 @@ export default function EditBeliStokGudang() {
                         return null;
                 }
             }).filter(Boolean);
+    
             const subtotal = calculateSubtotal();
             const totalPenjualan = calculateTotalPenjualan(subtotal);
+
             const baseFormData = {
                 cash_or_non: selectBayar === 1,
                 sub_total: subtotal,
@@ -522,14 +467,17 @@ export default function EditBeliStokGudang() {
                 produk: formattedProducts,
                 catatan: note
             };
+
             if (namaPembeli) {
                 baseFormData.nama_pembeli = namaPembeli;
             } else {
                 baseFormData.nama_pembeli = ''
             }
+
             const formData = selectBayar === 2 
                 ? { ...baseFormData, metode_id: selectMetode }
                 : baseFormData;
+    
             await api.put(`/pembelian-gudang/${id}`, formData);
             setModalSucc(true);
         } catch (error) {
@@ -587,69 +535,6 @@ export default function EditBeliStokGudang() {
         };
     }, [isModalOpen]);
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                setLoading(true);
-                const [handmadeRes, nonhandmadeRes, mentahRes, packagingRes] = await Promise.all([
-                    api.get('/barang-handmade-gudang'),
-                    api.get('/barang-nonhandmade-gudang'),
-                    api.get('/barang-mentah'),
-                    api.get('/packaging-gudang')
-                ]);
-                const baseUrl = import.meta.env.VITE_API_URL;
-                const allFormattedProducts = [
-                    ...handmadeRes.data.data.map(item => ({
-                        id: item.barang_handmade_id,
-                        image: item.image ? `${baseUrl}/images-barang-handmade-gudang/${item.image}` : '/placeholder.jpg',
-                        name: item.nama_barang || "Barang Handmade",
-                        price: item.harga_jual,
-                        kategori: item.kategori?.nama_kategori_barang,
-                        jenis: "Barang Handmade"
-                    })),
-                    ...nonhandmadeRes.data.data.map(item => ({
-                        id: item.barang_nonhandmade_id,
-                        image: item.image ? `${baseUrl}/images-barang-non-handmade-gudang/${item.image}` : '/placeholder.jpg',
-                        name: item.nama_barang,
-                        price: item.harga_jual,
-                        kategori: item.kategori?.nama_kategori_barang,
-                        jenis: "Barang Non-Handmade"
-                    })),
-                    ...mentahRes.data.data.map(item => ({
-                        id: item.barang_mentah_id,
-                        image: item.image ? `${baseUrl}/images-barang-mentah/${item.image}` : '/placeholder.jpg',
-                        name: item.nama_barang,
-                        price: item.harga_satuan,
-                        kategori: item.kategori?.nama_kategori_barang,
-                        jenis: "Barang Mentah"
-                    })),
-                    ...packagingRes.data.data.map(item => ({
-                        id: item.packaging_id,
-                        image: item.image ? `${baseUrl}/images-packaging-gudang/${item.image}` : '/placeholder.jpg',
-                        name: item.nama_packaging,
-                        price: item.harga_satuan,
-                        kategori: null,
-                        jenis: "Packaging"
-                    }))
-                ];
-                setFormattedProducts(allFormattedProducts);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
-
-    // Fungsi untuk generate data tabel dengan No konsisten
-    const getTableDataWithNo = () => {
-        return itemData.map((item, idx) => ({
-            ...item,
-            No: idx + 1
-        }));
-    };
-
     return (
         <LayoutWithNav>
             <div className="p-5">
@@ -672,6 +557,7 @@ export default function EditBeliStokGudang() {
                                     value={tanggal} 
                                     onChange={(e) => setTanggal(e)} 
                                 />
+                                {/* Added Nama Pembeli field */}
                                 <Input 
                                     label="Nama Pembeli" 
                                     type1="text" 
@@ -700,7 +586,7 @@ export default function EditBeliStokGudang() {
                         <section className="pt-10">
                             <h2 className="font-semibold text-lg mb-4">List Produk</h2>
                             <div className="pt-5">
-                                <Table headers={headers} data={getTableDataWithNo()} />
+                                <Table headers={headers} data={itemData} />
                                 <Button
                                     label="Tambah Baris"
                                     icon={
@@ -777,6 +663,7 @@ export default function EditBeliStokGudang() {
                 </section>
             </div>
 
+            {/* Product Selection Modal */}
             {isModalOpen && (
                 <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                     <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
@@ -827,6 +714,7 @@ export default function EditBeliStokGudang() {
                                 </div>
                             </div>
 
+                            {/* Bottom row: Action buttons */}
                             <div className="flex justify-end gap-4">
                                 <Button
                                     label="Batal"
@@ -852,7 +740,6 @@ export default function EditBeliStokGudang() {
                                     onClick={() => {
                                         setSelectedJenis(jenis);
                                         setSelectedCategory("Semua");
-                                        setSelectedCategoryId(null);
                                     }}
                                     className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
                                         selectedJenis === jenis 
@@ -870,7 +757,7 @@ export default function EditBeliStokGudang() {
                                 getCategories().map((kategori) => (
                                     <button
                                         key={kategori}
-                                        onClick={() => handleCategoryChange(kategori)}
+                                        onClick={() => setSelectedCategory(kategori)}
                                         className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                             selectedCategory === kategori
                                                 ? `bg-${themeColor} text-white`
@@ -883,65 +770,12 @@ export default function EditBeliStokGudang() {
                             }
                         </div>
 
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                            <div className="text-xs text-gray-500 pt-10">
-                                Menampilkan {modalTotalItems === 0 ? 0 : ((modalCurrentPage - 1) * modalItemsPerPage + 1)}–{Math.min(modalCurrentPage * modalItemsPerPage, modalTotalItems)} dari {modalTotalItems} barang
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm">Tampilkan:</span>
-                                <select
-                                    className="border rounded px-2 py-1 text-sm"
-                                    value={modalItemsPerPage}
-                                    onChange={e => setModalItemsPerPage(Number(e.target.value))}
-                                >
-                                    {[3, 12, 24, 48].map(num => (
-                                        <option key={num} value={num}>{num}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 h-[calc(100%-220px)] overflow-y-auto no-scrollbar">
+                        <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
                             <Gallery2
-                                items={modalItems}
+                                items={getFilteredItems()}
                                 onSelect={handleSelectItem}
                                 selectedItems={selectedItems}
                             />
-                        </div>
-                        
-                        <div className="flex items-center justify-center gap-2 mt-4">
-                            <button
-                                type="button"
-                                className={`w-8 h-8 flex items-center justify-center rounded-full border transition-all duration-150 ${modalCurrentPage === 1 ? 'bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed' : `bg-white text-${themeColor} border-${themeColor} hover:bg-${themeColor} hover:text-white`}`}
-                                onClick={() => setModalCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={modalCurrentPage === 1}
-                                aria-label="Sebelumnya"
-                            >
-                                &lt;
-                            </button>
-                            {getPageNumbers(modalCurrentPage, modalTotalPages).map((num, idx) => (
-                                typeof num === 'number' ? (
-                                    <button
-                                        key={num}
-                                        type="button"
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full border text-sm font-semibold transition-all duration-150 ${modalCurrentPage === num ? `bg-${themeColor} text-white border-${themeColor}` : `bg-white text-${themeColor} border-${themeColor} hover:bg-${themeColor} hover:text-white`}`}
-                                        onClick={() => setModalCurrentPage(num)}
-                                    >
-                                        {num}
-                                    </button>
-                                ) : (
-                                    <span key={idx} className="px-1 text-gray-400">...</span>
-                                )
-                            ))}
-                            <button
-                                type="button"
-                                className={`w-8 h-8 flex items-center justify-center rounded-full border transition-all duration-150 ${modalCurrentPage === modalTotalPages || modalTotalPages === 0 ? 'bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed' : `bg-white text-${themeColor} border-${themeColor} hover:bg-${themeColor} hover:text-white`}`}
-                                onClick={() => setModalCurrentPage(p => Math.min(modalTotalPages, p + 1))}
-                                disabled={modalCurrentPage === modalTotalPages || modalTotalPages === 0}
-                                aria-label="Berikutnya"
-                            >
-                                &gt;
-                            </button>
                         </div>
                     </div>
                 </section>
