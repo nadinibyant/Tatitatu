@@ -65,6 +65,9 @@ const TambahPenjualanCustom = () => {
     const [searchPackaging, setSearchPackaging] = useState("");
     const [dataBarangPaginated, setDataBarangPaginated] = useState([]);
     const [dataPackagingPaginated, setDataPackagingPaginated] = useState([]);
+    
+    const [allBarangOptions, setAllBarangOptions] = useState([]);
+    const [allPackagingOptions, setAllPackagingOptions] = useState([]);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -229,6 +232,54 @@ const TambahPenjualanCustom = () => {
         }
     };
 
+    // Fetch all barang custom untuk dropdown options (tanpa pagination)
+    const fetchAllBarangCustom = async () => {
+        try {
+            const response = await api.get(`/barang-custom?toko_id=${toko_id}&limit=1000`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.barang_custom_id,
+                    image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+                    name: item.nama_barang,
+                    code: item.barang_custom_id,
+                    price: item.harga_jual,
+                    jenis: item.jenis_barang.nama_jenis_barang,
+                    kategori: item.kategori.nama_kategori_barang,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setAllBarangOptions(items);
+            }
+        } catch (error) {
+            console.error('Error fetching all barang custom:', error);
+            setAllBarangOptions([]);
+        }
+    };
+
+    // Fetch all packaging untuk dropdown options (tanpa pagination)
+    const fetchAllPackaging = async () => {
+        try {
+            const response = await api.get(`/packaging?toko_id=${toko_id}&limit=1000`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.packaging_id,
+                    name: item.nama_packaging,
+                    price: 0,
+                    image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
+                        : "/placeholder-image.jpg",
+                    jenis: item.jenis_barang.nama_jenis_barang,
+                    kategori: item.kategori_barang.nama_kategori_barang,
+                    ukuran: item.ukuran,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setAllPackagingOptions(items);
+            }
+        } catch (error) {
+            console.error('Error fetching all packaging:', error);
+            setAllPackagingOptions([]);
+        }
+    };
+
     // Refactor fetchBarangCustom untuk support pagination dan search
     const fetchBarangCustom = async ({ page, limit, search }) => {
         try {
@@ -319,7 +370,7 @@ const TambahPenjualanCustom = () => {
         );
     
         if (itemIndex !== -1) {
-            const selectedBarang = dataBarangPaginated.find(barang => barang.id === selectedOption.value);
+            const selectedBarang = allBarangOptions.find(barang => barang.id === selectedOption.value);
             
             if (selectedBarang) {
                 const currentQuantity = updatedTables[tableIndex].data[itemIndex].quantity || 1;
@@ -337,7 +388,7 @@ const TambahPenjualanCustom = () => {
                     "Nama Barang": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataBarangPaginated.map(prod => ({
+                            options={allBarangOptions.map(prod => ({
                                 value: prod.id,
                                 label: prod.name
                             }))}
@@ -389,7 +440,7 @@ const TambahPenjualanCustom = () => {
                         "Nama Barang": (
                             <InputDropdown
                                 showRequired={false}
-                                options={dataPackagingPaginated.map(pkg => ({
+                                options={allPackagingOptions.map(pkg => ({
                                     value: pkg.id,
                                     label: `${pkg.name} - ${pkg.ukuran}`
                                 }))}
@@ -424,7 +475,7 @@ const TambahPenjualanCustom = () => {
                         "Nama Barang": (
                             <InputDropdown
                                 showRequired={false}
-                                options={dataBarangPaginated.map(prod => ({
+                                options={allBarangOptions.map(prod => ({
                                     value: prod.id,
                                     label: prod.name
                                 }))}
@@ -509,6 +560,8 @@ const TambahPenjualanCustom = () => {
 
     useEffect(() => {
         fetchMetodePembayaran();
+        fetchAllBarangCustom();
+        fetchAllPackaging();
     }, []);
 
     const handlePackagingChange = (tableIndex, itemId, selectedOption) => {
@@ -518,7 +571,7 @@ const TambahPenjualanCustom = () => {
         );
     
         if (itemIndex !== -1) {
-            const selectedPackaging = dataPackagingPaginated.find(pkg => pkg.id === selectedOption.value);
+            const selectedPackaging = allPackagingOptions.find(pkg => pkg.id === selectedOption.value);
             
             if (selectedPackaging) {
                 const currentQuantity = updatedTables[tableIndex].data[itemIndex].quantity || 1;
@@ -536,7 +589,7 @@ const TambahPenjualanCustom = () => {
                     "Nama Barang": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataPackagingPaginated.map(pkg => ({
+                            options={allPackagingOptions.map(pkg => ({
                                 value: pkg.id,
                                 label: `${pkg.name} - ${pkg.ukuran}`
                             }))}

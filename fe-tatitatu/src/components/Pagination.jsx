@@ -87,12 +87,12 @@ const Pagination = ({
 
             {/* Pagination controls */}
             {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                     {/* Previous button */}
                     <button
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-md whitespace-nowrap ${
                             currentPage === 1
                                 ? 'text-gray-400 cursor-not-allowed'
                                 : `text-${themeColor} hover:bg-${themeColor} hover:text-white border border-${themeColor}`
@@ -102,13 +102,13 @@ const Pagination = ({
                     </button>
 
                     {/* Page numbers */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap justify-center">
                         {getPageNumbers().map((page, index) => (
                             <button
                                 key={index}
                                 onClick={() => typeof page === 'number' ? onPageChange(page) : null}
                                 disabled={page === '...'}
-                                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                                className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-md min-w-[32px] sm:min-w-[36px] ${
                                     page === '...'
                                         ? 'text-gray-400 cursor-default'
                                         : page === currentPage
@@ -125,7 +125,7 @@ const Pagination = ({
                     <button
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-md whitespace-nowrap ${
                             currentPage === totalPages
                                 ? 'text-gray-400 cursor-not-allowed'
                                 : `text-${themeColor} hover:bg-${themeColor} hover:text-white border border-${themeColor}`

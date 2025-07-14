@@ -27,7 +27,6 @@ export default function TambahBarang() {
   const [dataKategori, setDataKategori] = useState([]);
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [materials, setMaterials] = useState([]);
   const [materialOptions, setMaterialOptions] = useState([]);
   const [galleryMaterials, setGalleryMaterials] = useState([{items: []}]);
@@ -45,6 +44,11 @@ export default function TambahBarang() {
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [formData, setFormData] = useState(null);
 
+  const [searchMaterial, setSearchMaterial] = useState("");
+  // Pagination state for material modal
+  const [paginationMaterial, setPaginationMaterial] = useState({ page: 1, limit: 12, total: 0, totalPages: 0 });
+
+
 
   const themeColor = (isAdminGudang || isHeadGudang) 
   ? 'coklatTua' 
@@ -53,6 +57,20 @@ export default function TambahBarang() {
     : (isAdmin && userData?.userId !== 1 && userData?.userId !== 2)
       ? "hitam"
       : "primary";
+
+  // Function to build query parameters for API calls
+  const buildQueryParams = (page, limit, category, search) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('limit', limit);
+    if (category && category !== "Semua") {
+      params.append('category', category);
+    }
+    if (search) {
+      params.append('search', search);
+    }
+    return params.toString();
+  };
 
   const fetchBiayaGudang = async () => {
     try {
@@ -68,7 +86,13 @@ export default function TambahBarang() {
 
   const fetchMaterialData2 = async () => {
     try {
-      const response = await api.get('/barang-mentah');
+      const queryParams = buildQueryParams(
+        paginationMaterial.page, 
+        paginationMaterial.limit, 
+        "Semua", 
+        searchMaterial
+      );
+      const response = await api.get(`/barang-mentah?${queryParams}`);
       if (response.data.success) {
         const options = response.data.data.map(item => ({
           label: item.nama_barang,
@@ -88,6 +112,15 @@ export default function TambahBarang() {
           price: item.harga_satuan
         }));
         setGalleryMaterials([{ items: galleryItems }]);
+        
+        // Update pagination info
+        if (response.data.pagination) {
+          setPaginationMaterial(prev => ({
+            ...prev,
+            total: response.data.pagination.totalItems || 0,
+            totalPages: response.data.pagination.totalPages || 1
+          }));
+        }
       }
     } catch (error) {
       console.error('Error fetching material data:', error);
@@ -96,7 +129,7 @@ export default function TambahBarang() {
 
    const fetchMaterialData = async () => {
     try {
-      const response = await api.get('/barang-mentah');
+      const response = await api.get('/barang-mentah?limit=1000');
       if (response.data.success) {
         const options = response.data.data.map(item => ({
           label: item.nama_barang,
@@ -118,6 +151,14 @@ export default function TambahBarang() {
       fetchBiayaGudang();
     }
   }, [isAdminGudang]);
+
+  // Add useEffect for pagination material
+  useEffect(() => {
+    if (isAdminGudang) {
+      fetchMaterialData2();
+    }
+  }, [paginationMaterial.page, paginationMaterial.limit, searchMaterial]);
+
 
 
   const handleMaterialModal = () => {
@@ -523,11 +564,6 @@ export default function TambahBarang() {
     { label: "Aksi", key: "Aksi", align: "text-center" }
   ];
 
-  const handleDeleteMaterial = (index) => {
-    const updatedMaterials = materials.filter((_, idx) => idx !== index);
-    setMaterials(updatedMaterials);
-  };
-
   const isHargaLogisHigherThan65Percent = (cabang) => {
     if (isAdminGudang) {
       const hargaJualIdeal = data.hargaJualIdeal || 0;
@@ -557,11 +593,6 @@ export default function TambahBarang() {
 
   const getWarningMessage = () => {
     if (isAdminGudang) {
-      const hargaJualIdeal = data.hargaJualIdeal || 0;
-      const hargaLogis = data.hargaLogis || 0;
-      const currentPercentage = hargaJualIdeal > 0 ? 
-        ((hargaLogis - hargaJualIdeal) / hargaJualIdeal) * 100 : 0;
-      
       return `Harga Logis berikut melebihi 65% dari Harga Jual Ideal. Apakah Anda yakin ingin melanjutkan?`;
     } else {
       const overPricedCabang = [];
@@ -700,7 +731,6 @@ formDataToSubmit.append('image', data.info_barang.Foto);
   
         const rincianBiayaData = [];
         let hasError = false;
-        let cabangError = "";
       
         Object.entries(data.hargaPerCabang).forEach(([cabangName, cabangData]) => {
           const cabang = dataCabang.find((c) => c.nama_cabang === cabangName);
@@ -708,13 +738,11 @@ formDataToSubmit.append('image', data.info_barang.Foto);
       
           if (!rincianBiaya) {
             hasError = true;
-            cabangError = cabangName;
             return;
           }
       
           if (!cabangData.hargaLogis || cabangData.hargaLogis <= 0) {
             hasError = true;
-            cabangError = cabangName;
             setErrorMessage(`Harga logis pada cabang "${cabangName}" belum diisi.`);
             setErrorAlert(true);
             return;
@@ -812,6 +840,8 @@ formDataToSubmit.append('image', data.info_barang.Foto);
   const handleBtnCancel = () => {
     navigate('/dataBarang/handmade')
   }
+
+
 
   return (
     <LayoutWithNav
@@ -1198,78 +1228,101 @@ formDataToSubmit.append('image', data.info_barang.Foto);
 
               {isMaterialModalOpen && (
                 <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                  <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
-                    <div className="flex flex-wrap md:flex-nowrap items-center justify-between mb-4 gap-4">
-                      {/* Search input */}
-                      <div className="relative w-full max-w-md flex-shrink-0">
-                        <span className="absolute inset-y-0 left-3 flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                          </svg>
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="Cari bahan mentah"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        />
-                      </div>
+                  <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-auto flex flex-col`}>
+                    <div className="flex flex-col space-y-4 mb-4">
+                      {/* Top row: Search and clear button */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="relative w-full sm:max-w-md">
+                          <span className="absolute inset-y-0 left-3 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                            </svg>
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="Cari bahan mentah"
+                            value={searchMaterial}
+                            onChange={(e) => setSearchMaterial(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          />
+                        </div>
 
-                      {/* Selected count */}
-                      <div className="flex items-center space-x-4 flex-shrink-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center space-x-4 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchMaterial("");
+                              setSelectedMaterial([]);
+                            }}
+                            className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                            title="Hapus data terpilih"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                           <p className={`text-${themeColor} font-semibold`}>
                             Terpilih {selectedMaterial.reduce((sum, item) => sum + item.count, 0)}
                           </p>
-                          {selectedMaterial.length > 0 && (
-                            <button 
-                              onClick={() => setSelectedMaterial([])} 
-                              className="hover:bg-gray-100 p-1 rounded-full"
-                            >
-                              <svg 
-                                width="20" 
-                                height="20" 
-                                viewBox="0 0 24 24" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                              >
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                              </svg>
-                            </button>
-                          )}
                         </div>
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="flex gap-4">
+                      {/* Bottom row: Action buttons */}
+                      <div className="flex justify-end gap-4">
                         <Button
                           label="Batal"
-                          textColor="text-black"
                           bgColor="border border-secondary"
+                          hoverColor="hover:bg-gray-100"
+                          textColor="text-black"
                           onClick={() => setIsMaterialModalOpen(false)}
                         />
                         <Button
                           label="Pilih"
                           bgColor={`bg-${themeColor}`}
+                          hoverColor="hover:bg-opacity-90"
                           textColor="text-white"
                           onClick={handleMaterialModalSubmit}
                         />
                       </div>
                     </div>
 
+
+
+                    {/* Items per page dropdown */}
+                    <div className="flex items-center gap-2 mt-4">
+                      <span className="text-sm text-gray-600">Items per page:</span>
+                      <select
+                        value={paginationMaterial.limit}
+                        onChange={(e) => {
+                          const newLimit = Number(e.target.value);
+                          setPaginationMaterial(prev => ({ ...prev, page: 1, limit: newLimit }));
+                        }}
+                        className={`border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-${themeColor}`}
+                      >
+                        {[12, 24, 48, 96].map(option => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     {/* Gallery */}
-                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                    <div className="mt-6 flex-1 min-h-0 overflow-y-auto no-scrollbar">
                       <Gallery2
-                        items={galleryMaterials[0].items.filter(item => 
-                          item.name.toLowerCase().includes(searchTerm.toLowerCase())
-                        )}
+                        items={galleryMaterials[0].items}
                         onSelect={handleMaterialSelect}
                         selectedItems={selectedMaterial}
+                        enableStockValidation={true}
+                        showPagination={true}
+                        currentPage={paginationMaterial.page}
+                        totalPages={paginationMaterial.totalPages}
+                        totalItems={paginationMaterial.total}
+                        itemsPerPage={paginationMaterial.limit}
+                        onPageChange={(newPage) => {
+                          setPaginationMaterial(prev => ({ ...prev, page: newPage }));
+                        }}
+                        onItemsPerPageChange={() => {}} // Disabled because we moved it to top
                       />
                     </div>
                   </div>

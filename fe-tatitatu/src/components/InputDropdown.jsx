@@ -41,6 +41,12 @@ const InputDropdown = ({
       : "primary";
 
   useEffect(() => {
+    if (!value || value === null || value === undefined) {
+      setSelectedValue("");
+      setSelectedOption(null);
+      return;
+    }
+
     const matchedOption = options.find(option => 
       String(option.value) === String(value)
     );

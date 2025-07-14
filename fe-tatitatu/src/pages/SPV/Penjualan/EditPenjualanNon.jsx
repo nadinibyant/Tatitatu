@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
 import InputDropdown from "../../../components/InputDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
@@ -15,7 +14,6 @@ import api from "../../../utils/api";
 import AlertError from "../../../components/AlertError";
 
 export default function EditPenjualanNon() {
-    const [existingData, setExistingData] = useState(null);
     const { id } = useParams();
 
     const [nomor, setNomor] = useState("");
@@ -64,16 +62,21 @@ export default function EditPenjualanNon() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPackagingModalOpen, setIsPackagingModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(0);
-    const [resetSignal, setResetSignal] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("Semua");
     const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     const [selectedItems, setSelectedItems] = useState([]);
     const [selectedPackagingCategory, setSelectedPackagingCategory] = useState("Semua");
-    const [selectedPackagingJenis, setSelectedPackagingJenis] = useState("Packaging");
     const [selectedPackagingItems, setSelectedPackagingItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [packagingSearchTerm, setPackagingSearchTerm] = useState("");
-
+    
+    const [currentPackagingPage, setCurrentPackagingPage] = useState(1);
+    const [currentHandmadePage, setCurrentHandmadePage] = useState(1);
+    const [limit, setLimit] = useState(50);
+    const [packagingLimit, setPackagingLimit] = useState(50);
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    const [selectedPackagingCategoryId, setSelectedPackagingCategoryId] = useState(null);
+    
     const [kategoriBarang, setKategoriBarang] = useState({
         "Barang Handmade": ["Semua"],
         "Barang Non-Handmade": ["Semua"]
@@ -91,10 +94,15 @@ export default function EditPenjualanNon() {
         }
     ]);
     const [dataMetode, setDataMetode] = useState([]);
+    const [kategoriIdMap, setKategoriIdMap] = useState({});
+
+    const [isBarangLoaded, setIsBarangLoaded] = useState(false);
+    const [isPackagingLoaded, setIsPackagingLoaded] = useState(false);
 
     const fetchPackaging = async () => {
         try {
-            const response = await api.get(`/packaging?toko_id=${toko_id}`);
+            let url = `/packaging?toko_id=${toko_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const packagingItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -108,22 +116,21 @@ export default function EditPenjualanNon() {
                         kategori: item.kategori_barang.nama_kategori_barang,
                         stock: item.stok_barang?.jumlah_stok || 0
                     }));
-
                 const kategoriBaru = [
                     "Semua", 
                     ...new Set(packagingItems.map(item => item.kategori))
                 ];
-
                 setKategoriPackaging(kategoriBaru);
-
                 setDataPackaging(prev => prev.map(packaging => 
                     packaging.jenis === "Packaging" 
                         ? { ...packaging, kategori: kategoriBaru, items: packagingItems }
                         : packaging
                 ));
+                setIsPackagingLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching packaging:', error);
+            setIsPackagingLoaded(true);
         }
     };
 
@@ -133,11 +140,19 @@ export default function EditPenjualanNon() {
             if (response.data.success) {
                 const kategoriBaru = response.data.data
                     .filter(kategori => !kategori.is_deleted)
-                    .map(kategori => kategori.nama_kategori_barang);
+                    .map(kategori => ({
+                        id: kategori.kategori_barang_id,
+                        nama: kategori.nama_kategori_barang
+                    }));
+
+                // mapping nama → id
+                const idMap = {};
+                kategoriBaru.forEach(kat => { idMap[kat.nama] = kat.id; });
+                setKategoriIdMap(idMap);
 
                 setKategoriBarang({
-                    "Barang Handmade": ["Semua", ...kategoriBaru],
-                    "Barang Non-Handmade": ["Semua", ...kategoriBaru]
+                    "Barang Handmade": ["Semua", ...kategoriBaru.map(k => k.nama)],
+                    "Barang Non-Handmade": ["Semua", ...kategoriBaru.map(k => k.nama)]
                 });
             }
         } catch (error) {
@@ -147,7 +162,8 @@ export default function EditPenjualanNon() {
 
     const fetchBarangHandmade = async () => {
         try {
-            const response = await api.get(`/barang-handmade?toko_id=${toko_id}`);
+            let url = `/barang-handmade?toko_id=${toko_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const handmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -160,21 +176,23 @@ export default function EditPenjualanNon() {
                         kategori: item.kategori_barang.nama_kategori_barang,
                         stock: item.stok_barang?.jumlah_stok || 0
                     }));
-
                 setDataBarang(prev => prev.map(barang => 
                     barang.jenis === "Barang Handmade" 
                         ? { ...barang, items: handmadeItems }
                         : barang
                 ));
+                setIsBarangLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching barang handmade:', error);
+            setIsBarangLoaded(true);
         }
     };
 
     const fetchBarangNonHandmade = async () => {
         try {
-            const response = await api.get(`/barang-non-handmade?toko_id=${toko_id}`);
+            let url = `/barang-non-handmade?toko_id=${toko_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const nonHandmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -187,15 +205,16 @@ export default function EditPenjualanNon() {
                         kategori: item.kategori?.nama_kategori_barang,
                         stock: item.stok_barang?.jumlah_stok || 0
                     }));
-
                 setDataBarang(prev => prev.map(barang => 
                     barang.jenis === "Barang Non-Handmade" 
                         ? { ...barang, items: nonHandmadeItems }
                         : barang
                 ));
+                setIsBarangLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching barang non-handmade:', error);
+            setIsBarangLoaded(true);
         }
     };
 
@@ -242,18 +261,55 @@ export default function EditPenjualanNon() {
                     }
                 }
 
+                // Pastikan dataBarang dan dataPackaging sudah ter-load
+                if (!isBarangLoaded || !isPackagingLoaded) {
+                    console.log('Data belum ter-load, menunggu...');
+                    return;
+                }
+
+                // Pastikan dataBarang dan dataPackaging tidak kosong
+                const hasBarangData = dataBarang.some(category => category.items && category.items.length > 0);
+                const hasPackagingData = dataPackaging.some(category => category.items && category.items.length > 0);
+                
+                console.log('Data barang loaded:', hasBarangData);
+                console.log('Data packaging loaded:', hasPackagingData);
+                console.log('Data barang structure:', dataBarang);
+                console.log('Data packaging structure:', dataPackaging);
+                
+                if (!hasBarangData || !hasPackagingData) {
+                    console.log('Data barang atau packaging kosong, menunggu...');
+                    return;
+                }
+
                 // Process products and packaging
                 const rincianProduk = [];
                 const rincianPackaging = [];
 
-                data.produk.forEach((item, index) => {
+                data.produk.forEach((item) => {
                     if (item.barang_handmade || item.barang_non_handmade) {
                         const product = item.barang_handmade || item.barang_non_handmade;
                         const jenisBarang = item.barang_handmade ? "Barang Handmade" : "Barang Non-Handmade";
                         
+                        // Pastikan dataBarang sudah ter-load sebelum membuat dropdown options
+                        const dropdownOptions = dataBarang.reduce((allItems, data) => {
+                            if (data.items && data.items.length > 0) {
+                                const items = data.items.map(item => ({
+                                    label: item.name,
+                                    value: item.id,
+                                    price: item.price,
+                                    jenis: data.jenis,
+                                    kategori: item.kategori,
+                                    image: item.image
+                                }));
+                                return [...allItems, ...items];
+                            }
+                            return allItems;
+                        }, []);
+                        
                         rincianProduk.push({
                             id: product.barang_handmade_id || product.barang_non_handmade_id,
-                            No: index + 1,
+                            timestamp: Date.now(), // Tambahkan timestamp
+                            No: rincianProduk.length + 1,
                             "Foto Produk": (
                                 <img
                                     src={`${import.meta.env.VITE_API_URL}/images-${jenisBarang.toLowerCase().replace(' ', '-')}/${product.image}`}
@@ -264,16 +320,7 @@ export default function EditPenjualanNon() {
                             "Nama Produk": (
                                 <InputDropdown
                                     showRequired={false}
-                                    options={[
-                                        {
-                                            label: product.nama_barang,
-                                            value: product.barang_handmade_id || product.barang_non_handmade_id,
-                                            price: item.harga_satuan,
-                                            jenis: jenisBarang,
-                                            kategori: product.kategori_barang?.nama_kategori_barang || product.kategori?.nama_kategori_barang,
-                                            image: product.image
-                                        }
-                                    ]}
+                                    options={dropdownOptions.length > 0 ? dropdownOptions : []}
                                     value={product.barang_handmade_id || product.barang_non_handmade_id}
                                     onSelect={(newSelection) => handleDropdownChange(product.barang_handmade_id || product.barang_non_handmade_id, newSelection)}
                                 />
@@ -291,7 +338,8 @@ export default function EditPenjualanNon() {
                             "Total Biaya": `Rp${item.total_biaya.toLocaleString('id-ID')}`,
                             rawTotalBiaya: item.total_biaya,
                             quantity: item.kuantitas,
-                            currentPrice: item.harga_satuan,
+                            currentPrice: item.harga_satuan, // Tambahkan currentPrice
+                            name: product.nama_barang, // Tambahkan name
                             Aksi: (
                                 <button
                                     className="text-red-500 hover:text-red-700"
@@ -302,9 +350,24 @@ export default function EditPenjualanNon() {
                             ),
                         });
                     } else if (item.packaging) {
+                        // Pastikan dataPackaging sudah ter-load sebelum membuat dropdown options
+                        const packagingDropdownOptions = dataPackaging.reduce((allItems, data) => {
+                            if (data.items && data.items.length > 0) {
+                                const items = data.items.map(item => ({
+                                    label: `${item.name}`,
+                                    value: item.id,
+                                    price: item.price,
+                                    image: item.image
+                                }));
+                                return [...allItems, ...items];
+                            }
+                            return allItems;
+                        }, []);
+                        
                         rincianPackaging.push({
                             id: item.packaging.packaging_id,
-                            No: index + 1,
+                            timestamp: Date.now(), // Tambahkan timestamp
+                            No: rincianPackaging.length + 1,
                             "Foto Produk": (
                                 <img
                                     src={`${import.meta.env.VITE_API_URL}/images-packaging/${item.packaging.image}`}
@@ -315,14 +378,7 @@ export default function EditPenjualanNon() {
                             "Nama Packaging": (
                                 <InputDropdown
                                     showRequired={false}
-                                    options={[
-                                        {
-                                            label: `${item.packaging.nama_packaging} - ${item.packaging.ukuran}`,
-                                            value: item.packaging.packaging_id,
-                                            price: item.harga_satuan,
-                                            image: item.packaging.image
-                                        }
-                                    ]}
+                                    options={packagingDropdownOptions.length > 0 ? packagingDropdownOptions : []}
                                     value={item.packaging.packaging_id}
                                     onSelect={(nextSelection) => handlePackagingDropdownChange(item.packaging.packaging_id, nextSelection)}
                                 />
@@ -335,7 +391,7 @@ export default function EditPenjualanNon() {
                                     onChange={(newCount) => handleQuantityChange(1, item.packaging.packaging_id, newCount)}
                                 />
                             ),
-                            quantity: item.kuantitas,
+                            quantity: item.kuantitas, // Tambahkan quantity
                             Aksi: (
                                 <button
                                     className="text-red-500 hover:text-red-700"
@@ -362,15 +418,78 @@ export default function EditPenjualanNon() {
         }
     };
 
+    // Functions to handle search and category changes
+    const handleSearchChange = (searchValue) => {
+        setSearchTerm(searchValue);
+        setCurrentHandmadePage(1);
+        fetchBarangHandmade(1, limit, selectedCategoryId, searchValue);
+        fetchBarangNonHandmade(1, limit, selectedCategoryId, searchValue);
+    };
+
+    const handlePackagingSearchChange = (searchValue) => {
+        setPackagingSearchTerm(searchValue);
+        setCurrentPackagingPage(1);
+        fetchPackaging(1, packagingLimit, selectedPackagingCategoryId, searchValue);
+    };
+
+    const handleCategoryChange = (categoryName) => {
+        setSelectedCategory(categoryName);
+        setCurrentHandmadePage(1);
+        // Ambil ID dari mapping, kecuali "Semua"
+        const categoryId = categoryName === "Semua" ? null : kategoriIdMap[categoryName];
+        setSelectedCategoryId(categoryId);
+        fetchBarangHandmade(1, limit, categoryId, searchTerm);
+        fetchBarangNonHandmade(1, limit, categoryId, searchTerm);
+    };
+
+    const handlePackagingCategoryChange = (categoryName) => {
+        setSelectedPackagingCategory(categoryName);
+        setCurrentPackagingPage(1);
+        const categoryId = categoryName === "Semua" ? null : kategoriIdMap[categoryName];
+        setSelectedPackagingCategoryId(categoryId);
+        fetchPackaging(1, packagingLimit, categoryId, packagingSearchTerm);
+    };
+
+    // Functions to handle pagination and items per page
+    const handlePageChange = (newPage) => {
+        setCurrentHandmadePage(newPage);
+        fetchBarangHandmade(newPage, limit, selectedCategoryId, searchTerm);
+        fetchBarangNonHandmade(newPage, limit, selectedCategoryId, searchTerm);
+    };
+
+    const handlePackagingPageChange = (newPage) => {
+        setCurrentPackagingPage(newPage);
+        fetchPackaging(newPage, packagingLimit, selectedPackagingCategoryId, packagingSearchTerm);
+    };
+
+    const handleItemsPerPageChange = (newLimit) => {
+        setLimit(newLimit);
+        setCurrentHandmadePage(1);
+        fetchBarangHandmade(1, newLimit, selectedCategoryId, searchTerm);
+        fetchBarangNonHandmade(1, newLimit, selectedCategoryId, searchTerm);
+    };
+
+    const handlePackagingItemsPerPageChange = (newLimit) => {
+        setPackagingLimit(newLimit);
+        setCurrentPackagingPage(1);
+        fetchPackaging(1, newLimit, selectedPackagingCategoryId, packagingSearchTerm);
+    };
+
     // Effect hooks
     useEffect(() => {
-        fetchPackaging();
+        fetchPackaging(); // tanpa parameter page/limit/category/search
         fetchKategoriBarang();
-        fetchBarangHandmade();
-        fetchBarangNonHandmade();
+        fetchBarangHandmade(); // tanpa parameter page/limit/category/search
+        fetchBarangNonHandmade(); // tanpa parameter page/limit/category/search
         fetchMetodePembayaran();
-        fetchPenjualan();
+        // Hapus fetchPenjualan dari sini
     }, []);
+
+    useEffect(() => {
+        if (isBarangLoaded && isPackagingLoaded) {
+            fetchPenjualan();
+        }
+    }, [isBarangLoaded, isPackagingLoaded, dataBarang, dataPackaging]);
 
     useEffect(() => {
         if (isModalOpen) {
@@ -454,11 +573,29 @@ export default function EditPenjualanNon() {
     };
 
     const handleDropdownChange = (itemId, nextSelection) => {
+        console.log('handleDropdownChange called:', itemId, nextSelection); // Debug log
+        
+        // Pastikan dataBarang sudah ter-load
+        if (!isBarangLoaded) {
+            console.log('Data barang belum ter-load');
+            return;
+        }
+
+                        // Pastikan dataBarang tidak kosong
+                const hasBarangData = dataBarang.some(category => category.items && category.items.length > 0);
+                console.log('Data barang available:', hasBarangData);
+                if (!hasBarangData) {
+                    console.log('Data barang kosong');
+                    return;
+                }
+        
         const updatedDataCabang = [...dataCabang];
         const cabangIndex = 0; // Rincian Produk
         const rowIndex = updatedDataCabang[cabangIndex].data.findIndex(
             (row) => row.id === itemId
         );
+
+        console.log('Found row at index:', rowIndex); // Debug log
     
         if (rowIndex !== -1) {
             let selectedItem = null;
@@ -478,9 +615,30 @@ export default function EditPenjualanNon() {
                 const currentQuantity = updatedDataCabang[cabangIndex].data[rowIndex].quantity || 0;
                 const newTotalBiaya = selectedItem.price * currentQuantity;
                 
+                console.log('Selected item found:', selectedItem);
+                console.log('Current quantity:', currentQuantity);
+                console.log('New total biaya:', newTotalBiaya);
+                
+                // Pastikan dataBarang sudah ter-load sebelum membuat dropdown options
+                const dropdownOptions = dataBarang.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: item.name,
+                            value: item.id,
+                            price: item.price,
+                            jenis: data.jenis,
+                            kategori: item.kategori,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
+                
                 updatedDataCabang[cabangIndex].data[rowIndex] = {
                     ...updatedDataCabang[cabangIndex].data[rowIndex],
                     id: selectedItem.id,
+                    timestamp: Date.now(), // Tambahkan timestamp untuk memastikan key unik
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -491,19 +649,9 @@ export default function EditPenjualanNon() {
                     "Nama Produk": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataBarang.reduce((allItems, data) => {
-                                const items = data.items.map(item => ({
-                                    label: item.name,
-                                    value: item.id,
-                                    price: item.price,
-                                    jenis: data.jenis,
-                                    kategori: item.kategori,
-                                    image: item.image
-                                }));
-                                return [...allItems, ...items];
-                            }, [])}
+                            options={dropdownOptions.length > 0 ? dropdownOptions : []}
                             value={selectedItem.id}
-                            onSelect={(nextSelection) => handleDropdownChange(itemId, nextSelection)}
+                            onSelect={(nextSelection) => handleDropdownChange(selectedItem.id, nextSelection)}
                         />
                     ),
                     "Jenis Barang": jenisBarang,
@@ -516,16 +664,36 @@ export default function EditPenjualanNon() {
                 };
     
                 setDataCabang(updatedDataCabang);
+            } else {
+                console.log('Selected item not found for value:', nextSelection.value);
             }
         }
     };
 
     const handlePackagingDropdownChange = (itemId, nextSelection) => {
+        console.log('handlePackagingDropdownChange called:', itemId, nextSelection); // Debug log
+        
+        // Pastikan dataPackaging sudah ter-load
+        if (!isPackagingLoaded) {
+            console.log('Data packaging belum ter-load');
+            return;
+        }
+
+                        // Pastikan dataPackaging tidak kosong
+                const hasPackagingData = dataPackaging.some(category => category.items && category.items.length > 0);
+                console.log('Data packaging available:', hasPackagingData);
+                if (!hasPackagingData) {
+                    console.log('Data packaging kosong');
+                    return;
+                }
+        
         const updatedDataCabang = [...dataCabang];
         const cabangIndex = 1; // Packaging
         const rowIndex = updatedDataCabang[cabangIndex].data.findIndex(
             (row) => row.id === itemId
         );
+
+        console.log('Found packaging row at index:', rowIndex); // Debug log
     
         if (rowIndex !== -1) {
             const selectedItem = dataPackaging
@@ -535,9 +703,27 @@ export default function EditPenjualanNon() {
             if (selectedItem) {
                 const currentQuantity = updatedDataCabang[cabangIndex].data[rowIndex].quantity || 1;
                 
+                console.log('Selected packaging item found:', selectedItem);
+                console.log('Current quantity:', currentQuantity);
+                
+                // Pastikan dataPackaging sudah ter-load sebelum membuat dropdown options
+                const packagingDropdownOptions = dataPackaging.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: `${item.name}`,
+                            value: item.id,
+                            price: item.price,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
+                
                 updatedDataCabang[cabangIndex].data[rowIndex] = {
                     ...updatedDataCabang[cabangIndex].data[rowIndex],
                     id: selectedItem.id,
+                    timestamp: Date.now(), // Tambahkan timestamp untuk memastikan key unik
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -548,23 +734,17 @@ export default function EditPenjualanNon() {
                     "Nama Packaging": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataPackaging.reduce((allItems, data) => {
-                                const items = data.items.map(item => ({
-                                    label: `${item.name}`,
-                                    value: item.id,
-                                    price: item.price,
-                                    image: item.image
-                                }));
-                                return [...allItems, ...items];
-                            }, [])}
+                            options={packagingDropdownOptions.length > 0 ? packagingDropdownOptions : []}
                             value={selectedItem.id}
-                            onSelect={(nextSelection) => handlePackagingDropdownChange(itemId, nextSelection)}
+                            onSelect={(nextSelection) => handlePackagingDropdownChange(selectedItem.id, nextSelection)}
                         />
                     ),
                     quantity: currentQuantity
                 };
     
                 setDataCabang(updatedDataCabang);
+            } else {
+                console.log('Selected packaging item not found for value:', nextSelection.value);
             }
         }
     };
@@ -651,7 +831,8 @@ export default function EditPenjualanNon() {
     const handleModalSubmit = () => {
         if (activeCabang !== null) {
             const updatedCabang = [...dataCabang];
-            const newItems = selectedItems.map(item => {
+            const startIndex = updatedCabang[activeCabang].data.length;
+            const newItems = selectedItems.map((item, index) => {
                 // Determine the product's category (Handmade or Non-Handmade)
                 const productCategory = dataBarang.find(category => 
                     category.items.some(i => i.id === item.id)
@@ -660,7 +841,8 @@ export default function EditPenjualanNon() {
                 const totalBiaya = parseInt(item.price) * item.count;
                 return {
                     id: item.id,
-                    No: updatedCabang[activeCabang].data.length + 1,
+                    timestamp: Date.now(), // Tambahkan timestamp
+                    No: startIndex + index + 1,
                     "Foto Produk": (
                         <img
                             src={item.image}
@@ -720,10 +902,12 @@ export default function EditPenjualanNon() {
     const handlePackagingModalSubmit = () => {
         if (activeCabang !== null) {
             const updatedCabang = [...dataCabang];
-            const newItems = selectedPackagingItems.map(item => {
+            const startIndex = updatedCabang[activeCabang].data.length;
+            const newItems = selectedPackagingItems.map((item, index) => {
                 return {
                     id: item.id,
-                    No: updatedCabang[activeCabang].data.length + 1,
+                    timestamp: Date.now(), // Tambahkan timestamp
+                    No: startIndex + index + 1,
                     "Foto Produk": (
                         <img
                             src={item.image}
@@ -877,7 +1061,7 @@ export default function EditPenjualanNon() {
         ) || [];
 
     const filteredPackagingItems = dataPackaging
-        .find((data) => data.jenis === selectedPackagingJenis)
+        .find((data) => data.jenis === "Packaging")
         ?.items.filter(
             (item) =>
                 (selectedPackagingCategory === "Semua" || item.kategori === selectedPackagingCategory) &&
@@ -936,7 +1120,7 @@ export default function EditPenjualanNon() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <Input label={"Nomor"} type="text" disabled={true} value={nomor} onChange={(e) => setNomor(e)} />
                                     <Input label={"Tanggal dan Waktu"} type="datetime-local" value={tanggal} onChange={(e) => setTanggal(e)} />
-                                    <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} />
+                                    <Input label={"Nama Pembeli"} value={namaPembeli} onChange={(e) => setNamaPembeli(e)} required={false}/>
                                     <InputDropdown 
                                         label="Cash/Non-Cash"
                                         options={dataBayar.map(item => ({
@@ -966,6 +1150,7 @@ export default function EditPenjualanNon() {
                                         <p className="font-bold">{cabang.nama}</p>
                                         <div className="pt-5">
                                             <Table 
+                                                key={cabang.data.map(row => row.id + '-' + (row.currentPrice ?? '') + '-' + (row.timestamp ?? Date.now())).join('_')}
                                                 headers={cabang.nama === "Packaging" ? packagingHeaders : headers} 
                                                 data={cabang.data} 
                                             />
@@ -1078,7 +1263,7 @@ export default function EditPenjualanNon() {
                                                     type="text"
                                                     placeholder="Cari Barang yang mau dibeli"
                                                     value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    onChange={(e) => handleSearchChange(e.target.value)}
                                                     className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                                 />
                                             </div>
@@ -1150,7 +1335,7 @@ export default function EditPenjualanNon() {
                                         {kategoriBarang[selectedJenis].map((kategori) => (
                                             <button
                                                 key={kategori}
-                                                onClick={() => setSelectedCategory(kategori)}
+                                                onClick={() => handleCategoryChange(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedCategory === kategori
                                                         ? "bg-primary text-white"
@@ -1162,13 +1347,36 @@ export default function EditPenjualanNon() {
                                         ))}
                                     </div>
 
+                                    {/* Items per page selector */}
+                                    <div className="flex items-center justify-between mt-4 mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <label className="text-sm text-gray-600">Items per page:</label>
+                                            <select
+                                                value={limit}
+                                                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                                                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                                            >
+                                                <option value={15}>15</option>
+                                                <option value={25}>25</option>
+                                                <option value={50}>50</option>
+                                                <option value={100}>100</option>
+                                            </select>
+                                        </div>
+                                        {/* <div className="text-sm text-gray-600">
+                                            Total: {totalItems} items
+                                        </div> */}
+                                    </div>
+
                                     {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                    <div className="mt-2 h-[calc(100%-220px)] overflow-y-auto no-scrollbar">
                                         <Gallery2
                                             items={filteredItems || []}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
                                             enableStockValidation={true}
+                                            currentPage={currentHandmadePage}
+                                            onPageChange={handlePageChange}
+                                            showPagination={true}
                                         />
                                     </div>
                                 </div>
@@ -1195,7 +1403,7 @@ export default function EditPenjualanNon() {
                                                     type="text"
                                                     placeholder="Cari Packaging"
                                                     value={packagingSearchTerm}
-                                                    onChange={(e) => setPackagingSearchTerm(e.target.value)}
+                                                    onChange={(e) => handlePackagingSearchChange(e.target.value)}
                                                     className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                                 />
                                             </div>
@@ -1252,7 +1460,7 @@ export default function EditPenjualanNon() {
                                         {kategoriPackaging.map((kategori) => (
                                             <button
                                                 key={kategori}
-                                                onClick={() => setSelectedPackagingCategory(kategori)}
+                                                onClick={() => handlePackagingCategoryChange(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedPackagingCategory === kategori
                                                         ? "bg-primary text-white"
@@ -1264,8 +1472,28 @@ export default function EditPenjualanNon() {
                                         ))}
                                     </div>
 
+                                    {/* Items per page selector */}
+                                    <div className="flex items-center justify-between mt-4 mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <label className="text-sm text-gray-600">Items per page:</label>
+                                            <select
+                                                value={packagingLimit}
+                                                onChange={(e) => handlePackagingItemsPerPageChange(Number(e.target.value))}
+                                                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                                            >
+                                                <option value={15}>15</option>
+                                                <option value={25}>25</option>
+                                                <option value={50}>50</option>
+                                                <option value={100}>100</option>
+                                            </select>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            Total: {filteredPackagingItems.length} items
+                                        </div>
+                                    </div>
+
                                     {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                    <div className="mt-2 h-[calc(100%-220px)] overflow-y-auto no-scrollbar">
                                         <Gallery2
                                             items={filteredPackagingItems?.map(item => ({
                                                 ...item,
@@ -1274,6 +1502,9 @@ export default function EditPenjualanNon() {
                                             onSelect={handleSelectPackagingItem}
                                             selectedItems={selectedPackagingItems}
                                             enableStockValidation={true}
+                                            currentPage={currentPackagingPage}
+                                            onPageChange={handlePackagingPageChange}
+                                            showPagination={true}
                                         />
                                     </div>
                                 </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
+
 import InputDropdown from "../../../components/InputDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
@@ -75,7 +75,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchPackaging = async () => {
         try {
-            const response = await api.get(`/packaging?toko_id=${toko_id}`);
+            const response = await api.get(`/packaging?toko_id=${toko_id}&limit=1000`);
             if (response.data.success) {
                 const packagingItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -123,7 +123,6 @@ export default function TambahPenjualanKasir() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeCabang, setActiveCabang] = useState(null);
-    const [resetSignal, setResetSignal] = useState(false);
 
     // Modal gallery state
     const [selectedCategory, setSelectedCategory] = useState("Semua");
@@ -255,10 +254,10 @@ export default function TambahPenjualanKasir() {
     const handlePackagingModalSubmit = () => {
         if (activeCabang !== null) {
             const updatedCabang = [...dataCabang];
-            const newItems = selectedPackagingItems.map((item) => {
+            const newItems = selectedPackagingItems.map((item, index) => {
                 return {
                     id: item.id,
-                    No: updatedCabang[activeCabang].data.length + 1,
+                    No: updatedCabang[activeCabang].data.length + index + 1,
                     "Foto Produk": (
                         <img
                             src={item.image}
@@ -302,6 +301,11 @@ export default function TambahPenjualanKasir() {
                 };
             });
             updatedCabang[activeCabang].data.push(...newItems);
+            // Renumber all items after adding new ones
+            updatedCabang[activeCabang].data = updatedCabang[activeCabang].data.map((item, index) => ({
+                ...item,
+                No: index + 1
+            }));
             setDataCabang(updatedCabang);
         }
         setIsPackagingModalOpen(false);
@@ -322,10 +326,12 @@ export default function TambahPenjualanKasir() {
             if (selectedItem) {
                 const currentQuantity = updatedDataCabang[activeCabang].data[rowIndex].quantity || 1;
                 const newTotalBiaya = selectedItem.price * currentQuantity;
+                const currentNo = updatedDataCabang[activeCabang].data[rowIndex].No;
                 
                 updatedDataCabang[activeCabang].data[rowIndex] = {
                     ...updatedDataCabang[activeCabang].data[rowIndex],
                     id: selectedItem.id,
+                    No: currentNo, // Preserve the current number
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -370,10 +376,12 @@ export default function TambahPenjualanKasir() {
         if (rowIndex !== -1) {
             const currentItem = updatedDataCabang[activeCabang].data[rowIndex];
             const newTotal = currentItem.currentPrice * Number(newCount);
+            const currentNo = currentItem.No; // Preserve the current number
             
             updatedDataCabang[activeCabang].data[rowIndex].quantity = Number(newCount);
             updatedDataCabang[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
             updatedDataCabang[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+            updatedDataCabang[activeCabang].data[rowIndex].No = currentNo; // Preserve the current number
             
             setDataCabang(updatedDataCabang);
         }
@@ -442,7 +450,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchBarangHandmade = async () => {
         try {
-            const response = await api.get(`/barang-handmade?cabang=${cabang_id}`);
+            const response = await api.get(`/barang-handmade?cabang=${cabang_id}&limit=1000`);
             if (response.data.success) {
                 const handmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -469,7 +477,7 @@ export default function TambahPenjualanKasir() {
 
     const fetchBarangNonHandmade = async () => {
         try {
-            const response = await api.get(`/barang-non-handmade?cabang=${cabang_id}`);
+            const response = await api.get(`/barang-non-handmade?cabang=${cabang_id}&limit=1000`);
             if (response.data.success) {
                 const nonHandmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -533,7 +541,7 @@ export default function TambahPenjualanKasir() {
     const handleModalSubmit = () => {
         if (activeCabang !== null) {
             const updatedCabang = [...dataCabang];
-            const newItems = selectedItems.map((item) => {
+            const newItems = selectedItems.map((item, index) => {
                 // Determine the product's category (Handmade or Non-Handmade)
                 const productCategory = dataBarang.find(category => 
                     category.items.some(i => i.id === item.id)
@@ -542,7 +550,7 @@ export default function TambahPenjualanKasir() {
                 const totalBiaya = parseInt(item.price) * item.count;
                 return {
                     id: item.id,
-                    No: updatedCabang[activeCabang].data.length + 1,
+                    No: updatedCabang[activeCabang].data.length + index + 1,
                     "Foto Produk": (
                         <img
                             src={item.image}
@@ -593,6 +601,11 @@ export default function TambahPenjualanKasir() {
                 };
             });
             updatedCabang[activeCabang].data.push(...newItems);
+            // Renumber all items after adding new ones
+            updatedCabang[activeCabang].data = updatedCabang[activeCabang].data.map((item, index) => ({
+                ...item,
+                No: index + 1
+            }));
             setDataCabang(updatedCabang);
         }
         setIsModalOpen(false);
@@ -623,10 +636,12 @@ export default function TambahPenjualanKasir() {
             if (selectedItem) {
                 const currentQuantity = updatedDataCabang[activeCabang].data[rowIndex].quantity || 0;
                 const newTotalBiaya = selectedItem.price * currentQuantity;
+                const currentNo = updatedDataCabang[activeCabang].data[rowIndex].No;
                 
                 updatedDataCabang[activeCabang].data[rowIndex] = {
                     ...updatedDataCabang[activeCabang].data[rowIndex],
                     id: selectedItem.id,
+                    No: currentNo, // Preserve the current number
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -675,9 +690,11 @@ export default function TambahPenjualanKasir() {
         if (rowIndex !== -1) {
             const currentItem = updatedCabangCopy[activeCabang].data[rowIndex];
             const newTotal = currentItem.currentPrice * Number(newCount);
+            const currentNo = currentItem.No; // Preserve the current number
             updatedCabangCopy[activeCabang].data[rowIndex].quantity = newCount;
             updatedCabangCopy[activeCabang].data[rowIndex].rawTotalBiaya = newTotal;
             updatedCabangCopy[activeCabang].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+            updatedCabangCopy[activeCabang].data[rowIndex].No = currentNo; // Preserve the current number
             setDataCabang(updatedCabangCopy);
         }
     };
@@ -687,6 +704,11 @@ export default function TambahPenjualanKasir() {
         updatedCabang[cabangIndex].data = updatedCabang[cabangIndex].data.filter(
             (item) => item.id !== itemId
         );
+        // Renumber all items after deletion
+        updatedCabang[cabangIndex].data = updatedCabang[cabangIndex].data.map((item, index) => ({
+            ...item,
+            No: index + 1
+        }));
         setDataCabang(updatedCabang);
     };
 

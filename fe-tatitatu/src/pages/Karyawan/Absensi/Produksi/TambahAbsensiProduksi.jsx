@@ -52,8 +52,7 @@ export default function TambahAbsensiProduksi() {
     const [itemsPerPage, setItemsPerPage] = useState(12);
     const [searchTimeout, setSearchTimeout] = useState(null);
 
-    // Tambahkan state untuk input page
-    const [inputPage, setInputPage] = useState(1);
+
 
     const themeColor = (isAdminGudang || isHeadGudang || isKaryawanProduksi) 
     ? 'coklatTua' 
@@ -197,14 +196,22 @@ export default function TambahAbsensiProduksi() {
 
 
 
-    const getAllItems = () => {
-        return handmadeItems.map(item => ({
-            label: item.name,
-            value: item.id,
-            kategori: item.kategori,
-            code: item.code,
-            price: item.price
-        }));
+    const getAllItems = async () => {
+        try {
+            // Fetch all items without pagination for dropdown
+            const response = await api.get(`/barang-handmade-gudang?limit=1000`);
+            const allItems = response.data.data.map(item => ({
+                label: item.nama_barang,
+                value: item.barang_handmade_id,
+                kategori: item.kategori.nama_kategori_barang,
+                code: item.barang_handmade_id,
+                price: item.harga_jual || 0
+            }));
+            return allItems;
+        } catch (error) {
+            console.error('Error fetching all items for dropdown:', error);
+            return [];
+        }
     };
 
     useEffect(() => {
@@ -266,33 +273,17 @@ export default function TambahAbsensiProduksi() {
         setSelectedCategory("Semua");
     };
 
-    // Update handlePageChange agar sinkron dengan inputPage
+    // Update handlePageChange
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
-        setInputPage(newPage);
     };
 
-    // Handler untuk input page manual
-    const handleInputPageChange = (e) => {
-        let val = e.target.value.replace(/[^0-9]/g, '');
-        if (val === '') val = 1;
-        val = Math.max(1, Math.min(Number(val), totalPages));
-        setInputPage(val);
-    };
-    const handleInputPageEnter = (e) => {
-        if (e.key === 'Enter') {
-            let val = Number(inputPage);
-            if (val < 1) val = 1;
-            if (val > totalPages) val = totalPages;
-            setCurrentPage(val);
-        }
-    };
+
 
     // Handler untuk items per page
     const handleItemsPerPageChange = (e) => {
         setItemsPerPage(Number(e.target.value));
         setCurrentPage(1);
-        setInputPage(1);
     };
 
     const handleCategoryChange = (category) => {
@@ -304,10 +295,10 @@ export default function TambahAbsensiProduksi() {
         setSearchTerm(e.target.value);
     };
 
-    const handleModalSubmit = () => {
+    const handleModalSubmit = async () => {
         if (activeCabang !== null && selectedItems.length > 0) {
             const updatedCabang = [...dataCabang];
-            const allItems = getAllItems();
+            const allItems = await getAllItems();
     
             const newItems = selectedItems.map((item, index) => {
                 const currentIndex = updatedCabang[activeCabang].data.length + index;
@@ -352,14 +343,14 @@ export default function TambahAbsensiProduksi() {
     };
 
 
-    const handleDropdownChange = (itemId, nextSelection) => {
+    const handleDropdownChange = async (itemId, nextSelection) => {
         const updatedDataCabang = [...dataCabang];
         const rowIndex = updatedDataCabang[activeCabang].data.findIndex(
             (row) => row.id === itemId
         );
     
         if (rowIndex !== -1) {
-            const allItems = getAllItems();
+            const allItems = await getAllItems();
             
             const currentRow = updatedDataCabang[activeCabang].data[rowIndex];
             const existingQuantity = currentRow.quantity || 
@@ -383,7 +374,7 @@ export default function TambahAbsensiProduksi() {
                         type="number"
                         value={existingQuantity} 
                         onChange={(newCount) => handleQuantityChange(itemId, newCount)}
-                    />
+                        />
                 ),
                 name: nextSelection.label
             };

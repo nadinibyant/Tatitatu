@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
 import InputDropdown from "../../../components/InputDropdown";
 import Table from "../../../components/Table";
 import Button from "../../../components/Button";
@@ -82,6 +81,8 @@ export default function EditPenjualanNonCustomKasir() {
         }
     ]);
     const [dataMetode, setDataMetode] = useState([]);
+    const [isBarangLoaded, setIsBarangLoaded] = useState(false);
+    const [isPackagingLoaded, setIsPackagingLoaded] = useState(false);
 
     // UI state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,11 +97,12 @@ export default function EditPenjualanNonCustomKasir() {
     const [selectedCategory, setSelectedCategory] = useState("Semua");
     const [selectedJenis, setSelectedJenis] = useState("Barang Handmade");
     const [selectedItems, setSelectedItems] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
+    // State untuk modal packaging
     const [selectedPackagingCategory, setSelectedPackagingCategory] = useState("Semua");
-    const [selectedPackagingJenis, setSelectedPackagingJenis] = useState("Packaging");
     const [selectedPackagingItems, setSelectedPackagingItems] = useState([]);
-    const [packagingSearchTerm, setPackagingSearchTerm] = useState("");
+
+    // Tambahkan state untuk pagination
+    const [packagingLimit, setPackagingLimit] = useState(50);
 
     // Utility functions
     function getCurrentDateTime() {
@@ -163,9 +165,24 @@ export default function EditPenjualanNonCustomKasir() {
                     if (item.barang_handmade || item.barang_non_handmade) {
                         const product = item.barang_handmade || item.barang_non_handmade;
                         const jenisBarang = item.barang_handmade ? "Barang Handmade" : "Barang Non-Handmade";
-                        
+                        // Cari dropdown options dari dataBarang
+                        let dropdownOptions = [];
+                        if (Array.isArray(dataBarang)) {
+                            dropdownOptions = dataBarang.reduce((allItems, data) => {
+                                const items = (data.items || []).map(item => ({
+                                    label: item.name,
+                                    value: item.id,
+                                    price: item.price,
+                                    jenis: data.jenis,
+                                    kategori: item.kategori,
+                                    image: item.image
+                                }));
+                                return [...allItems, ...items];
+                            }, []);
+                        }
                         rincianProduk.push({
                             id: product.barang_handmade_id || product.barang_non_handmade_id,
+                            timestamp: Date.now() + index, // Tambahkan timestamp + index untuk memastikan unik
                             No: index + 1,
                             "Foto Produk": (
                                 <img
@@ -174,34 +191,14 @@ export default function EditPenjualanNonCustomKasir() {
                                     className="w-12 h-12"
                                 />
                             ),
-                            "Nama Produk": (
+                            "Nama Produk": dropdownOptions.length > 0 ? (
                                 <InputDropdown
                                     showRequired={false}
-                                    options={[
-                                        {
-                                            label: product.nama_barang,
-                                            value: product.barang_handmade_id || product.barang_non_handmade_id,
-                                            price: item.harga_satuan,
-                                            jenis: jenisBarang,
-                                            kategori: product.kategori_barang?.nama_kategori_barang || product.kategori?.nama_kategori_barang,
-                                            image: product.image
-                                        },
-                                        ...dataBarang.reduce((allItems, data) => {
-                                            const items = data.items.map(item => ({
-                                                label: item.name,
-                                                value: item.id,
-                                                price: item.price,
-                                                jenis: data.jenis,
-                                                kategori: item.kategori,
-                                                image: item.image
-                                            }));
-                                            return [...allItems, ...items];
-                                        }, [])
-                                    ]}
+                                    options={dropdownOptions}
                                     value={product.barang_handmade_id || product.barang_non_handmade_id}
                                     onSelect={(newSelection) => handleDropdownChange(product.barang_handmade_id || product.barang_non_handmade_id, newSelection)}
                                 />
-                            ),
+                            ) : product.nama_barang,
                             "Jenis Barang": jenisBarang,
                             "Harga Satuan": `Rp${item.harga_satuan.toLocaleString('id-ID')}`,
                             "Kuantitas": (
@@ -216,6 +213,7 @@ export default function EditPenjualanNonCustomKasir() {
                             rawTotalBiaya: item.total_biaya,
                             quantity: item.kuantitas,
                             currentPrice: item.harga_satuan,
+                            name: product.nama_barang, // Tambahkan name
                             Aksi: (
                                 <button
                                     className="text-red-500 hover:text-red-700"
@@ -228,6 +226,7 @@ export default function EditPenjualanNonCustomKasir() {
                     } else if (item.packaging) {
                         rincianPackaging.push({
                             id: item.packaging.packaging_id,
+                            timestamp: Date.now() + index, // Tambahkan timestamp + index untuk memastikan unik
                             No: index + 1,
                             "Foto Produk": (
                                 <img
@@ -236,30 +235,7 @@ export default function EditPenjualanNonCustomKasir() {
                                     className="w-12 h-12"
                                 />
                             ),
-                            "Nama Packaging": (
-                                <InputDropdown
-                                    showRequired={false}
-                                    options={[
-                                        {
-                                            label: `${item.packaging.nama_packaging} - ${item.packaging.ukuran}`,
-                                            value: item.packaging.packaging_id,
-                                            price: item.packaging.harga_satuan,
-                                            image: item.packaging.image
-                                        },
-                                        ...dataPackaging.reduce((allItems, data) => {
-                                            const items = data.items.map(item => ({
-                                                label: item.name,
-                                                value: item.id,
-                                                price: item.price,
-                                                image: item.image
-                                            }));
-                                            return [...allItems, ...items];
-                                        }, [])
-                                    ]}
-                                    value={item.packaging.packaging_id}
-                                    onSelect={(nextSelection) => handlePackagingDropdownChange(item.packaging.packaging_id, nextSelection)}
-                                />
-                            ),
+                            "Nama Packaging": null, // Akan di-update oleh useEffect
                             "Kuantitas": (
                                 <Input
                                     showRequired={false}
@@ -297,7 +273,8 @@ export default function EditPenjualanNonCustomKasir() {
 
     const fetchPackaging = async () => {
         try {
-            const response = await api.get(`/packaging?toko_id=${toko_id}`);
+            let url = `/packaging?toko_id=${toko_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const packagingItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -324,9 +301,11 @@ export default function EditPenjualanNonCustomKasir() {
                         ? { ...packaging, kategori: kategoriBaru, items: packagingItems }
                         : packaging
                 ));
+                setIsPackagingLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching packaging:', error);
+            setIsPackagingLoaded(true);
         }
     };
 
@@ -350,7 +329,8 @@ export default function EditPenjualanNonCustomKasir() {
 
     const fetchBarangHandmade = async () => {
         try {
-            const response = await api.get(`/barang-handmade?cabang=${cabang_id}`);
+            let url = `/barang-handmade?cabang=${cabang_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const handmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -369,15 +349,18 @@ export default function EditPenjualanNonCustomKasir() {
                         ? { ...barang, items: handmadeItems }
                         : barang
                 ));
+                setIsBarangLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching barang handmade:', error);
+            setIsBarangLoaded(true);
         }
     };
 
     const fetchBarangNonHandmade = async () => {
         try {
-            const response = await api.get(`/barang-non-handmade?cabang=${cabang_id}`);
+            let url = `/barang-non-handmade?cabang=${cabang_id}&limit=10000`;
+            const response = await api.get(url);
             if (response.data.success) {
                 const nonHandmadeItems = response.data.data
                     .filter(item => !item.is_deleted)
@@ -396,9 +379,11 @@ export default function EditPenjualanNonCustomKasir() {
                         ? { ...barang, items: nonHandmadeItems }
                         : barang
                 ));
+                setIsBarangLoaded(true);
             }
         } catch (error) {
             console.error('Error fetching barang non-handmade:', error);
+            setIsBarangLoaded(true);
         }
     };
 
@@ -492,6 +477,7 @@ export default function EditPenjualanNonCustomKasir() {
                 const totalBiaya = parseInt(item.price) * item.count;
                 return {
                     id: item.id,
+                    timestamp: Date.now() + Math.random(), // Tambahkan timestamp unik
                     No: updatedCabang[activeCabang].data.length + 1,
                     "Foto Produk": (
                         <img
@@ -555,6 +541,7 @@ export default function EditPenjualanNonCustomKasir() {
             const newItems = selectedPackagingItems.map((item) => {
                 return {
                     id: item.id,
+                    timestamp: Date.now() + Math.random(), // Tambahkan timestamp unik
                     No: updatedCabang[activeCabang].data.length + 1,
                     "Foto Produk": (
                         <img
@@ -606,15 +593,20 @@ export default function EditPenjualanNonCustomKasir() {
     };
 
     const handleDropdownChange = (itemId, nextSelection) => {
+        console.log('handleDropdownChange called:', itemId, nextSelection); // Debug log
+        
         const updatedDataCabang = [...dataCabang];
         const rowIndex = updatedDataCabang[0].data.findIndex(
             (row) => row.id === itemId
         );
+
+        console.log('Found row at index:', rowIndex); // Debug log
     
         if (rowIndex !== -1) {
             let selectedItem = null;
             let jenisBarang = '';
-
+            
+            // Find the selected item across both Handmade and Non-Handmade categories
             for (const category of dataBarang) {
                 const found = category.items.find(i => i.id === nextSelection.value);
                 if (found) {
@@ -628,9 +620,30 @@ export default function EditPenjualanNonCustomKasir() {
                 const currentQuantity = updatedDataCabang[0].data[rowIndex].quantity || 0;
                 const newTotalBiaya = selectedItem.price * currentQuantity;
                 
+                console.log('Selected item found:', selectedItem);
+                console.log('Current quantity:', currentQuantity);
+                console.log('New total biaya:', newTotalBiaya);
+                
+                // Pastikan dataBarang sudah ter-load sebelum membuat dropdown options
+                const dropdownOptions = dataBarang.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: item.name,
+                            value: item.id,
+                            price: item.price,
+                            jenis: data.jenis,
+                            kategori: item.kategori,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
+                
                 updatedDataCabang[0].data[rowIndex] = {
                     ...updatedDataCabang[0].data[rowIndex],
                     id: selectedItem.id,
+                    timestamp: Date.now() + rowIndex, // Tambahkan timestamp + rowIndex untuk memastikan key unik
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -641,24 +654,14 @@ export default function EditPenjualanNonCustomKasir() {
                     "Nama Produk": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataBarang.reduce((allItems, data) => {
-                                const items = data.items.map(item => ({
-                                    label: item.name,
-                                    value: item.id,
-                                    price: item.price,
-                                    jenis: data.jenis,
-                                    kategori: item.kategori,
-                                    image: item.image
-                                }));
-                                return [...allItems, ...items];
-                            }, [])}
+                            options={dropdownOptions.length > 0 ? dropdownOptions : []}
                             value={selectedItem.id}
-                            onSelect={(nextSelection) => handleDropdownChange(itemId, nextSelection)}
+                            onSelect={(nextSelection) => handleDropdownChange(selectedItem.id, nextSelection)}
                         />
                     ),
                     "Jenis Barang": jenisBarang,
-                    "Harga Satuan": `Rp${selectedItem.price.toLocaleString()}`,
-                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                    "Harga Satuan": `Rp${selectedItem.price.toLocaleString('id-ID')}`,
+                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString('id-ID')}`,
                     rawTotalBiaya: newTotalBiaya,
                     name: selectedItem.name,
                     currentPrice: selectedItem.price,
@@ -666,15 +669,24 @@ export default function EditPenjualanNonCustomKasir() {
                 };
     
                 setDataCabang(updatedDataCabang);
+            } else {
+                console.log('Selected item not found for value:', nextSelection.value);
             }
+        } else {
+            console.log('Row not found for itemId:', itemId);
+            console.log('Available rows:', updatedDataCabang[0].data.map(row => ({ id: row.id, name: row.name })));
         }
     };
 
     const handlePackagingDropdownChange = (itemId, nextSelection) => {
+        console.log('handlePackagingDropdownChange called:', itemId, nextSelection); // Debug log
+        
         const updatedDataCabang = [...dataCabang];
         const rowIndex = updatedDataCabang[1].data.findIndex(
             (row) => row.id === itemId
         );
+
+        console.log('Found packaging row at index:', rowIndex); // Debug log
     
         if (rowIndex !== -1) {
             const selectedItem = dataPackaging
@@ -683,11 +695,28 @@ export default function EditPenjualanNonCustomKasir() {
     
             if (selectedItem) {
                 const currentQuantity = updatedDataCabang[1].data[rowIndex].quantity || 1;
-                const newTotalBiaya = selectedItem.price * currentQuantity;
+                
+                console.log('Selected packaging item found:', selectedItem);
+                console.log('Current quantity:', currentQuantity);
+                
+                // Pastikan dataPackaging sudah ter-load sebelum membuat dropdown options
+                const packagingDropdownOptions = dataPackaging.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: `${item.name}`,
+                            value: item.id,
+                            price: item.price,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
                 
                 updatedDataCabang[1].data[rowIndex] = {
                     ...updatedDataCabang[1].data[rowIndex],
                     id: selectedItem.id,
+                    timestamp: Date.now() + rowIndex, // Tambahkan timestamp + rowIndex untuk memastikan key unik
                     "Foto Produk": (
                         <img
                             src={selectedItem.image}
@@ -698,26 +727,17 @@ export default function EditPenjualanNonCustomKasir() {
                     "Nama Packaging": (
                         <InputDropdown
                             showRequired={false}
-                            options={dataPackaging.reduce((allItems, data) => {
-                                const items = data.items.map(item => ({
-                                    label: `${item.name} - ${item.kategori}`,
-                                    value: item.id,
-                                    price: item.price,
-                                    image: item.image
-                                }));
-                                return [...allItems, ...items];
-                            }, [])}
+                            options={packagingDropdownOptions.length > 0 ? packagingDropdownOptions : []}
                             value={selectedItem.id}
-                            onSelect={(nextSelection) => handlePackagingDropdownChange(itemId, nextSelection)}
+                            onSelect={(nextSelection) => handlePackagingDropdownChange(selectedItem.id, nextSelection)}
                         />
                     ),
-                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                    rawTotalBiaya: newTotalBiaya,
-                    currentPrice: selectedItem.price,
                     quantity: currentQuantity
                 };
     
                 setDataCabang(updatedDataCabang);
+            } else {
+                console.log('Selected packaging item not found for value:', nextSelection.value);
             }
         }
     };
@@ -878,15 +898,247 @@ export default function EditPenjualanNonCustomKasir() {
         }
     };
 
+    // Tambahkan state untuk pagination dan data barang dari API
+    const [barangList, setBarangList] = useState([]);
+    // const [barangLoading, setBarangLoading] = useState(false); // (Jika ingin loading spinner, gunakan ini)
+    const [barangPage, setBarangPage] = useState(1);
+    const [barangTotalPages, setBarangTotalPages] = useState(1);
+    const [barangTotalItems, setBarangTotalItems] = useState(0);
+    const [barangLimit, setBarangLimit] = useState(50);
+    const [barangCategoryId, setBarangCategoryId] = useState(null);
+    const [barangSearch, setBarangSearch] = useState("");
+
+    // Mapping nama kategori ke id (jika ada)
+    const kategoriIdMap = {};
+    kategoriBarang["Barang Handmade"]?.forEach((nama, idx) => {
+        if (nama !== "Semua") kategoriIdMap[nama] = idx + 1;
+    });
+    kategoriBarang["Barang Non-Handmade"]?.forEach((nama, idx) => {
+        if (nama !== "Semua") kategoriIdMap[nama] = idx + 1;
+    });
+    // Handler untuk perubahan kategori (ambil id kategori)
+    const handleCategoryChange = (kategori) => {
+        setSelectedCategory(kategori);
+        if (kategori === "Semua") {
+            setBarangCategoryId(null);
+        } else {
+            setBarangCategoryId(kategoriIdMap[kategori] || null);
+        }
+        setBarangPage(1);
+    };
+
+    // Handler search
+    const handleBarangSearch = (e) => {
+        setBarangSearch(e.target.value);
+        setBarangPage(1);
+    };
+
+    // Handler page dan limit
+    const handleBarangPageChange = (page) => setBarangPage(page);
+    const handleBarangLimitChange = (limit) => {
+        setBarangLimit(limit);
+        setBarangPage(1);
+    };
+
+    // Fetch barang dari API (handmade/non-handmade)
+    const fetchBarang = async () => {
+        // setBarangLoading(true); // (Jika ingin loading spinner, gunakan ini)
+        try {
+            let endpoint = selectedJenis === "Barang Handmade" ? "/barang-handmade" : "/barang-non-handmade";
+            const params = {
+                page: barangPage,
+                limit: barangLimit,
+                cabang: cabang_id,
+            };
+            if (barangCategoryId) params.category = barangCategoryId;
+            if (barangSearch) params.search = barangSearch;
+            const res = await api.get(endpoint, { params });
+            const data = res.data.data.map(item => ({
+                id: item.barang_handmade_id || item.barang_non_handmade_id,
+                image: item.image ? `${import.meta.env.VITE_API_URL}/${selectedJenis === "Barang Handmade" ? "images-barang-handmade" : "images-barang-non-handmade"}/${item.image}` : "/placeholder-image.jpg",
+                name: item.nama_barang,
+                price: item.rincian_biaya?.[0]?.harga_logis || 0,
+                kategori: item.kategori_barang?.nama_kategori_barang || item.kategori?.nama_kategori_barang || "",
+                stock: item.stok_barang?.jumlah_stok || 0
+            }));
+            setBarangList(data);
+            setBarangTotalPages(res.data.pagination.totalPages);
+            setBarangTotalItems(res.data.pagination.totalItems);
+        } catch {
+            setBarangList([]);
+            setBarangTotalPages(1);
+            setBarangTotalItems(0);
+        } finally {
+            // setBarangLoading(false); // (Jika ingin loading spinner, gunakan ini)
+        }
+    };
+
+    // Trigger fetch barang saat modal tambah baris dibuka atau filter berubah
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchBarang();
+        }
+        // eslint-disable-next-line
+    }, [isModalOpen, barangPage, barangLimit, barangCategoryId, barangSearch, selectedJenis]);
+
+    // Tambahkan state untuk pagination dan data packaging dari API
+    const [packagingList, setPackagingList] = useState([]);
+    const [packagingPage, setPackagingPage] = useState(1);
+    const [packagingTotalPages, setPackagingTotalPages] = useState(1);
+    const [packagingTotalItems, setPackagingTotalItems] = useState(0);
+    const [packagingCategoryId, setPackagingCategoryId] = useState(null);
+    const [packagingSearch, setPackagingSearch] = useState("");
+
+    // Handler untuk perubahan kategori packaging
+    const handlePackagingCategoryChange = (kategori) => {
+        setSelectedPackagingCategory(kategori);
+        if (kategori === "Semua") {
+            setPackagingCategoryId(null);
+        } else {
+            // Mapping nama ke id jika ada, atau gunakan index+1
+            setPackagingCategoryId(kategoriPackaging.indexOf(kategori) + 1);
+        }
+        setPackagingPage(1);
+    };
+
+    // Handler search packaging
+    const handlePackagingSearch = (e) => {
+        setPackagingSearch(e.target.value);
+        setPackagingPage(1);
+    };
+
+    // Handler page dan limit packaging
+    const handlePackagingPageChange = (page) => setPackagingPage(page);
+    const handlePackagingLimitChange = (limit) => {
+        setPackagingLimit(limit);
+        setPackagingPage(1);
+    };
+
+    // Fetch packaging dari API
+    const fetchPackagingPaginated = async () => {
+        try {
+            const params = {
+                page: packagingPage,
+                limit: packagingLimit,
+                toko_id: toko_id,
+            };
+            if (packagingCategoryId) params.category = packagingCategoryId;
+            if (packagingSearch) params.search = packagingSearch;
+            const res = await api.get("/packaging", { params });
+            const data = res.data.data
+                .filter(item => !item.is_deleted)
+                .map(item => ({
+                    id: item.packaging_id,
+                    image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` 
+                        : "/placeholder-image.jpg",
+                    name: `${item.nama_packaging} - ${item.ukuran}`,
+                    price: item.harga_jual,
+                    kategori: item.kategori_barang.nama_kategori_barang,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+            setPackagingList(data);
+            setPackagingTotalPages(res.data.pagination.totalPages);
+            setPackagingTotalItems(res.data.pagination.totalItems);
+        } catch {
+            setPackagingList([]);
+            setPackagingTotalPages(1);
+            setPackagingTotalItems(0);
+        }
+    };
+
+    // Trigger fetch packaging saat modal tambah packaging dibuka atau filter berubah
+    useEffect(() => {
+        if (isPackagingModalOpen) {
+            fetchPackagingPaginated();
+        }
+        // eslint-disable-next-line
+    }, [isPackagingModalOpen, packagingPage, packagingLimit, packagingCategoryId, packagingSearch]);
+
     // Effects
     useEffect(() => {
-        fetchPenjualan();
         fetchPackaging();
         fetchKategoriBarang();
         fetchBarangHandmade();
         fetchBarangNonHandmade();
         fetchMetodePembayaran();
     }, []);
+
+    // Fetch penjualan setelah data barang dan packaging ter-load
+    useEffect(() => {
+        if (isBarangLoaded && isPackagingLoaded) {
+            fetchPenjualan();
+        }
+    }, [isBarangLoaded, isPackagingLoaded]);
+
+    // Force re-render dropdowns setelah data ter-load
+    useEffect(() => {
+        if (isBarangLoaded && isPackagingLoaded && dataCabang.length > 0) {
+            const updatedDataCabang = [...dataCabang];
+            
+            // Update dropdown options untuk rincian produk
+            if (updatedDataCabang[0] && updatedDataCabang[0].data.length > 0) {
+                const dropdownOptions = dataBarang.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: item.name,
+                            value: item.id,
+                            price: item.price,
+                            jenis: data.jenis,
+                            kategori: item.kategori,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
+
+                updatedDataCabang[0].data = updatedDataCabang[0].data.map(row => ({
+                    ...row,
+                    "Nama Produk": (
+                        <InputDropdown
+                            showRequired={false}
+                            options={dropdownOptions}
+                            value={row.id}
+                            onSelect={(newSelection) => handleDropdownChange(row.id, newSelection)}
+                        />
+                    )
+                }));
+            }
+
+            // Update dropdown options untuk packaging
+            if (updatedDataCabang[1] && updatedDataCabang[1].data.length > 0) {
+                const packagingDropdownOptions = dataPackaging.reduce((allItems, data) => {
+                    if (data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            label: `${item.name}`,
+                            value: item.id,
+                            price: item.price,
+                            image: item.image
+                        }));
+                        return [...allItems, ...items];
+                    }
+                    return allItems;
+                }, []);
+
+                updatedDataCabang[1].data = updatedDataCabang[1].data.map(row => ({
+                    ...row,
+                    "Nama Packaging": (
+                        <InputDropdown
+                            showRequired={false}
+                            options={packagingDropdownOptions}
+                            value={row.id}
+                            onSelect={(nextSelection) => handlePackagingDropdownChange(row.id, nextSelection)}
+                        />
+                    )
+                }));
+            }
+
+            setDataCabang(updatedDataCabang);
+        }
+    }, [isBarangLoaded, isPackagingLoaded, dataBarang, dataPackaging]);
+
+
 
     useEffect(() => {
         if (isModalOpen || isPackagingModalOpen) {
@@ -928,22 +1180,10 @@ export default function EditPenjualanNonCustomKasir() {
         { label: "Aksi", key: "Aksi", align: "text-left" }
     ];
 
-    // Filtered items for modals
-    const filteredItems = dataBarang
-        .find((data) => data.jenis === selectedJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedCategory === "Semua" || item.kategori === selectedCategory) &&
-                item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ) || [];
 
-    const filteredPackagingItems = dataPackaging
-        .find((data) => data.jenis === selectedPackagingJenis)
-        ?.items.filter(
-            (item) =>
-                (selectedPackagingCategory === "Semua" || item.kategori === selectedPackagingCategory) &&
-                item.name.toLowerCase().includes(packagingSearchTerm.toLowerCase())
-        ) || [];
+
+    // Pagination logic
+    // (hapus totalHandmadePages dan paginatedItems karena sudah pakai API)
 
     // Breadcrumb configuration
     const breadcrumbItems = fromLaporanKeuangan 
@@ -1029,7 +1269,10 @@ export default function EditPenjualanNonCustomKasir() {
                                         <div className="pt-5">
                                             <Table 
                                                 headers={cabang.nama === "Packaging" ? packagingHeaders : headers} 
-                                                data={cabang.data} 
+                                                data={cabang.data.map((row, index) => ({
+                                                    ...row,
+                                                    key: `${row.id}-${index}` // HAPUS timestamp dari key
+                                                }))} 
                                             />
                                             <Button
                                                 label="Tambah Baris"
@@ -1140,8 +1383,8 @@ export default function EditPenjualanNonCustomKasir() {
                                                 <input
                                                     type="text"
                                                     placeholder="Cari Barang yang mau dibeli"
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    value={barangSearch}
+                                                    onChange={handleBarangSearch}
                                                     className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                                 />
                                             </div>
@@ -1149,7 +1392,7 @@ export default function EditPenjualanNonCustomKasir() {
                                             <div className="flex items-center space-x-4 self-end sm:self-auto">
                                                 <button
                                                     onClick={() => {
-                                                        setSearchTerm("");
+                                                        setBarangSearch("");
                                                         setSelectedItems([]);
                                                     }}
                                                     className="text-gray-400 hover:text-gray-700 focus:outline-none"
@@ -1198,7 +1441,7 @@ export default function EditPenjualanNonCustomKasir() {
                                         {["Barang Handmade", "Barang Non-Handmade"].map((jenis) => (
                                             <button
                                                 key={jenis}
-                                                onClick={() => setSelectedJenis(jenis)}
+                                                onClick={() => { setSelectedJenis(jenis); setBarangPage(1); }}
                                                 className={`px-4 py-2 text-sm font-semibold whitespace-nowrap ${
                                                     selectedJenis === jenis ? `text-${themeColor} border-b-2 border-${themeColor}` : "text-gray-400"
                                                 }`}
@@ -1213,7 +1456,7 @@ export default function EditPenjualanNonCustomKasir() {
                                         {kategoriBarang[selectedJenis]?.map((kategori) => (
                                             <button
                                                 key={kategori}
-                                                onClick={() => setSelectedCategory(kategori)}
+                                                onClick={() => handleCategoryChange(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedCategory === kategori
                                                         ? `bg-${themeColor} text-white`
@@ -1225,13 +1468,38 @@ export default function EditPenjualanNonCustomKasir() {
                                         ))}
                                     </div>
 
-                                    {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                    {/* Items per page selector */}
+                                    <div className="flex items-center justify-between mt-4 mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <label className="text-sm text-gray-600">Items per page:</label>
+                                            <select
+                                                value={barangLimit}
+                                                onChange={(e) => handleBarangLimitChange(Number(e.target.value))}
+                                                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                                            >
+                                                <option value={15}>15</option>
+                                                <option value={25}>25</option>
+                                                <option value={50}>50</option>
+                                                <option value={100}>100</option>
+                                            </select>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            Total: {barangTotalItems} items
+                                        </div>
+                                    </div>
+                                    {/* Gallery (dengan pagination bawaan Gallery2) */}
+                                    <div className="mt-2 h-[calc(100%-260px)] overflow-y-auto no-scrollbar flex flex-col">
                                         <Gallery2
-                                            items={filteredItems || []}
+                                            items={barangList}
                                             onSelect={handleSelectItem}
                                             selectedItems={selectedItems}
                                             enableStockValidation={true}
+                                            currentPage={barangPage}
+                                            totalPages={barangTotalPages}
+                                            totalItems={barangTotalItems}
+                                            itemsPerPage={barangLimit}
+                                            onPageChange={handleBarangPageChange}
+                                            showPagination={true}
                                         />
                                     </div>
                                 </div>
@@ -1241,7 +1509,7 @@ export default function EditPenjualanNonCustomKasir() {
                         {/* Modal Tambah Packaging */}
                         {isPackagingModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden flex flex-col`}>
                                     {/* Input Search */}
                                     <div className="flex flex-col space-y-4 mb-4">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -1259,8 +1527,8 @@ export default function EditPenjualanNonCustomKasir() {
                                                 <input
                                                     type="text"
                                                     placeholder="Cari Packaging"
-                                                    value={packagingSearchTerm}
-                                                    onChange={(e) => setPackagingSearchTerm(e.target.value)}
+                                                    value={packagingSearch}
+                                                    onChange={handlePackagingSearch}
                                                     className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                                 />
                                             </div>
@@ -1268,7 +1536,7 @@ export default function EditPenjualanNonCustomKasir() {
                                             <div className="flex items-center space-x-4 self-end sm:self-auto">
                                                 <button
                                                     onClick={() => {
-                                                        setPackagingSearchTerm("");
+                                                        setPackagingSearch("");
                                                         setSelectedPackagingItems([]);
                                                     }}
                                                     className="text-gray-400 hover:text-gray-700 focus:outline-none"
@@ -1317,7 +1585,7 @@ export default function EditPenjualanNonCustomKasir() {
                                         {kategoriPackaging.map((kategori) => (
                                             <button
                                                 key={kategori}
-                                                onClick={() => setSelectedPackagingCategory(kategori)}
+                                                onClick={() => handlePackagingCategoryChange(kategori)}
                                                 className={`px-3 py-1 text-sm md:text-base rounded-md ${
                                                     selectedPackagingCategory === kategori
                                                         ? `bg-${themeColor} text-white`
@@ -1329,16 +1597,38 @@ export default function EditPenjualanNonCustomKasir() {
                                         ))}
                                     </div>
 
-                                    {/* Gallery */}
-                                    <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                    {/* Items per page selector */}
+                                    <div className="flex items-center justify-between mt-4 mb-2">
+                                        <div className="flex items-center space-x-2">
+                                            <label className="text-sm text-gray-600">Items per page:</label>
+                                            <select
+                                                value={packagingLimit}
+                                                onChange={(e) => handlePackagingLimitChange(Number(e.target.value))}
+                                                className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                                            >
+                                                <option value={15}>15</option>
+                                                <option value={25}>25</option>
+                                                <option value={50}>50</option>
+                                                <option value={100}>100</option>
+                                            </select>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            Total: {packagingTotalItems} items
+                                        </div>
+                                    </div>
+                                    {/* Gallery (dengan pagination bawaan Gallery2) */}
+                                    <div className="mt-2 h-[calc(100%-260px)] overflow-y-auto no-scrollbar flex flex-col">
                                         <Gallery2
-                                            items={filteredPackagingItems?.map(item => ({
-                                                ...item,
-                                                formattedPrice: `Rp${item.price.toLocaleString('id-ID')}`
-                                            })) || []}
+                                            items={packagingList}
                                             onSelect={handleSelectPackagingItem}
                                             selectedItems={selectedPackagingItems}
                                             enableStockValidation={true}
+                                            currentPage={packagingPage}
+                                            totalPages={packagingTotalPages}
+                                            totalItems={packagingTotalItems}
+                                            itemsPerPage={packagingLimit}
+                                            onPageChange={handlePackagingPageChange}
+                                            showPagination={true}
                                         />
                                     </div>
                                 </div>

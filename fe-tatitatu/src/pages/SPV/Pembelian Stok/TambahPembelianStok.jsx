@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Breadcrumbs from "../../../components/Breadcrumbs";
 import Input from "../../../components/Input";
-import Navbar from "../../../components/Navbar";
 import { menuItems, userOptions } from "../../../data/menu";
 import InputDropdown from "../../../components/InputDropdown";
 import Table from "../../../components/Table";
@@ -43,8 +42,69 @@ export default function TambahPembelianStok() {
     const [isModalSucc, setModalSucc] = useState(false)
     const [isMetodeDisabled, setIsMetodeDisabled] = useState(false);
     
-    const [dataBarang, setDataBarang] = useState([]);
     const [kategoriList, setKategoriList] = useState([]);
+
+    // State untuk semua produk (tanpa pagination, category, search)
+    const [dropdownItems, setDropdownItems] = useState([]);
+
+    // Ambil semua produk untuk dropdown
+    const fetchDropdownItems = async () => {
+        try {
+            const params = {
+                toko_id,
+                limit: 10000, // Ambil semua data
+            };
+            const handmadeRes = await api.get('/barang-handmade', { params });
+            const handmadeItems = handmadeRes.data.data.map(item => ({
+                id: item.barang_handmade_id,
+                image: `${import.meta.env.VITE_API_URL}/images-barang-handmade/${item.image}`,
+                code: item.barang_handmade_id,
+                name: item.nama_barang,
+                rincian_biaya: item.rincian_biaya,
+                kategori: item.kategori_barang.nama_kategori_barang,
+                jenis: 'Barang Handmade'
+            }));
+            const nonHandmadeRes = await api.get('/barang-non-handmade', { params });
+            const nonHandmadeItems = nonHandmadeRes.data.data.map(item => ({
+                id: item.barang_non_handmade_id,
+                image: `${import.meta.env.VITE_API_URL}/images-barang-non-handmade/${item.image}`,
+                code: item.barang_non_handmade_id,
+                name: item.nama_barang,
+                rincian_biaya: item.rincian_biaya,
+                kategori: item.kategori.nama_kategori_barang,
+                jenis: 'Barang Non-Handmade'
+            }));
+            const customRes = await api.get('/barang-custom', { params });
+            const customItems = customRes.data.data.map(item => ({
+                id: item.barang_custom_id,
+                image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+                code: item.barang_custom_id,
+                name: item.nama_barang,
+                price: item.harga_satuan,
+                kategori: item.kategori.nama_kategori_barang,
+                jenis: 'Bahan Custom'
+            }));
+            const packagingRes = await api.get('/packaging', { params });
+            const packagingItems = packagingRes.data.data.map(item => ({
+                id: item.packaging_id, 
+                image: `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`,
+                code: item.packaging_id, 
+                name: item.nama_packaging,
+                price: item.harga_satuan,
+                kategori: item.kategori_barang.nama_kategori_barang,
+                jenis: 'Packaging'
+            }));
+            setDropdownItems([
+                ...handmadeItems,
+                ...nonHandmadeItems,
+                ...customItems,
+                ...packagingItems
+            ]);
+        } catch (error) {
+            console.error('Error fetching dropdown items:', error);
+            setDropdownItems([]);
+        }
+    };
     const [errorAlert, setErrorAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -108,85 +168,6 @@ export default function TambahPembelianStok() {
         }
     };
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [handmadeRes, nonHandmadeRes, customRes, packagingRes, kategoriRes] = await Promise.all([
-                api.get(`/barang-handmade?toko_id=${toko_id}`),
-                api.get(`/barang-non-handmade?toko_id=${toko_id}`),
-                api.get(`/barang-custom?toko_id=${toko_id}`),
-                api.get(`/packaging?toko_id=${toko_id}`),
-                api.get(`/kategori-barang?toko_id=${toko_id}`)
-            ]);
-
-            setKategoriList(kategoriRes.data.data.filter(k => !k.is_deleted));
-
-            const formatItems = (items, type) => items.map(item => {
-                let price = 0;
-                if ((type === 'barang_handmade' || type === 'barang_non_handmade') && item.rincian_biaya) {
-                    const currentCabangId = dataCabang[activeCabang]?.id;
-                    const rincianBiaya = item.rincian_biaya.find(
-                        rincian => rincian.cabang_id === currentCabangId
-                    );
-                    
-                    if (rincianBiaya?.detail_rincian_biaya) {
-                        const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
-                            detail => detail.nama_biaya === "Modal"
-                        );
-                        
-                        if (modalBiaya) {
-                            price = modalBiaya.jumlah_biaya;
-                        }
-                    }
-                } else if (type === 'packaging') {
-                    price = item.harga_satuan;
-                } else if (type === 'barang_custom') {
-                    price = item.harga_satuan;
-                }
-            
-                return {
-                    id: item[`${type}_id`],
-                    image: item.image,
-                    code: item[`${type}_id`],
-                    name: type === 'packaging' ? item.nama_packaging : item.nama_barang,
-                    rincian_biaya: item.rincian_biaya,
-                    price: price,
-                    kategori_id: item.kategori_barang_id || item.kategori_barang?.kategori_barang_id
-                };
-            });
-
-            const handmadeData = {
-                jenis: "Barang Handmade",
-                items: formatItems(handmadeRes.data.data, 'barang_handmade')
-            };
-
-            const nonHandmadeData = {
-                jenis: "Barang Non-Handmade",
-                items: formatItems(nonHandmadeRes.data.data, 'barang_non_handmade')
-            };
-
-            const customData = {
-                jenis: "Bahan Custom",
-                items: formatItems(customRes.data.data, 'barang_custom')
-            };
-
-            const packagingData = {
-                jenis: "Packaging",
-                items: formatItems(packagingRes.data.data, 'packaging')
-            };
-
-            setDataBarang([handmadeData, nonHandmadeData, customData, packagingData]);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const fetchCabang = async () => {
         try {
             setLoading(true);
@@ -206,6 +187,25 @@ export default function TambahPembelianStok() {
 
     useEffect(() => {
         fetchCabang();
+    }, [toko_id]);
+
+    // Fetch kategori data
+    useEffect(() => {
+        const fetchKategori = async () => {
+            try {
+                const response = await api.get(`/kategori-barang?toko_id=${toko_id}`);
+                setKategoriList(response.data.data.filter(k => !k.is_deleted));
+            } catch (error) {
+                console.error('Error fetching kategori:', error);
+                setKategoriList([]);
+            }
+        };
+        fetchKategori();
+    }, [toko_id]);
+
+    // Fetch dropdown items
+    useEffect(() => {
+        fetchDropdownItems();
     }, [toko_id]);
 
 
@@ -292,40 +292,13 @@ export default function TambahPembelianStok() {
                     existingItem.count = count;
                 }
             } else {
-                updated.push({ ...item, count });
+                updated.push({ ...item, count, jenis: selectedJenis });
             }
             return updated;
         });
     };
 
-    const filteredItems = useMemo(() => {
-        const selectedData = dataBarang.find((data) => data.jenis === selectedJenis);
-        if (!selectedData) return [];
-    
-        const currentCabangId = dataCabang[activeCabang]?.id;
-    
-        return selectedData.items.filter(item => {
-            const matchesCategory = selectedCategory === "Semua" || 
-                                  item.kategori_id === parseInt(selectedCategory);
-            const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-            
-            if ((selectedJenis === "Barang Handmade" || selectedJenis === "Barang Non-Handmade") && item.rincian_biaya) {
-                const cabangRincian = item.rincian_biaya.find(
-                    rincian => rincian.cabang_id === currentCabangId
-                );
-                if (cabangRincian) {
-                    const modalDetail = cabangRincian.detail_rincian_biaya.find(
-                        detail => detail.nama_biaya === "Modal"
-                    );
-                    if (modalDetail) {
-                        item.price = modalDetail.jumlah_biaya;
-                    }
-                }
-            }
-    
-            return matchesCategory && matchesSearch;
-        });
-    }, [dataBarang, selectedJenis, selectedCategory, searchTerm, activeCabang, dataCabang]);
+
 
 
     const resetSelection = () => {
@@ -336,7 +309,7 @@ export default function TambahPembelianStok() {
 const handleModalSubmit = () => {
     if (activeCabang !== null) {
         const updatedCabang = [...dataCabang];
-        const newItems = selectedItems.map(item => {
+        const newItems = selectedItems.map((item, idx) => {
             let price = item.price;
             if (item.rincian_biaya) {
                 const cabangRincian = item.rincian_biaya.find(
@@ -353,10 +326,7 @@ const handleModalSubmit = () => {
             }
 
             const totalBiaya = price * item.count;
-            const dropdownValue = item.id;
-            const itemType = dataBarang.find(cat => 
-                cat.items.find(i => i.id === item.id)
-            )?.jenis;
+            const itemType = item.jenis || "Barang Handmade";
 
             let typeSpecificId = {};
             switch(itemType) {
@@ -377,7 +347,7 @@ const handleModalSubmit = () => {
             return {
                 ...typeSpecificId,
                 id: item.id,
-                No: updatedCabang[activeCabang].data.length + 1,
+                No: updatedCabang[activeCabang].data.length + 1, // This will be corrected after adding
                 "Foto Produk": (
                     <div className="w-12 h-12 flex items-center justify-center">
                         <img 
@@ -393,96 +363,22 @@ const handleModalSubmit = () => {
                 "Nama Produk": (
                     <InputDropdown
                         showRequired={false}
-                        options={dataBarang.reduce((allItems, data) => {
-                            const items = data.items.map(item => ({
-                                label: item.name,
-                                value: item.id,
-                                jenis: data.jenis,
-                                kategori: item.kategori,
-                                image: item.image,
-                                code: item.code,
-                                rincian_biaya: item.rincian_biaya
-                            }));
-                            return [...allItems, ...items];
-                        }, [])}
-                        value={dropdownValue}
-                        onSelect={(newSelection) => {
-                            let selectedItem = null;
-                            let jenisBarang = '';
-                            
-                            for (const category of dataBarang) {
-                                const found = category.items.find(i => i.id === newSelection.value);
-                                if (found) {
-                                    selectedItem = found;
-                                    jenisBarang = category.jenis;
-                                    break;
-                                }
-                            }
-
-                            if (selectedItem) {
-                                const updatedDataCabang = [...dataCabang];
-                                const itemIndex = updatedDataCabang[activeCabang].data.findIndex(
-                                    (data) => data.id === item.id
-                                );
-
-                                if (itemIndex !== -1) {
-                                    let newPrice = selectedItem.price;
-
-                                    if (jenisBarang === "Barang Non-Handmade" && selectedItem.rincian_biaya) {
-                                        const currentCabangId = dataCabang[activeCabang].id;
-                                        const rincianBiaya = selectedItem.rincian_biaya.find(
-                                            rincian => rincian.cabang_id === currentCabangId
-                                        );
-                                        
-                                        if (rincianBiaya?.detail_rincian_biaya) {
-                                            const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
-                                                detail => detail.nama_biaya === "Modal"
-                                            );
-                                            if (modalBiaya) {
-                                                newPrice = modalBiaya.jumlah_biaya;
-                                            }
-                                        }
-                                    }
-
-                                    const currentQuantity = updatedDataCabang[activeCabang].data[itemIndex].quantity || 0;
-                                    const newTotalBiaya = newPrice * currentQuantity;
-                                    const newImageData = {
-                                        imageUrl: getImageUrl(selectedItem, jenisBarang),
-                                        image: selectedItem.image,
-                                        itemType: jenisBarang
-                                    };
-
-                                    updatedDataCabang[activeCabang].data[itemIndex] = {
-                                        ...updatedDataCabang[activeCabang].data[itemIndex],
-                                        ...newImageData,
-                                        "Foto Produk": (
-                                            <div className="w-12 h-12 flex items-center justify-center">
-                                                <img 
-                                                    src={newImageData.imageUrl}
-                                                    alt={selectedItem.name} 
-                                                    className="w-full h-full object-cover rounded"
-                                                    onError={(e) => {
-                                                        e.target.src = '/placeholder-image.jpg';
-                                                    }}
-                                                />
-                                            </div>
-                                        ),
-                                        "Jenis Barang": jenisBarang,
-                                        "Harga Satuan": `Rp${newPrice.toLocaleString()}`,
-                                        rawHargaSatuan: newPrice,
-                                        rawTotalBiaya: newTotalBiaya,
-                                        "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
-                                    };
-
-                                    setDataCabang(updatedDataCabang);
-                                }
-                            }
-                        }}
+                        options={dropdownItems.map(item => ({
+                            label: item.name,
+                            value: item.id,
+                            jenis: item.jenis,
+                            kategori: item.kategori,
+                            image: item.image,
+                            code: item.code,
+                            rincian_biaya: item.rincian_biaya
+                        }))}
+                        value={item.id}
+                        onSelect={(newSelection) => handleTableDropdownChange(activeCabang, updatedCabang[activeCabang].data.length + idx, newSelection)}
                     />
                 ),
                 "Jenis Barang": itemType,
                 "Harga Satuan": `Rp${price.toLocaleString()}`,
-                rawHargaSatuan: item.price,
+                rawHargaSatuan: price,
                 "Kuantitas": (
                     <Input
                         showRequired={false}
@@ -495,7 +391,7 @@ const handleModalSubmit = () => {
                             );
 
                             if (itemIndex === -1) {
-                                const newTotal = item.price * Number(newCount);
+                                const newTotal = price * Number(newCount);
                                 const updatedItem = {
                                     ...item,
                                     quantity: newCount,
@@ -512,6 +408,7 @@ const handleModalSubmit = () => {
                                 updatedCabangCopy[activeCabang].data[itemIndex].rawTotalBiaya = newTotal;
                                 updatedCabangCopy[activeCabang].data[itemIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
                             }
+                            // Preserve row numbers when quantity changes
                             setDataCabang(updatedCabangCopy);
                         }}
                     />
@@ -519,6 +416,7 @@ const handleModalSubmit = () => {
                 quantity: item.count,
                 "Total Biaya": `Rp${totalBiaya.toLocaleString()}`,
                 rawTotalBiaya: totalBiaya,
+                jenis: itemType,
                 Aksi: (
                     <button
                         type="button"
@@ -532,6 +430,8 @@ const handleModalSubmit = () => {
         });
 
         updatedCabang[activeCabang].data.push(...newItems);
+        // Renumber all rows after adding new items
+        updatedCabang[activeCabang].data = renumberRows(updatedCabang[activeCabang].data);
         setDataCabang(updatedCabang);
     }
     setIsModalOpen(false);
@@ -539,12 +439,89 @@ const handleModalSubmit = () => {
 };
 
 
+    // Function to renumber rows in a cabang
+    const renumberRows = (cabangData) => {
+        return cabangData.map((item, index) => ({
+            ...item,
+            No: index + 1
+        }));
+    };
+
     const handleDeleteItem = (cabangIndex, itemId) => {
         const updatedCabang = [...dataCabang];
         updatedCabang[cabangIndex].data = updatedCabang[cabangIndex].data.filter(
             (item) => item.id !== itemId
         );
+        // Renumber the remaining rows
+        updatedCabang[cabangIndex].data = renumberRows(updatedCabang[cabangIndex].data);
         setDataCabang(updatedCabang);
+    };
+
+    // Ganti/ubah handleTableDropdownChange agar menerima cabangIndex dan rowIndex:
+    const handleTableDropdownChange = (cabangIndex, rowIndex, nextSelection) => {
+        const updatedDataCabang = [...dataCabang];
+        // Cari item yang dipilih dari dropdownItems
+        const selectedItem = dropdownItems.find(i => i.id === nextSelection.value);
+        if (selectedItem) {
+            let newPrice = selectedItem.price || 0;
+            // Hitung harga untuk Handmade/Non-Handmade dengan rincian_biaya
+            if ((selectedItem.jenis === "Barang Handmade" || selectedItem.jenis === "Barang Non-Handmade") && selectedItem.rincian_biaya) {
+                const currentCabangId = updatedDataCabang[cabangIndex].id;
+                const rincianBiaya = selectedItem.rincian_biaya.find(
+                    rincian => rincian.cabang_id === currentCabangId
+                );
+                if (rincianBiaya?.detail_rincian_biaya) {
+                    const modalBiaya = rincianBiaya.detail_rincian_biaya.find(
+                        detail => detail.nama_biaya === "Modal"
+                    );
+                    if (modalBiaya) {
+                        newPrice = modalBiaya.jumlah_biaya;
+                    }
+                }
+            }
+            const currentQuantity = updatedDataCabang[cabangIndex].data[rowIndex].quantity || 0;
+            const newTotalBiaya = newPrice * currentQuantity;
+            // Tentukan ID field berdasarkan jenis produk
+            let typeSpecificId = {};
+            switch(selectedItem.jenis) {
+                case "Barang Handmade":
+                    typeSpecificId = { barang_handmade_id: selectedItem.id };
+                    break;
+                case "Barang Non-Handmade":
+                    typeSpecificId = { barang_non_handmade_id: selectedItem.id };
+                    break;
+                case "Bahan Custom":
+                    typeSpecificId = { barang_custom_id: selectedItem.id };
+                    break;
+                case "Packaging":
+                    typeSpecificId = { packaging_id: selectedItem.id };
+                    break;
+            }
+            updatedDataCabang[cabangIndex].data[rowIndex] = {
+                ...updatedDataCabang[cabangIndex].data[rowIndex],
+                ...typeSpecificId,
+                id: selectedItem.id,
+                "Foto Produk": (
+                    <div className="w-12 h-12 flex items-center justify-center">
+                        <img 
+                            src={selectedItem.image}
+                            alt={selectedItem.name} 
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                                e.target.src = '/placeholder-image.jpg';
+                            }}
+                        />
+                    </div>
+                ),
+                "Jenis Barang": selectedItem.jenis,
+                "Harga Satuan": `Rp${newPrice.toLocaleString()}`,
+                rawHargaSatuan: newPrice,
+                rawTotalBiaya: newTotalBiaya,
+                "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`,
+                jenis: selectedItem.jenis
+            };
+            setDataCabang(updatedDataCabang);
+        }
     };
 
     const subtotal = calculateSubtotal();
@@ -616,10 +593,10 @@ const handleModalSubmit = () => {
 
     // PAGINATION STATE
     const [pagination, setPagination] = useState({
-        "Barang Handmade": { page: 1, limit: 12, total: 0 },
-        "Barang Non-Handmade": { page: 1, limit: 12, total: 0 },
-        "Bahan Custom": { page: 1, limit: 12, total: 0 },
-        "Packaging": { page: 1, limit: 12, total: 0 },
+        "Barang Handmade": { page: 1, limit: 5, total: 0 },
+        "Barang Non-Handmade": { page: 1, limit: 5, total: 0 },
+        "Bahan Custom": { page: 1, limit: 5, total: 0 },
+        "Packaging": { page: 1, limit: 5, total: 0 },
     });
     const [barangData, setBarangData] = useState({
         "Barang Handmade": { items: [], total: 0 },
@@ -627,6 +604,8 @@ const handleModalSubmit = () => {
         "Bahan Custom": { items: [], total: 0 },
         "Packaging": { items: [], total: 0 },
     });
+
+
 
     // Fetch paginated data for the selected jenis
     const fetchBarangPaginated = async (jenis, { page, limit, category, search }) => {
@@ -676,6 +655,7 @@ const handleModalSubmit = () => {
                     name: typeKey === 'packaging' ? item.nama_packaging : item.nama_barang,
                     rincian_biaya: item.rincian_biaya,
                     price: price,
+                    jenis: jenis,
                     kategori_id: item.kategori_barang_id || item.kategori_barang?.kategori_barang_id
                 };
             });
@@ -693,7 +673,7 @@ const handleModalSubmit = () => {
                     total: res.data.pagination?.totalItems || items.length
                 }
             }));
-        } catch (e) {
+        } catch {
             setBarangData(prev => ({ ...prev, [jenis]: { items: [], total: 0 } }));
         } finally {
             setLoading(false);
@@ -723,8 +703,8 @@ const handleModalSubmit = () => {
         }));
     }, [selectedJenis]);
 
-    // Handler for limit change (optional, not shown in UI yet)
-    const handleLimitChange = (limit) => {
+    // Handler for items per page change
+    const handleItemsPerPageChange = useCallback((limit) => {
         setPagination(prev => ({
             ...prev,
             [selectedJenis]: {
@@ -733,7 +713,8 @@ const handleModalSubmit = () => {
                 page: 1
             }
         }));
-    };
+    }, [selectedJenis]);
+
     // Handler for category change
     const handleCategoryChange = (cat) => {
         setSelectedCategory(cat);
@@ -745,17 +726,7 @@ const handleModalSubmit = () => {
             }
         }));
     };
-    // Handler for search change
-    const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value);
-        setPagination(prev => ({
-            ...prev,
-            [selectedJenis]: {
-                ...prev[selectedJenis],
-                page: 1
-            }
-        }));
-    };
+
 
     return (
         <>
@@ -789,26 +760,76 @@ const handleModalSubmit = () => {
                                 {isLoading ? (
                                     <Spinner />
                                 ) : (
-                                    dataCabang.map((cabang, index) => (
-                                        <div key={cabang.id} className="pt-5">
-                                            <p className="font-bold">{cabang.nama}</p>
-                                            <div className="pt-5">
-                                                <Table headers={headers} data={cabang.data} />
-                                                <Button
-                                                    label="Tambah Baris"
-                                                    icon={
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                                                        </svg>
-                                                    }
-                                                    onClick={() => btnAddBaris(index)}
-                                                    bgColor=""
-                                                    hoverColor={`hover:border-${themeColor} hover:border`}
-                                                    textColor={`text-${themeColor}`}
+                                    dataCabang.map((cabang, cabangIndex) => {
+                                        // Rebuild table data dengan handler yang benar untuk setiap baris
+                                        const tableData = cabang.data.map((item, rowIndex) => ({
+                                            ...item,
+                                            "Nama Produk": (
+                                                <InputDropdown
+                                                    showRequired={false}
+                                                    options={dropdownItems.map(item => ({
+                                                        label: item.name,
+                                                        value: item.id,
+                                                        jenis: item.jenis,
+                                                        kategori: item.kategori,
+                                                        image: item.image,
+                                                        code: item.code,
+                                                        rincian_biaya: item.rincian_biaya
+                                                    }))}
+                                                    value={item.id}
+                                                    onSelect={(newSelection) => handleTableDropdownChange(cabangIndex, rowIndex, newSelection)}
                                                 />
+                                            ),
+                                            "Kuantitas": (
+                                                <Input
+                                                    showRequired={false}
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={(newCount) => {
+                                                        const updatedCabangCopy = [...dataCabang];
+                                                        const currentItem = updatedCabangCopy[cabangIndex].data[rowIndex];
+                                                        const currentPrice = currentItem.rawHargaSatuan;
+                                                        
+                                                        updatedCabangCopy[cabangIndex].data[rowIndex].quantity = newCount;
+                                                        const newTotal = currentPrice * Number(newCount);
+                                                        updatedCabangCopy[cabangIndex].data[rowIndex].rawTotalBiaya = newTotal;
+                                                        updatedCabangCopy[cabangIndex].data[rowIndex]["Total Biaya"] = `Rp${newTotal.toLocaleString()}`;
+                                                        setDataCabang(updatedCabangCopy);
+                                                    }}
+                                                />
+                                            ),
+                                            Aksi: (
+                                                <button
+                                                    type="button"
+                                                    className="text-red-500 hover:text-red-700"
+                                                    onClick={() => handleDeleteItem(cabangIndex, item.id)}
+                                                >
+                                                    Hapus
+                                                </button>
+                                            ),
+                                        }));
+
+                                        return (
+                                            <div key={cabang.id} className="pt-5">
+                                                <p className="font-bold">{cabang.nama}</p>
+                                                <div className="pt-5">
+                                                    <Table headers={headers} data={tableData} />
+                                                    <Button
+                                                        label="Tambah Baris"
+                                                        icon={
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                                            </svg>
+                                                        }
+                                                        onClick={() => btnAddBaris(cabangIndex)}
+                                                        bgColor=""
+                                                        hoverColor={`hover:border-${themeColor} hover:border`}
+                                                        textColor={`text-${themeColor}`}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </section>
 
@@ -883,7 +904,7 @@ const handleModalSubmit = () => {
                         {/* Modal Tambah Baris */}
                         {isModalOpen && (
                             <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden pb-8`}>
+                                <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-auto flex flex-col`}>
                                     <div className="flex flex-col space-y-4 mb-4">
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                             <div className="relative w-full sm:max-w-md">
@@ -1015,20 +1036,20 @@ const handleModalSubmit = () => {
                                             </div>
 
                                             {/* Gallery */}
-                                            <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
+                                            <div className="mt-6 flex-1 min-h-0 overflow-y-auto no-scrollbar">
                                                 {/* Dropdown Items Per Page */}
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-sm">Tampilkan</span>
+                                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2">
+                                                    <span className="text-xs sm:text-sm">Tampilkan</span>
                                                     <select
                                                         value={pagination[selectedJenis].limit}
-                                                        onChange={e => handleLimitChange(Number(e.target.value))}
-                                                        className="border rounded px-2 py-1 text-sm"
+                                                        onChange={e => handleItemsPerPageChange(Number(e.target.value))}
+                                                        className="border rounded px-2 py-1 text-xs sm:text-sm"
                                                     >
                                                         {[5, 10, 15, 30, 50].map(opt => (
                                                             <option key={opt} value={opt}>{opt}</option>
                                                         ))}
                                                     </select>
-                                                    <span className="text-sm">per halaman</span>
+                                                    <span className="text-xs sm:text-sm">per halaman</span>
                                                 </div>
                                                 {(() => {
                                                     const currentPagination = pagination[selectedJenis];

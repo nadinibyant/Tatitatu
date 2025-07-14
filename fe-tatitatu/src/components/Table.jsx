@@ -354,9 +354,9 @@ const Table = ({
     return content;
   };
 
-  const renderMobileRow = (row, rowIndex) => (
+  const renderMobileRow = (row, rowIndex, uniqueKey) => (
     <div 
-      key={rowIndex} 
+      key={uniqueKey} 
       className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-visible"
     >
       <div className="divide-y divide-gray-200">
@@ -437,7 +437,7 @@ const Table = ({
         <tbody className="divide-y divide-gray-200 bg-white">
           {paginatedData.map((row, rowIndex) => (
             <tr
-              key={rowIndex}
+              key={row.key || row.id || row.timestamp || rowIndex}
               className={`hover:bg-gray-50 transition-colors
                 ${onRowClick ? "cursor-pointer" : "cursor-default"}
               `}
@@ -575,7 +575,7 @@ const Table = ({
       <div className="w-full">
         {isMobile ? (
           <div className="space-y-4">
-            {paginatedData.map((row, idx) => renderMobileRow(row, idx))}
+            {paginatedData.map((row, idx) => renderMobileRow(row, idx, row.key || row.id || row.timestamp || idx))}
           </div>
         ) : (
           renderDesktopTable()

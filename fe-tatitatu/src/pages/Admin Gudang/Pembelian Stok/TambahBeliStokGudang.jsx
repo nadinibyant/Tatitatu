@@ -277,11 +277,11 @@ export default function TambahBeliStokGudang() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                            const [nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
-                // api.get('/barang-handmade-gudang'),
-                api.get('/barang-nonhandmade-gudang'),
-                api.get('/barang-mentah'),
-                api.get('/packaging-gudang'),
+                const [nonhandmadeRes, mentahRes, packagingRes, categoriesRes] = await Promise.all([
+                // api.get('/barang-handmade-gudang?limit=1000'),
+                api.get('/barang-nonhandmade-gudang?limit=1000'),
+                api.get('/barang-mentah?limit=1000'),
+                api.get('/packaging-gudang?limit=1000'),
                 api.get('/kategori-barang-gudang')
             ]);
 
@@ -410,28 +410,124 @@ export default function TambahBeliStokGudang() {
 
     const handleModalSubmit = () => {
         if (selectedItems.length === 0) return;
-
-        const newItems = selectedItems.map((item) => {
-            const product = formattedProducts.find(p => p.id === item.id);
-            if (!product) return null;
-            return createTableRow(product, item.count);
-        }).filter(Boolean);
-
-        setItemData(prevData => {
-            const updatedData = [...prevData, ...newItems];
-            // Renumber all items
-            return updatedData.map((item, index) => ({
-                ...item,
-                No: index + 1
+    
+        console.log('Selected Items:', selectedItems);
+        
+        // Create a copy of the current itemData
+        let updatedItemData = [...itemData];
+        
+        // Process each selected item
+        selectedItems.forEach((item) => {
+            // Check if this item already exists in the table
+            const existingItemIndex = updatedItemData.findIndex(
+                tableItem => tableItem.id === item.id
+            );
+            
+            // Create dropdown options for all products (without pagination)
+            const dropdownOptions = formattedProducts.map(product => ({
+                label: product.name,
+                value: product.id,
+                jenis: product.jenis,
+                image: product.image,
+                price: product.price
             }));
+            
+            // Find the corresponding product in formattedProducts by matching name and jenis
+            const correspondingProduct = formattedProducts.find(p => 
+                p.name === item.name && p.jenis === item.jenis
+            );
+            
+            if (existingItemIndex >= 0) {
+                // Item already exists in the table, update its quantity
+                const existingItem = updatedItemData[existingItemIndex];
+                const newQuantity = existingItem.quantity + item.count;
+                const newTotalBiaya = existingItem.currentPrice * newQuantity;
+                
+                // Update the existing item with new quantity and total
+                updatedItemData[existingItemIndex] = {
+                    ...existingItem,
+                    "Kuantitas": (
+                        <Input
+                            showRequired={false}
+                            type="number"
+                            value={newQuantity}
+                            onChange={(newValue) => handleQuantityChange(existingItem.id, newValue)}
+                        />
+                    ),
+                    quantity: newQuantity,
+                    rawTotalBiaya: newTotalBiaya,
+                    "Total Biaya": `Rp${newTotalBiaya.toLocaleString()}`
+                };
+            } else {
+                // Item doesn't exist in the table, create a new row
+                const productToUse = correspondingProduct || item;
+                const newRow = {
+                    id: productToUse.id,  
+                    No: updatedItemData.length + 1,
+                    "Foto Produk": (
+                        <img 
+                            src={productToUse.image}
+                            alt={productToUse.name}
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder.jpg';
+                            }}
+                        />
+                    ),
+                    "Nama Produk": (
+                        <InputDropdown
+                            showRequired={false}
+                            options={dropdownOptions}
+                            value={productToUse.id}
+                            onSelect={(newSelection) => handleDropdownChange(productToUse.id, newSelection)}
+                        />
+                    ),
+                    "Jenis Barang": productToUse.jenis,
+                    "Harga Satuan": `Rp${productToUse.price.toLocaleString()}`,
+                    "Kuantitas": (
+                        <Input
+                            showRequired={false}
+                            type="number"
+                            value={item.count}
+                            onChange={(newValue) => handleQuantityChange(productToUse.id, newValue)}
+                        />
+                    ),
+                    quantity: item.count,
+                    rawTotalBiaya: productToUse.price * item.count,
+                    currentPrice: productToUse.price,
+                    name: productToUse.name,
+                    "Total Biaya": `Rp${(productToUse.price * item.count).toLocaleString()}`,
+                    "Aksi": (
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteItem(productToUse.id)}
+                            className="py-1 text-merah font-semibold"
+                        >
+                            Hapus
+                        </button>
+                    )
+                };
+                
+                updatedItemData.push(newRow);
+            }
         });
-
+        
+        // Renumber all items
+        updatedItemData = updatedItemData.map((item, index) => ({
+            ...item,
+            No: index + 1
+        }));
+        
+        // Update the state
+        setItemData(updatedItemData);
         setIsModalOpen(false);
-        setSelectedItems([]);
     };
 
     const createTableRow = (product, quantity) => {
         const totalBiaya = product.price * quantity;
+        
+        // Create dropdown options from all formattedProducts (without pagination)
         const dropdownOptions = formattedProducts.map(item => ({
             label: item.name,
             value: item.id,
@@ -439,7 +535,12 @@ export default function TambahBeliStokGudang() {
             image: item.image,
             price: item.price
         }));
-
+        
+        // Find the corresponding product in formattedProducts by matching name and jenis
+        const correspondingProduct = formattedProducts.find(p => 
+            p.name === product.name && p.jenis === product.jenis
+        );
+    
         return {
             id: product.id,  
             No: itemData.length + 1,
@@ -458,7 +559,7 @@ export default function TambahBeliStokGudang() {
                 <InputDropdown
                     showRequired={false}
                     options={dropdownOptions}
-                    value={product.id} 
+                    value={correspondingProduct ? correspondingProduct.id : null}
                     onSelect={(newSelection) => handleDropdownChange(product.id, newSelection)}
                 />
             ),
@@ -788,7 +889,7 @@ export default function TambahBeliStokGudang() {
                     {/* Product Selection Modal */}
                     {isModalOpen && (
                         <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
-                            <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden`}>
+                            <div className={`bg-white border border-${themeColor} rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-auto flex flex-col`}>
                                 <div className="flex flex-col space-y-4 mb-4">
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                         <div className="relative w-full sm:max-w-md">
@@ -896,20 +997,20 @@ export default function TambahBeliStokGudang() {
                                     }
                                 </div>
 
-                                <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar pb-4">
+                                <div className="mt-6 flex-1 min-h-0 overflow-y-auto no-scrollbar">
                                     {/* Dropdown Items Per Page */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm">Tampilkan</span>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2">
+                                        <span className="text-xs sm:text-sm">Tampilkan</span>
                                         <select
                                             value={pagination[selectedJenis].limit}
                                             onChange={e => handleLimitChange(Number(e.target.value))}
-                                            className="border rounded px-2 py-1 text-sm"
+                                            className="border rounded px-2 py-1 text-xs sm:text-sm"
                                         >
                                             {[5, 10, 15, 30, 50].map(opt => (
                                                 <option key={opt} value={opt}>{opt}</option>
                                             ))}
                                         </select>
-                                        <span className="text-sm">per halaman</span>
+                                        <span className="text-xs sm:text-sm">per halaman</span>
                                     </div>
                                     {(() => {
                                         const currentPagination = pagination[selectedJenis];

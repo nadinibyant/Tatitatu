@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Breadcrumbs from '../../../components/Breadcrumbs';
 import Input from '../../../components/Input';
@@ -45,6 +45,20 @@ const EditPenjualanCustom = () => {
     const [dataMetode, setDataMetode] = useState([{ value: 1, label: '-' }]);
     const toko_id = userData.userId;
     
+    // Pagination state for modal
+    const [paginationProduk, setPaginationProduk] = useState({ page: 1, limit: 12, total: 0 });
+    const [paginationPackaging, setPaginationPackaging] = useState({ page: 1, limit: 12, total: 0 });
+    const [searchProdukInput, setSearchProdukInput] = useState("");
+    const [searchProduk, setSearchProduk] = useState("");
+    const [searchPackagingInput, setSearchPackagingInput] = useState("");
+    const [searchPackaging, setSearchPackaging] = useState("");
+    const [dataBarangPaginated, setDataBarangPaginated] = useState([]);
+    const [dataPackagingPaginated, setDataPackagingPaginated] = useState([]);
+    
+    // State untuk dropdown options (tanpa pagination)
+    const [allBarangOptions, setAllBarangOptions] = useState([]);
+    const [allPackagingOptions, setAllPackagingOptions] = useState([]);
+    
     // UI state
     const [isLoading, setLoading] = useState(false);
     const [isModalSucc, setModalSucc] = useState(false);
@@ -60,6 +74,19 @@ const EditPenjualanCustom = () => {
     useEffect(() => {
         fetchAllData();
     }, [id]);
+
+    // Fetch data on modal open or pagination change
+    useEffect(() => {
+        if (modalState.isOpen && modalState.content === 'produk') {
+            fetchBarangCustomPaginated({ page: paginationProduk.page, limit: paginationProduk.limit, search: searchProduk });
+        }
+    }, [modalState.isOpen, modalState.content, paginationProduk.page, paginationProduk.limit]);
+    
+    useEffect(() => {
+        if (modalState.isOpen && modalState.content === 'packaging') {
+            fetchPackagingPaginated({ page: paginationPackaging.page, limit: paginationPackaging.limit, search: searchPackaging });
+        }
+    }, [modalState.isOpen, modalState.content, paginationPackaging.page, paginationPackaging.limit]);
 
     const mapCustomProducts = (data) => data.map(item => ({
         barang_custom_id: item.barang_custom_id,
@@ -79,6 +106,109 @@ const EditPenjualanCustom = () => {
             `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}` : 
             "https://via.placeholder.com/50",
     }));
+
+    // Fetch all barang custom untuk dropdown options (tanpa pagination)
+    const fetchAllBarangCustom = async () => {
+        try {
+            const response = await api.get(`/barang-custom?toko_id=${toko_id}&limit=1000`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    barang_custom_id: item.barang_custom_id,
+                    image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+                    nama_barang: item.nama_barang,
+                    price: item.harga_jual,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setAllBarangOptions(items);
+            }
+        } catch (error) {
+            console.error('Error fetching all barang custom:', error);
+            setAllBarangOptions([]);
+        }
+    };
+
+    // Fetch all packaging untuk dropdown options (tanpa pagination)
+    const fetchAllPackaging = async () => {
+        try {
+            const response = await api.get(`/packaging?toko_id=${toko_id}&limit=1000`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    packaging_id: item.packaging_id,
+                    nama_packaging: item.nama_packaging,
+                    price: 0,
+                    image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
+                        : "/placeholder-image.jpg",
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setAllPackagingOptions(items);
+            }
+        } catch (error) {
+            console.error('Error fetching all packaging:', error);
+            setAllPackagingOptions([]);
+        }
+    };
+
+    // Fetch paginated barang custom untuk modal
+    const fetchBarangCustomPaginated = async ({ page, limit, search }) => {
+        try {
+            setLoading(true);
+            let params = [`toko_id=${toko_id}`, `page=${page}`, `limit=${limit}`];
+            if (search) params.push(`search=${encodeURIComponent(search)}`);
+            const response = await api.get(`/barang-custom?${params.join('&')}`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.barang_custom_id,
+                    image: `${import.meta.env.VITE_API_URL}/images-barang-custom/${item.image}`,
+                    name: item.nama_barang,
+                    code: item.barang_custom_id,
+                    price: item.harga_jual,
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setDataBarangPaginated(items);
+                setPaginationProduk(prev => ({
+                    ...prev,
+                    total: response.data.pagination?.totalItems ?? items.length
+                }));
+            }
+        } catch {
+            setDataBarangPaginated([]);
+            setPaginationProduk(prev => ({ ...prev, total: 0 }));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch paginated packaging untuk modal
+    const fetchPackagingPaginated = async ({ page, limit, search }) => {
+        try {
+            setLoading(true);
+            let params = [`toko_id=${toko_id}`, `page=${page}`, `limit=${limit}`];
+            if (search) params.push(`search=${encodeURIComponent(search)}`);
+            const response = await api.get(`/packaging?${params.join('&')}`);
+            if (response.data.success) {
+                const items = response.data.data.filter(item => !item.is_deleted).map(item => ({
+                    id: item.packaging_id,
+                    name: item.nama_packaging,
+                    price: 0,
+                    image: item.image 
+                        ? `${import.meta.env.VITE_API_URL}/images-packaging/${item.image}`
+                        : "/placeholder-image.jpg",
+                    stock: item.stok_barang?.jumlah_stok || 0
+                }));
+                setDataPackagingPaginated(items);
+                setPaginationPackaging(prev => ({
+                    ...prev,
+                    total: response.data.pagination?.totalItems ?? items.length
+                }));
+            }
+        } catch {
+            setDataPackagingPaginated([]);
+            setPaginationPackaging(prev => ({ ...prev, total: 0 }));
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchAllData = async () => {
         try {
@@ -102,8 +232,12 @@ const EditPenjualanCustom = () => {
             setDataBarang(mapCustomProducts(customRes.data.data));
             setDataPackaging(mapPackagingProducts(packagingRes.data.data));
             setDataMetode(metodeList);
-            // console.log(dataBarang)
-            // console.log(setDataPackaging)
+            
+            // Fetch all data for dropdowns
+            await Promise.all([
+                fetchAllBarangCustom(),
+                fetchAllPackaging()
+            ]);
 
 
             const detail = penjualanRes.data.data;
@@ -142,20 +276,7 @@ const EditPenjualanCustom = () => {
         }
     };
 
-    const transformToTableData = () => [
-        {
-            nama: 'Rincian Jumlah dan Bahan',
-            data: detailData.customProducts.map((item, idx) => createTableRow(item, idx, 'custom'))
-        },
-        {
-            nama: 'Rincian Biaya',
-            data: detailData.biayaProducts.map((item, idx) => createBiayaRow(item, idx))
-        },
-        {
-            nama: 'Packaging',
-            data: detailData.packagingProducts.map((item, idx) => createPackagingRow(item, idx))
-        }
-    ];
+
     
     const createTableRow = (item, index, type) => {
         // Generate a unique ID if none exists
@@ -180,11 +301,11 @@ const EditPenjualanCustom = () => {
             "Nama Barang": <InputDropdown 
                 showRequired={false}
                 options={type === 'custom' ? 
-                    dataBarang.map(item => ({
+                    allBarangOptions.map(item => ({
                         value: item.barang_custom_id,
                         label: item.nama_barang
                     })) : 
-                    dataPackaging.map(item => ({
+                    allPackagingOptions.map(item => ({
                         value: item.packaging_id,
                         label: item.nama_packaging
                     }))}
@@ -226,7 +347,7 @@ const EditPenjualanCustom = () => {
             />,
             "Nama Barang": <InputDropdown 
                 showRequired={false}
-                options={dataPackaging.map(item => ({
+                options={allPackagingOptions.map(item => ({
                     value: item.packaging_id,
                     label: item.nama_packaging
                 }))}
@@ -395,6 +516,42 @@ const EditPenjualanCustom = () => {
                 } : item
             )
         }));
+    };
+
+    // Handler untuk search, limit, page produk custom
+    const handleProdukSearchInputChange = (e) => setSearchProdukInput(e.target.value);
+    const handleProdukSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchProduk(searchProdukInput);
+            setPaginationProduk(prev => ({ ...prev, page: 1 }));
+            fetchBarangCustomPaginated({ page: 1, limit: paginationProduk.limit, search: searchProdukInput });
+        }
+    };
+    const handleProdukLimitChange = (limit) => {
+        setPaginationProduk(prev => ({ ...prev, limit, page: 1 }));
+        fetchBarangCustomPaginated({ page: 1, limit, search: searchProduk });
+    };
+    const handleProdukPageChange = (page) => {
+        setPaginationProduk(prev => ({ ...prev, page }));
+        fetchBarangCustomPaginated({ page, limit: paginationProduk.limit, search: searchProduk });
+    };
+
+    // Handler untuk search, limit, page packaging
+    const handlePackagingSearchInputChange = (e) => setSearchPackagingInput(e.target.value);
+    const handlePackagingSearchInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setSearchPackaging(searchPackagingInput);
+            setPaginationPackaging(prev => ({ ...prev, page: 1 }));
+            fetchPackagingPaginated({ page: 1, limit: paginationPackaging.limit, search: searchPackagingInput });
+        }
+    };
+    const handlePackagingLimitChange = (limit) => {
+        setPaginationPackaging(prev => ({ ...prev, limit, page: 1 }));
+        fetchPackagingPaginated({ page: 1, limit, search: searchPackaging });
+    };
+    const handlePackagingPageChange = (page) => {
+        setPaginationPackaging(prev => ({ ...prev, page }));
+        fetchPackagingPaginated({ page, limit: paginationPackaging.limit, search: searchPackaging });
     };
 
     const handleModalSubmit = () => {
@@ -569,6 +726,7 @@ const EditPenjualanCustom = () => {
                                 />
                                 <Input 
                                     label="Nama Pembeli" 
+                                    required={false}
                                     value={formData.namaPembeli} 
                                     onChange={(e) => setFormData(prev => ({...prev, namaPembeli: e}))} 
                                 />
@@ -734,110 +892,136 @@ const EditPenjualanCustom = () => {
                 {modalState.isOpen && (
                     <section className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
                         <div className="bg-white border border-primary rounded-md p-6 w-[90%] md:w-[70%] h-[90%] overflow-hidden">
-                            <div className="flex flex-col space-y-4 mb-4">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div className="relative w-full sm:max-w-md">
-                                        <span className="absolute inset-y-0 left-3 flex items-center">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-5 h-5 text-gray-400"
-                                                fill="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
-                                            </svg>
-                                        </span>
-                                        <input
-                                            type="text"
-                                            placeholder="Cari barang..."
-                                            value={modalState.searchTerm}
-                                            onChange={(e) => setModalState(prev => ({...prev, searchTerm: e.target.value}))}
-                                            className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center space-x-4 self-end sm:self-auto">
-                                        <button
-                                            onClick={() => setModalState(prev => ({...prev, searchTerm: '', selectedItems: []}))}
-                                            className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                            {/* Search, X, Terpilih */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                                <div className="relative w-full sm:max-w-md">
+                                    <span className="absolute inset-y-0 left-3 flex items-center">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="w-5 h-5 text-gray-400"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-6 w-6"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                        <p className="text-primary font-semibold">
-                                            Terpilih {modalState.selectedItems.reduce((sum, item) => sum + (item.count || 0), 0)}
-                                        </p>
-                                    </div>
+                                            <path d="M20.707 19.293l-4.054-4.054A7.948 7.948 0 0016 9.5 8 8 0 108 17.5c1.947 0 3.727-.701 5.239-1.865l4.054 4.054a1 1 0 001.414-1.414zM10 15.5A6.5 6.5 0 1110 2a6.5 6.5 0 010 13.5z" />
+                                        </svg>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder={modalState.content === 'packaging' ? "Cari Packaging" : "Cari Barang yang mau dibeli"}
+                                        value={modalState.content === 'packaging' ? searchPackagingInput : searchProdukInput}
+                                        onChange={modalState.content === 'packaging' ? handlePackagingSearchInputChange : handleProdukSearchInputChange}
+                                        onKeyDown={modalState.content === 'packaging' ? handlePackagingSearchInputKeyDown : handleProdukSearchInputKeyDown}
+                                        className="w-full border border-gray-300 rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    />
                                 </div>
-
-                                {/* Bottom row: Action buttons */}
-                                <div className="flex justify-end gap-4">
-                                    <Button
-                                        label="Batal"
-                                        bgColor="border border-secondary"
-                                        hoverColor="hover:bg-gray-100"
-                                        textColor="text-black"
-                                        onClick={() => setModalState(prev => ({...prev, isOpen: false, selectedItems: []}))}
-                                    />
-                                    <Button
-                                        label="Pilih"
-                                        bgColor="bg-primary"
-                                        hoverColor="hover:bg-opacity-90"
-                                        textColor="text-white"
-                                        onClick={handleModalSubmit}
-                                    />
+                                <div className="flex items-center space-x-4 self-end sm:self-auto">
+                                    <button
+                                        onClick={() => {
+                                            if (modalState.content === 'packaging') {
+                                                setSearchPackaging("");
+                                                setSearchPackagingInput("");
+                                            } else {
+                                                setSearchProduk("");
+                                                setSearchProdukInput("");
+                                            }
+                                            setModalState(prev => ({...prev, selectedItems: []}));
+                                        }}
+                                        className="text-gray-400 hover:text-gray-700 focus:outline-none"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-6 w-6"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    <p className="text-primary font-semibold">
+                                        Terpilih {modalState.selectedItems.reduce((sum, item) => sum + (item.count || 0), 0)}
+                                    </p>
                                 </div>
                             </div>
-
-                            <div className="mt-6 h-[calc(100%-180px)] overflow-y-auto no-scrollbar">
-                                <Gallery2
-                                    items={modalState.content === 'packaging' 
-                                        ? dataPackaging.filter(item => 
-                                            item.nama_packaging?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
-                                        ).map(item => ({
-                                            id: item.packaging_id,
-                                            image: item.image,
-                                            code: item.packaging_id,
-                                            name: item.nama_packaging,
-                                            price: item.price || item.harga_jual || item.harga,
-                                            stock: item.stock
-                                        }))
-                                        : dataBarang.filter(item =>
-                                            item.nama_barang?.toLowerCase().includes(modalState.searchTerm.toLowerCase())
-                                        ).map(item => ({
-                                            id: item.barang_custom_id,
-                                            image: item.image,
-                                            code: item.barang_custom_id,
-                                            name: item.nama_barang,
-                                            price: item.price || item.harga_jual || item.harga,
-                                            stock: item.stock
-                                        }))
-                                    }
-                                    onSelect={(item, count) => {
-                                        setModalState(prev => {
-                                            const updatedItems = prev.selectedItems.filter(i => i.id !== item.id);
-                                            if (count > 0) {
-                                                updatedItems.push({
-                                                    ...item,
-                                                    count
-                                                });
-                                            }
-                                            return {
-                                                ...prev,
-                                                selectedItems: updatedItems
-                                            };
-                                        });
-                                    }}
-                                    selectedItems={modalState.selectedItems}
-                                    enableStockValidation={true}
+                            {/* Action buttons */}
+                            <div className="flex justify-end gap-4 mb-4">
+                                <Button
+                                    label="Batal"
+                                    bgColor="border border-secondary"
+                                    hoverColor="hover:bg-gray-100"
+                                    textColor="text-black"
+                                    onClick={() => setModalState(prev => ({...prev, isOpen: false, selectedItems: []}))}
                                 />
+                                <Button
+                                    label="Pilih"
+                                    bgColor="bg-primary"
+                                    hoverColor="hover:bg-opacity-90"
+                                    textColor="text-white"
+                                    onClick={handleModalSubmit}
+                                />
+                            </div>
+                            {/* Items per page */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm">Items per page:</span>
+                                <select
+                                    value={modalState.content === 'packaging' ? paginationPackaging.limit : paginationProduk.limit}
+                                    onChange={e => (modalState.content === 'packaging' ? handlePackagingLimitChange(Number(e.target.value)) : handleProdukLimitChange(Number(e.target.value)))}
+                                    className="border rounded px-2 py-1 text-sm"
+                                >
+                                    {[3, 12, 24, 48].map(opt => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* Gallery */}
+                            <div className="mt-2 h-[calc(100%-250px)] overflow-y-auto no-scrollbar">
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center h-40">
+                                        <Spinner />
+                                    </div>
+                                ) : (
+                                    <Gallery2
+                                        items={modalState.content === 'packaging' ? dataPackagingPaginated : dataBarangPaginated}
+                                        onSelect={(item, count) => {
+                                            setModalState(prev => {
+                                                const updatedItems = prev.selectedItems.filter(i => i.id !== item.id);
+                                                if (count > 0) {
+                                                    updatedItems.push({
+                                                        ...item,
+                                                        count
+                                                    });
+                                                }
+                                                return {
+                                                    ...prev,
+                                                    selectedItems: updatedItems
+                                                };
+                                            });
+                                        }}
+                                        selectedItems={modalState.selectedItems}
+                                        enableStockValidation={true}
+                                    />
+                                )}
+                            </div>
+                            {/* Pagination */}
+                            <div className="flex gap-2 items-center mt-2 justify-center">
+                                <button
+                                    disabled={(modalState.content === 'packaging' ? paginationPackaging.page : paginationProduk.page) === 1}
+                                    onClick={() => (modalState.content === 'packaging' ? handlePackagingPageChange(paginationPackaging.page - 1) : handleProdukPageChange(paginationProduk.page - 1))}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+                                <span className="text-sm">
+                                    Halaman {(modalState.content === 'packaging' ? paginationPackaging.page : paginationProduk.page)} dari {Math.max(1, Math.ceil((modalState.content === 'packaging' ? paginationPackaging.total : paginationProduk.total) / (modalState.content === 'packaging' ? paginationPackaging.limit : paginationProduk.limit)))}
+                                </span>
+                                <button
+                                    disabled={(modalState.content === 'packaging' ? paginationPackaging.page : paginationProduk.page) >= Math.ceil((modalState.content === 'packaging' ? paginationPackaging.total : paginationProduk.total) / (modalState.content === 'packaging' ? paginationPackaging.limit : paginationProduk.limit))}
+                                    onClick={() => (modalState.content === 'packaging' ? handlePackagingPageChange(paginationPackaging.page + 1) : handleProdukPageChange(paginationProduk.page + 1))}
+                                    className="px-2 py-1 border rounded disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     </section>

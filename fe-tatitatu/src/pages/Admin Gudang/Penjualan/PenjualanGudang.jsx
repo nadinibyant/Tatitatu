@@ -9,6 +9,7 @@ import ActionMenu from "../../../components/ActionMenu";
 import api from "../../../utils/api";
 import Alert from "../../../components/Alert";
 import AlertSuccess from "../../../components/AlertSuccess";
+import Spinner from "../../../components/Spinner";
 
 export default function PenjualanGudang() {
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
@@ -102,10 +103,6 @@ export default function PenjualanGudang() {
             );
         }
         return namaBarangArray.join(', ');
-    };
-
-    const getTotalBarang = (produk) => {
-        return produk.reduce((sum, item) => sum + item.kuantitas, 0);
     };
 
     const formatRupiah = (amount) => {
@@ -210,6 +207,11 @@ export default function PenjualanGudang() {
 
                 <section className="mt-5 bg-white rounded-xl">
                     <div className="p-5">
+                        {loading ? (
+                            <div className="flex justify-center items-center min-h-[200px]">
+                                <Spinner />
+                            </div>
+                        ) : (
                         <Table
                             headers={headers}
                             data={penjualanData.map((item) => ({
@@ -231,6 +233,7 @@ export default function PenjualanGudang() {
                             onRowClick={handleRowClick}
                             syncWithUrl={true}
                         />
+                        )}
                     </div>
                 </section>
             </div>
