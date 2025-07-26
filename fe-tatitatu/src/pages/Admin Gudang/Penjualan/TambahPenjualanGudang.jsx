@@ -1309,6 +1309,7 @@ const handleDeletePackaging = () => {
                                             itemsPerPage={limit}
                                             onPageChange={handlePageChange}
                                             showPagination={true}
+                                            isHandmadeContext={selectedJenis === "Barang Handmade"}
                                         />
                                     </div>
                                 </div>

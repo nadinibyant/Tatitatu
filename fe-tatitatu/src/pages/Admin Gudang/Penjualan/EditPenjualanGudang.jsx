@@ -1618,7 +1618,8 @@ export default function EditPenjualanGudang() {
                                                 setPaginationMentah(prev => ({ ...prev, page: newPage }));
                                             }
                                         }}
-                                        onItemsPerPageChange={() => {}} // Disabled because we moved it to top
+                                        onItemsPerPageChange={() => {}}
+                                        isHandmadeContext={activeJenis === "Barang Handmade"}
                                     />
                                 </div>
                             </div>

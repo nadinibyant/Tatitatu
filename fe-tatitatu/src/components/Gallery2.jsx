@@ -82,6 +82,7 @@ const Gallery2 = ({
   selectedItems, 
   role = "",
   enableStockValidation = false,
+  isHandmadeContext = false,
   currentPage = 1,
   totalPages = 1,
   totalItems = 0,
@@ -89,13 +90,13 @@ const Gallery2 = ({
   onPageChange = () => {},
   showPagination = false
 }) => {
-  const [stockAlert, setStockAlert] = useState({ show: false, itemName: '' });
+  const [stockAlert, setStockAlert] = useState({ show: false, itemName: '', isHandmade: false });
   
   const showStockAlert = (itemName) => {
-    setStockAlert({ show: true, itemName });
+    setStockAlert({ show: true, itemName, isHandmade: isHandmadeContext });
     setTimeout(() => {
-      setStockAlert({ show: false, itemName: '' });
-    }, 3000); 
+      setStockAlert({ show: false, itemName: '', isHandmade: false });
+    }, 4000); 
   };
 
   const userData = JSON.parse(localStorage.getItem('userData'))
@@ -125,11 +126,16 @@ const Gallery2 = ({
         <div className="sticky top-0 left-0 right-0 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-10 mb-4 shadow-md flex items-center justify-between">
           <div>
             <strong className="font-bold">Perhatian!</strong>
-            <span className="block sm:inline"> Stok "{stockAlert.itemName}" tidak mencukupi.</span>
+            <span className="block sm:inline">
+              {' '}Stok "{stockAlert.itemName}" tidak mencukupi.
+              {stockAlert.isHandmade && (
+                <span className="font-semibold"> Silahkan minta pada admin produksi untuk penambahan stok barang.</span>
+              )}
+            </span>
           </div>
           <button 
             className="ml-4"
-            onClick={() => setStockAlert({ show: false, itemName: '' })}
+            onClick={() => setStockAlert({ show: false, itemName: '', isHandmade: false })}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-700" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -154,7 +160,6 @@ const Gallery2 = ({
         ))}
       </div>
 
-      {/* Pagination */}
       {showPagination && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
